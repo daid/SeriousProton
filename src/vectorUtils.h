@@ -72,6 +72,12 @@ namespace sf
     }
 
     template <typename T>
+    Vector2<T> rotateVector(const Vector2<T>& v, const T& angle)
+    {
+        return Vector2<T>(sinf(angle / 180.0 * M_PI), -cosf(angle / 180.0 * M_PI)) * v.y + Vector2<T>(sinf((angle + 90) / 180.0 * M_PI), -cosf((angle + 90) / 180.0 * M_PI)) * v.x;
+    }
+
+    template <typename T>
     T length(const Vector2<T>& v)
     {
         return sqrtf(v.x*v.x+v.y*v.y);

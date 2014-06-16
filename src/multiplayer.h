@@ -168,6 +168,12 @@ public:
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveData;
         memberReplicationInfo.push_back(info);
     }
+    void registerMemberReplication(sf::Vector3f* member, float update_delay = 0.0)
+    {
+        registerMemberReplication(&member->x, update_delay);
+        registerMemberReplication(&member->y, update_delay);
+        registerMemberReplication(&member->z, update_delay);
+    }
     
     void registerCollisionableReplication();
     
@@ -208,5 +214,22 @@ template<class T> MultiplayerObject* createMultiplayerObject()
     return ret;
 }
 #define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
+
+static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector2f& v)
+{
+    return packet << v.x << v.y;
+}
+static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector2f& v)
+{
+    return packet >> v.x >> v.y;
+}
+static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector3f& v)
+{
+    return packet << v.x << v.y << v.z;
+}
+static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3f& v)
+{
+    return packet >> v.x >> v.y >> v.z;
+}
 
 #endif//MULTIPLAYER_H

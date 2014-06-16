@@ -4,7 +4,7 @@
 #include "scriptInterfaceMagic.h"
 #include "Updatable.h"
 
-#define AUTO_RELOAD_SCRIPT 1
+#define AUTO_RELOAD_SCRIPT 0
 
 class ScriptObject : public Updatable
 {
