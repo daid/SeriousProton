@@ -1,13 +1,13 @@
 #ifndef MULTIPLAYER_H
 #define MULTIPLAYER_H
 
-
 #include <SFML/Network.hpp>
 #include "Updatable.h"
 #include "stringImproved.h"
 
+
 static const int defaultServerPort = 35666;
-static const int multiplayerMagicNumber = 0x2fab3f0f;
+static const int multiplayerMagicNumber = 0x2fab3f0f; //So what is this for? Besides being maaagiic?
 
 class MultiplayerObject;
 class GameServer;
@@ -16,6 +16,7 @@ class GameClient;
 extern P<GameServer> gameServer;
 extern P<GameClient> gameClient;
 
+//TODO: Better naming & file seperation
 class GameServer : public Updatable
 {
     sf::Clock updateTimeClock;
@@ -27,7 +28,7 @@ class GameServer : public Updatable
     int sendDataCounter;
     float sendDataRate;
     float lastGameSpeed;
-    
+
     struct ClientInfo
     {
         sf::TcpSocket* socket;
@@ -40,17 +41,18 @@ class GameServer : public Updatable
     std::map<int32_t, P<MultiplayerObject> > objectMap;
 public:
     GameServer(string serverName, int versionNumber, int listenPort = defaultServerPort);
-    
+
     P<MultiplayerObject> getObjectById(int32_t id);
     virtual void update(float delta);
-    float getSendDataRate() { return sendDataRate; }
+    inline float getSendDataRate() { return sendDataRate; }
+
 private:
     void registerObject(P<MultiplayerObject> obj);
     void sendAll(sf::Packet& packet);
-    
+
     void genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet);
     void genenerateDeletePacketFor(int32_t id, sf::Packet& packet);
-    
+
     friend class MultiplayerObject;
 public:
     virtual void onNewClient(int32_t clientId) {}
@@ -64,15 +66,16 @@ class GameClient : public Updatable
     int32_t clientId;
 public:
     GameClient(sf::IpAddress server, int portNr = defaultServerPort);
-    
+
     P<MultiplayerObject> getObjectById(int32_t id);
     virtual void update(float delta);
-    
+
     int32_t getClientId() { return clientId; }
 
     friend class MultiplayerObject;
 };
 
+//Class to find all servers that have the correct version number. Creates a big nice list.
 class ServerScanner : public Updatable
 {
     sf::Clock updateTimeClock;
@@ -95,9 +98,9 @@ private:
 public:
 
     ServerScanner(int versionNumber, int serverPort = defaultServerPort);
-    
+
     virtual void update(float delta);
-    
+
     std::vector<ServerInfo> getServerList();
 };
 
@@ -127,6 +130,8 @@ template <typename T> struct multiplayerReplicationFunctions
 };
 template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr);
 
+//In between class that handles all the nasty synchronization of objects between server and client.
+//I'm assuming that it should be a pure virtual class though.
 class MultiplayerObject : public virtual PObject
 {
     const static int32_t noId = 0xFFFFFFFF;
@@ -134,14 +139,14 @@ class MultiplayerObject : public virtual PObject
     bool replicated;
     bool on_server;
     string multiplayerClassIdentifier;
-    
+
     struct MemberReplicationInfo
     {
         void* ptr;
         int64_t prev_data;
         float update_delay;
         float update_timeout;
-        
+
         bool(*isChangedFunction)(void* data, void* prev_data_ptr);
         void(*sendFunction)(void* data, sf::Packet& packet);
         void(*receiveFunction)(void* data, sf::Packet& packet);
@@ -149,10 +154,10 @@ class MultiplayerObject : public virtual PObject
     std::vector<MemberReplicationInfo> memberReplicationInfo;
 public:
     MultiplayerObject(string multiplayerClassIdentifier);
-    
+
     bool isServer() { return on_server; }
     bool isClient() { return !on_server; }
-    
+
     template <typename T> void registerMemberReplication(T* member, float update_delay = 0.0)
     {
         assert(!replicated);
@@ -168,12 +173,12 @@ public:
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveData;
         memberReplicationInfo.push_back(info);
     }
-    
+
     void registerCollisionableReplication();
-    
+
     int32_t getMultiplayerId() { return multiplayerObjectId; }
     void sendCommand(sf::Packet& packet);//Send a command from the client to the server.
-    
+
     virtual void onReceiveCommand(int32_t clientId, sf::Packet& packet) {} //Got data from a client, handle it.
 private:
     friend class GameServer;
@@ -184,13 +189,14 @@ typedef MultiplayerObject* (*CreateMultiplayerObjectFunction)();
 
 class MultiplayerClassListItem;
 extern MultiplayerClassListItem* multiplayerClassListStart;
+
 class MultiplayerClassListItem
 {
 public:
     string name;
     CreateMultiplayerObjectFunction func;
     MultiplayerClassListItem* next;
-    
+
     MultiplayerClassListItem(string name, CreateMultiplayerObjectFunction func)
     {
         this->name = name;
@@ -199,6 +205,7 @@ public:
         multiplayerClassListStart = this;
     }
 };
+
 template<class T> MultiplayerObject* createMultiplayerObject()
 {
     P<GameServer> tmp = gameServer;
