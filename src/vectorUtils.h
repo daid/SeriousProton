@@ -151,7 +151,7 @@ namespace sf
     template <typename T>
     static inline bool operator > (const Vector3<T>& v, const Vector3<T>& v2)
     {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) > (v2.x * v2.x + v2.y * v2.y);
+        return (v.x * v.x + v.y * v.y + v.z * v.z) > (v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
     }
 
     template <typename T>
@@ -188,6 +188,12 @@ namespace sf
     T dot(const Vector3<T>& v0, const Vector3<T>& v1)
     {
         return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
+    }
+
+    template <typename T>
+    Vector3<T> cross(const Vector3<T>& v0, const Vector3<T>& v1)
+    {
+        return Vector3<T>(v0.y * v1.z - v1.y * v0.z, v1.x*v0.z - v0.x*v1.z, v0.x*v1.y - v0.y*v1.x);
     }
 }
 #endif//SFML_EXTRA_VECTOR_UTILS_H
