@@ -20,6 +20,7 @@ GameServer::GameServer(string serverName, int versionNumber, int listenPort)
     assert(!gameClient);
     gameServer = this;
     lastGameSpeed = engine->getGameSpeed();
+    sendDataRate = 0.0;
 
     nextObjectId = 1;
     nextClientId = 1;
