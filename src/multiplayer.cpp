@@ -500,7 +500,7 @@ void MultiplayerObject::registerCollisionableReplication()
     info.ptr = dynamic_cast<Collisionable*>(this);
     assert(info.ptr);
     info.prev_data = -1;
-    info.update_delay = 0.2;
+    info.update_delay = 0.4;
     info.update_timeout = 0.0;
     info.isChangedFunction = &collisionable_isChanged;
     info.sendFunction = &collisionable_sendFunction;

@@ -60,25 +60,21 @@ public:
     }
     virtual sf::Int64 seek(sf::Int64 position)
     {
-        fpos_t pos = position;
-        fsetpos(f, &pos);
+        fseek(f, position, SEEK_SET);
         return position;
     }
     virtual sf::Int64 tell()
     {
-        fpos_t pos;
-        fgetpos(f, &pos);
-        return pos;
+        return ftell(f);
     }
     virtual sf::Int64 getSize()
     {
         fpos_t pos;
         fgetpos(f, &pos);
         fseek(f, 0, SEEK_END);
-        fpos_t endpos;
-        fgetpos(f, &endpos);
+        sf::Int64 size = ftell(f);
         fsetpos(f, &pos);
-        return endpos;
+        return size;
     }
 };
 
