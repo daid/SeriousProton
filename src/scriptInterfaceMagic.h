@@ -87,6 +87,8 @@ template<class T> struct convert< P<T> >
 template<> void convert<const char*>::param(lua_State* L, int& idx, const char*& str);
 template<> void convert<string>::param(lua_State* L, int& idx, string& str);
 
+template<> void convert<bool>::param(lua_State* L, int& idx, bool& b);
+
 /* Convert parameters to sf::Vector2 objects. */
 template<typename T> struct convert<sf::Vector2<T> >
 {
@@ -339,6 +341,37 @@ template<class T, typename P1, typename P2, typename P3, typename P4, typename P
         convert<P5>::param(L, idx, p5);
         if (obj)
             (obj->*func)(p1, p2, p3, p4, p5);
+        lua_pushvalue(L, 1);
+        return 1;
+    }
+};
+
+template<class T, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6> struct call<T, void(T::*)(P1, P2, P3, P4, P5, P6) >
+{
+    typedef P<PObject>* PT;
+    typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6);
+    
+    static int function(lua_State* L)
+    {
+        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
+        FuncProto func = *func_ptr;
+        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
+        T* obj = dynamic_cast<T*>(***p);
+        P1 p1;
+        P2 p2;
+        P3 p3;
+        P4 p4;
+        P5 p5;
+        P6 p6;
+        int idx = 2;
+        convert<P1>::param(L, idx, p1);
+        convert<P2>::param(L, idx, p2);
+        convert<P3>::param(L, idx, p3);
+        convert<P4>::param(L, idx, p4);
+        convert<P5>::param(L, idx, p5);
+        convert<P6>::param(L, idx, p6);
+        if (obj)
+            (obj->*func)(p1, p2, p3, p4, p5, p6);
         lua_pushvalue(L, 1);
         return 1;
     }

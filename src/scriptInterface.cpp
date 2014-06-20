@@ -71,7 +71,7 @@ void ScriptObject::run(const char* filename)
     do
     {
         string line = stream->readLine();
-        filecontents += line;
+        filecontents += line + "\n";
     }while(stream->tell() < stream->getSize());
     
     if (luaL_loadstring(L, filecontents.c_str()))

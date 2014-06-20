@@ -19,6 +19,7 @@ class TextureManager
 private:
     bool defaultRepeated;
     bool defaultSmooth;
+    bool autoSprite;
     std::map<string, TextureData> textureMap;
 public:
     TextureManager();
@@ -26,6 +27,7 @@ public:
 
     void setDefaultRepeated(bool repeated) { defaultRepeated = repeated; }
     void setDefaultSmooth(bool smooth) { defaultSmooth = smooth; }
+    void setAutoSprite(bool enabled) { autoSprite = enabled; }
     
     void setTexture(sf::Sprite& sprite, string name, unsigned int spriteIndex = 0);
     const sf::IntRect getSpriteRect(string name, unsigned int spriteIndex = 0);
