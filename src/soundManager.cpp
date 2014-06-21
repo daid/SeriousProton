@@ -34,6 +34,7 @@ void SoundManager::playMusic(string name)
     if (musicStream)
     {
         music.openFromStream(**musicStream);
+        music.setLoop(true);
         music.play();
     }
 }
