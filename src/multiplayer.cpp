@@ -161,7 +161,8 @@ void GameServer::update(float gameDelta)
         if (selector.isReady(*clientList[n].socket))
         {
             sf::Packet packet;
-            if (clientList[n].socket->receive(packet) == sf::TcpSocket::Done)
+            sf::TcpSocket::Status status;
+            while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
             {
                 int16_t command;
                 packet >> command;
@@ -181,7 +182,9 @@ void GameServer::update(float gameDelta)
                 default:
                     printf("Unknown packet from client: %d\n", command);
                 }
-            }else{
+            }
+            if (status == sf::TcpSocket::Disconnected)
+            {
                 onDisconnectClient(clientList[n].clientId);
                 selector.remove(*clientList[n].socket);
                 delete clientList[n].socket;
