@@ -232,4 +232,9 @@ static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3f& v)
     return packet >> v.x >> v.y >> v.z;
 }
 
+#define REGISTER_MULTIPLAYER_ENUM(type) \
+    static inline sf::Packet& operator << (sf::Packet& packet, const type& e) { return packet << int8_t(e); } \
+    static inline sf::Packet& operator >> (sf::Packet& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
+
+
 #endif//MULTIPLAYER_H
