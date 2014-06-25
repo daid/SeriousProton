@@ -9,6 +9,7 @@ class InputHandler : public Updatable
     P<WindowManager> windowManager;
 
     sf::Vector2f mousePos;
+    int mouse_wheel_delta;
     bool mouseButtonDown[sf::Mouse::ButtonCount];
     bool mouseButtonPressed[sf::Mouse::ButtonCount];
 public:
@@ -18,6 +19,9 @@ public:
     sf::Vector2f getMousePos() { return mousePos; }
     bool mouseIsDown(int button) { return mouseButtonDown[button]; }
     bool mouseIsPressed(int button) { return mouseButtonPressed[button]; }
+    int getMouseWheelDelta() { return mouse_wheel_delta; }
+    
+    friend class Engine;
 };
 
 class PlayerController: public virtual PObject

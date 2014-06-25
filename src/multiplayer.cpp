@@ -473,7 +473,7 @@ void collisionable_sendFunction(void* data, sf::Packet& packet)
     float rotation = c->getRotation();
     float angularVelocity = c->getAngularVelocity();
     
-    packet << position.x << position.y << velocity.x << velocity.y << rotation << angularVelocity;
+    packet << position << velocity << rotation << angularVelocity;
 }
 
 void collisionable_receiveFunction(void* data, sf::Packet& packet)
@@ -485,7 +485,7 @@ void collisionable_receiveFunction(void* data, sf::Packet& packet)
     float rotation;
     float angularVelocity;
 
-    packet >> position.x >> position.y >> velocity.x >> velocity.y >> rotation >> angularVelocity;
+    packet >> position >> velocity >> rotation >> angularVelocity;
     
     c->setPosition(position);
     c->setVelocity(velocity);

@@ -39,12 +39,15 @@ P<PObject> Engine::getObject(string name)
 void Engine::runMainLoop()
 {
     windowManager = dynamic_cast<WindowManager*>(*getObject("windowManager"));
+    InputHandler* inputHandler = dynamic_cast<InputHandler*>(*getObject("inputHandler"));
     sf::Clock frameTimeClock;
 #ifdef DEBUG
     sf::Clock debugOutputClock;
 #endif
     while (windowManager->window.isOpen())
     {
+        if (inputHandler)
+            inputHandler->mouse_wheel_delta = 0;
         // Handle events
         sf::Event event;
         while (windowManager->window.pollEvent(event))
@@ -69,6 +72,10 @@ void Engine::runMainLoop()
                 printf("---------------------\n");
             }
 #endif
+            if (event.type == sf::Event::MouseWheelMoved && inputHandler)
+            {
+                inputHandler->mouse_wheel_delta += event.mouseWheel.delta;
+            }
         }
 
 #ifdef DEBUG
