@@ -73,9 +73,11 @@ void Engine::runMainLoop()
             }
 #endif
             if (event.type == sf::Event::MouseWheelMoved && inputHandler)
-            {
                 inputHandler->mouse_wheel_delta += event.mouseWheel.delta;
-            }
+            if (event.type == sf::Event::MouseButtonPressed && inputHandler)
+                inputHandler->button_down[event.mouseButton.button] = true;
+            if (event.type == sf::Event::MouseButtonReleased && inputHandler)
+                inputHandler->button_down[event.mouseButton.button] = false;
         }
 
 #ifdef DEBUG

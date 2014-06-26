@@ -10,6 +10,8 @@ class InputHandler : public Updatable
 
     sf::Vector2f mousePos;
     int mouse_wheel_delta;
+    bool button_down[sf::Mouse::ButtonCount];
+    
     bool mouseButtonDown[sf::Mouse::ButtonCount];
     bool mouseButtonPressed[sf::Mouse::ButtonCount];
 public:
