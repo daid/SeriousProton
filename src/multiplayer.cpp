@@ -162,7 +162,7 @@ void GameServer::update(float gameDelta)
         {
             sf::Packet packet;
             sf::TcpSocket::Status status;
-            while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
+            if ((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
             {
                 int16_t command;
                 packet >> command;
@@ -172,9 +172,9 @@ void GameServer::update(float gameDelta)
                     {
                         int32_t id;
                         packet >> id;
+                        clientList[n].socket->receive(packet);
                         if (objectMap.find(id) != objectMap.end() && objectMap[id])
                         {
-                            clientList[n].socket->receive(packet);
                             objectMap[id]->onReceiveCommand(clientList[n].clientId, packet);
                         }
                     }
