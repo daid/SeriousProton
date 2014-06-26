@@ -124,6 +124,7 @@ void GameServer::update(float gameDelta)
     {
         ClientInfo info;
         info.socket = new sf::TcpSocket();
+        info.socket->setBlocking(false);
         info.clientId = nextClientId;
         nextClientId++;
         listenSocket.accept(*info.socket);
@@ -162,7 +163,7 @@ void GameServer::update(float gameDelta)
         {
             sf::Packet packet;
             sf::TcpSocket::Status status;
-            if ((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
+            while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
             {
                 int16_t command;
                 packet >> command;
