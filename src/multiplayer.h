@@ -157,7 +157,7 @@ public:
     {
         assert(!replicated);
         assert(memberReplicationInfo.size() < 0xFFFF);
-        assert(sizeof(T) <= sizeof(MemberReplicationInfo::prev_data));
+        assert(sizeof(T) <= sizeof(int64_t));
         MemberReplicationInfo info;
         info.ptr = member;
         info.prev_data = -1;
