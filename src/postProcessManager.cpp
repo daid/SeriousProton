@@ -19,10 +19,10 @@ PostProcessor::PostProcessor(string name, RenderChain* chain)
 {
     if (shader.loadFromFile("resources/" + name + ".frag", sf::Shader::Fragment))
     {
-        printf(("Loaded shader: " + name + "\n").c_str());
+        printf("Loaded shader: %s\n", name.c_str());
         enabled = true;
     }else{
-        printf(("Failed to load shader: " + name + "\n").c_str());
+        printf("Failed to load shader: %s\n", name.c_str());
         enabled = false;
     }
 }

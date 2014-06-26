@@ -121,5 +121,5 @@ void TextureManager::loadTexture(string name, sf::Vector2i subDiv)
     data.texture.setSmooth(defaultSmooth);
     
     data.texture.loadFromImage(tmpImage);
-    printf("Loaded: %s with %d sprites\n", name.c_str(), data.sprites.size());
+    printf("Loaded: %s with %d sprites\n", name.c_str(), int(data.sprites.size()));
 }
