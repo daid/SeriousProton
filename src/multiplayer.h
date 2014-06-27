@@ -215,19 +215,19 @@ template<class T> MultiplayerObject* createMultiplayerObject()
 }
 #define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
 
-static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector2f& v)
+template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector2<T>& v)
 {
     return packet << v.x << v.y;
 }
-static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector2f& v)
+template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector2<T>& v)
 {
     return packet >> v.x >> v.y;
 }
-static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector3f& v)
+template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector3<T>& v)
 {
     return packet << v.x << v.y << v.z;
 }
-static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3f& v)
+template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3<T>& v)
 {
     return packet >> v.x >> v.y >> v.z;
 }
