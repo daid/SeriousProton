@@ -4,20 +4,33 @@
 #include "windowManager.h"
 #include "Updatable.h"
 
-class InputHandler : public Updatable
+class InputHandler
 {
-    P<WindowManager> windowManager;
+    static P<WindowManager> windowManager;
 
-    sf::Vector2f mousePos;
-    bool mouseButtonDown[sf::Mouse::ButtonCount];
-    bool mouseButtonPressed[sf::Mouse::ButtonCount];
-public:
-    virtual ~InputHandler() {}
-    virtual void update(float delta);
+    static sf::Vector2f mousePos;
+    static int mouse_wheel_delta;
+    static bool mouse_button_down[sf::Mouse::ButtonCount];
+    static bool keyboard_button_down[sf::Keyboard::KeyCount];
     
-    sf::Vector2f getMousePos() { return mousePos; }
-    bool mouseIsDown(int button) { return mouseButtonDown[button]; }
-    bool mouseIsPressed(int button) { return mouseButtonPressed[button]; }
+    static bool mouseButtonDown[sf::Mouse::ButtonCount];
+    static bool mouseButtonPressed[sf::Mouse::ButtonCount];
+    static bool keyboardButtonDown[sf::Keyboard::KeyCount];
+    static bool keyboardButtonPressed[sf::Keyboard::KeyCount];
+
+    static void initialize();
+public:
+    static void update();
+
+    static bool keyboardIsDown(sf::Keyboard::Key key) { return keyboardButtonDown[key]; }
+    static bool keyboardIsPressed(sf::Keyboard::Key key) { return keyboardButtonPressed[key]; }
+    
+    static sf::Vector2f getMousePos() { return mousePos; }
+    static bool mouseIsDown(sf::Mouse::Button button) { return mouseButtonDown[button]; }
+    static bool mouseIsPressed(sf::Mouse::Button button) { return mouseButtonPressed[button]; }
+    static int getMouseWheelDelta() { return mouse_wheel_delta; }
+    
+    friend class Engine;
 };
 
 class PlayerController: public virtual PObject

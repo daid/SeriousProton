@@ -162,7 +162,7 @@ public:
     {
         assert(!replicated);
         assert(memberReplicationInfo.size() < 0xFFFF);
-        assert(sizeof(T) <= sizeof(MemberReplicationInfo::prev_data));
+        assert(sizeof(T) <= sizeof(int64_t));
         MemberReplicationInfo info;
         info.ptr = member;
         info.prev_data = -1;
@@ -173,7 +173,17 @@ public:
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveData;
         memberReplicationInfo.push_back(info);
     }
+<<<<<<< HEAD
 
+=======
+    void registerMemberReplication(sf::Vector3f* member, float update_delay = 0.0)
+    {
+        registerMemberReplication(&member->x, update_delay);
+        registerMemberReplication(&member->y, update_delay);
+        registerMemberReplication(&member->z, update_delay);
+    }
+    
+>>>>>>> origin/master
     void registerCollisionableReplication();
 
     int32_t getMultiplayerId() { return multiplayerObjectId; }
@@ -215,5 +225,27 @@ template<class T> MultiplayerObject* createMultiplayerObject()
     return ret;
 }
 #define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
+
+template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector2<T>& v)
+{
+    return packet << v.x << v.y;
+}
+template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector2<T>& v)
+{
+    return packet >> v.x >> v.y;
+}
+template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector3<T>& v)
+{
+    return packet << v.x << v.y << v.z;
+}
+template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3<T>& v)
+{
+    return packet >> v.x >> v.y >> v.z;
+}
+
+#define REGISTER_MULTIPLAYER_ENUM(type) \
+    static inline sf::Packet& operator << (sf::Packet& packet, const type& e) { return packet << int8_t(e); } \
+    static inline sf::Packet& operator >> (sf::Packet& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
+
 
 #endif//MULTIPLAYER_H

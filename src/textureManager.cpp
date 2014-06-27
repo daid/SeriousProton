@@ -9,6 +9,7 @@ TextureManager::TextureManager()
 {
     defaultRepeated = false;
     defaultSmooth = false;
+    autoSprite = true;
 }
 
 TextureManager::~TextureManager()
@@ -92,7 +93,7 @@ void TextureManager::loadTexture(string name, sf::Vector2i subDiv)
             }
         }
     }else{
-        if (tmpImage.getSize().x < 1024 && tmpImage.getSize().y < 1024)
+        if (autoSprite)
         {
             for(unsigned int y=0; y<tmpImage.getSize().y; y++)
             {
@@ -120,5 +121,5 @@ void TextureManager::loadTexture(string name, sf::Vector2i subDiv)
     data.texture.setSmooth(defaultSmooth);
     
     data.texture.loadFromImage(tmpImage);
-    printf("Loaded: %s with %d sprites\n", name.c_str(), data.sprites.size());
+    printf("Loaded: %s with %d sprites\n", name.c_str(), int(data.sprites.size()));
 }

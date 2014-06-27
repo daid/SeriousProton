@@ -18,6 +18,7 @@ Engine::Engine()
     initRandom();
     windowManager = NULL;
     CollisionManager::initialize();
+    InputHandler::initialize();
     gameSpeed = 1.0;
 }
 Engine::~Engine()
@@ -39,12 +40,15 @@ P<PObject> Engine::getObject(string name)
 void Engine::runMainLoop()
 {
     windowManager = dynamic_cast<WindowManager*>(*getObject("windowManager"));
+    InputHandler* inputHandler = dynamic_cast<InputHandler*>(*getObject("inputHandler"));
     sf::Clock frameTimeClock;
 #ifdef DEBUG
     sf::Clock debugOutputClock;
 #endif
     while (windowManager->window.isOpen())
     {
+        if (inputHandler)
+            InputHandler::mouse_wheel_delta = 0;
         // Handle events
         sf::Event event;
         while (windowManager->window.pollEvent(event))
@@ -69,6 +73,16 @@ void Engine::runMainLoop()
                 printf("---------------------\n");
             }
 #endif
+            if (event.type == sf::Event::KeyPressed)
+                InputHandler::keyboard_button_down[event.key.code] = true;
+            if (event.type == sf::Event::KeyReleased)
+                InputHandler::keyboard_button_down[event.key.code] = false;
+            if (event.type == sf::Event::MouseWheelMoved)
+                InputHandler::mouse_wheel_delta += event.mouseWheel.delta;
+            if (event.type == sf::Event::MouseButtonPressed)
+                InputHandler::mouse_button_down[event.mouseButton.button] = true;
+            if (event.type == sf::Event::MouseButtonReleased)
+                InputHandler::mouse_button_down[event.mouseButton.button] = false;
         }
 
 #ifdef DEBUG
@@ -96,6 +110,7 @@ void Engine::runMainLoop()
             delta *= 5.0;
 #endif
         
+        InputHandler::update();
         entityList.update();
         foreach(Updatable, u, updatableList)
             u->update(delta);

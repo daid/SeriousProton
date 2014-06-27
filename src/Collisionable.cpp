@@ -170,7 +170,7 @@ void Collisionable::setCollisionShape(const std::vector<sf::Vector2f>& shapeList
         if (!valid)
         {
             shape.SetAsBox(1.0/BOX2D_SCALE, 1.0/BOX2D_SCALE, points[0], 0);
-            printf("Failed to set valid collision shape: %i\n", shapeList.size());
+            printf("Failed to set valid collision shape: %i\n", int(shapeList.size()));
             for(unsigned int n=0; n<shapeList.size(); n++)
             {
                 printf("%f %f\n", shapeList[n].x, shapeList[n].y);

@@ -71,6 +71,22 @@ namespace sf
         return atan2(v.x, -v.y) / M_PI * 180;
     }
 
+    /* Return the difference between angle_a and angle_b within a range of -180 and 180 degrees */
+    template <typename T>
+    T angleDifference(const T& angle_a, const T& angle_b)
+    {
+        T ret = (angle_b - angle_a);
+        while(ret > 180) ret -= 360;
+        while(ret < -180) ret += 360;
+        return ret;
+    }
+
+    template <typename T>
+    Vector2<T> rotateVector(const Vector2<T>& v, const T& angle)
+    {
+        return Vector2<T>(sinf(angle / 180.0 * M_PI), -cosf(angle / 180.0 * M_PI)) * v.y + Vector2<T>(sinf((angle + 90) / 180.0 * M_PI), -cosf((angle + 90) / 180.0 * M_PI)) * v.x;
+    }
+
     template <typename T>
     T length(const Vector2<T>& v)
     {
@@ -145,7 +161,7 @@ namespace sf
     template <typename T>
     static inline bool operator > (const Vector3<T>& v, const Vector3<T>& v2)
     {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) > (v2.x * v2.x + v2.y * v2.y);
+        return (v.x * v.x + v.y * v.y + v.z * v.z) > (v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
     }
 
     template <typename T>
@@ -182,6 +198,12 @@ namespace sf
     T dot(const Vector3<T>& v0, const Vector3<T>& v1)
     {
         return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
+    }
+
+    template <typename T>
+    Vector3<T> cross(const Vector3<T>& v0, const Vector3<T>& v1)
+    {
+        return Vector3<T>(v0.y * v1.z - v1.y * v0.z, v1.x*v0.z - v0.x*v1.z, v0.x*v1.y - v0.y*v1.x);
     }
 }
 #endif//SFML_EXTRA_VECTOR_UTILS_H

@@ -20,6 +20,7 @@ GameServer::GameServer(string serverName, int versionNumber, int listenPort)
     assert(!gameClient);
     gameServer = this;
     lastGameSpeed = engine->getGameSpeed();
+    sendDataRate = 0.0;
 
     nextObjectId = 1;
     nextClientId = 1;
@@ -123,6 +124,7 @@ void GameServer::update(float gameDelta)
     {
         ClientInfo info;
         info.socket = new sf::TcpSocket();
+        info.socket->setBlocking(false);
         info.clientId = nextClientId;
         nextClientId++;
         listenSocket.accept(*info.socket);
@@ -160,7 +162,8 @@ void GameServer::update(float gameDelta)
         if (selector.isReady(*clientList[n].socket))
         {
             sf::Packet packet;
-            if (clientList[n].socket->receive(packet) == sf::TcpSocket::Done)
+            sf::TcpSocket::Status status;
+            while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
             {
                 int16_t command;
                 packet >> command;
@@ -170,9 +173,9 @@ void GameServer::update(float gameDelta)
                     {
                         int32_t id;
                         packet >> id;
+                        clientList[n].socket->receive(packet);
                         if (objectMap.find(id) != objectMap.end() && objectMap[id])
                         {
-                            clientList[n].socket->receive(packet);
                             objectMap[id]->onReceiveCommand(clientList[n].clientId, packet);
                         }
                     }
@@ -180,7 +183,9 @@ void GameServer::update(float gameDelta)
                 default:
                     printf("Unknown packet from client: %d\n", command);
                 }
-            }else{
+            }
+            if (status == sf::TcpSocket::Disconnected)
+            {
                 onDisconnectClient(clientList[n].clientId);
                 selector.remove(*clientList[n].socket);
                 delete clientList[n].socket;
@@ -469,7 +474,7 @@ void collisionable_sendFunction(void* data, sf::Packet& packet)
     float rotation = c->getRotation();
     float angularVelocity = c->getAngularVelocity();
     
-    packet << position.x << position.y << velocity.x << velocity.y << rotation << angularVelocity;
+    packet << position << velocity << rotation << angularVelocity;
 }
 
 void collisionable_receiveFunction(void* data, sf::Packet& packet)
@@ -481,7 +486,7 @@ void collisionable_receiveFunction(void* data, sf::Packet& packet)
     float rotation;
     float angularVelocity;
 
-    packet >> position.x >> position.y >> velocity.x >> velocity.y >> rotation >> angularVelocity;
+    packet >> position >> velocity >> rotation >> angularVelocity;
     
     c->setPosition(position);
     c->setVelocity(velocity);
@@ -499,7 +504,7 @@ void MultiplayerObject::registerCollisionableReplication()
     info.ptr = dynamic_cast<Collisionable*>(this);
     assert(info.ptr);
     info.prev_data = -1;
-    info.update_delay = 0.2;
+    info.update_delay = 0.4;
     info.update_timeout = 0.0;
     info.isChangedFunction = &collisionable_isChanged;
     info.sendFunction = &collisionable_sendFunction;

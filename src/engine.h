@@ -18,6 +18,7 @@
 #include "vectorUtils.h"
 #include "multiplayer.h"
 #include "event.h"
+#include "tween.h"
 
 class Engine;
 extern Engine* engine;

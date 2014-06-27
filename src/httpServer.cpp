@@ -161,7 +161,7 @@ void HttpServerConnection::sendReply()
         fseek(f, 0, SEEK_SET);
     }
     reply += "Content-type: text/html\r\n";
-    reply += "Content-length: " + string(replyDataSize) + "\r\n";
+    reply += "Content-length: " + string(int(replyDataSize)) + "\r\n";
     reply += "\r\n";
     socket.send(reply.c_str(), reply.size());
     if (replyData.size() > 0)

@@ -1,6 +1,7 @@
 #include <sys/stat.h>
 
 #include "random.h"
+#include "resources.h"
 #include "scriptInterface.h"
 
 REGISTER_SCRIPT_CLASS(ScriptObject)
@@ -62,7 +63,18 @@ void ScriptObject::run(const char* filename)
 #endif
     
     printf("Load: %s\n", filename);
-    if (luaL_loadfile(L, filename))
+    P<ResourceStream> stream = getResourceStream(filename);
+    if (!stream)
+        return;
+    
+    string filecontents;
+    do
+    {
+        string line = stream->readLine();
+        filecontents += line + "\n";
+    }while(stream->tell() < stream->getSize());
+    
+    if (luaL_loadstring(L, filecontents.c_str()))
     {
         printf("ERROR(load): %s\n", luaL_checkstring(L, -1));
         destroy();
@@ -79,7 +91,7 @@ void ScriptObject::run(const char* filename)
     if (lua_isnil(L, -1))
     {
         lua_pop(L, 1);
-        printf("WARNING(no init function): %s\n", filename);
+        //printf("WARNING(no init function): %s\n", filename);
     }else if (lua_pcall(L, 0, 0, 0))
     {
         printf("ERROR(init): %s\n", luaL_checkstring(L, -1));
