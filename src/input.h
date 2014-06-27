@@ -4,7 +4,7 @@
 #include "windowManager.h"
 #include "Updatable.h"
 
-class InputHandler
+class InputHandler : public virtual PObject
 {
     static P<WindowManager> windowManager;
 
@@ -12,7 +12,7 @@ class InputHandler
     static int mouse_wheel_delta;
     static bool mouse_button_down[sf::Mouse::ButtonCount];
     static bool keyboard_button_down[sf::Keyboard::KeyCount];
-    
+
     static bool mouseButtonDown[sf::Mouse::ButtonCount];
     static bool mouseButtonPressed[sf::Mouse::ButtonCount];
     static bool keyboardButtonDown[sf::Keyboard::KeyCount];
@@ -24,12 +24,12 @@ public:
 
     static bool keyboardIsDown(sf::Keyboard::Key key) { return keyboardButtonDown[key]; }
     static bool keyboardIsPressed(sf::Keyboard::Key key) { return keyboardButtonPressed[key]; }
-    
+
     static sf::Vector2f getMousePos() { return mousePos; }
     static bool mouseIsDown(sf::Mouse::Button button) { return mouseButtonDown[button]; }
     static bool mouseIsPressed(sf::Mouse::Button button) { return mouseButtonPressed[button]; }
     static int getMouseWheelDelta() { return mouse_wheel_delta; }
-    
+
     friend class Engine;
 };
 

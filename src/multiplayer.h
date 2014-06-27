@@ -173,17 +173,14 @@ public:
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveData;
         memberReplicationInfo.push_back(info);
     }
-<<<<<<< HEAD
 
-=======
     void registerMemberReplication(sf::Vector3f* member, float update_delay = 0.0)
     {
         registerMemberReplication(&member->x, update_delay);
         registerMemberReplication(&member->y, update_delay);
         registerMemberReplication(&member->z, update_delay);
     }
-    
->>>>>>> origin/master
+
     void registerCollisionableReplication();
 
     int32_t getMultiplayerId() { return multiplayerObjectId; }
