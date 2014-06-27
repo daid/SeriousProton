@@ -10,8 +10,7 @@ public:
     static const int buttonCount = 6;
     sf::Keyboard::Key keyBind[4 + buttonCount];
 
-    PlayerController(int nr)
-    : index(nr)
+    PlayerController(int nr): index(nr)
     {
         switch(nr)
         {
