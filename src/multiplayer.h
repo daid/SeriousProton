@@ -45,6 +45,9 @@ public:
     P<MultiplayerObject> getObjectById(int32_t id);
     virtual void update(float delta);
     inline float getSendDataRate() { return sendDataRate; }
+    
+    string getServerName() { return serverName; }
+    void setServerName(string name) { serverName = name; }
 
 private:
     void registerObject(P<MultiplayerObject> obj);
