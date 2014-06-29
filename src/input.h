@@ -2,9 +2,10 @@
 #define INPUT_H
 
 #include "windowManager.h"
+#include "stringImproved.h"
 #include "Updatable.h"
 
-class InputHandler : public virtual PObject
+class InputHandler
 {
     static P<WindowManager> windowManager;
 
@@ -17,6 +18,7 @@ class InputHandler : public virtual PObject
     static bool mouseButtonPressed[sf::Mouse::ButtonCount];
     static bool keyboardButtonDown[sf::Keyboard::KeyCount];
     static bool keyboardButtonPressed[sf::Keyboard::KeyCount];
+    static string keyboard_text_entry;
 
     static void initialize();
 public:
@@ -24,6 +26,7 @@ public:
 
     static bool keyboardIsDown(sf::Keyboard::Key key) { return keyboardButtonDown[key]; }
     static bool keyboardIsPressed(sf::Keyboard::Key key) { return keyboardButtonPressed[key]; }
+    static string getKeyboardTextEntry() { return keyboard_text_entry; }
 
     static sf::Vector2f getMousePos() { return mousePos; }
     static bool mouseIsDown(sf::Mouse::Button button) { return mouseButtonDown[button]; }

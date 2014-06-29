@@ -131,7 +131,7 @@ public:
 #ifdef DEBUG
         if(!ptr || ptr->_destroyed_flag)
         {
-            printf("Oh noes!\n");
+            printf("Oh noes! Better find me and put a breakpoint here!\n");
         }
         assert(ptr);
         assert(!ptr->_destroyed_flag);

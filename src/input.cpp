@@ -12,6 +12,7 @@ bool InputHandler::mouseButtonDown[sf::Mouse::ButtonCount];
 bool InputHandler::mouseButtonPressed[sf::Mouse::ButtonCount];
 bool InputHandler::keyboardButtonDown[sf::Keyboard::KeyCount];
 bool InputHandler::keyboardButtonPressed[sf::Keyboard::KeyCount];
+string InputHandler::keyboard_text_entry;
 
 void InputHandler::initialize()
 {

@@ -40,15 +40,14 @@ P<PObject> Engine::getObject(string name)
 void Engine::runMainLoop()
 {
     windowManager = dynamic_cast<WindowManager*>(*getObject("windowManager"));
-    InputHandler* inputHandler = dynamic_cast<InputHandler*>(*getObject("inputHandler"));
     sf::Clock frameTimeClock;
 #ifdef DEBUG
     sf::Clock debugOutputClock;
 #endif
     while (windowManager->window.isOpen())
     {
-        if (inputHandler)
-            InputHandler::mouse_wheel_delta = 0;
+        InputHandler::mouse_wheel_delta = 0;
+        InputHandler::keyboard_text_entry = "";
         // Handle events
         sf::Event event;
         while (windowManager->window.pollEvent(event))
@@ -77,6 +76,8 @@ void Engine::runMainLoop()
                 InputHandler::keyboard_button_down[event.key.code] = true;
             if (event.type == sf::Event::KeyReleased)
                 InputHandler::keyboard_button_down[event.key.code] = false;
+            if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
+                InputHandler::keyboard_text_entry += string(char(event.text.unicode));
             if (event.type == sf::Event::MouseWheelMoved)
                 InputHandler::mouse_wheel_delta += event.mouseWheel.delta;
             if (event.type == sf::Event::MouseButtonPressed)
