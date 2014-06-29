@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include "vectorUtils.h"
 #include "resources.h"
 #include "soundManager.h"
 
@@ -51,6 +52,37 @@ void SoundManager::playSound(string name, float pitch, float volume)
         data = loadSound(name);
     
     playSoundData(data, pitch, volume);
+}
+
+void SoundManager::setListenerPosition(sf::Vector2f position, float angle)
+{
+    sf::Vector2f listen_vector = sf::vector2FromAngle(angle);
+    sf::Listener::setPosition(position.x, 0, position.y);
+    sf::Listener::setDirection(listen_vector.x, 0, listen_vector.y);
+}
+
+void SoundManager::playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch, float volume)
+{
+    sf::SoundBuffer* data = soundMap[name];
+    if (data == NULL)
+        data = loadSound(name);
+    
+    for(unsigned int n=0; n<activeSoundList.size(); n++)
+    {
+        sf::Sound& sound = activeSoundList[n];
+        if (sound.getStatus() == sf::Sound::Stopped)
+        {
+            sound.setBuffer(*data);
+            sound.setRelativeToListener(true);
+            sound.setMinDistance(min_distance);
+            sound.setAttenuation(attenuation);
+            sound.setPosition(position.x, 0, position.y);
+            sound.setPitch(pitch);
+            sound.setVolume(volume);
+            sound.play();
+            return;
+        }
+    }
 }
 
 void SoundManager::setTextToSpeachVoice(string name)
@@ -115,6 +147,7 @@ void SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volum
         if (sound.getStatus() == sf::Sound::Stopped)
         {
             sound.setBuffer(*data);
+            sound.setRelativeToListener(false);
             sound.setPitch(pitch);
             sound.setVolume(volume);
             sound.play();

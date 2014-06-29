@@ -24,6 +24,11 @@ public:
     void playMusic(string name);
     void stopMusic();
     void playSound(string name, float pitch = 1.0f, float volume = 100.0f);
+
+    //Positional sounds
+    void setListenerPosition(sf::Vector2f position, float angle);
+    void playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch = 1.0f, float volume = 100.0f);
+
     void setTextToSpeachVoice(string name);
     void playTextToSpeech(string text);
 private:
