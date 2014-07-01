@@ -406,6 +406,11 @@ public:
         lua_setmetatable(L, -2);
         return 1;
     }
+
+    static int no_create(lua_State* L)
+    {
+        return 0;
+    }
     
     static int isValid(lua_State* L)
     {
@@ -426,7 +431,18 @@ public:
     {
         lua_pushcfunction(L, create);
         lua_setglobal(L, objectTypeName);
-        
+        registerObject(L);
+    }
+
+    static void registerObjectNoCreation(lua_State* L)
+    {
+        lua_pushcfunction(L, no_create);
+        lua_setglobal(L, objectTypeName);
+        registerObject(L);
+    }
+
+    static void registerObject(lua_State* L)
+    {
         luaL_getmetatable(L, objectTypeName);
         int metatable = lua_gettop(L);
         if (lua_isnil(L, metatable))
@@ -505,6 +521,11 @@ public:
     template <> const char* scriptBindObject<T>::objectTypeName = # T; \
     template <> const char* scriptBindObject<T>::objectBaseTypeName = NULL; \
     registerObjectFunctionListItem registerObjectFunctionListItem ## T (scriptBindObject<T>::registerObjectCreation); \
+    template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
+#define REGISTER_SCRIPT_CLASS_NO_CREATE(T) \
+    template <> const char* scriptBindObject<T>::objectTypeName = # T; \
+    template <> const char* scriptBindObject<T>::objectBaseTypeName = NULL; \
+    registerObjectFunctionListItem registerObjectFunctionListItem ## T (scriptBindObject<T>::registerObjectNoCreation); \
     template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
 #define REGISTER_SCRIPT_SUBCLASS(T, BASE) \
     template <> const char* scriptBindObject<T>::objectTypeName = # T; \
