@@ -22,6 +22,7 @@ SoundManager::SoundManager()
         activeSoundList.push_back(sf::Sound());
     
     musicStream = NULL;
+    music_volume = 100.0;
 }
 
 SoundManager::~SoundManager()
@@ -36,6 +37,7 @@ void SoundManager::playMusic(string name)
     {
         music.openFromStream(**musicStream);
         music.setLoop(true);
+        music.setVolume(music_volume);
         music.play();
     }
 }
@@ -43,6 +45,12 @@ void SoundManager::playMusic(string name)
 void SoundManager::stopMusic()
 {
     music.stop();
+}
+
+void SoundManager::setMusicVolume(float volume)
+{
+    music_volume = volume;
+    music.setVolume(music_volume);
 }
 
 void SoundManager::playSound(string name, float pitch, float volume)

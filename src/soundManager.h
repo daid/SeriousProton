@@ -17,12 +17,14 @@ private:
     P<ResourceStream> musicStream;
     std::map<string, sf::SoundBuffer*> soundMap;
     std::vector<sf::Sound> activeSoundList;
+    float music_volume;
 public:
     SoundManager();
     ~SoundManager();
     
     void playMusic(string name);
     void stopMusic();
+    void setMusicVolume(float volume);
     void playSound(string name, float pitch = 1.0f, float volume = 100.0f);
 
     //Positional sounds
