@@ -1,4 +1,5 @@
 #include <SFML/System.hpp>
+#include <dirent.h>
 #include "resources.h"
 
 PVector<ResourceProvider> resourceProviders;
@@ -95,7 +96,17 @@ P<ResourceStream> DirectoryResourceProvider::getResourceStream(string filename)
 std::vector<string> DirectoryResourceProvider::findResources(string searchPattern)
 {
     std::vector<string> foundFiles;
-    //TODO
+    DIR* dir = opendir(basepath.c_str());
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (entry->d_name[0] == '.')
+            continue;
+        string name = string(entry->d_name);
+        if (searchMatch(name, searchPattern))
+            foundFiles.push_back(name);
+    }
+    closedir(dir);
     return foundFiles;
 }
 
