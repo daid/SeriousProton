@@ -1,3 +1,4 @@
+#include <GL/glew.h>
 #include "windowManager.h"
 #include "Updatable.h"
 #include "Renderable.h"
@@ -54,6 +55,7 @@ WindowManager::WindowManager(int virtualWidth, int virtualHeight, bool fullscree
         view.setViewport(sf::FloatRect(0, offset, 1, aspect));
     }
     window.setView(view);
+    glewInit();
 }
 
 WindowManager::~WindowManager()
