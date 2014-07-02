@@ -32,13 +32,13 @@ ScriptObject::ScriptObject()
     L = NULL;
 }
 
-ScriptObject::ScriptObject(const char* filename)
+ScriptObject::ScriptObject(string filename)
 {
     L = NULL;
     run(filename);
 }
 
-void ScriptObject::run(const char* filename)
+void ScriptObject::run(string filename)
 {
     if (L == NULL)
     {
@@ -62,7 +62,7 @@ void ScriptObject::run(const char* filename)
     lua_setglobal(L, "__ScriptFilename");
 #endif
     
-    printf("Load: %s\n", filename);
+    printf("Load script: %s\n", filename.c_str());
     P<ResourceStream> stream = getResourceStream(filename);
     if (!stream)
         return;

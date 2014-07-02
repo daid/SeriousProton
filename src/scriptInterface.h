@@ -2,6 +2,7 @@
 #define SCRIPT_INTERFACE_H
 
 #include "scriptInterfaceMagic.h"
+#include "stringImproved.h"
 #include "Updatable.h"
 
 #define AUTO_RELOAD_SCRIPT 0
@@ -14,10 +15,10 @@ class ScriptObject : public Updatable
 #endif
 public:
     ScriptObject();
-    ScriptObject(const char* filename);
+    ScriptObject(string filename);
     virtual ~ScriptObject();
     
-    void run(const char* filename);
+    void run(string filename);
     void clean();
     virtual void update(float delta);
 
