@@ -29,7 +29,16 @@ int lua_destroyScript(lua_State* L)
 
 ScriptObject::ScriptObject()
 {
-    L = NULL;
+    L = luaL_newstate();
+
+    lua_pushlightuserdata(L, this);
+    lua_setglobal(L, "__ScriptObjectPointer");
+    luaL_openlibs(L);
+    lua_register(L, "random", lua_random);
+    lua_register(L, "destroyScript", lua_destroyScript);
+    
+    for(registerObjectFunctionListItem* item = registerObjectFunctionListStart; item != NULL; item = item->next)
+        item->func(L);
 }
 
 ScriptObject::ScriptObject(string filename)
@@ -107,6 +116,22 @@ void ScriptObject::clean()
     }
 }
 
+void ScriptObject::registerFunction(string name, lua_CFunction function)
+{
+    if (L)
+        lua_register(L, name.c_str(), function);
+}
+
+void ScriptObject::callFunction(string name)
+{
+    lua_getglobal(L, name.c_str());
+    if (lua_pcall(L, 0, 0, 0))
+    {
+        printf("ERROR(%s): %s\n", name.c_str(), luaL_checkstring(L, -1));
+        lua_pop(L, 1);
+    }
+}
+
 ScriptObject::~ScriptObject()
 {
     clean();
@@ -153,8 +178,7 @@ void ScriptObject::update(float delta)
         lua_pushnumber(L, delta);
         if (lua_pcall(L, 1, 1, 0))
         {
-            printf("ERROR(update): %s\n", luaL_checkstring(L, -1));
-            destroy();
+            lua_pop(L, 1);
             return;
         }
         lua_pop(L, 1);

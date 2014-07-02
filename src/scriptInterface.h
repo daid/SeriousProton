@@ -20,6 +20,8 @@ public:
     
     void run(string filename);
     void clean();
+    void registerFunction(string name, lua_CFunction function);
+    void callFunction(string name);
     virtual void update(float delta);
 
     //Make the ScriptCallback our friend, so we can access the lua_State from the callback class.
