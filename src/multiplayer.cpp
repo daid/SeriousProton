@@ -133,12 +133,12 @@ void GameServer::update(float gameDelta)
         {
             sf::Packet packet;
             packet << CMD_SET_CLIENT_ID << info.clientId;
-            info.socket->send(packet);
+            while(info.socket->send(packet) == sf::TcpSocket::NotReady) {}
         }
         {
             sf::Packet packet;
             packet << CMD_SET_GAME_SPEED << lastGameSpeed;
-            info.socket->send(packet);
+            while(info.socket->send(packet) == sf::TcpSocket::NotReady) {}
         }
         
         onNewClient(info.clientId);
@@ -152,7 +152,7 @@ void GameServer::update(float gameDelta)
                 sf::Packet packet;
                 genenerateCreatePacketFor(obj, packet);
                 sendDataCounter += packet.getDataSize();
-                info.socket->send(packet);
+                while(info.socket->send(packet)  == sf::TcpSocket::NotReady) {}
             }
         }
     }
@@ -231,7 +231,7 @@ void GameServer::sendAll(sf::Packet& packet)
     for(unsigned int n=0; n<clientList.size(); n++)
     {
         sendDataCounter += packet.getDataSize();
-        clientList[n].socket->send(packet);
+        while(clientList[n].socket->send(packet) == sf::TcpSocket::NotReady) {}
     }
 }
 
@@ -271,7 +271,8 @@ void GameClient::update(float delta)
         objectMap.erase(delList[n]);
 
     sf::Packet packet;
-    while(socket.receive(packet) == sf::TcpSocket::Done)
+    sf::TcpSocket::Status status;
+    while((status = socket.receive(packet)) == sf::TcpSocket::Done)
     {
         int16_t command;
         packet >> command;
@@ -335,6 +336,10 @@ void GameClient::update(float delta)
         default:
             printf("Unknown command from server: %d\n", command);
         }
+    }
+    if (status == sf::TcpSocket::Disconnected)
+    {
+        destroy();
     }
 }
 
@@ -521,7 +526,7 @@ void MultiplayerObject::sendCommand(sf::Packet& packet)
     {
         sf::Packet p;
         p << CMD_CLIENT_COMMAND << multiplayerObjectId;
-        gameClient->socket.send(p);
-        gameClient->socket.send(packet);
+        while(gameClient->socket.send(p) == sf::TcpSocket::NotReady) {}
+        while(gameClient->socket.send(packet) == sf::TcpSocket::NotReady) {}
     }
 }
