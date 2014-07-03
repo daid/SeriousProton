@@ -74,7 +74,10 @@ void ScriptObject::run(string filename)
     printf("Load script: %s\n", filename.c_str());
     P<ResourceStream> stream = getResourceStream(filename);
     if (!stream)
+    {
+        printf("Script not found: %s\n", filename.c_str());
         return;
+    }
     
     string filecontents;
     do

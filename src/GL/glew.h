@@ -109,6 +109,9 @@
 #define __GLEXT_H_
 #define __gl_ATI_h_
 
+#define GLEW_STATIC
+#define GLEW_NO_GLU
+
 #if defined(_WIN32)
 
 /*
