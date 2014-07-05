@@ -28,21 +28,21 @@ class Collisionable: public virtual PObject
 {
 private:
     b2Body* body;
-    bool enablePhysics;
-    bool staticPhysics;
+    bool enable_physics;
+    bool static_physics;
     
     void createBody(b2Shape* shape);
 public:
     Collisionable(float radius);
-    Collisionable(sf::Vector2f boxSize, sf::Vector2f boxOrigin = sf::Vector2f(0, 0));
+    Collisionable(sf::Vector2f box_size, sf::Vector2f box_origin = sf::Vector2f(0, 0));
     Collisionable(const std::vector<sf::Vector2f>& shape);
     virtual ~Collisionable();
     virtual void collision(Collisionable* target);
     
     void setCollisionRadius(float radius);
-    void setCollisionBox(sf::Vector2f boxSize, sf::Vector2f boxOrigin = sf::Vector2f(0, 0));
+    void setCollisionBox(sf::Vector2f box_size, sf::Vector2f box_origin = sf::Vector2f(0, 0));
     void setCollisionShape(const std::vector<sf::Vector2f>& shape);
-    void setCollisionPhysics(bool enablePhysics, bool staticPhysics);
+    void setCollisionPhysics(bool enable_physics, bool static_physics);
     
     void setPosition(sf::Vector2f v);
     sf::Vector2f getPosition();
@@ -67,7 +67,7 @@ public:
 
 class CollisionDebugDraw : public Renderable, public b2Draw
 {
-    sf::RenderTarget* renderTarget;
+    sf::RenderTarget* render_target;
 public:
     CollisionDebugDraw(RenderLayer* layer);
     

@@ -1,4 +1,4 @@
-#include "Collisionable.h"
+#include "collisionable.h"
 #include "Renderable.h"
 #include "vectorUtils.h"
 
@@ -103,26 +103,26 @@ void CollisionManager::handleCollisions(float delta)
 
 Collisionable::Collisionable(float radius)
 {
-    enablePhysics = false;
-    staticPhysics = false;
+    enable_physics = false;
+    static_physics = false;
     body = NULL;
     
     setCollisionRadius(radius);
 }
 
-Collisionable::Collisionable(sf::Vector2f boxSize, sf::Vector2f boxOrigin)
+Collisionable::Collisionable(sf::Vector2f box_size, sf::Vector2f box_origin)
 {
-    enablePhysics = false;
-    staticPhysics = false;
+    enable_physics = false;
+    static_physics = false;
     body = NULL;
     
-    setCollisionBox(boxSize, boxOrigin);
+    setCollisionBox(box_size, box_origin);
 }
 
 Collisionable::Collisionable(const std::vector<sf::Vector2f>& shape)
 {
-    enablePhysics = false;
-    staticPhysics = false;
+    enable_physics = false;
+    static_physics = false;
     body = NULL;
     
     setCollisionShape(shape);
@@ -142,10 +142,10 @@ void Collisionable::setCollisionRadius(float radius)
     createBody(&shape);
 }
 
-void Collisionable::setCollisionBox(sf::Vector2f boxSize, sf::Vector2f boxOrigin)
+void Collisionable::setCollisionBox(sf::Vector2f box_size, sf::Vector2f box_origin)
 {
     b2PolygonShape shape;
-    shape.SetAsBox(boxSize.x / 2.0 / BOX2D_SCALE, boxSize.y / 2.0 / BOX2D_SCALE, v2b(boxOrigin), 0);
+    shape.SetAsBox(box_size.x / 2.0 / BOX2D_SCALE, box_size.y / 2.0 / BOX2D_SCALE, v2b(box_origin), 0);
 
     createBody(&shape);
 }
@@ -185,23 +185,23 @@ void Collisionable::setCollisionShape(const std::vector<sf::Vector2f>& shapeList
             shapeDef.shape = &shape;
             shapeDef.density = 1.0;
             shapeDef.friction = 0.1;
-            shapeDef.isSensor = !enablePhysics;
+            shapeDef.isSensor = !enable_physics;
             body->CreateFixture(&shapeDef);
         }
     }
 }
 
-void Collisionable::setCollisionPhysics(bool enablePhysics, bool staticPhysics)
+void Collisionable::setCollisionPhysics(bool enable_physics, bool static_physics)
 {
-    this->enablePhysics = enablePhysics;
-    this->staticPhysics = staticPhysics;
+    this->enable_physics = enable_physics;
+    this->static_physics = static_physics;
 
     if (!body)
         return;
 
     for(b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext())
-        f->SetSensor(!enablePhysics);
-    body->SetType(staticPhysics ? b2_kinematicBody : b2_dynamicBody);
+        f->SetSensor(!enable_physics);
+    body->SetType(static_physics ? b2_kinematicBody : b2_dynamicBody);
 }
 
 void Collisionable::createBody(b2Shape* shape)
@@ -212,7 +212,7 @@ void Collisionable::createBody(b2Shape* shape)
             body->DestroyFixture(body->GetFixtureList());
     }else{
         b2BodyDef bodyDef;
-        bodyDef.type = staticPhysics ? b2_kinematicBody : b2_dynamicBody;
+        bodyDef.type = static_physics ? b2_kinematicBody : b2_dynamicBody;
         bodyDef.userData = this;
         bodyDef.allowSleep = false;
         body = CollisionManager::world->CreateBody(&bodyDef);
@@ -222,7 +222,7 @@ void Collisionable::createBody(b2Shape* shape)
     shapeDef.shape = shape;
     shapeDef.density = 1.0;
     shapeDef.friction = 0.1;
-    shapeDef.isSensor = !enablePhysics;
+    shapeDef.isSensor = !enable_physics;
     body->CreateFixture(&shapeDef);
 }
 
@@ -332,7 +332,7 @@ CollisionDebugDraw::CollisionDebugDraw(RenderLayer* layer)
     
 void CollisionDebugDraw::render(sf::RenderTarget& window)
 {
-    renderTarget = &window;
+    render_target = &window;
     CollisionManager::world->DrawDebugData();
 }
 
@@ -347,7 +347,7 @@ void CollisionDebugDraw::DrawPolygon(const b2Vec2* vertices, int32 vertexCount, 
     }
     a[vertexCount].position = b2v(vertices[0]);
     a[vertexCount].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
-    renderTarget->draw(a);
+    render_target->draw(a);
 }
 
 /// Draw a solid closed polygon provided in CCW order.
@@ -361,7 +361,7 @@ void CollisionDebugDraw::DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCo
     }
     a[vertexCount].position = b2v(vertices[0]);
     a[vertexCount].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
-    renderTarget->draw(a);
+    render_target->draw(a);
 }
 
 /// Draw a circle.
@@ -373,7 +373,7 @@ void CollisionDebugDraw::DrawCircle(const b2Vec2& center, float32 radius, const 
     shape.setFillColor(sf::Color::Transparent);
     shape.setOutlineColor(sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255));
     shape.setOutlineThickness(0.3);
-    renderTarget->draw(shape);
+    render_target->draw(shape);
 }
 
 /// Draw a solid circle.
@@ -385,7 +385,7 @@ void CollisionDebugDraw::DrawSolidCircle(const b2Vec2& center, float32 radius, c
     shape.setFillColor(sf::Color::Transparent);
     shape.setOutlineColor(sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255));
     shape.setOutlineThickness(0.3);
-    renderTarget->draw(shape);
+    render_target->draw(shape);
 }
 
 /// Draw a line segment.
@@ -396,7 +396,7 @@ void CollisionDebugDraw::DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b
     a[0].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
     a[1].position = b2v(p2);
     a[1].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
-    renderTarget->draw(a);
+    render_target->draw(a);
 }
 
 /// Draw a transform. Choose your own length scale.
@@ -408,6 +408,6 @@ void CollisionDebugDraw::DrawTransform(const b2Transform& xf)
     a[1].position = b2v(xf.p) + sf::Vector2f(xf.q.GetXAxis().x * 10, xf.q.GetXAxis().y * 10);
     a[0].position = b2v(xf.p);
     a[1].position = b2v(xf.p) + sf::Vector2f(xf.q.GetYAxis().x * 10, xf.q.GetYAxis().y * 10);
-    renderTarget->draw(a);
+    render_target->draw(a);
 }
 #endif//DEBUG

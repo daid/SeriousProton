@@ -13,7 +13,7 @@
 #include "soundManager.h"
 #include "textureManager.h"
 #include "gameEntity.h"
-#include "Collisionable.h"
+#include "collisionable.h"
 #include "random.h"
 #include "vectorUtils.h"
 #include "multiplayer.h"

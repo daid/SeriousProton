@@ -1,5 +1,5 @@
 #include "multiplayer.h"
-#include "Collisionable.h"
+#include "collisionable.h"
 #include "engine.h"
 
 static const int16_t CMD_CREATE = 0x0001;

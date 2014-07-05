@@ -2,7 +2,7 @@
 #include "windowManager.h"
 #include "Updatable.h"
 #include "Renderable.h"
-#include "Collisionable.h"
+#include "collisionable.h"
 #include "postProcessManager.h"
 #include "input.h"
 

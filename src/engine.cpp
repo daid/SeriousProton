@@ -2,7 +2,7 @@
 #include "random.h"
 #include "gameEntity.h"
 #include "Updatable.h"
-#include "Collisionable.h"
+#include "collisionable.h"
 
 #ifdef DEBUG
 #include <typeinfo>
