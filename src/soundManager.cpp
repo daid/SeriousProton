@@ -81,7 +81,7 @@ void SoundManager::playSound(string name, sf::Vector2f position, float min_dista
         if (sound.getStatus() == sf::Sound::Stopped)
         {
             sound.setBuffer(*data);
-            sound.setRelativeToListener(true);
+            sound.setRelativeToListener(false);
             sound.setMinDistance(min_distance);
             sound.setAttenuation(attenuation);
             sound.setPosition(position.x, 0, position.y);
@@ -155,9 +155,12 @@ void SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volum
         if (sound.getStatus() == sf::Sound::Stopped)
         {
             sound.setBuffer(*data);
-            sound.setRelativeToListener(false);
+            sound.setRelativeToListener(true);
+            sound.setMinDistance(1);
+            sound.setAttenuation(0);
             sound.setPitch(pitch);
             sound.setVolume(volume);
+            sound.setPosition(0, 0, 0);
             sound.play();
             return;
         }

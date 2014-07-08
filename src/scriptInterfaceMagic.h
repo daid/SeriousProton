@@ -422,7 +422,7 @@ public:
     static int destroy(lua_State* L)
     {
         PT* p = static_cast< PT* >(lua_touserdata(L, -1));
-        if ((***p) != NULL);
+        if ((***p) != NULL)
             (***p)->destroy();
         return 0;
     }
