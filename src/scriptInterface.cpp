@@ -125,6 +125,16 @@ void ScriptObject::registerFunction(string name, lua_CFunction function)
         lua_register(L, name.c_str(), function);
 }
 
+void ScriptObject::registerObject(P<PObject> object, string class_name, string variable_name)
+{
+    P<PObject>** p = static_cast< P<PObject>** >(lua_newuserdata(L, sizeof(P<PObject>*)));
+    *p = new P<PObject>();
+    (**p) = object;
+    luaL_getmetatable(L, class_name.c_str());
+    lua_setmetatable(L, -2);
+    lua_setglobal(L, variable_name.c_str());
+}
+
 void ScriptObject::callFunction(string name)
 {
     lua_getglobal(L, name.c_str());

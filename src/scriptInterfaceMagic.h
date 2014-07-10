@@ -165,6 +165,32 @@ template<class T> struct call<T, void(T::*)() >
     }
 };
 
+template<class T, class R> struct call<T, R(T::*)() >
+{
+    typedef P<PObject>* PT;
+    typedef R(T::*FuncProto)();
+    
+    static int function(lua_State* L)
+    {
+        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
+        FuncProto func = *func_ptr;
+        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
+        if (p == NULL)
+        {
+            //Function called without object...
+            return 0;
+        }
+        T* obj = dynamic_cast<T*>(***p);
+        if (obj)
+        {
+            R r = (obj->*func)();
+            convert<R>::returnType(L, r);
+            return 1;
+        }
+        return 1;
+    }
+};
+
 class ScriptCallback;
 class ScriptObject;
 template<class T> struct call<T, ScriptCallback T::* >
@@ -531,6 +557,11 @@ public:
     template <> const char* scriptBindObject<T>::objectTypeName = # T; \
     template <> const char* scriptBindObject<T>::objectBaseTypeName = # BASE; \
     registerObjectFunctionListItem registerObjectFunctionListItem ## T (scriptBindObject<T>::registerObjectCreation); \
+    template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
+#define REGISTER_SCRIPT_SUBCLASS_NO_CREATE(T, BASE) \
+    template <> const char* scriptBindObject<T>::objectTypeName = # T; \
+    template <> const char* scriptBindObject<T>::objectBaseTypeName = # BASE; \
+    registerObjectFunctionListItem registerObjectFunctionListItem ## T (scriptBindObject<T>::registerObjectNoCreation); \
     template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
 #define REGISTER_SCRIPT_CLASS_FUNCTION(T, F) \
     addFunction<T> (L, table, # F , &T::F)
