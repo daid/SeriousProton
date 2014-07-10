@@ -75,6 +75,10 @@ void GameServer::update(float gameDelta)
                 genenerateCreatePacketFor(obj, packet);
                 sendAll(packet);
             }
+            sf::Packet packet;
+            packet << CMD_UPDATE_VALUE;
+            packet << int32_t(obj->multiplayerObjectId);
+            int cnt = 0;
             for(unsigned int n=0; n<obj->memberReplicationInfo.size(); n++)
             {
                 if (obj->memberReplicationInfo[n].update_timeout > 0.0)
@@ -83,17 +87,16 @@ void GameServer::update(float gameDelta)
                 }else{
                     if ((obj->memberReplicationInfo[n].isChangedFunction)(obj->memberReplicationInfo[n].ptr, &obj->memberReplicationInfo[n].prev_data))
                     {
-                        sf::Packet packet;
-                        packet << CMD_UPDATE_VALUE;
-                        packet << int32_t(obj->multiplayerObjectId);
                         packet << int16_t(n);
                         (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
-                        sendAll(packet);
+                        cnt++;
                         
                         obj->memberReplicationInfo[n].update_timeout = obj->memberReplicationInfo[n].update_delay;
                     }
                 }
             }
+            if (cnt > 0)
+                sendAll(packet);
         }else{
             delList.push_back(id);
         }
@@ -173,7 +176,9 @@ void GameServer::update(float gameDelta)
                     {
                         int32_t id;
                         packet >> id;
-                        clientList[n].socket->receive(packet);
+                        while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::NotReady)
+                        {
+                        }
                         if (objectMap.find(id) != objectMap.end() && objectMap[id])
                         {
                             objectMap[id]->onReceiveCommand(clientList[n].clientId, packet);
@@ -314,12 +319,15 @@ void GameClient::update(float delta)
             {
                 int32_t id;
                 int16_t idx;
-                packet >> id >> idx;
+                packet >> id;
                 if (objectMap.find(id) != objectMap.end() && objectMap[id])
                 {
                     P<MultiplayerObject> obj = objectMap[id];
-                    if (idx < int32_t(obj->memberReplicationInfo.size()))
-                        (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
+                    while(packet >> idx)
+                    {
+                        if (idx < int32_t(obj->memberReplicationInfo.size()))
+                            (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
+                    }
                 }
             }
             break;
