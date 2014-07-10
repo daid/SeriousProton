@@ -46,6 +46,8 @@ template<typename T> struct convert
 };
 //Specialized template for the bool return type, so we return a lua boolean.
 template<> int convert<bool>::returnType(lua_State* L, bool b);
+//Specialized template for the string return type, so we return a lua string.
+template<> int convert<string>::returnType(lua_State* L, string s);
 
 /* Convert parameters to PObject pointers */
 template<class T> struct convert<T*>
