@@ -38,13 +38,14 @@ template<typename T> struct convert
         // by the default number conversion.
         t = luaL_checknumber(L, idx++);
     }
-    static void returnType(lua_State* L, T t)
+    static int returnType(lua_State* L, T t)
     {
         lua_pushnumber(L, t);
+        return 1;
     }
 };
 //Specialized template for the bool return type, so we return a lua boolean.
-template<> void convert<bool>::returnType(lua_State* L, bool b);
+template<> int convert<bool>::returnType(lua_State* L, bool b);
 
 /* Convert parameters to PObject pointers */
 template<class T> struct convert<T*>
@@ -96,6 +97,13 @@ template<typename T> struct convert<sf::Vector2<T> >
     {
         v.x = luaL_checknumber(L, idx++);
         v.y = luaL_checknumber(L, idx++);
+    }
+    
+    static int returnType(lua_State* L, sf::Vector2<T> t)
+    {
+        lua_pushnumber(L, t.x);
+        lua_pushnumber(L, t.y);
+        return 2;
     }
 };
 /* Convert parameters to sf::Vector3 objects. */
@@ -184,10 +192,9 @@ template<class T, class R> struct call<T, R(T::*)() >
         if (obj)
         {
             R r = (obj->*func)();
-            convert<R>::returnType(L, r);
-            return 1;
+            return convert<R>::returnType(L, r);
         }
-        return 1;
+        return 0;
     }
 };
 
@@ -261,8 +268,7 @@ template<class T, typename R, typename P1> struct call<T, R(T::*)(P1) >
         if (obj)
         {
             R r = (obj->*func)(p1);
-            convert<R>::returnType(L, r);
-            return 1;
+            return convert<R>::returnType(L, r);
         }
         return 0;
     }

@@ -1,8 +1,9 @@
 #include "scriptInterfaceMagic.h"
 
-template<> void convert<bool>::returnType(lua_State* L, bool b)
+template<> int convert<bool>::returnType(lua_State* L, bool b)
 {
     lua_pushboolean(L, b);
+    return 1;
 }
 
 template<> void convert<const char*>::param(lua_State* L, int& idx, const char*& str)
