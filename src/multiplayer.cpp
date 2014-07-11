@@ -87,6 +87,7 @@ void GameServer::update(float gameDelta)
                 }else{
                     if ((obj->memberReplicationInfo[n].isChangedFunction)(obj->memberReplicationInfo[n].ptr, &obj->memberReplicationInfo[n].prev_data))
                     {
+                        //printf("%d %d %s %f\n", obj->multiplayerObjectId, n, obj->memberReplicationInfo[n].name, obj->memberReplicationInfo[n].update_delay);
                         packet << int16_t(n);
                         (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
                         cnt++;
@@ -129,6 +130,7 @@ void GameServer::update(float gameDelta)
         info.socket = new sf::TcpSocket();
         info.socket->setBlocking(false);
         info.clientId = nextClientId;
+        info.receiveState = CRS_Main;
         nextClientId++;
         listenSocket.accept(*info.socket);
         clientList.push_back(info);
@@ -162,31 +164,47 @@ void GameServer::update(float gameDelta)
     
     for(unsigned int n=0; n<clientList.size(); n++)
     {
+        if (clientList[n].packet_backlog.size() > 0)
+        {
+            printf("Client: %d, Backlog: %d\n", n, clientList[n].packet_backlog.size());
+            while(clientList[n].packet_backlog.size() > 0 && clientList[n].socket->send(clientList[n].packet_backlog[0]) == sf::TcpSocket::Done)
+            {
+                clientList[n].packet_backlog.erase(clientList[n].packet_backlog.begin());
+            }
+            if (clientList[n].backlog_clock.getElapsedTime().asSeconds() > 20.0)
+            {
+                clientList[n].socket->disconnect();
+            }
+        }
+        
         if (selector.isReady(*clientList[n].socket))
         {
             sf::Packet packet;
             sf::TcpSocket::Status status;
             while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
             {
-                int16_t command;
-                packet >> command;
-                switch(command)
+                switch(clientList[n].receiveState)
                 {
-                case CMD_CLIENT_COMMAND:
+                case CRS_Main:
                     {
-                        int32_t id;
-                        packet >> id;
-                        while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::NotReady)
+                        int16_t command;
+                        packet >> command;
+                        switch(command)
                         {
-                        }
-                        if (objectMap.find(id) != objectMap.end() && objectMap[id])
-                        {
-                            objectMap[id]->onReceiveCommand(clientList[n].clientId, packet);
+                        case CMD_CLIENT_COMMAND:
+                            packet >> clientList[n].command_object_id;
+                            clientList[n].receiveState = CRS_Command;
+                            break;
+                        default:
+                            printf("Unknown packet from client: %d\n", command);
                         }
                     }
                     break;
-                default:
-                    printf("Unknown packet from client: %d\n", command);
+                case CRS_Command:
+                    if (objectMap.find(clientList[n].command_object_id) != objectMap.end() && objectMap[clientList[n].command_object_id])
+                        objectMap[clientList[n].command_object_id]->onReceiveCommand(clientList[n].clientId, packet);
+                    clientList[n].receiveState = CRS_Main;
+                    break;
                 }
             }
             if (status == sf::TcpSocket::Disconnected)
@@ -235,8 +253,18 @@ void GameServer::sendAll(sf::Packet& packet)
 {
     for(unsigned int n=0; n<clientList.size(); n++)
     {
-        sendDataCounter += packet.getDataSize();
-        while(clientList[n].socket->send(packet) == sf::TcpSocket::NotReady) {}
+        if (clientList[n].packet_backlog.size() < 1)
+        {
+            if (clientList[n].socket->send(packet) != sf::TcpSocket::Done)
+            {
+                clientList[n].packet_backlog.push_back(packet);
+                clientList[n].backlog_clock.restart();
+            }else{
+                sendDataCounter += packet.getDataSize();
+            }
+        }else{
+            clientList[n].packet_backlog.push_back(packet);
+        }
     }
 }
 
@@ -249,9 +277,9 @@ GameClient::GameClient(sf::IpAddress server, int portNr)
     gameClient = this;
 
     if (socket.connect(server, portNr) != sf::TcpSocket::Done)
-    {
-        destroy();
-    }
+        connected = false;
+    else
+        connected = true;
     socket.setBlocking(false);
 }
 
@@ -347,7 +375,7 @@ void GameClient::update(float delta)
     }
     if (status == sf::TcpSocket::Disconnected)
     {
-        destroy();
+        connected = false;
     }
 }
 
@@ -516,6 +544,7 @@ void MultiplayerObject::registerCollisionableReplication()
     MemberReplicationInfo info;
     info.ptr = dynamic_cast<Collisionable*>(this);
     assert(info.ptr);
+    info.name = "Collisionable_data";
     info.prev_data = -1;
     info.update_delay = 0.4;
     info.update_timeout = 0.0;

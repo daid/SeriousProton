@@ -29,10 +29,19 @@ class GameServer : public Updatable
     float sendDataRate;
     float lastGameSpeed;
 
+    enum EClientReceiveState
+    {
+        CRS_Main,
+        CRS_Command
+    };
     struct ClientInfo
     {
         sf::TcpSocket* socket;
         int32_t clientId;
+        EClientReceiveState receiveState;
+        int32_t command_object_id;
+        std::vector<sf::Packet> packet_backlog;
+        sf::Clock backlog_clock;
     };
     int32_t nextClientId;
     std::vector<ClientInfo> clientList;
@@ -67,6 +76,7 @@ class GameClient : public Updatable
     sf::TcpSocket socket;
     std::map<int32_t, P<MultiplayerObject> > objectMap;
     int32_t clientId;
+    bool connected;
 public:
     GameClient(sf::IpAddress server, int portNr = defaultServerPort);
 
@@ -74,6 +84,7 @@ public:
     virtual void update(float delta);
 
     int32_t getClientId() { return clientId; }
+    bool isConnected() { return connected; }
 
     friend class MultiplayerObject;
 };
@@ -145,6 +156,9 @@ class MultiplayerObject : public virtual PObject
 
     struct MemberReplicationInfo
     {
+#ifdef DEBUG
+        const char* name;
+#endif
         void* ptr;
         int64_t prev_data;
         float update_delay;
@@ -161,12 +175,21 @@ public:
     bool isServer() { return on_server; }
     bool isClient() { return !on_server; }
 
+#ifdef DEBUG
+#define STRINGIFY(n) #n
+#define registerMemberReplication(m, ...) registerMemberReplication_(STRINGIFY(m), m , ## __VA_ARGS__ )
+    template <typename T> void registerMemberReplication_(const char* name, T* member, float update_delay = 0.0)
+#else
     template <typename T> void registerMemberReplication(T* member, float update_delay = 0.0)
+#endif
     {
         assert(!replicated);
         assert(memberReplicationInfo.size() < 0xFFFF);
         assert(sizeof(T) <= sizeof(int64_t));
         MemberReplicationInfo info;
+#ifdef DEBUG
+        info.name = name;
+#endif
         info.ptr = member;
         info.prev_data = -1;
         info.update_delay = update_delay;
@@ -177,7 +200,11 @@ public:
         memberReplicationInfo.push_back(info);
     }
 
+#ifdef DEBUG
+    void registerMemberReplication_(const char* name, sf::Vector3f* member, float update_delay = 0.0)
+#else
     void registerMemberReplication(sf::Vector3f* member, float update_delay = 0.0)
+#endif
     {
         registerMemberReplication(&member->x, update_delay);
         registerMemberReplication(&member->y, update_delay);
