@@ -544,7 +544,9 @@ void MultiplayerObject::registerCollisionableReplication()
     MemberReplicationInfo info;
     info.ptr = dynamic_cast<Collisionable*>(this);
     assert(info.ptr);
+#ifdef DEBUG
     info.name = "Collisionable_data";
+#endif
     info.prev_data = -1;
     info.update_delay = 0.4;
     info.update_timeout = 0.0;
