@@ -99,6 +99,13 @@ public:
         registerMemberReplication(&member->y, update_delay);
         registerMemberReplication(&member->z, update_delay);
     }
+    
+    void updateMemberReplicationUpdateDelay(void* data, float update_delay)
+    {
+        for(unsigned int n=0; n<memberReplicationInfo.size(); n++)
+            if (memberReplicationInfo[n].ptr == data)
+                memberReplicationInfo[n].update_delay = update_delay;
+    }
 
     void registerCollisionableReplication();
 

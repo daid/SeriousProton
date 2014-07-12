@@ -3,6 +3,16 @@
 #include "multiplayer_internal.h"
 #include "engine.h"
 
+#define MULTIPLAYER_COLLECT_DATA_STATS 0
+
+#if MULTIPLAYER_COLLECT_DATA_STATS
+sf::Clock multiplayer_stats_dump;
+static std::map<string, int> multiplayer_stats;
+#define ADD_MULTIPLAYER_STATS(name, bytes) multiplayer_stats[name] += (bytes)
+#else
+#define ADD_MULTIPLAYER_STATS(name, bytes) do {} while(0)
+#endif
+
 P<GameServer> gameServer;
 
 GameServer::GameServer(string serverName, int versionNumber, int listenPort)
@@ -65,11 +75,18 @@ void GameServer::update(float gameDelta)
                 
                 sf::Packet packet;
                 genenerateCreatePacketFor(obj, packet);
+                //Call the isChanged function for each replication info, so the prev_data is updated.
+                for(unsigned int n=0; n<obj->memberReplicationInfo.size(); n++)
+                    obj->memberReplicationInfo[n].isChangedFunction(obj->memberReplicationInfo[n].ptr, &obj->memberReplicationInfo[n].prev_data);
                 sendAll(packet);
+                ADD_MULTIPLAYER_STATS(obj->multiplayerClassIdentifier + "::CREATE", packet.getDataSize());
             }
             sf::Packet packet;
             packet << CMD_UPDATE_VALUE;
             packet << int32_t(obj->multiplayerObjectId);
+#if MULTIPLAYER_COLLECT_DATA_STATS
+            int overhead = packet.getDataSize();
+#endif
             int cnt = 0;
             for(unsigned int n=0; n<obj->memberReplicationInfo.size(); n++)
             {
@@ -79,17 +96,23 @@ void GameServer::update(float gameDelta)
                 }else{
                     if ((obj->memberReplicationInfo[n].isChangedFunction)(obj->memberReplicationInfo[n].ptr, &obj->memberReplicationInfo[n].prev_data))
                     {
-                        //printf("%d %d %s %f\n", obj->multiplayerObjectId, n, obj->memberReplicationInfo[n].name, obj->memberReplicationInfo[n].update_delay);
+#if MULTIPLAYER_COLLECT_DATA_STATS
+                        int packet_size = packet.getDataSize();
+#endif
                         packet << int16_t(n);
                         (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
                         cnt++;
+                        ADD_MULTIPLAYER_STATS(obj->multiplayerClassIdentifier + "::" + obj->memberReplicationInfo[n].name, packet.getDataSize() - packet_size);
                         
                         obj->memberReplicationInfo[n].update_timeout = obj->memberReplicationInfo[n].update_delay;
                     }
                 }
             }
             if (cnt > 0)
+            {
                 sendAll(packet);
+                ADD_MULTIPLAYER_STATS(obj->multiplayerClassIdentifier + "::OVERHEAD", overhead);
+            }
         }else{
             delList.push_back(id);
         }
@@ -99,6 +122,7 @@ void GameServer::update(float gameDelta)
         sf::Packet packet;
         genenerateDeletePacketFor(delList[n], packet);
         sendAll(packet);
+        ADD_MULTIPLAYER_STATS("???::DELETE", packet.getDataSize());
         objectMap.erase(delList[n]);
     }
 
@@ -212,6 +236,23 @@ void GameServer::update(float gameDelta)
     
     float dataPerSecond = float(sendDataCounter) / delta;
     sendDataRate = sendDataRate * (1.0 - delta) + dataPerSecond * delta;
+
+#if MULTIPLAYER_COLLECT_DATA_STATS
+    if (multiplayer_stats_dump.getElapsedTime().asSeconds() > 1.0)
+    {
+        multiplayer_stats_dump.restart();
+        
+        int total = 0;
+        for(std::map<string, int >::iterator i=multiplayer_stats.begin(); i != multiplayer_stats.end(); i++)
+            total += i->second;
+        printf("---------------------------------Total: %d\n", total);
+        for(std::map<string, int >::iterator i=multiplayer_stats.begin(); i != multiplayer_stats.end(); i++)
+        {
+            printf("%60s: %d (%d%%)\n", i->first.c_str(), i->second, i->second * 100 / total);
+        }
+        multiplayer_stats.clear();
+    }
+#endif
 }
 
 void GameServer::registerObject(P<MultiplayerObject> obj)
