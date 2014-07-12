@@ -5,118 +5,7 @@
 #include "Updatable.h"
 #include "stringImproved.h"
 
-
-static const int defaultServerPort = 35666;
-static const int multiplayerMagicNumber = 0x2fab3f0f; //So what is this for? Besides being maaagiic?
-
 class MultiplayerObject;
-class GameServer;
-class GameClient;
-
-extern P<GameServer> gameServer;
-extern P<GameClient> gameClient;
-
-//TODO: Better naming & file seperation
-class GameServer : public Updatable
-{
-    sf::Clock updateTimeClock;
-    sf::UdpSocket broadcastListenSocket;
-    sf::TcpListener listenSocket;
-    sf::SocketSelector selector;
-    string serverName;
-    int versionNumber;
-    int sendDataCounter;
-    float sendDataRate;
-    float lastGameSpeed;
-
-    enum EClientReceiveState
-    {
-        CRS_Main,
-        CRS_Command
-    };
-    struct ClientInfo
-    {
-        sf::TcpSocket* socket;
-        int32_t clientId;
-        EClientReceiveState receiveState;
-        int32_t command_object_id;
-        std::vector<sf::Packet> packet_backlog;
-        sf::Clock backlog_clock;
-    };
-    int32_t nextClientId;
-    std::vector<ClientInfo> clientList;
-
-    int32_t nextObjectId;
-    std::map<int32_t, P<MultiplayerObject> > objectMap;
-public:
-    GameServer(string serverName, int versionNumber, int listenPort = defaultServerPort);
-
-    P<MultiplayerObject> getObjectById(int32_t id);
-    virtual void update(float delta);
-    inline float getSendDataRate() { return sendDataRate; }
-    
-    string getServerName() { return serverName; }
-    void setServerName(string name) { serverName = name; }
-
-private:
-    void registerObject(P<MultiplayerObject> obj);
-    void sendAll(sf::Packet& packet);
-
-    void genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet);
-    void genenerateDeletePacketFor(int32_t id, sf::Packet& packet);
-
-    friend class MultiplayerObject;
-public:
-    virtual void onNewClient(int32_t clientId) {}
-    virtual void onDisconnectClient(int32_t clientId) {}
-};
-
-class GameClient : public Updatable
-{
-    sf::TcpSocket socket;
-    std::map<int32_t, P<MultiplayerObject> > objectMap;
-    int32_t clientId;
-    bool connected;
-public:
-    GameClient(sf::IpAddress server, int portNr = defaultServerPort);
-
-    P<MultiplayerObject> getObjectById(int32_t id);
-    virtual void update(float delta);
-
-    int32_t getClientId() { return clientId; }
-    bool isConnected() { return connected; }
-
-    friend class MultiplayerObject;
-};
-
-//Class to find all servers that have the correct version number. Creates a big nice list.
-class ServerScanner : public Updatable
-{
-    sf::Clock updateTimeClock;
-    int serverPort;
-    sf::UdpSocket socket;
-    float broadcastDelay;
-
-public:
-    struct ServerInfo
-    {
-        sf::IpAddress address;
-        float timeout;
-        string name;
-    };
-private:
-
-    std::vector<struct ServerInfo> serverList;
-    int versionNumber;
-    const static float serverTimeout = 30.0;
-public:
-
-    ServerScanner(int versionNumber, int serverPort = defaultServerPort);
-
-    virtual void update(float delta);
-
-    std::vector<ServerInfo> getServerList();
-};
 
 template <typename T> struct multiplayerReplicationFunctions
 {
@@ -245,11 +134,7 @@ public:
 
 template<class T> MultiplayerObject* createMultiplayerObject()
 {
-    P<GameServer> tmp = gameServer;
-    gameServer = NULL;
-    MultiplayerObject* ret = new T();
-    gameServer = tmp;
-    return ret;
+    return new T();
 }
 #define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
 

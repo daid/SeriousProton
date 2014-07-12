@@ -17,6 +17,9 @@
 #include "random.h"
 #include "vectorUtils.h"
 #include "multiplayer.h"
+#include "multiplayer_server.h"
+#include "multiplayer_server_scanner.h"
+#include "multiplayer_client.h"
 #include "event.h"
 #include "tween.h"
 

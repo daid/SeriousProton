@@ -1,0 +1,261 @@
+#include "multiplayer_server.h"
+#include "multiplayer_client.h"
+#include "multiplayer_internal.h"
+#include "engine.h"
+
+P<GameServer> gameServer;
+
+GameServer::GameServer(string serverName, int versionNumber, int listenPort)
+: serverName(serverName), versionNumber(versionNumber)
+{
+    assert(!gameServer);
+    assert(!gameClient);
+    gameServer = this;
+    lastGameSpeed = engine->getGameSpeed();
+    sendDataRate = 0.0;
+
+    nextObjectId = 1;
+    nextClientId = 1;
+    
+    if (listenSocket.listen(listenPort) != sf::TcpListener::Done)
+    {
+        printf("Failed to listen on TCP port: %d\n", listenPort);
+    }
+    if (broadcastListenSocket.bind(listenPort) != sf::UdpSocket::Done)
+    {
+        printf("Failed to listen on UDP port: %d\n", listenPort);
+    }
+    selector.add(listenSocket);
+    selector.add(broadcastListenSocket);
+}
+
+P<MultiplayerObject> GameServer::getObjectById(int32_t id)
+{
+    if (objectMap.find(id) != objectMap.end())
+        return objectMap[id];
+    return NULL;
+}
+
+void GameServer::update(float gameDelta)
+{
+    //Calculate our own delta, as we want wall-time delta, the gameDelta can be modified by the current game speed (could even be 0 on pause)
+    float delta = updateTimeClock.getElapsedTime().asSeconds();
+    updateTimeClock.restart();
+    
+    sendDataCounter = 0;
+
+    if (lastGameSpeed != engine->getGameSpeed())
+    {
+        lastGameSpeed = engine->getGameSpeed();
+        sf::Packet packet;
+        packet << CMD_SET_GAME_SPEED << lastGameSpeed;
+        sendAll(packet);
+    }
+    
+    std::vector<int32_t> delList;
+    for(std::map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
+    {
+        int id = i->first;
+        P<MultiplayerObject> obj = i->second;
+        if (obj)
+        {
+            if (!obj->replicated)
+            {
+                obj->replicated = true;
+                
+                sf::Packet packet;
+                genenerateCreatePacketFor(obj, packet);
+                sendAll(packet);
+            }
+            sf::Packet packet;
+            packet << CMD_UPDATE_VALUE;
+            packet << int32_t(obj->multiplayerObjectId);
+            int cnt = 0;
+            for(unsigned int n=0; n<obj->memberReplicationInfo.size(); n++)
+            {
+                if (obj->memberReplicationInfo[n].update_timeout > 0.0)
+                {
+                    obj->memberReplicationInfo[n].update_timeout -= delta;
+                }else{
+                    if ((obj->memberReplicationInfo[n].isChangedFunction)(obj->memberReplicationInfo[n].ptr, &obj->memberReplicationInfo[n].prev_data))
+                    {
+                        //printf("%d %d %s %f\n", obj->multiplayerObjectId, n, obj->memberReplicationInfo[n].name, obj->memberReplicationInfo[n].update_delay);
+                        packet << int16_t(n);
+                        (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
+                        cnt++;
+                        
+                        obj->memberReplicationInfo[n].update_timeout = obj->memberReplicationInfo[n].update_delay;
+                    }
+                }
+            }
+            if (cnt > 0)
+                sendAll(packet);
+        }else{
+            delList.push_back(id);
+        }
+    }
+    for(unsigned int n=0; n<delList.size(); n++)
+    {
+        sf::Packet packet;
+        genenerateDeletePacketFor(delList[n], packet);
+        sendAll(packet);
+        objectMap.erase(delList[n]);
+    }
+
+    selector.wait(sf::microseconds(1));//Seems to delay 1ms on Windows. Not ideal, but fast enough. (other option is using threads, which I rather avoid)
+    if (selector.isReady(broadcastListenSocket))
+    {
+        sf::IpAddress recvAddress;
+        unsigned short recvPort;
+        sf::Packet recvPacket;
+        broadcastListenSocket.receive(recvPacket, recvAddress, recvPort);
+        
+        //We do not care about what we received. Reply that we live!
+        sf::Packet sendPacket;
+        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(versionNumber) << serverName;
+        broadcastListenSocket.send(sendPacket, recvAddress, recvPort);
+    }
+    
+    if (selector.isReady(listenSocket))
+    {
+        ClientInfo info;
+        info.socket = new sf::TcpSocket();
+        info.socket->setBlocking(false);
+        info.clientId = nextClientId;
+        info.receiveState = CRS_Main;
+        nextClientId++;
+        listenSocket.accept(*info.socket);
+        clientList.push_back(info);
+        selector.add(*info.socket);
+        {
+            sf::Packet packet;
+            packet << CMD_SET_CLIENT_ID << info.clientId;
+            while(info.socket->send(packet) == sf::TcpSocket::NotReady) {}
+        }
+        {
+            sf::Packet packet;
+            packet << CMD_SET_GAME_SPEED << lastGameSpeed;
+            while(info.socket->send(packet) == sf::TcpSocket::NotReady) {}
+        }
+        
+        onNewClient(info.clientId);
+        
+        //On a new client, first create all the already existing objects. And update all the values.
+        for(std::map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
+        {
+            P<MultiplayerObject> obj = i->second;
+            if (obj && obj->replicated)
+            {
+                sf::Packet packet;
+                genenerateCreatePacketFor(obj, packet);
+                sendDataCounter += packet.getDataSize();
+                while(info.socket->send(packet)  == sf::TcpSocket::NotReady) {}
+            }
+        }
+    }
+    
+    for(unsigned int n=0; n<clientList.size(); n++)
+    {
+        if (clientList[n].packet_backlog.size() > 0)
+        {
+            printf("Client: %d, Backlog: %d\n", n, clientList[n].packet_backlog.size());
+            while(clientList[n].packet_backlog.size() > 0 && clientList[n].socket->send(clientList[n].packet_backlog[0]) == sf::TcpSocket::Done)
+            {
+                clientList[n].packet_backlog.erase(clientList[n].packet_backlog.begin());
+            }
+            if (clientList[n].backlog_clock.getElapsedTime().asSeconds() > 20.0)
+            {
+                clientList[n].socket->disconnect();
+            }
+        }
+        
+        if (selector.isReady(*clientList[n].socket))
+        {
+            sf::Packet packet;
+            sf::TcpSocket::Status status;
+            while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
+            {
+                switch(clientList[n].receiveState)
+                {
+                case CRS_Main:
+                    {
+                        int16_t command;
+                        packet >> command;
+                        switch(command)
+                        {
+                        case CMD_CLIENT_COMMAND:
+                            packet >> clientList[n].command_object_id;
+                            clientList[n].receiveState = CRS_Command;
+                            break;
+                        default:
+                            printf("Unknown command from client: %d\n", command);
+                        }
+                    }
+                    break;
+                case CRS_Command:
+                    if (objectMap.find(clientList[n].command_object_id) != objectMap.end() && objectMap[clientList[n].command_object_id])
+                        objectMap[clientList[n].command_object_id]->onReceiveCommand(clientList[n].clientId, packet);
+                    clientList[n].receiveState = CRS_Main;
+                    break;
+                }
+            }
+            if (status == sf::TcpSocket::Disconnected)
+            {
+                onDisconnectClient(clientList[n].clientId);
+                selector.remove(*clientList[n].socket);
+                delete clientList[n].socket;
+                clientList.erase(clientList.begin() + n);
+                n--;
+            }
+        }
+    }
+    
+    float dataPerSecond = float(sendDataCounter) / delta;
+    sendDataRate = sendDataRate * (1.0 - delta) + dataPerSecond * delta;
+}
+
+void GameServer::registerObject(P<MultiplayerObject> obj)
+{
+    //Note, at this point in time, the pointed object is only of the MultiplayerObject class.
+    // This due to the fact that in C++ does not "is" it's final sub-class till construction is completed.
+    obj->multiplayerObjectId = nextObjectId;
+    obj->replicated = false;
+    nextObjectId++;
+    
+    objectMap[obj->multiplayerObjectId] = obj;
+}
+
+void GameServer::genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet)
+{
+    packet << CMD_CREATE << obj->multiplayerObjectId << obj->multiplayerClassIdentifier;
+
+    for(unsigned int n=0; n<obj->memberReplicationInfo.size(); n++)
+    {
+        packet << int16_t(n);
+        (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
+    }
+}
+
+void GameServer::genenerateDeletePacketFor(int32_t id, sf::Packet& packet)
+{
+    packet << CMD_DELETE << id;
+}
+
+void GameServer::sendAll(sf::Packet& packet)
+{
+    for(unsigned int n=0; n<clientList.size(); n++)
+    {
+        if (clientList[n].packet_backlog.size() < 1)
+        {
+            if (clientList[n].socket->send(packet) != sf::TcpSocket::Done)
+            {
+                clientList[n].packet_backlog.push_back(packet);
+                clientList[n].backlog_clock.restart();
+            }else{
+                sendDataCounter += packet.getDataSize();
+            }
+        }else{
+            clientList[n].packet_backlog.push_back(packet);
+        }
+    }
+}
