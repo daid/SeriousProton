@@ -203,7 +203,7 @@ void GameServer::update(float gameDelta)
                 {
                 case CRS_Main:
                     {
-                        int16_t command;
+                        command_t command;
                         packet >> command;
                         switch(command)
                         {

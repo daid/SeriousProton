@@ -44,7 +44,7 @@ void GameClient::update(float delta)
     sf::TcpSocket::Status status;
     while((status = socket.receive(packet)) == sf::TcpSocket::Done)
     {
-        int16_t command;
+        command_t command;
         packet >> command;
         switch(command)
         {
