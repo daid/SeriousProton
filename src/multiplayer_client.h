@@ -8,7 +8,7 @@
 class GameClient;
 class MultiplayerObject;
 
-extern P<GameClient> gameClient;
+extern P<GameClient> game_client;
 
 class GameClient : public Updatable
 {

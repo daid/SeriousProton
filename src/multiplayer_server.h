@@ -11,7 +11,7 @@ static const int multiplayerVerficationNumber = 0x2fab3f0f; //Used to verify tha
 class GameServer;
 class MultiplayerObject;
 
-extern P<GameServer> gameServer;
+extern P<GameServer> game_server;
 
 class GameServer : public Updatable
 {
@@ -50,7 +50,7 @@ public:
     P<MultiplayerObject> getObjectById(int32_t id);
     virtual void update(float delta);
     inline float getSendDataRate() { return sendDataRate; }
-    
+
     string getServerName() { return serverName; }
     void setServerName(string name) { serverName = name; }
 
