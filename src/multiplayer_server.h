@@ -22,7 +22,9 @@ class GameServer : public Updatable
     string serverName;
     int versionNumber;
     int sendDataCounter;
+    int sendDataCounterPerClient;
     float sendDataRate;
+    float sendDataRatePerClient;
     float lastGameSpeed;
 
     enum EClientReceiveState
@@ -50,6 +52,7 @@ public:
     P<MultiplayerObject> getObjectById(int32_t id);
     virtual void update(float delta);
     inline float getSendDataRate() { return sendDataRate; }
+    inline float getSendDataRatePerClient() { return sendDataRatePerClient; }
     
     string getServerName() { return serverName; }
     void setServerName(string name) { serverName = name; }

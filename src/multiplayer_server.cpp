@@ -23,6 +23,7 @@ GameServer::GameServer(string serverName, int versionNumber, int listenPort)
     gameServer = this;
     lastGameSpeed = engine->getGameSpeed();
     sendDataRate = 0.0;
+    sendDataRatePerClient = 0.0;
 
     nextObjectId = 1;
     nextClientId = 1;
@@ -53,6 +54,7 @@ void GameServer::update(float gameDelta)
     updateTimeClock.restart();
     
     sendDataCounter = 0;
+    sendDataCounterPerClient = 0;
 
     if (lastGameSpeed != engine->getGameSpeed())
     {
@@ -173,7 +175,7 @@ void GameServer::update(float gameDelta)
                 sf::Packet packet;
                 genenerateCreatePacketFor(obj, packet);
                 sendDataCounter += packet.getDataSize();
-                while(info.socket->send(packet)  == sf::TcpSocket::NotReady) {}
+                while(info.socket->send(packet) == sf::TcpSocket::NotReady) {}
             }
         }
     }
@@ -236,6 +238,8 @@ void GameServer::update(float gameDelta)
     
     float dataPerSecond = float(sendDataCounter) / delta;
     sendDataRate = sendDataRate * (1.0 - delta) + dataPerSecond * delta;
+    dataPerSecond = float(sendDataCounterPerClient) / delta;
+    sendDataRatePerClient = sendDataRatePerClient * (1.0 - delta) + dataPerSecond * delta;
 
 #if MULTIPLAYER_COLLECT_DATA_STATS
     if (multiplayer_stats_dump.getElapsedTime().asSeconds() > 1.0)
@@ -284,6 +288,7 @@ void GameServer::genenerateDeletePacketFor(int32_t id, sf::Packet& packet)
 
 void GameServer::sendAll(sf::Packet& packet)
 {
+    sendDataCounterPerClient += packet.getDataSize();
     for(unsigned int n=0; n<clientList.size(); n++)
     {
         if (clientList[n].packet_backlog.size() < 1)
