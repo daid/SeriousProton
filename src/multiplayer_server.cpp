@@ -13,21 +13,21 @@ static std::map<string, int> multiplayer_stats;
 #define ADD_MULTIPLAYER_STATS(name, bytes) do {} while(0)
 #endif
 
-P<GameServer> gameServer;
+P<GameServer> game_server;
 
 GameServer::GameServer(string serverName, int versionNumber, int listenPort)
 : serverName(serverName), versionNumber(versionNumber)
 {
-    assert(!gameServer);
-    assert(!gameClient);
-    gameServer = this;
+    assert(!game_server);
+    assert(!game_client);
+    game_server = this;
     lastGameSpeed = engine->getGameSpeed();
     sendDataRate = 0.0;
     sendDataRatePerClient = 0.0;
 
     nextObjectId = 1;
     nextClientId = 1;
-    
+
     if (listenSocket.listen(listenPort) != sf::TcpListener::Done)
     {
         printf("Failed to listen on TCP port: %d\n", listenPort);
@@ -52,7 +52,7 @@ void GameServer::update(float gameDelta)
     //Calculate our own delta, as we want wall-time delta, the gameDelta can be modified by the current game speed (could even be 0 on pause)
     float delta = updateTimeClock.getElapsedTime().asSeconds();
     updateTimeClock.restart();
-    
+
     sendDataCounter = 0;
     sendDataCounterPerClient = 0;
 
@@ -63,7 +63,7 @@ void GameServer::update(float gameDelta)
         packet << CMD_SET_GAME_SPEED << lastGameSpeed;
         sendAll(packet);
     }
-    
+
     std::vector<int32_t> delList;
     for(std::map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
     {
@@ -74,7 +74,7 @@ void GameServer::update(float gameDelta)
             if (!obj->replicated)
             {
                 obj->replicated = true;
-                
+
                 sf::Packet packet;
                 genenerateCreatePacketFor(obj, packet);
                 //Call the isChanged function for each replication info, so the prev_data is updated.
@@ -105,7 +105,7 @@ void GameServer::update(float gameDelta)
                         (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
                         cnt++;
                         ADD_MULTIPLAYER_STATS(obj->multiplayerClassIdentifier + "::" + obj->memberReplicationInfo[n].name, packet.getDataSize() - packet_size);
-                        
+
                         obj->memberReplicationInfo[n].update_timeout = obj->memberReplicationInfo[n].update_delay;
                     }
                 }
@@ -135,13 +135,13 @@ void GameServer::update(float gameDelta)
         unsigned short recvPort;
         sf::Packet recvPacket;
         broadcastListenSocket.receive(recvPacket, recvAddress, recvPort);
-        
+
         //We do not care about what we received. Reply that we live!
         sf::Packet sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(versionNumber) << serverName;
         broadcastListenSocket.send(sendPacket, recvAddress, recvPort);
     }
-    
+
     if (selector.isReady(listenSocket))
     {
         ClientInfo info;
@@ -163,9 +163,9 @@ void GameServer::update(float gameDelta)
             packet << CMD_SET_GAME_SPEED << lastGameSpeed;
             while(info.socket->send(packet) == sf::TcpSocket::NotReady) {}
         }
-        
+
         onNewClient(info.clientId);
-        
+
         //On a new client, first create all the already existing objects. And update all the values.
         for(std::map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
         {
@@ -179,7 +179,7 @@ void GameServer::update(float gameDelta)
             }
         }
     }
-    
+
     for(unsigned int n=0; n<clientList.size(); n++)
     {
         if (clientList[n].packet_backlog.size() > 0)
@@ -194,7 +194,7 @@ void GameServer::update(float gameDelta)
                 clientList[n].socket->disconnect();
             }
         }
-        
+
         if (selector.isReady(*clientList[n].socket))
         {
             sf::Packet packet;
@@ -235,7 +235,7 @@ void GameServer::update(float gameDelta)
             }
         }
     }
-    
+
     float dataPerSecond = float(sendDataCounter) / delta;
     sendDataRate = sendDataRate * (1.0 - delta) + dataPerSecond * delta;
     dataPerSecond = float(sendDataCounterPerClient) / delta;
@@ -245,7 +245,7 @@ void GameServer::update(float gameDelta)
     if (multiplayer_stats_dump.getElapsedTime().asSeconds() > 1.0)
     {
         multiplayer_stats_dump.restart();
-        
+
         int total = 0;
         for(std::map<string, int >::iterator i=multiplayer_stats.begin(); i != multiplayer_stats.end(); i++)
             total += i->second;
@@ -266,7 +266,7 @@ void GameServer::registerObject(P<MultiplayerObject> obj)
     obj->multiplayerObjectId = nextObjectId;
     obj->replicated = false;
     nextObjectId++;
-    
+
     objectMap[obj->multiplayerObjectId] = obj;
 }
 

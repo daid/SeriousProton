@@ -3,15 +3,15 @@
 #include "multiplayer_internal.h"
 #include "engine.h"
 
-P<GameClient> gameClient;
+P<GameClient> game_client;
 
 GameClient::GameClient(sf::IpAddress server, int portNr)
 {
-    assert(!gameServer);
-    assert(!gameClient);
-    
+    assert(!game_server);
+    assert(!game_client);
+
     clientId = -1;
-    gameClient = this;
+    game_client = this;
 
     if (socket.connect(server, portNr) != sf::TcpSocket::Done)
         connected = false;
@@ -61,7 +61,7 @@ void GameClient::update(float delta)
                         MultiplayerObject* obj = i->func();
                         obj->multiplayerObjectId = id;
                         objectMap[id] = obj;
-                        
+
                         int16_t idx;
                         while(packet >> idx)
                         {

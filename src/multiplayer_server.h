@@ -11,7 +11,7 @@ static const int multiplayerVerficationNumber = 0x2fab3f0f; //Used to verify tha
 class GameServer;
 class MultiplayerObject;
 
-extern P<GameServer> gameServer;
+extern P<GameServer> game_server;
 
 class GameServer : public Updatable
 {
