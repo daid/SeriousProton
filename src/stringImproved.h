@@ -66,10 +66,7 @@ public:
             end += start;
             start = 0;
         }
-        if (end > len)
-        {
-            end = len;
-        }
+        len = std::min(end, len);
         if (end <= start)
         {
             return "";
