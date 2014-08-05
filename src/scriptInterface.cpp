@@ -191,6 +191,7 @@ void ScriptObject::update(float delta)
         lua_pushnumber(L, delta);
         if (lua_pcall(L, 1, 1, 0))
         {
+            printf("ERROR(update): %s\n", luaL_checkstring(L, -1));
             lua_pop(L, 1);
             return;
         }
