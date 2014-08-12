@@ -1,4 +1,8 @@
 #include "multiplayer_server_scanner.h"
+#ifdef WIN32
+#include <winsock2.h>
+#include <iphlpapi.h>
+#endif
 
 ServerScanner::ServerScanner(int versionNumber, int serverPort)
 : serverPort(serverPort), versionNumber(versionNumber)
@@ -22,8 +26,31 @@ void ServerScanner::update(float gameDelta)
     {
         sf::Packet sendPacket;
         sendPacket << multiplayerVerficationNumber << "ServerQuery" << int32_t(versionNumber);
+#ifdef WIN32
+        {
+            //On windows, using a single broadcast address seems to send the UPD package only on 1 interface.
+            // So use the windows API to get all addresses, construct broadcast addresses and send out the packets to all of them.
+            PMIB_IPADDRTABLE pIPAddrTable;
+            DWORD tableSize = 0;
+            GetIpAddrTable(NULL, &tableSize, 0);
+            if (tableSize > 0)
+            {
+                pIPAddrTable = (PMIB_IPADDRTABLE)calloc(tableSize, 1);
+                if (GetIpAddrTable(pIPAddrTable, &tableSize, 0) == NO_ERROR)
+                {
+                    for(unsigned int n=0; n<pIPAddrTable->dwNumEntries; n++)
+                    {
+                        sf::IpAddress ip(ntohl((pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask));
+                        socket.send(sendPacket, ip, serverPort);
+                    }
+                }
+                free(pIPAddrTable);
+            }
+        }
+#else
         socket.send(sendPacket, sf::IpAddress::Broadcast, serverPort);
-        broadcastDelay += 5.0;
+#endif
+        broadcastDelay += 2.0;
     }
     
     for(unsigned int n=0; n<serverList.size(); n++)
