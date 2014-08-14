@@ -188,14 +188,18 @@ void ScriptObject::update(float delta)
         lua_gc(L, LUA_GCCOLLECT, 0);
 #endif
         lua_getglobal(L, "update");
-        lua_pushnumber(L, delta);
-        if (lua_pcall(L, 1, 1, 0))
+        if (lua_isnil(L, -1))
         {
-            printf("ERROR(update): %s\n", luaL_checkstring(L, -1));
             lua_pop(L, 1);
-            return;
+        }else{
+            lua_pushnumber(L, delta);
+            if (lua_pcall(L, 1, 0, 0))
+            {
+                printf("ERROR(update): %s\n", luaL_checkstring(L, -1));
+                lua_pop(L, 1);
+                return;
+            }
         }
-        lua_pop(L, 1);
     }
 }
 

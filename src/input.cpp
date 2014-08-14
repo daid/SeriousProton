@@ -43,7 +43,6 @@ void InputHandler::update()
     mousePos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y);
     for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
     {
-        //bool down = sf::Mouse::isButtonPressed(sf::Mouse::Button(n)) && windowManager->hasFocus();    //
         bool down = mouse_button_down[n];
         mouseButtonPressed[n] = (!mouseButtonDown[n] && down);
         mouseButtonReleased[n] = (mouseButtonDown[n] && !down);
