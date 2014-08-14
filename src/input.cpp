@@ -33,8 +33,8 @@ void InputHandler::update()
     if (swap_xy)
     {
         sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
-        float x = mousePos.y * desktop.width / desktop.height;
-        float y = mousePos.x * desktop.height / desktop.width;
+        float x = (desktop.height - mousePos.y) * desktop.width / desktop.height;
+        float y = (desktop.width - mousePos.x) * desktop.height / desktop.width;
         mousePos.x = x;
         mousePos.y = y;
     }
