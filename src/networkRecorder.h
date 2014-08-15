@@ -1,7 +1,9 @@
 #ifndef NETWORK_RECORDER_H
 #define NETWORK_RECORDER_H
+
 #include <SFML/Audio.hpp>
 #include <SFML/Network.hpp>
+#include <stdint.h>
 #include <iostream>
 
 class NetworkRecorder: public sf::SoundRecorder

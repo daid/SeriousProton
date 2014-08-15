@@ -2,6 +2,7 @@
 #define MULTIPLAYER_CLIENT_H
 
 #include <SFML/Network.hpp>
+#include <stdint.h>
 #include "Updatable.h"
 #include "multiplayer_server.h"
 

@@ -2,6 +2,7 @@
 #define MULTIPLAYER_H
 
 #include <SFML/Network.hpp>
+#include <stdint.h>
 #include "Updatable.h"
 #include "stringImproved.h"
 
