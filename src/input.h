@@ -25,7 +25,7 @@ class InputHandler
     static void initialize();
 public:
     static bool touch_screen;
-    static bool swap_xy;
+    static sf::Transform mouse_transform;
     
     static void update();
 

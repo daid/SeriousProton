@@ -3,7 +3,7 @@
 
 P<WindowManager> InputHandler::windowManager;
 bool InputHandler::touch_screen = false;
-bool InputHandler::swap_xy = false;
+sf::Transform InputHandler::mouse_transform;
 
 sf::Vector2f InputHandler::mousePos;
 int InputHandler::mouse_wheel_delta;
@@ -30,17 +30,10 @@ void InputHandler::update()
         windowManager = engine->getObject("windowManager");
 
     mousePos = sf::Vector2f(sf::Mouse::getPosition());
-    if (swap_xy)
-    {
-        sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
-        float x = (desktop.height - mousePos.y) * desktop.width / desktop.height;
-        float y = (desktop.width - mousePos.x) * desktop.height / desktop.width;
-        mousePos.x = x;
-        mousePos.y = y;
-    }
     mousePos = mousePos - sf::Vector2f(windowManager->window.getPosition());
     mousePos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x);
     mousePos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y);
+    mousePos = mouse_transform.transformPoint(mousePos);
     for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
     {
         bool down = mouse_button_down[n];
