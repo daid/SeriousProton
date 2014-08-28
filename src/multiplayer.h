@@ -31,6 +31,40 @@ template <typename T> struct multiplayerReplicationFunctions
         T* ptr = (T*)data;
         packet >> *ptr;
     }
+
+    static bool isChangedVector(void* data, void* prev_data_ptr)
+    {
+        std::vector<T>* ptr = (std::vector<T>*)data;
+        std::vector<T>* prev_data = *(std::vector<T>**)prev_data_ptr;
+        if (prev_data->size() != ptr->size())
+        {
+            *prev_data = *ptr;
+            return true;
+        }
+        return false;
+    }
+    static void sendDataVector(void* data, sf::Packet& packet)
+    {
+        std::vector<T>* ptr = (std::vector<T>*)data;
+        uint16_t count = ptr->size();
+        packet << count;
+        for(unsigned int n=0; n<count; n++)
+            packet << (*ptr)[n];
+    }
+    static void receiveDataVector(void* data, sf::Packet& packet)
+    {
+        std::vector<T>* ptr = (std::vector<T>*)data;
+        uint16_t count;
+        packet >> count;
+        ptr->resize(count);
+        for(unsigned int n=0; n<count; n++)
+            packet >> (*ptr)[n];
+    }
+    static void cleanupVector(void* prev_data_ptr)
+    {
+        std::vector<T>* prev_data = *(std::vector<T>**)prev_data_ptr;
+        delete prev_data;
+    }
 };
 template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr);
 
@@ -57,6 +91,13 @@ class MultiplayerObject : public virtual PObject
         bool(*isChangedFunction)(void* data, void* prev_data_ptr);
         void(*sendFunction)(void* data, sf::Packet& packet);
         void(*receiveFunction)(void* data, sf::Packet& packet);
+        void(*cleanupFunction)(void* prev_data_ptr);
+        
+        ~MemberReplicationInfo()
+        {
+            if (cleanupFunction)
+                cleanupFunction(&prev_data);
+        }
     };
     std::vector<MemberReplicationInfo> memberReplicationInfo;
 public:
@@ -67,11 +108,13 @@ public:
 
 #ifdef DEBUG
 #define STRINGIFY(n) #n
-#define registerMemberReplication(m, ...) registerMemberReplication_(STRINGIFY(m), m , ## __VA_ARGS__ )
-    template <typename T> void registerMemberReplication_(const char* name, T* member, float update_delay = 0.0)
+#define registerMemberReplication(member, ...) registerMemberReplication_(STRINGIFY(member), member , ## __VA_ARGS__ )
+#define F_PARAM const char* name,
 #else
-    template <typename T> void registerMemberReplication(T* member, float update_delay = 0.0)
+#define registerMemberReplication(member, ...) registerMemberReplication_(member , ## __VA_ARGS__ )
+#define F_PARAM
 #endif
+    template <typename T> void registerMemberReplication_(F_PARAM T* member, float update_delay = 0.0)
     {
         assert(!replicated);
         assert(memberReplicationInfo.size() < 0xFFFF);
@@ -87,14 +130,31 @@ public:
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChanged;
         info.sendFunction = &multiplayerReplicationFunctions<T>::sendData;
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveData;
+        info.cleanupFunction = NULL;
         memberReplicationInfo.push_back(info);
     }
 
+    template <typename T> void registerMemberReplication_(F_PARAM std::vector<T>* member, float update_delay = 0.0)
+    {
+        assert(!replicated);
+        assert(memberReplicationInfo.size() < 0xFFFF);
+        assert(sizeof(T) <= sizeof(int64_t));
+        MemberReplicationInfo info;
 #ifdef DEBUG
-    void registerMemberReplication_(const char* name, sf::Vector3f* member, float update_delay = 0.0)
-#else
-    void registerMemberReplication(sf::Vector3f* member, float update_delay = 0.0)
+        info.name = name;
 #endif
+        info.ptr = member;
+        info.prev_data = (int64_t) new std::vector<T>;
+        info.update_delay = update_delay;
+        info.update_timeout = 0.0;
+        info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChangedVector;
+        info.sendFunction = &multiplayerReplicationFunctions<T>::sendDataVector;
+        info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveDataVector;
+        info.cleanupFunction = &multiplayerReplicationFunctions<T>::cleanupVector;
+        memberReplicationInfo.push_back(info);
+    }
+
+    void registerMemberReplication_(F_PARAM sf::Vector3f* member, float update_delay = 0.0)
     {
         registerMemberReplication(&member->x, update_delay);
         registerMemberReplication(&member->y, update_delay);
