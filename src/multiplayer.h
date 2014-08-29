@@ -36,9 +36,25 @@ template <typename T> struct multiplayerReplicationFunctions
     {
         std::vector<T>* ptr = (std::vector<T>*)data;
         std::vector<T>* prev_data = *(std::vector<T>**)prev_data_ptr;
+        bool changed = false;
         if (prev_data->size() != ptr->size())
         {
-            *prev_data = *ptr;
+            changed = true;
+        }else{
+            for(unsigned int n=0; n<ptr->size(); n++)
+            {
+                if ((*prev_data)[n] != (*ptr)[n])
+                {
+                    changed = true;
+                    break;
+                }
+            }
+        }
+        if (changed)
+        {
+            prev_data->resize(ptr->size());
+            for(unsigned int n=0; n<ptr->size(); n++)
+               (*prev_data)[n] = (*ptr)[n];
             return true;
         }
         return false;
@@ -92,16 +108,11 @@ class MultiplayerObject : public virtual PObject
         void(*sendFunction)(void* data, sf::Packet& packet);
         void(*receiveFunction)(void* data, sf::Packet& packet);
         void(*cleanupFunction)(void* prev_data_ptr);
-        
-        ~MemberReplicationInfo()
-        {
-            if (cleanupFunction)
-                cleanupFunction(&prev_data);
-        }
     };
     std::vector<MemberReplicationInfo> memberReplicationInfo;
 public:
     MultiplayerObject(string multiplayerClassIdentifier);
+    virtual ~MultiplayerObject();
 
     bool isServer() { return on_server; }
     bool isClient() { return !on_server; }

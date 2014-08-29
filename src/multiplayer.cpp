@@ -21,6 +21,13 @@ MultiplayerObject::MultiplayerObject(string multiplayerClassIdentifier)
     }
 }
 
+MultiplayerObject::~MultiplayerObject()
+{
+    for(unsigned int n=0; n<memberReplicationInfo.size(); n++)
+        if (memberReplicationInfo[n].cleanupFunction)
+            memberReplicationInfo[n].cleanupFunction(&memberReplicationInfo[n].prev_data);
+}
+
 template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr)
 {
     string* ptr = (string*)data;
