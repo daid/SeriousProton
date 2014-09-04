@@ -475,6 +475,8 @@ public:
             if (maxsplit > 0)
                 maxsplit--;
         }
+        if (start < int(length()))
+            res.push_back(substr(start));
         return res;
     }
 
