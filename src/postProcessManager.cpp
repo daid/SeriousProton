@@ -53,7 +53,7 @@ void PostProcessor::render(sf::RenderTarget& window)
         shader.setParameter("textureSize", sf::Vector2f(renderTexture.getSize().x, renderTexture.getSize().y));
     }
     
-    renderTexture.clear();
+    renderTexture.clear(sf::Color(20, 20, 20));
     chain->render(renderTexture);
     
     renderTexture.display();
