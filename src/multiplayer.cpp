@@ -116,11 +116,11 @@ void MultiplayerObject::registerCollisionableReplication()
     memberReplicationInfo.push_back(info);
 }
 
-void MultiplayerObject::sendCommand(sf::Packet& packet)
+void MultiplayerObject::sendClientCommand(sf::Packet& packet)
 {
     if (game_server)
     {
-        onReceiveCommand(0, packet);
+        onReceiveClientCommand(0, packet);
     }else if (game_client)
     {
         sf::Packet p;

@@ -220,7 +220,7 @@ void GameServer::update(float gameDelta)
                     break;
                 case CRS_Command:
                     if (objectMap.find(clientList[n].command_object_id) != objectMap.end() && objectMap[clientList[n].command_object_id])
-                        objectMap[clientList[n].command_object_id]->onReceiveCommand(clientList[n].clientId, packet);
+                        objectMap[clientList[n].command_object_id]->onReceiveClientCommand(clientList[n].clientId, packet);
                     clientList[n].receiveState = CRS_Main;
                     break;
                 }

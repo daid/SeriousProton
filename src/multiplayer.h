@@ -182,9 +182,9 @@ public:
     void registerCollisionableReplication();
 
     int32_t getMultiplayerId() { return multiplayerObjectId; }
-    void sendCommand(sf::Packet& packet);//Send a command from the client to the server.
+    void sendClientCommand(sf::Packet& packet);//Send a command from the client to the server.
 
-    virtual void onReceiveCommand(int32_t clientId, sf::Packet& packet) {} //Got data from a client, handle it.
+    virtual void onReceiveClientCommand(int32_t clientId, sf::Packet& packet) {} //Got data from a client, handle it.
 private:
     friend class GameServer;
     friend class GameClient;
