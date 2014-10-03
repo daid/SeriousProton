@@ -113,6 +113,7 @@ void MultiplayerObject::registerCollisionableReplication()
     info.isChangedFunction = &collisionable_isChanged;
     info.sendFunction = &collisionable_sendFunction;
     info.receiveFunction = &collisionable_receiveFunction;
+    info.cleanupFunction = NULL;
     memberReplicationInfo.push_back(info);
 }
 
