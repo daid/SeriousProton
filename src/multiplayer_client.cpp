@@ -13,7 +13,7 @@ GameClient::GameClient(sf::IpAddress server, int portNr)
     clientId = -1;
     game_client = this;
 
-    if (socket.connect(server, portNr) != sf::TcpSocket::Done)
+    if (socket.connect(server, portNr, sf::seconds(5)) != sf::TcpSocket::Done)
         connected = false;
     else
         connected = true;
