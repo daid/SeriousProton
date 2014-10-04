@@ -24,6 +24,7 @@ GameServer::GameServer(string serverName, int versionNumber, int listenPort)
     lastGameSpeed = engine->getGameSpeed();
     sendDataRate = 0.0;
     sendDataRatePerClient = 0.0;
+    boardcastServerDelay = 0.0;
 
     nextObjectId = 1;
     nextClientId = 1;
@@ -140,6 +141,16 @@ void GameServer::update(float gameDelta)
         sf::Packet sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(versionNumber) << serverName;
         broadcastListenSocket.send(sendPacket, recvAddress, recvPort);
+    }
+    if (boardcastServerDelay > 0.0)
+    {
+        boardcastServerDelay -= delta;
+    }else{
+        boardcastServerDelay = 5.0;
+        
+        sf::Packet sendPacket;
+        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(versionNumber) << serverName;
+        ServerScanner::broadcastPacket(broadcastListenSocket, sendPacket, broadcastListenSocket.getLocalPort() + 1);
     }
 
     if (selector.isReady(listenSocket))

@@ -26,30 +26,7 @@ void ServerScanner::update(float gameDelta)
     {
         sf::Packet sendPacket;
         sendPacket << multiplayerVerficationNumber << "ServerQuery" << int32_t(versionNumber);
-#ifdef WIN32
-        {
-            //On windows, using a single broadcast address seems to send the UPD package only on 1 interface.
-            // So use the windows API to get all addresses, construct broadcast addresses and send out the packets to all of them.
-            PMIB_IPADDRTABLE pIPAddrTable;
-            DWORD tableSize = 0;
-            GetIpAddrTable(NULL, &tableSize, 0);
-            if (tableSize > 0)
-            {
-                pIPAddrTable = (PMIB_IPADDRTABLE)calloc(tableSize, 1);
-                if (GetIpAddrTable(pIPAddrTable, &tableSize, 0) == NO_ERROR)
-                {
-                    for(unsigned int n=0; n<pIPAddrTable->dwNumEntries; n++)
-                    {
-                        sf::IpAddress ip(ntohl((pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask));
-                        socket.send(sendPacket, ip, serverPort);
-                    }
-                }
-                free(pIPAddrTable);
-            }
-        }
-#else
-        socket.send(sendPacket, sf::IpAddress::Broadcast, serverPort);
-#endif
+        broadcastPacket(socket, sendPacket, serverPort);
         broadcastDelay += 2.0;
     }
     
@@ -99,4 +76,30 @@ void ServerScanner::update(float gameDelta)
 std::vector<ServerScanner::ServerInfo> ServerScanner::getServerList()
 {
     return serverList;
+}
+
+void ServerScanner::broadcastPacket(sf::UdpSocket& socket, sf::Packet packet, int port_nr)
+{
+#ifdef WIN32
+    //On windows, using a single broadcast address seems to send the UPD package only on 1 interface.
+    // So use the windows API to get all addresses, construct broadcast addresses and send out the packets to all of them.
+    PMIB_IPADDRTABLE pIPAddrTable;
+    DWORD tableSize = 0;
+    GetIpAddrTable(NULL, &tableSize, 0);
+    if (tableSize > 0)
+    {
+        pIPAddrTable = (PMIB_IPADDRTABLE)calloc(tableSize, 1);
+        if (GetIpAddrTable(pIPAddrTable, &tableSize, 0) == NO_ERROR)
+        {
+            for(unsigned int n=0; n<pIPAddrTable->dwNumEntries; n++)
+            {
+                sf::IpAddress ip(ntohl((pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask));
+                socket.send(packet, ip, port_nr);
+            }
+        }
+        free(pIPAddrTable);
+    }
+#else
+    socket.send(packet, sf::IpAddress::Broadcast, port_nr);
+#endif
 }

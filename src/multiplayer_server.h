@@ -27,6 +27,7 @@ class GameServer : public Updatable
     float sendDataRate;
     float sendDataRatePerClient;
     float lastGameSpeed;
+    float boardcastServerDelay;
 
     enum EClientReceiveState
     {
