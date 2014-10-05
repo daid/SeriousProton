@@ -150,13 +150,13 @@ void GameServer::update(float gameDelta)
         
         sf::Packet sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(versionNumber) << serverName;
-        ServerScanner::broadcastPacket(broadcastListenSocket, sendPacket, broadcastListenSocket.getLocalPort() + 1);
+        UDPbroadcastPacket(broadcastListenSocket, sendPacket, broadcastListenSocket.getLocalPort() + 1);
     }
 
     if (selector.isReady(listenSocket))
     {
         ClientInfo info;
-        info.socket = new sf::TcpSocket();
+        info.socket = new TcpSocket();
         info.socket->setBlocking(false);
         info.clientId = nextClientId;
         info.receiveState = CRS_Main;
@@ -167,12 +167,12 @@ void GameServer::update(float gameDelta)
         {
             sf::Packet packet;
             packet << CMD_SET_CLIENT_ID << info.clientId;
-            while(info.socket->send(packet) == sf::TcpSocket::NotReady) {}
+            info.socket->send(packet);
         }
         {
             sf::Packet packet;
             packet << CMD_SET_GAME_SPEED << lastGameSpeed;
-            while(info.socket->send(packet) == sf::TcpSocket::NotReady) {}
+            info.socket->send(packet);
         }
 
         onNewClient(info.clientId);
@@ -186,26 +186,14 @@ void GameServer::update(float gameDelta)
                 sf::Packet packet;
                 genenerateCreatePacketFor(obj, packet);
                 sendDataCounter += packet.getDataSize();
-                while(info.socket->send(packet) == sf::TcpSocket::NotReady) {}
+                info.socket->send(packet);
             }
         }
     }
 
     for(unsigned int n=0; n<clientList.size(); n++)
     {
-        if (clientList[n].packet_backlog.size() > 0)
-        {
-            printf("Client: %d, Backlog: %d\n", n, clientList[n].packet_backlog.size());
-            while(clientList[n].packet_backlog.size() > 0 && clientList[n].socket->send(clientList[n].packet_backlog[0]) == sf::TcpSocket::Done)
-            {
-                clientList[n].packet_backlog.erase(clientList[n].packet_backlog.begin());
-            }
-            if (clientList[n].backlog_clock.getElapsedTime().asSeconds() > 20.0)
-            {
-                clientList[n].socket->disconnect();
-            }
-        }
-
+        clientList[n].socket->update();
         if (selector.isReady(*clientList[n].socket))
         {
             sf::Packet packet;
@@ -301,18 +289,5 @@ void GameServer::sendAll(sf::Packet& packet)
 {
     sendDataCounterPerClient += packet.getDataSize();
     for(unsigned int n=0; n<clientList.size(); n++)
-    {
-        if (clientList[n].packet_backlog.size() < 1)
-        {
-            if (clientList[n].socket->send(packet) != sf::TcpSocket::Done)
-            {
-                clientList[n].packet_backlog.push_back(packet);
-                clientList[n].backlog_clock.restart();
-            }else{
-                sendDataCounter += packet.getDataSize();
-            }
-        }else{
-            clientList[n].packet_backlog.push_back(packet);
-        }
-    }
+        clientList[n].socket->send(packet);
 }

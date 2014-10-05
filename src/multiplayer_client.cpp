@@ -40,6 +40,7 @@ void GameClient::update(float delta)
     for(unsigned int n=0; n<delList.size(); n++)
         objectMap.erase(delList[n]);
 
+    socket.update();
     sf::Packet packet;
     sf::TcpSocket::Status status;
     while((status = socket.receive(packet)) == sf::TcpSocket::Done)
@@ -111,7 +112,10 @@ void GameClient::update(float delta)
         }
     }
     if (status == sf::TcpSocket::Disconnected)
-    {
         connected = false;
-    }
+}
+
+void GameClient::sendPacket(sf::Packet& packet)
+{
+    socket.send(packet);
 }

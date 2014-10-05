@@ -30,9 +30,6 @@ public:
     virtual void update(float delta);
 
     std::vector<ServerInfo> getServerList();
-    
-    //Utility function to assist in broadcasting UDP packets.
-    static void broadcastPacket(sf::UdpSocket& socket, sf::Packet packet, int port_nr);
 };
 
 #endif//MULTIPLAYER_SERVER_SCANER_H

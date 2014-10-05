@@ -126,7 +126,7 @@ void MultiplayerObject::sendClientCommand(sf::Packet& packet)
     {
         sf::Packet p;
         p << CMD_CLIENT_COMMAND << multiplayerObjectId;
-        while(game_client->socket.send(p) == sf::TcpSocket::NotReady) {}
-        while(game_client->socket.send(packet) == sf::TcpSocket::NotReady) {}
+        game_client->sendPacket(p);
+        game_client->sendPacket(packet);
     }
 }

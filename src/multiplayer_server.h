@@ -1,8 +1,8 @@
 #ifndef MULTIPLAYER_SERVER_H
 #define MULTIPLAYER_SERVER_H
 
-#include <SFML/Network.hpp>
 #include <stdint.h>
+#include "fixedSocket.h"
 #include "Updatable.h"
 #include "stringImproved.h"
 
@@ -36,12 +36,10 @@ class GameServer : public Updatable
     };
     struct ClientInfo
     {
-        sf::TcpSocket* socket;
+        TcpSocket* socket;
         int32_t clientId;
         EClientReceiveState receiveState;
         int32_t command_object_id;
-        std::vector<sf::Packet> packet_backlog;
-        sf::Clock backlog_clock;
     };
     int32_t nextClientId;
     std::vector<ClientInfo> clientList;

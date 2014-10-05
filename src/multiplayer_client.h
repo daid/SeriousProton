@@ -1,8 +1,8 @@
 #ifndef MULTIPLAYER_CLIENT_H
 #define MULTIPLAYER_CLIENT_H
 
-#include <SFML/Network.hpp>
 #include <stdint.h>
+#include "fixedSocket.h"
 #include "Updatable.h"
 #include "multiplayer_server.h"
 
@@ -13,7 +13,7 @@ extern P<GameClient> game_client;
 
 class GameClient : public Updatable
 {
-    sf::TcpSocket socket;
+    TcpSocket socket;
     std::map<int32_t, P<MultiplayerObject> > objectMap;
     int32_t clientId;
     bool connected;
@@ -26,7 +26,7 @@ public:
     int32_t getClientId() { return clientId; }
     bool isConnected() { return connected; }
 
-    friend class MultiplayerObject;
+    void sendPacket(sf::Packet& packet);
 };
 
 #endif//MULTIPLAYER_CLIENT_H
