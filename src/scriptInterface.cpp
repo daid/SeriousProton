@@ -7,6 +7,7 @@
 REGISTER_SCRIPT_CLASS(ScriptObject)
 {
     REGISTER_SCRIPT_CLASS_FUNCTION(ScriptObject, run);
+    REGISTER_SCRIPT_CLASS_FUNCTION(ScriptObject, setGlobal);
 }
 
 registerObjectFunctionListItem* registerObjectFunctionListStart;
@@ -107,6 +108,15 @@ void ScriptObject::run(string filename)
     }else if (lua_pcall(L, 0, 0, 0))
     {
         printf("ERROR(init): %s\n", luaL_checkstring(L, -1));
+    }
+}
+
+void ScriptObject::setGlobal(string global_name, string value)
+{
+    if (L)
+    {
+        lua_pushstring(L, value.c_str());
+        lua_setglobal(L, global_name.c_str());
     }
 }
 

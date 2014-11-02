@@ -22,6 +22,7 @@ public:
     void clean();
     void registerFunction(string name, lua_CFunction function);
     void registerObject(P<PObject> object, string class_name, string variable_name);
+    void setGlobal(string global_name, string value);
     void callFunction(string name);
     virtual void update(float delta);
 
