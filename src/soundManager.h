@@ -25,6 +25,7 @@ public:
     void playMusic(string name);
     void stopMusic();
     void setMusicVolume(float volume);
+    float getMusicVolume();
     void playSound(string name, float pitch = 1.0f, float volume = 100.0f);
 
     //Positional sounds

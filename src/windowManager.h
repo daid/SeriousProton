@@ -12,17 +12,27 @@ private:
     sf::Vector2i virtualSize;
     sf::RenderWindow window;
     RenderChain* renderChain;
+    bool fullscreen;
+    int fsaa;
 public:
-    WindowManager(int virtualWidth, int virtualHeight, bool fullScreen, RenderChain* chain, int fsaa = 0);
+    WindowManager(int virtualWidth, int virtualHeight, bool fullscreen, RenderChain* chain, int fsaa = 0);
     virtual ~WindowManager();
     
     sf::Vector2i getVirtualSize() const { return virtualSize; }
     void render();
     void close();
     bool hasFocus() { return windowHasFocus; }
+    
+    bool isFullscreen() { return fullscreen; }
+    void setFullscreen(bool fullscreen);
+    int getFSAA() { return fsaa; }
+    void setFSAA(int fsaa);
 
     friend class InputHandler;
     friend class Engine;
+
+private:
+    void create();
 };
 
 #endif//WINDOW_MANAGER_H
