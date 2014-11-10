@@ -575,5 +575,10 @@ public:
     addFunction<T> (L, table, # F , &T::F)
 #define REGISTER_SCRIPT_CLASS_CALLBACK(T, C) \
     addCallback<T> (L, table, # C , &T::C)
+#define REGISTER_SCRIPT_FUNCTION(F) \
+    static void registerFunctionFunction ## F (lua_State* L) { \
+        lua_register(L, # F , &F); \
+    }\
+    registerObjectFunctionListItem registerFunctionListItem ## F (registerFunctionFunction ## F );
 
 #endif//SCRIPT_INTERFACE_MAGIC_H

@@ -129,12 +129,6 @@ void ScriptObject::clean()
     }
 }
 
-void ScriptObject::registerFunction(string name, lua_CFunction function)
-{
-    if (L)
-        lua_register(L, name.c_str(), function);
-}
-
 void ScriptObject::registerObject(P<PObject> object, string class_name, string variable_name)
 {
     P<PObject>** p = static_cast< P<PObject>** >(lua_newuserdata(L, sizeof(P<PObject>*)));
