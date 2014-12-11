@@ -44,7 +44,7 @@ void PostProcessor::render(sf::RenderTarget& window)
         sf::View view(sf::Vector2f(window.getView().getSize().x/2,window.getView().getSize().y/2), sf::Vector2f(window.getView().getSize()));
         view.setViewport(sf::FloatRect(0, 1.0 - float(h) / float(th), float(w) / float(tw), float(h) / float(th)));
 
-        renderTexture.create(tw, th, false);
+        renderTexture.create(tw, th, true);
         renderTexture.setRepeated(true);
         renderTexture.setSmooth(true);
         renderTexture.setView(view);
