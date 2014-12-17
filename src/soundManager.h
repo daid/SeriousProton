@@ -18,6 +18,7 @@ private:
     std::map<string, sf::SoundBuffer*> soundMap;
     std::vector<sf::Sound> activeSoundList;
     float music_volume;
+    bool positional_sound_enabled;
 public:
     SoundManager();
     ~SoundManager();
@@ -30,6 +31,7 @@ public:
 
     //Positional sounds
     void setListenerPosition(sf::Vector2f position, float angle);
+    void disablePositionalSound();
     void playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch = 1.0f, float volume = 100.0f);
 
     void setTextToSpeachVoice(string name);

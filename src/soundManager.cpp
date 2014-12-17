@@ -23,6 +23,7 @@ SoundManager::SoundManager()
     
     musicStream = NULL;
     music_volume = 100.0;
+    positional_sound_enabled = false;
 }
 
 SoundManager::~SoundManager()
@@ -75,10 +76,18 @@ void SoundManager::setListenerPosition(sf::Vector2f position, float angle)
     sf::Vector2f listen_vector = sf::vector2FromAngle(angle);
     sf::Listener::setPosition(position.x, 0, position.y);
     sf::Listener::setDirection(listen_vector.x, 0, listen_vector.y);
+    positional_sound_enabled = true;
+}
+
+void SoundManager::disablePositionalSound()
+{
+    positional_sound_enabled = false;
 }
 
 void SoundManager::playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch, float volume)
 {
+    if (!positional_sound_enabled)
+        return;
     sf::SoundBuffer* data = soundMap[name];
     if (data == NULL)
         data = loadSound(name);
