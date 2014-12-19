@@ -2,6 +2,8 @@
 #define HTTP_SERVER_H
 
 #include <SFML/Network.hpp>
+#include "Updatable.h"
+#include "stringImproved.h"
 
 class HttpServerConnection: public sf::NonCopyable
 {
@@ -30,22 +32,19 @@ public:
     void sendReply();
 };
 
-class HttpServer: private sf::NonCopyable
+class HttpServer: public Updatable
 {
 private:
     int portNr;
     sf::TcpListener listenSocket;
     sf::SocketSelector selector;
-    sf::Thread thread;
-    bool running;
     std::vector<HttpServerConnection*> connections;
-    std::string fileBasePath;
+    string fileBasePath;
 public:
-    HttpServer(std::string fileBasePath, int portNr = 80);
+    HttpServer(string fileBasePath, int portNr = 80);
     ~HttpServer();
     
-private:
-    void handleSocketsThread();
+    virtual void update(float delta);
 };
 
 

@@ -2,56 +2,45 @@
 #include <stdio.h>
 
 #include "httpServer.h"
-#include "stringImproved.h"
 
-HttpServer::HttpServer(std::string fileBasePath, int portNr)
-: thread(&HttpServer::handleSocketsThread, this)
+HttpServer::HttpServer(string fileBasePath, int portNr)
 {
     this->fileBasePath = fileBasePath;
     listenSocket.listen(portNr);
     selector.add(listenSocket);
-    running = true;
-    thread.launch();
 }
 
 HttpServer::~HttpServer()
 {
     listenSocket.close();
-    running = false;
-    thread.wait();
     for(unsigned int n=0; n<connections.size(); n++)
         delete connections[n];
 }
 
-void HttpServer::handleSocketsThread()
+void HttpServer::update(float delta)
 {
-    while(running)
+    if (selector.wait(sf::microseconds(1)))
     {
-        if (selector.wait())
+        if (selector.isReady(listenSocket))
         {
-            if (!running)
-                break;
-            if (selector.isReady(listenSocket))
+            HttpServerConnection* connection = new HttpServerConnection();
+            if (listenSocket.accept(connection->socket) == sf::Socket::Done)
             {
-                HttpServerConnection* connection = new HttpServerConnection();
-                if (listenSocket.accept(connection->socket) == sf::Socket::Done)
-                {
-                    connections.push_back(connection);
-                    selector.add(connection->socket);
-                }else{
-                    delete connection;
-                }
+                connections.push_back(connection);
+                selector.add(connection->socket);
+            }else{
+                delete connection;
             }
-            for(unsigned int n=0; n<connections.size(); n++)
+        }
+        for(unsigned int n=0; n<connections.size(); n++)
+        {
+            if (selector.isReady(connections[n]->socket))
             {
-                if (selector.isReady(connections[n]->socket))
+                if (!connections[n]->read())
                 {
-                    if (!connections[n]->read())
-                    {
-                        selector.remove(connections[n]->socket);
-                        delete connections[n];
-                        connections.erase(connections.begin() + n);
-                    }
+                    selector.remove(connections[n]->socket);
+                    delete connections[n];
+                    connections.erase(connections.begin() + n);
                 }
             }
         }
@@ -135,16 +124,16 @@ bool HttpServerConnection::handleLine(char* line)
 void HttpServerConnection::sendReply()
 {
     const char* replyCode = "200";
-    std::string replyData = "";
+    string replyData = "";
     FILE* f = NULL;
     if (requestPath == "/")
         requestPath = "/index.html";
-    if (requestPath.find("..") != std::string::npos)
+    if (requestPath.find("..") != string::npos)
     {
         replyCode = "403";
         replyData = "Forbidden";
     }else{
-        std::string fullPath = "www/" + requestPath;
+        string fullPath = "www/" + requestPath;
         f = fopen(fullPath.c_str(), "rb");
         if (!f)
         {
@@ -153,7 +142,7 @@ void HttpServerConnection::sendReply()
         }
     }
     size_t replyDataSize = replyData.size();
-    std::string reply = std::string("HTTP/1.1 ") + replyCode + " OK\r\n";
+    string reply = string("HTTP/1.1 ") + replyCode + " OK\r\n";
     if (f)
     {
         fseek(f, 0, SEEK_END);

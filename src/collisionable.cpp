@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <utility>
 #include "collisionable.h"
 #include "Renderable.h"
 #include "vectorUtils.h"
@@ -41,6 +43,10 @@ PVector<Collisionable> CollisionManager::queryArea(sf::Vector2f lowerBound, sf::
     b2AABB aabb;
     aabb.lowerBound = v2b(lowerBound);
     aabb.upperBound = v2b(upperBound);
+    if (aabb.lowerBound.x > aabb.upperBound.x)
+        std::swap(aabb.upperBound.x, aabb.lowerBound.x);
+    if (aabb.lowerBound.y > aabb.upperBound.y)
+        std::swap(aabb.upperBound.y, aabb.lowerBound.y);
     world->QueryAABB(&callback, aabb);
     return callback.list;
 }
