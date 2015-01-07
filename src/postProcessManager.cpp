@@ -17,19 +17,25 @@ static int powerOfTwo(int v)
 PostProcessor::PostProcessor(string name, RenderChain* chain)
 : chain(chain)
 {
-    if (shader.loadFromFile("resources/" + name + ".frag", sf::Shader::Fragment))
+    if (sf::Shader::isAvailable())
     {
-        printf("Loaded shader: %s\n", name.c_str());
-        enabled = true;
+        if (shader.loadFromFile("resources/" + name + ".frag", sf::Shader::Fragment))
+        {
+            printf("Loaded shader: %s\n", name.c_str());
+            enabled = true;
+        }else{
+            printf("Failed to load shader: %s\n", name.c_str());
+            enabled = false;
+        }
     }else{
-        printf("Failed to load shader: %s\n", name.c_str());
+        printf("Did not load load shader: %s\nBecause of no shader support in video card driver.\n", name.c_str());
         enabled = false;
     }
 }
 
 void PostProcessor::render(sf::RenderTarget& window)
 {
-    if (!enabled)
+    if (!enabled || !sf::Shader::isAvailable())
     {
         chain->render(window);
         return;
@@ -65,5 +71,6 @@ void PostProcessor::render(sf::RenderTarget& window)
 
 void PostProcessor::setUniform(string name, float value)
 {
-    shader.setParameter(name, value);
+    if (sf::Shader::isAvailable())
+        shader.setParameter(name, value);
 }
