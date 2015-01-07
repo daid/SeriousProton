@@ -21,6 +21,8 @@ private:
     RenderChain* link;
 
 public:
+    bool active;
+
     RenderLayer();
     RenderLayer(RenderChain* link);
     
@@ -36,11 +38,12 @@ class Renderable: public virtual PObject
         Renderable();
         Renderable(RenderLayer* renderLayer);
         virtual ~Renderable() {}
-        virtual int preRender(sf::RenderTarget& window) {return 0;}
         virtual void render(sf::RenderTarget& window) = 0;
-        virtual int postRender(sf::RenderTarget& window) {return 0;}
+        
+        void moveToRenderLayer(RenderLayer* renderLayer);
     protected:
     private:
+        RenderLayer* layer;
 };
 
 #endif // RENDERABLE_H

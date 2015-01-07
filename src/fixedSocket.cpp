@@ -52,7 +52,7 @@ void TcpSocket::private_send(sf::Packet& packet)
     int size = packet.getDataSize();
     const void* data = packet.getData();
     
-    sf::Uint32 packetSize = ::htonl(static_cast<sf::Uint32>(size));
+    sf::Uint32 packetSize = htonl(static_cast<sf::Uint32>(size));
     int sent = ::send(getHandle(), reinterpret_cast<const char*>(&packetSize), sizeof(packetSize), SOCKET_FLAGS);
     if (sent < 0)   //Note: No disconnect caught here. It will be caught in the receive call.
         sent = 0;

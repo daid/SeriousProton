@@ -25,7 +25,7 @@ void NetworkAudioStream::startListening(unsigned short port)
 
 bool NetworkAudioStream::onGetData(sf::SoundStream::Chunk& data)
 {
-
+    return false;
 }
 void NetworkAudioStream::onSeek(sf::Time timeOffset)
 {
