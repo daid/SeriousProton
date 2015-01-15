@@ -139,6 +139,15 @@ void ScriptObject::registerObject(P<PObject> object, string class_name, string v
     lua_setglobal(L, variable_name.c_str());
 }
 
+void ScriptObject::runCode(string code)
+{
+    if (luaL_dostring(L, code.c_str()))
+    {
+        printf("ERROR(%s): %s\n", code.c_str(), luaL_checkstring(L, -1));
+        lua_pop(L, 1);
+    }
+}
+
 void ScriptObject::callFunction(string name)
 {
     lua_getglobal(L, name.c_str());
