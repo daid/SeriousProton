@@ -44,7 +44,7 @@ void ServerScanner::update(float gameDelta)
         int32_t verification, versionNr;
         string name;
         recvPacket >> verification >> versionNr >> name;
-        if (verification == multiplayerVerficationNumber && versionNr == versionNumber)
+        if (verification == multiplayerVerficationNumber && (versionNr == versionNumber || versionNr == 0 || versionNumber == 0))
         {
             bool found = false;
             for(unsigned int n=0; n<serverList.size(); n++)
