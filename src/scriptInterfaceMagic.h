@@ -11,21 +11,30 @@
 #include "stringImproved.h"
 #include "lua/lua.hpp"
 
-typedef void (*registerObjectFunction)(lua_State* L);
+class ScriptClassInfo;
 
-class registerObjectFunctionListItem;
-extern registerObjectFunctionListItem* registerObjectFunctionListStart;
-class registerObjectFunctionListItem
+typedef void (*registerObjectFunction)(lua_State* L);
+typedef bool (*checkObjectType)(P<PObject> obj);
+
+extern ScriptClassInfo* scriptClassInfoList;
+class ScriptClassInfo
 {
 public:
-    registerObjectFunction func;
-    registerObjectFunctionListItem* next;
+    string class_name;
+    string base_class_name;
+    registerObjectFunction register_function;
+    checkObjectType check_function;
+    ScriptClassInfo* next;
+    std::vector<ScriptClassInfo*> child_classes;
     
-    registerObjectFunctionListItem(registerObjectFunction func)
+    ScriptClassInfo(string class_name, string base_class_name, registerObjectFunction register_function, checkObjectType check_function)
     {
-        this->func = func;
-        this->next = registerObjectFunctionListStart;
-        registerObjectFunctionListStart = this;
+        this->class_name = class_name;
+        this->base_class_name = base_class_name;
+        this->register_function = register_function;
+        this->check_function = check_function;
+        this->next = scriptClassInfoList;
+        scriptClassInfoList = this;
     }
 };
 
@@ -474,6 +483,11 @@ public:
         lua_setglobal(L, objectTypeName);
         registerObject(L);
     }
+    
+    static bool checkObjectType(P<PObject> obj)
+    {
+        return bool(P<T>(obj));
+    }
 
     static void registerObject(lua_State* L)
     {
@@ -554,22 +568,22 @@ public:
 #define REGISTER_SCRIPT_CLASS(T) \
     template <> const char* scriptBindObject<T>::objectTypeName = # T; \
     template <> const char* scriptBindObject<T>::objectBaseTypeName = NULL; \
-    registerObjectFunctionListItem registerObjectFunctionListItem ## T (scriptBindObject<T>::registerObjectCreation); \
+    ScriptClassInfo scriptClassInfo ## T ( # T , "" , scriptBindObject<T>::registerObjectCreation, scriptBindObject<T>::checkObjectType); \
     template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
 #define REGISTER_SCRIPT_CLASS_NO_CREATE(T) \
     template <> const char* scriptBindObject<T>::objectTypeName = # T; \
     template <> const char* scriptBindObject<T>::objectBaseTypeName = NULL; \
-    registerObjectFunctionListItem registerObjectFunctionListItem ## T (scriptBindObject<T>::registerObjectNoCreation); \
+    ScriptClassInfo scriptClassInfo ## T ( # T , "" , scriptBindObject<T>::registerObjectNoCreation, scriptBindObject<T>::checkObjectType); \
     template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
 #define REGISTER_SCRIPT_SUBCLASS(T, BASE) \
     template <> const char* scriptBindObject<T>::objectTypeName = # T; \
     template <> const char* scriptBindObject<T>::objectBaseTypeName = # BASE; \
-    registerObjectFunctionListItem registerObjectFunctionListItem ## T (scriptBindObject<T>::registerObjectCreation); \
+    ScriptClassInfo scriptClassInfo ## T ( # T , # BASE , scriptBindObject<T>::registerObjectCreation, scriptBindObject<T>::checkObjectType); \
     template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
 #define REGISTER_SCRIPT_SUBCLASS_NO_CREATE(T, BASE) \
     template <> const char* scriptBindObject<T>::objectTypeName = # T; \
     template <> const char* scriptBindObject<T>::objectBaseTypeName = # BASE; \
-    registerObjectFunctionListItem registerObjectFunctionListItem ## T (scriptBindObject<T>::registerObjectNoCreation); \
+    ScriptClassInfo scriptClassInfo ## T ( # T , # BASE , scriptBindObject<T>::registerObjectNoCreation, scriptBindObject<T>::checkObjectType); \
     template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
 #define REGISTER_SCRIPT_CLASS_FUNCTION(T, F) \
     addFunction<T> (L, table, # F , &T::F)
@@ -579,6 +593,6 @@ public:
     static void registerFunctionFunction ## F (lua_State* L) { \
         lua_register(L, # F , &F); \
     }\
-    registerObjectFunctionListItem registerFunctionListItem ## F (registerFunctionFunction ## F );
+    ScriptClassInfo scriptClassInfo ## F ( # F , "" , registerFunctionFunction ## F , NULL );
 
 #endif//SCRIPT_INTERFACE_MAGIC_H
