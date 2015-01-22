@@ -38,6 +38,8 @@ public:
     }
 };
 
+string getScriptClassClassNameFromObject(P<PObject> object);
+
 /* By default convert parameters to numbers types. Should work for int and float types */
 template<typename T> struct convert
 {
@@ -92,6 +94,41 @@ template<class T> struct convert< P<T> >
         }
         ptr = **p;
         //printf("ObjParam: %p\n", ptr);
+    }
+    
+    static int returnType(lua_State* L, P<T> object)
+    {
+        string class_name = getScriptClassClassNameFromObject(object);
+        if (class_name != "")
+        {
+            P<PObject>** p = static_cast< P<PObject>** >(lua_newuserdata(L, sizeof(P<PObject>*)));
+            *p = new P<PObject>();
+            (**p) = object;
+            luaL_getmetatable(L, class_name.c_str());
+            lua_setmetatable(L, -2);
+            return 1;
+        }
+        return 0;
+    }
+};
+template<class T> struct convert< PVector<T> >
+{
+    static int returnType(lua_State* L, PVector<T> pvector)
+    {
+        lua_newtable(L);
+        int n = 1;
+        foreach(T, t, pvector)
+        {
+            lua_pushnumber(L, n);
+            if (convert<P<T> >::returnType(L, t))
+            {
+                lua_settable(L, -3);
+                n++;
+            }else{
+                lua_pop(L, 1);
+            }
+        }
+        return 1;
     }
 };
 

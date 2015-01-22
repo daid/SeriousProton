@@ -25,7 +25,7 @@ public:
     void runCode(string code);
     void callFunction(string name);
     virtual void update(float delta);
-
+    
     //Make the ScriptCallback our friend, so we can access the lua_State from the callback class.
     friend class ScriptCallback;
 };

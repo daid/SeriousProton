@@ -127,63 +127,20 @@ void ScriptObject::clean()
     }
 }
 
-static bool addObjectToScript(lua_State* L, P<PObject> object, string variable_name, ScriptClassInfo* info)
+void ScriptObject::registerObject(P<PObject> object, string variable_name)
 {
-    if (info->check_function && info->check_function(object))
+    string class_name = getScriptClassClassNameFromObject(object);
+    if (class_name != "")
     {
-        printf("Is %s:%s\n", variable_name.c_str(), info->class_name.c_str());
-        for(unsigned int n=0; n<info->child_classes.size(); n++)
-        {
-            if (addObjectToScript(L, object, variable_name, info->child_classes[n]))
-                return true;
-        }
-
         P<PObject>** p = static_cast< P<PObject>** >(lua_newuserdata(L, sizeof(P<PObject>*)));
         *p = new P<PObject>();
         (**p) = object;
-        luaL_getmetatable(L, info->class_name.c_str());
+        luaL_getmetatable(L, class_name.c_str());
         lua_setmetatable(L, -2);
         lua_setglobal(L, variable_name.c_str());
-        printf("Added: %s as %s\n", variable_name.c_str(), info->class_name.c_str());
-        return true;
     }else{
-        printf("Is not %s:%s\n", variable_name.c_str(), info->class_name.c_str());
+        printf("Failed to find class for object %s\n", variable_name.c_str());
     }
-    return false;
-}
-
-void ScriptObject::registerObject(P<PObject> object, string variable_name)
-{
-    static bool child_relations_set = false;
-    printf(child_relations_set ? "child_relations_set=true\n" : "child_relations_set=false\n");
-    if (!child_relations_set)
-    {
-        for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
-        {
-            if (item->base_class_name != "")
-            {
-                for(ScriptClassInfo* item_parent = scriptClassInfoList; item_parent != NULL; item_parent = item_parent->next)
-                {
-                    if (item->base_class_name == item_parent->class_name)
-                    {
-                        item_parent->child_classes.push_back(item);
-                        printf("Added %s as child of %s\n", item->class_name.c_str(), item_parent->class_name.c_str());
-                    }
-                }
-            }
-        }
-        child_relations_set = true;
-    }
-    
-    for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
-    {
-        if (item->base_class_name == "")
-        {
-            if (addObjectToScript(L, object, variable_name, item))
-                return;
-        }
-    }
-    printf("Failed to register object in script...\n");
 }
 
 void ScriptObject::runCode(string code)
