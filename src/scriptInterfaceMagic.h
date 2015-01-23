@@ -549,6 +549,10 @@ public:
 		lua_pushcclosure(L, isValid, 0);
 		lua_settable(L, functionTable);
 
+        lua_pushstring(L, "typeName");
+		lua_pushstring(L, objectTypeName);
+		lua_settable(L, functionTable);
+
         lua_pushstring(L, "destroy");
 		lua_pushcclosure(L, destroy, 0);
 		lua_settable(L, functionTable);
