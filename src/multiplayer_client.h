@@ -13,10 +13,13 @@ extern P<GameClient> game_client;
 
 class GameClient : public Updatable
 {
+    const static float no_data_disconnect_time = 20.0f;
+    
     TcpSocket socket;
     std::map<int32_t, P<MultiplayerObject> > objectMap;
     int32_t clientId;
     bool connected;
+    sf::Clock last_receive_time;
 public:
     GameClient(sf::IpAddress server, int portNr = defaultServerPort);
 

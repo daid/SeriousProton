@@ -17,6 +17,7 @@ GameClient::GameClient(sf::IpAddress server, int portNr)
         connected = false;
     else
         connected = true;
+    last_receive_time.restart();
     socket.setBlocking(false);
 }
 
@@ -45,6 +46,8 @@ void GameClient::update(float delta)
     sf::TcpSocket::Status status;
     while((status = socket.receive(packet)) == sf::TcpSocket::Done)
     {
+        last_receive_time.restart();
+        
         command_t command;
         packet >> command;
         switch(command)
@@ -111,8 +114,11 @@ void GameClient::update(float delta)
             printf("Unknown command from server: %d\n", command);
         }
     }
-    if (status == sf::TcpSocket::Disconnected)
+    if (status == sf::TcpSocket::Disconnected || last_receive_time.getElapsedTime().asSeconds() > no_data_disconnect_time)
+    {
+        socket.disconnect();
         connected = false;
+    }
 }
 
 void GameClient::sendPacket(sf::Packet& packet)
