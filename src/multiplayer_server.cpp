@@ -25,6 +25,7 @@ GameServer::GameServer(string serverName, int versionNumber, int listenPort)
     sendDataRate = 0.0;
     sendDataRatePerClient = 0.0;
     boardcastServerDelay = 0.0;
+    aliveClock.restart();
 
     nextObjectId = 1;
     nextClientId = 1;
@@ -233,6 +234,15 @@ void GameServer::update(float gameDelta)
                 n--;
             }
         }
+    }
+    
+    if (aliveClock.getElapsedTime().asSeconds() > 10.0)
+    {
+        aliveClock.restart();
+        
+        sf::Packet packet;
+        packet << CMD_ALIVE;
+        sendAll(packet);
     }
 
     float dataPerSecond = float(sendDataCounter) / delta;

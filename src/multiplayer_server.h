@@ -17,6 +17,7 @@ extern P<GameServer> game_server;
 class GameServer : public Updatable
 {
     sf::Clock updateTimeClock;
+    sf::Clock aliveClock;
     sf::UdpSocket broadcastListenSocket;
     sf::TcpListener listenSocket;
     sf::SocketSelector selector;

@@ -110,10 +110,14 @@ void GameClient::update(float delta)
                 engine->setGameSpeed(gamespeed);
             }
             break;
+        case CMD_ALIVE:
+            //Alive packet, just to keep the connection alive.
+            break;
         default:
             printf("Unknown command from server: %d\n", command);
         }
     }
+    
     if (status == sf::TcpSocket::Disconnected || last_receive_time.getElapsedTime().asSeconds() > no_data_disconnect_time)
     {
         socket.disconnect();
