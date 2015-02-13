@@ -179,7 +179,7 @@ public:
                 memberReplicationInfo[n].update_delay = update_delay;
     }
 
-    void registerCollisionableReplication();
+    void registerCollisionableReplication(float object_significant_range = -1);
 
     int32_t getMultiplayerId() { return multiplayerObjectId; }
     void sendClientCommand(sf::Packet& packet);//Send a command from the client to the server.

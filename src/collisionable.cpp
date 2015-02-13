@@ -112,6 +112,7 @@ Collisionable::Collisionable(float radius)
     enable_physics = false;
     static_physics = false;
     body = NULL;
+    multiplayer_replication_object_significant_range = -1;
     
     setCollisionRadius(radius);
 }

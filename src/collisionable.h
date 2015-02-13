@@ -58,6 +58,8 @@ public:
     sf::Vector2f toWorldSpace(sf::Vector2f v);
     
     std::vector<sf::Vector2f> getCollisionShape(); //For debugging
+
+    float multiplayer_replication_object_significant_range;
     
     friend class CollisionManager;
 };
