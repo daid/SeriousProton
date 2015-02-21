@@ -14,11 +14,24 @@ public:
     std::map<string, string> headers;
 };
 
+class HttpServer;
 class HttpServerConnection;
 class HttpRequestHandler : public sf::NonCopyable
 {
 public:
+    HttpRequestHandler() {}
+    virtual ~HttpRequestHandler() {}
+    
     virtual bool handleRequest(HttpRequest& request, HttpServerConnection* connection) = 0;
+};
+
+class HttpRequestFileHandler : public HttpRequestHandler
+{
+    string base_path;
+public:
+    HttpRequestFileHandler(string base_path) : base_path(base_path) {}
+    
+    virtual bool handleRequest(HttpRequest& request, HttpServerConnection* connection);
 };
 
 class HttpServerConnection: public sf::NonCopyable
@@ -35,18 +48,21 @@ private:
     size_t recvBufferCount;
     
     HttpRequest request;
-
+    HttpServer* server;
+    int reply_code;
+    bool headers_send;
 public:
     sf::TcpSocket socket;
     
-    HttpServerConnection();
+    HttpServerConnection(HttpServer* server);
     bool read();
 
     void sendData(const char* data, size_t data_length);
 private:    
     bool handleLine(string line);
     
-    void sendReply();
+    void handleRequest();
+    void sendHeaders();
 };
 
 class HttpServer: public Updatable
@@ -56,12 +72,16 @@ private:
     sf::TcpListener listenSocket;
     sf::SocketSelector selector;
     std::vector<HttpServerConnection*> connections;
-    string fileBasePath;
+    std::vector<HttpRequestHandler*> handlers;
 public:
-    HttpServer(string fileBasePath, int portNr = 80);
+    HttpServer(int portNr = 80);
     ~HttpServer();
     
+    void addHandler(HttpRequestHandler* handler) { handlers.push_back(handler); }
+    
     virtual void update(float delta);
+    
+    friend class HttpServerConnection;
 };
 
 

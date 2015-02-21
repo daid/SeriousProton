@@ -4,9 +4,8 @@
 #include "httpServer.h"
 #include "logging.h"
 
-HttpServer::HttpServer(string fileBasePath, int portNr)
+HttpServer::HttpServer(int portNr)
 {
-    this->fileBasePath = fileBasePath;
     listenSocket.listen(portNr);
     selector.add(listenSocket);
 }
@@ -16,6 +15,8 @@ HttpServer::~HttpServer()
     listenSocket.close();
     for(unsigned int n=0; n<connections.size(); n++)
         delete connections[n];
+    for(unsigned int n=0; n<handlers.size(); n++)
+        delete handlers[n];
 }
 
 void HttpServer::update(float delta)
@@ -24,7 +25,7 @@ void HttpServer::update(float delta)
     {
         if (selector.isReady(listenSocket))
         {
-            HttpServerConnection* connection = new HttpServerConnection();
+            HttpServerConnection* connection = new HttpServerConnection(this);
             if (listenSocket.accept(connection->socket) == sf::Socket::Done)
             {
                 connections.push_back(connection);
@@ -48,7 +49,8 @@ void HttpServer::update(float delta)
     }
 }
 
-HttpServerConnection::HttpServerConnection()
+HttpServerConnection::HttpServerConnection(HttpServer* server)
+: server(server)
 {
     recvBufferCount = 0;
     status = METHOD;
@@ -123,7 +125,7 @@ bool HttpServerConnection::handleLine(string line)
                 }
             }
             status = METHOD;
-            sendReply();
+            handleRequest();
         }else{
             std::vector<string> parts = line.split(":", 1);
             if (parts.size() != 2)
@@ -136,55 +138,75 @@ bool HttpServerConnection::handleLine(string line)
     return true;
 }
 
-void HttpServerConnection::sendReply()
+void HttpServerConnection::handleRequest()
 {
-    string replyCode = "200";
-    string replyData = "";
-    FILE* f = NULL;
-    if (request.path == "/")
-        request.path = "/index.html";
-    if (request.path.find("..") != -1)
+    reply_code = 200;
+    headers_send = false;
+    
+    for(unsigned int n=0; n<server->handlers.size(); n++)
     {
-        replyCode = "403";
-        replyData = "Forbidden";
-    }else{
-        string fullPath = "www/" + request.path;
-        f = fopen(fullPath.c_str(), "rb");
-        if (!f)
-        {
-            replyCode = "404";
-            replyData = "File not found";
-        }
+        if (server->handlers[n]->handleRequest(request, this))
+            break;
+        if (headers_send)
+            break;
     }
-    string reply = string("HTTP/1.1 ") + replyCode + " OK\r\n";
+    
+    if (!headers_send)
+    {
+        reply_code = 404;
+        string replyData = "File not found";
+        sendData(replyData.c_str(), replyData.size());
+    }
+    string end_chunk = "0\r\n\r\n";
+    socket.send(end_chunk.c_str(), end_chunk.size());
+}
+
+void HttpServerConnection::sendHeaders()
+{
+    string reply = string("HTTP/1.1 ") + string(reply_code) + " OK\r\n";
     reply += "Content-type: text/html\r\n";
     reply += "Connection: Keep-Alive\r\n";
     reply += "Transfer-Encoding: chunked\r\n";
     reply += "\r\n";
     socket.send(reply.c_str(), reply.size());
-    sendData(replyData.c_str(), replyData.size());
-    if (f)
-    {
-        while(true)
-        {
-            char buffer[1024];
-            size_t n = fread(buffer, 1, sizeof(buffer), f);
-            if (n < 1)
-                break;
-            sendData(buffer, n);
-        }
-        fclose(f);
-    }
-    string end_chunk = "0\r\n\r\n";
-    socket.send(end_chunk.c_str(), end_chunk.size());
+    headers_send = true;
 }
 
 void HttpServerConnection::sendData(const char* data, size_t data_length)
 {
     if (data_length < 1)
         return;
+    if (!headers_send)
+        sendHeaders();
     string chunk_len_string = string::hex(data_length) + "\r\n";
     socket.send(chunk_len_string.c_str(), chunk_len_string.size());
     socket.send(data, data_length);
     socket.send("\r\n", 2);
+}
+
+bool HttpRequestFileHandler::handleRequest(HttpRequest& request, HttpServerConnection* connection)
+{
+
+    string replyData = "";
+    FILE* f = NULL;
+    if (request.path == "/")
+        request.path = "/index.html";
+    if (request.path.find("..") != -1)
+        return false;
+    
+    string fullPath = base_path + request.path;
+    f = fopen(fullPath.c_str(), "rb");
+    if (!f)
+        return false;
+
+    while(true)
+    {
+        char buffer[1024];
+        size_t n = fread(buffer, 1, sizeof(buffer), f);
+        if (n < 1)
+            break;
+        connection->sendData(buffer, n);
+    }
+    fclose(f);
+    return true;
 }
