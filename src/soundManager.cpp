@@ -198,12 +198,12 @@ sf::SoundBuffer* SoundManager::loadSound(string name)
     if (!stream) stream = getResourceStream(name + ".wav");
     if (!stream || !data->loadFromStream(**stream))
     {
-        printf("Failed to load: %s\n", name.c_str());
+        LOG(WARNING) << "Failed to load: " << name;
         soundMap[name] = data;
         return data;
     }
     
-    printf("Loaded: %s of %f seconds\n", name.c_str(), data->getDuration().asSeconds());
+    LOG(INFO) << "Loaded: " << name << " of " << data->getDuration().asSeconds() << " seconds";
     soundMap[name] = data;
     return data;
 }

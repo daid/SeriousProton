@@ -129,6 +129,8 @@ void ScriptObject::clean()
 
 void ScriptObject::registerObject(P<PObject> object, string variable_name)
 {
+    if (!L)
+        return;
     string class_name = getScriptClassClassNameFromObject(object);
     if (class_name != "")
     {
@@ -145,6 +147,8 @@ void ScriptObject::registerObject(P<PObject> object, string variable_name)
 
 void ScriptObject::runCode(string code)
 {
+    if (!L)
+        return;
     if (luaL_dostring(L, code.c_str()))
     {
         printf("ERROR(%s): %s\n", code.c_str(), luaL_checkstring(L, -1));
@@ -154,12 +158,27 @@ void ScriptObject::runCode(string code)
 
 void ScriptObject::callFunction(string name)
 {
+    if (!L)
+        return;
     lua_getglobal(L, name.c_str());
     if (lua_pcall(L, 0, 0, 0))
     {
         printf("ERROR(%s): %s\n", name.c_str(), luaL_checkstring(L, -1));
         lua_pop(L, 1);
     }
+}
+
+static void runCyclesHook(lua_State *L, lua_Debug *ar)
+{
+    lua_pushstring(L, "Max execution limit reached. Aborting.");
+    lua_error(L);
+}
+
+void ScriptObject::setMaxRunCycles(int count)
+{
+    if (!L)
+        return;
+    lua_sethook(L, runCyclesHook, LUA_MASKCOUNT, count);
 }
 
 ScriptObject::~ScriptObject()

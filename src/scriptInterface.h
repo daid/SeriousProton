@@ -24,6 +24,7 @@ public:
     void setGlobal(string global_name, string value);
     void runCode(string code);
     void callFunction(string name);
+    void setMaxRunCycles(int count);
     virtual void update(float delta);
     
     //Make the ScriptCallback our friend, so we can access the lua_State from the callback class.

@@ -24,9 +24,9 @@ public:
     std::string requestPath;
     
     HttpServerConnection();
-    
     bool read();
-    
+
+private:    
     bool handleLine(string line);
     
     void sendReply();
