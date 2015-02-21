@@ -46,7 +46,7 @@ ScriptObject::ScriptObject(string filename)
     run(filename);
 }
 
-void ScriptObject::run(string filename)
+bool ScriptObject::run(string filename)
 {
     if (L == NULL)
     {
@@ -70,12 +70,12 @@ void ScriptObject::run(string filename)
     lua_setglobal(L, "__ScriptFilename");
 #endif
     
-    printf("Load script: %s\n", filename.c_str());
+    LOG(INFO) << "Load script: " << filename;
     P<ResourceStream> stream = getResourceStream(filename);
     if (!stream)
     {
-        printf("Script not found: %s\n", filename.c_str());
-        return;
+        LOG(ERROR) << "Script not found: " << filename;
+        return false;
     }
     
     string filecontents;
@@ -87,15 +87,15 @@ void ScriptObject::run(string filename)
     
     if (luaL_loadstring(L, filecontents.c_str()))
     {
-        printf("ERROR(load): %s\n", luaL_checkstring(L, -1));
+        LOG(ERROR) << "LUA: load: " << luaL_checkstring(L, -1);
         destroy();
-        return;
+        return false;
     }
     if (lua_pcall(L, 0, 0, 0))
     {
-        printf("ERROR(run): %s\n", luaL_checkstring(L, -1));
+        LOG(ERROR) << "LUA: run: " << luaL_checkstring(L, -1);
         destroy();
-        return;
+        return false;
     }
     
     lua_getglobal(L, "init");
@@ -105,8 +105,10 @@ void ScriptObject::run(string filename)
         //printf("WARNING(no init function): %s\n", filename);
     }else if (lua_pcall(L, 0, 0, 0))
     {
-        printf("ERROR(init): %s\n", luaL_checkstring(L, -1));
+        LOG(ERROR) << "LUA: init: " << luaL_checkstring(L, -1);
+        return false;
     }
+    return true;
 }
 
 void ScriptObject::setGlobal(string global_name, string value)
@@ -145,27 +147,92 @@ void ScriptObject::registerObject(P<PObject> object, string variable_name)
     }
 }
 
-void ScriptObject::runCode(string code)
+bool ScriptObject::runCode(string code)
 {
     if (!L)
-        return;
+        return false;
     if (luaL_dostring(L, code.c_str()))
     {
         LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
         lua_pop(L, 1);
+        return false;
     }
+    lua_settop(L, 0);
+    return true;
 }
 
-void ScriptObject::callFunction(string name)
+static string luaToJSON(lua_State* L, int index)
+{
+    if (lua_isnil(L, index) || lua_isnone(L, index))
+        return "null";
+    if (lua_isboolean(L, index))
+        return lua_toboolean(L, index) ? "true" : "false";
+    if (lua_isnumber(L, index))
+        return string(lua_tonumber(L, index), 3);
+    if (lua_isstring(L, index))
+        return "\"" + string(lua_tostring(L, index)) + "\"";
+    if (lua_istable(L, index))
+    {
+        string ret = "{";
+        lua_pushnil(L);
+        bool first = true;
+        while(lua_next(L, index) != 0)
+        {
+            if (first)
+                first = false;
+            else
+                ret += ", ";
+            /* uses 'key' (at index -2) and 'value' (at index -1) */
+            ret += luaToJSON(L, lua_gettop(L) - 1);
+            ret += ": ";
+            ret += luaToJSON(L, lua_gettop(L));
+            /* removes 'value'; keeps 'key' for next iteration */
+            lua_pop(L, 1);
+        }
+        ret += "}";
+        return ret;
+    }
+    if (lua_isuserdata(L, index))
+        return "\"[OBJECT]\"";
+    if (lua_isfunction(L, index))
+        return "\"[function]\"";
+    return "???";
+}
+
+bool ScriptObject::runCode(string code, string& json_output)
 {
     if (!L)
-        return;
+        return false;
+    if (luaL_dostring(L, code.c_str()))
+    {
+        LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
+        lua_pop(L, 1);
+        return false;
+    }
+    int nresults = lua_gettop(L);
+    json_output = "";
+    for(int n=0; n<nresults; n++)
+    {
+        if (n > 0)
+            json_output += ", ";
+        json_output += luaToJSON(L, n + 1);
+    }
+    lua_settop(L, 0);
+    return true;
+}
+
+bool ScriptObject::callFunction(string name)
+{
+    if (!L)
+        return false;
     lua_getglobal(L, name.c_str());
     if (lua_pcall(L, 0, 0, 0))
     {
         printf("ERROR(%s): %s\n", name.c_str(), luaL_checkstring(L, -1));
         lua_pop(L, 1);
+        return false;
     }
+    return true;
 }
 
 static void runCyclesHook(lua_State *L, lua_Debug *ar)

@@ -124,7 +124,7 @@ bool HttpServerConnection::handleLine(string line)
                 }
             }
             status = METHOD;
-            LOG(DEBUG) << "HTTP request:" << request.path;
+            LOG(DEBUG) << "HTTP request: " << request.path;
             handleRequest();
         }else{
             std::vector<string> parts = line.split(":", 1);
@@ -174,10 +174,10 @@ void HttpServerConnection::sendHeaders()
 
 void HttpServerConnection::sendData(const char* data, size_t data_length)
 {
-    if (data_length < 1)
-        return;
     if (!headers_send)
         sendHeaders();
+    if (data_length < 1)
+        return;
     string chunk_len_string = string::hex(data_length) + "\r\n";
     socket.send(chunk_len_string.c_str(), chunk_len_string.size());
     socket.send(data, data_length);
@@ -186,7 +186,6 @@ void HttpServerConnection::sendData(const char* data, size_t data_length)
 
 bool HttpRequestFileHandler::handleRequest(HttpRequest& request, HttpServerConnection* connection)
 {
-
     string replyData = "";
     FILE* f = NULL;
     if (request.path == "/")

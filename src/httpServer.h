@@ -58,6 +58,7 @@ public:
     bool read();
 
     void sendData(const char* data, size_t data_length);
+    void sendString(string data) { sendData(data.c_str(), data.length()); }
 private:    
     bool handleLine(string line);
     

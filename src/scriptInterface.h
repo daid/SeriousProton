@@ -18,12 +18,13 @@ public:
     ScriptObject(string filename);
     virtual ~ScriptObject();
     
-    void run(string filename);
+    bool run(string filename);
     void clean();
     void registerObject(P<PObject> object, string variable_name);
     void setGlobal(string global_name, string value);
-    void runCode(string code);
-    void callFunction(string name);
+    bool runCode(string code);
+    bool runCode(string code, string& json_output);
+    bool callFunction(string name);
     void setMaxRunCycles(int count);
     virtual void update(float delta);
     
