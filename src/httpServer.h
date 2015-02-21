@@ -5,27 +5,44 @@
 #include "Updatable.h"
 #include "stringImproved.h"
 
-class HttpServerConnection: public sf::NonCopyable
+class HttpRequest : public sf::NonCopyable
 {
 public:
+    string method;
+    string path;
+    string post_data;
+    std::map<string, string> headers;
+};
+
+class HttpServerConnection;
+class HttpRequestHandler : public sf::NonCopyable
+{
+public:
+    virtual bool handleRequest(HttpRequest& request, HttpServerConnection* connection) = 0;
+};
+
+class HttpServerConnection: public sf::NonCopyable
+{
+private:
     enum Status
     {
         METHOD,
-        HEADERS,
-        BODY
+        HEADERS
     } status;
 
-    sf::TcpSocket socket;
     const static size_t recvBufferSize = 2048;
     char recvBuffer[recvBufferSize];
     size_t recvBufferCount;
     
-    std::string requestMethod;
-    std::string requestPath;
+    HttpRequest request;
+
+public:
+    sf::TcpSocket socket;
     
     HttpServerConnection();
     bool read();
 
+    void sendData(const char* data, size_t data_length);
 private:    
     bool handleLine(string line);
     

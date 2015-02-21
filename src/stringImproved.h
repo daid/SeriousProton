@@ -20,6 +20,7 @@ public:
     string() : std::string() {}
     string(const std::string& str) : std::string(str) {}
     string(const char* str) : std::string(str) {}
+    string(const char* str, int length) : std::string(str, length) {}
 
     string(const char c) : std::string()
     {
@@ -46,6 +47,13 @@ public:
         stream << std::fixed << std::setprecision(decimals);
         stream << nr;
         *this = stream.str();
+    }
+
+    static string hex(const int nr)
+    {
+        std::ostringstream stream;
+        stream << std::hex << nr;
+        return stream.str();
     }
     
     /*
