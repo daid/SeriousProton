@@ -58,7 +58,7 @@ void ServerScanner::update(float gameDelta)
             }
             if (!found)
             {
-                printf("ServerScanner::New server: %s %i %s\n", recvAddress.toString().c_str(), recvPort, name.c_str());
+                LOG(INFO) << "ServerScanner::New server: " << recvAddress.toString() << " " << recvPort << " " << name;
                 ServerInfo si;
                 si.address = recvAddress;
                 si.timeout = 0.0;

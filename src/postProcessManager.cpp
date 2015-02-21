@@ -1,5 +1,4 @@
-#include <stdio.h>
-
+#include "logging.h"
 #include "postProcessManager.h"
 
 static int powerOfTwo(int v)
@@ -21,14 +20,15 @@ PostProcessor::PostProcessor(string name, RenderChain* chain)
     {
         if (shader.loadFromFile("resources/" + name + ".frag", sf::Shader::Fragment))
         {
-            printf("Loaded shader: %s\n", name.c_str());
+            LOG(INFO) << "Loaded shader: " << name;
             enabled = true;
         }else{
-            printf("Failed to load shader: %s\n", name.c_str());
+            LOG(WARNING) << "Failed to load shader:" << name;
             enabled = false;
         }
     }else{
-        printf("Did not load load shader: %s\nBecause of no shader support in video card driver.\n", name.c_str());
+        LOG(WARNING) << "Did not load load shader: " << name;
+        LOG(WARNING) << "Because of no shader support in video card driver.";
         enabled = false;
     }
 }

@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "httpServer.h"
+#include "logging.h"
 
 HttpServer::HttpServer(string fileBasePath, int portNr)
 {
@@ -87,6 +88,7 @@ bool HttpServerConnection::read()
 
 bool HttpServerConnection::handleLine(string line)
 {
+    LOG(DEBUG) << "Got line: " << line;
     switch(status)
     {
     case METHOD:{
@@ -103,7 +105,7 @@ bool HttpServerConnection::handleLine(string line)
             status = METHOD;
             sendReply();
         }else{
-            printf("Header: %s\n", line.c_str());
+            LOG(DEBUG) << "Header: " << line;
         }
         break;
     case BODY:

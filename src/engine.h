@@ -21,6 +21,7 @@
 #include "multiplayer_server_scanner.h"
 #include "multiplayer_client.h"
 #include "event.h"
+#include "logging.h"
 #include "tween.h"
 
 class Engine;

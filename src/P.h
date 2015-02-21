@@ -4,7 +4,8 @@
 #include <SFML/System.hpp>
 #include <vector>
 #include <assert.h>
-#include <stdio.h>
+
+#include "logging.h"
 
 /**
     P<T> is a reference counting pointer class. This class keeps track to the amount of P<T> pointers pointing to a Pobject.
@@ -131,7 +132,7 @@ public:
 #ifdef DEBUG
         if(!ptr || ptr->_destroyed_flag)
         {
-            printf("Oh noes! Better find me and put a breakpoint here!\n");
+            LOG(ERROR) << "Oh noes! Better find me and put a breakpoint here!";
         }
         assert(ptr);
         assert(!ptr->_destroyed_flag);

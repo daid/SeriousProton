@@ -1,5 +1,4 @@
-#include <stdio.h>
-
+#include "logging.h"
 #include "resources.h"
 #include "textureManager.h"
 
@@ -74,7 +73,7 @@ void TextureManager::loadTexture(string name, sf::Vector2i subDiv)
     if (!stream) stream = getResourceStream(name + ".png");
     if (!stream || !tmpImage.loadFromStream(**stream))
     {
-        printf("Failed to load: %s\n", name.c_str());
+        LOG(WARNING) << "Failed to load: " << name;
         data.texture.create(8, 8);
         return;
     }
@@ -121,5 +120,5 @@ void TextureManager::loadTexture(string name, sf::Vector2i subDiv)
     data.texture.setSmooth(defaultSmooth);
     
     data.texture.loadFromImage(tmpImage);
-    printf("Loaded: %s with %d sprites\n", name.c_str(), int(data.sprites.size()));
+    LOG(INFO) << "Loaded: " << name << " with " << data.sprites.size() << " sprites";
 }

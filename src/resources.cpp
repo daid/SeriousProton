@@ -1,5 +1,6 @@
 #include <SFML/System.hpp>
 #include <dirent.h>
+#include <stdio.h>
 #include "resources.h"
 
 PVector<ResourceProvider> resourceProviders;
