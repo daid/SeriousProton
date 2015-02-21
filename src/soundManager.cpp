@@ -92,7 +92,7 @@ void SoundManager::playSound(string name, sf::Vector2f position, float min_dista
     if (data == NULL)
         data = loadSound(name);
     if (data->getChannelCount() > 1)
-        printf("Warning: %s: Used as positional sound but has more then 1 channel.\n", name.c_str());
+        LOG(WARNING) << name << ": Used as positional sound but has more then 1 channel.";
     
     for(unsigned int n=0; n<activeSoundList.size(); n++)
     {

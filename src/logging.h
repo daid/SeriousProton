@@ -16,9 +16,15 @@ enum ELogLevel
 
 class Logging : sf::NonCopyable
 {
+    static ELogLevel global_level;
+    bool do_logging;
 public:
     Logging(ELogLevel level, string file, int line, string function_name);
     ~Logging();
+    
+    static void setLogLevel(ELogLevel level);
+    
+    friend const Logging& operator<<(const Logging& log, const char* str);
 };
 
 const Logging& operator<<(const Logging& log, const char* str);

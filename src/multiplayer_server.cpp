@@ -32,11 +32,11 @@ GameServer::GameServer(string serverName, int versionNumber, int listenPort)
 
     if (listenSocket.listen(listenPort) != sf::TcpListener::Done)
     {
-        printf("Failed to listen on TCP port: %d\n", listenPort);
+        LOG(ERROR) << "Failed to listen on TCP port: " << listenPort;
     }
     if (broadcastListenSocket.bind(listenPort) != sf::UdpSocket::Done)
     {
-        printf("Failed to listen on UDP port: %d\n", listenPort);
+        LOG(ERROR) << "Failed to listen on UDP port: " << listenPort;
     }
     selector.add(listenSocket);
     selector.add(broadcastListenSocket);
@@ -214,7 +214,7 @@ void GameServer::update(float gameDelta)
                             clientList[n].receiveState = CRS_Command;
                             break;
                         default:
-                            printf("Unknown command from client: %d\n", command);
+                            LOG(ERROR) << "Unknown command from client: " << command;
                         }
                     }
                     break;

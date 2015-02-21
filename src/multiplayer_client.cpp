@@ -61,7 +61,7 @@ void GameClient::update(float delta)
                 {
                     if (i->name == name)
                     {
-                        printf("Created %s from server replication\n", name.c_str());
+                        LOG(INFO) << "Created " << name << " from server replication";
                         MultiplayerObject* obj = i->func();
                         obj->multiplayerObjectId = id;
                         objectMap[id] = obj;
@@ -114,7 +114,7 @@ void GameClient::update(float delta)
             //Alive packet, just to keep the connection alive.
             break;
         default:
-            printf("Unknown command from server: %d\n", command);
+            LOG(ERROR) << "Unknown command from server: " << command;
         }
     }
     

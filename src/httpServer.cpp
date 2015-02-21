@@ -121,10 +121,10 @@ bool HttpServerConnection::handleLine(string line)
                     request.post_data = string(recvBuffer, body_length);
                     recvBufferCount -= body_length;
                     memmove(recvBuffer, recvBuffer + body_length, recvBufferCount);
-                    LOG(INFO) << "POST" << request.post_data;
                 }
             }
             status = METHOD;
+            LOG(DEBUG) << "HTTP request:" << request.path;
             handleRequest();
         }else{
             std::vector<string> parts = line.split(":", 1);

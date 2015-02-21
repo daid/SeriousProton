@@ -2,18 +2,30 @@
 
 #include "logging.h"
 
+ELogLevel Logging::global_level = LOGLEVEL_ERROR;
+
 Logging::Logging(ELogLevel level, string file, int line, string function_name)
 {
-    printf(">");
+    do_logging = level >= global_level;
+    
+    if (do_logging)
+        printf(">");
 }
 
 Logging::~Logging()
 {
-    printf("\n");
+    if (do_logging)
+        printf("\n");
 }
 
 const Logging& operator<<(const Logging& log, const char* str)
 {
-    printf("%s", str);
+    if (log.do_logging)
+        printf("%s", str);
     return log;
+}
+
+void Logging::setLogLevel(ELogLevel level)
+{
+    global_level = level;
 }

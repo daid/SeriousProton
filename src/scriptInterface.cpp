@@ -141,7 +141,7 @@ void ScriptObject::registerObject(P<PObject> object, string variable_name)
         lua_setmetatable(L, -2);
         lua_setglobal(L, variable_name.c_str());
     }else{
-        printf("Failed to find class for object %s\n", variable_name.c_str());
+        LOG(ERROR) << "Failed to find class for object " << variable_name;
     }
 }
 
@@ -151,7 +151,7 @@ void ScriptObject::runCode(string code)
         return;
     if (luaL_dostring(L, code.c_str()))
     {
-        printf("ERROR(%s): %s\n", code.c_str(), luaL_checkstring(L, -1));
+        LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
         lua_pop(L, 1);
     }
 }
@@ -203,13 +203,13 @@ void ScriptObject::update(float delta)
             printf("Reload: %s\n", filename);
             if (luaL_loadfile(L, filename))
             {
-                printf("ERROR(load): %s\n", luaL_checkstring(L, -1));
+                LOG(ERROR) << "LUA: load: " << luaL_checkstring(L, -1));
                 destroy();
                 return;
             }
             if (lua_pcall(L, 0, 0, 0))
             {
-                printf("ERROR(run): %s\n", luaL_checkstring(L, -1));
+                LOG(ERROR) << "LUA: run: " << luaL_checkstring(L, -1));
                 destroy();
                 return;
             }
@@ -231,7 +231,7 @@ void ScriptObject::update(float delta)
             lua_pushnumber(L, delta);
             if (lua_pcall(L, 1, 0, 0))
             {
-                printf("ERROR(update): %s\n", luaL_checkstring(L, -1));
+                LOG(ERROR) << "LUA: update: " << luaL_checkstring(L, -1);
                 lua_pop(L, 1);
                 return;
             }
@@ -250,14 +250,14 @@ void ScriptCallback::operator() ()
     {
         if (luaL_loadstring(L, functionName.c_str()))
         {
-            printf("ERROR(%s): %s\n", functionName.c_str(), luaL_checkstring(L, -1));
+            LOG(ERROR) << "LUA: " << functionName << ": " << luaL_checkstring(L, -1);
             lua_pop(L, 1);
             return;
         }
     }
     if (lua_pcall(L, 0, 0, 0))
     {
-        printf("ERROR(%s): %s\n", functionName.c_str(), luaL_checkstring(L, -1));
+        LOG(ERROR) << "LUA: " << functionName << ": " << luaL_checkstring(L, -1);
         lua_pop(L, 1);
         return;
     }
