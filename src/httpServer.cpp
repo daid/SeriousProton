@@ -71,47 +71,39 @@ bool HttpServerConnection::read()
         char* ptr = (char*)memchr(recvBuffer, '\n', recvBufferCount);
         if (!ptr)
             break;
+        *ptr = '\0';
+        string line(recvBuffer);
         ptr++;
         size_t len = ptr - recvBuffer;
-        char line[recvBufferSize];
-        memcpy(line, recvBuffer, len);
         recvBufferCount -= len;
         memmove(recvBuffer, ptr, recvBufferCount);
-        line[len] = '\0';
-        while(len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
-            line[--len] = '\0';
+        if (line.endswith("\r"))
+            line = line.substr(0, -1);
         if (!handleLine(line))
             return false;
     }
     return true;
 }
 
-bool HttpServerConnection::handleLine(char* line)
+bool HttpServerConnection::handleLine(string line)
 {
     switch(status)
     {
     case METHOD:{
-        char* pathPtr = strchr(line, ' ');
-        if (!pathPtr)
+        std::vector<string> parts = line.split();
+        if (parts.size() != 3)
             return false;
-        char* httpVersionPtr = strchr(pathPtr+1, ' ');
-        if (!httpVersionPtr)
-            return false;
-        *pathPtr++ = '\0';
-        *httpVersionPtr++ = '\0';
-
-        requestMethod = line;
-        requestPath = pathPtr;
-
+        requestMethod = parts[0];
+        requestPath = parts[1];
         status = HEADERS;
         }break;
     case HEADERS:
-        if (strlen(line) == 0)
+        if (line.length() == 0)
         {
             status = METHOD;
             sendReply();
         }else{
-            //printf("Header %i: %s\n", strlen(line), line);
+            printf("Header: %s\n", line.c_str());
         }
         break;
     case BODY:
@@ -123,7 +115,7 @@ bool HttpServerConnection::handleLine(char* line)
 
 void HttpServerConnection::sendReply()
 {
-    const char* replyCode = "200";
+    string replyCode = "200";
     string replyData = "";
     FILE* f = NULL;
     if (requestPath == "/")

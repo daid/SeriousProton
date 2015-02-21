@@ -28,8 +28,8 @@ extern Engine* engine;
 
 class Engine
 {
+    bool running;
     WindowManager* windowManager;
-    float q;
     
     std::map<string, P<PObject> > objectMap;
     float elapsedTime;

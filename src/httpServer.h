@@ -27,7 +27,7 @@ public:
     
     bool read();
     
-    bool handleLine(char* line);
+    bool handleLine(string line);
     
     void sendReply();
 };
