@@ -27,6 +27,9 @@ public:
     bool callFunction(string name);
     void setMaxRunCycles(int count);
     virtual void update(float delta);
+
+private:
+    void createLuaState();
     
     //Make the ScriptCallback our friend, so we can access the lua_State from the callback class.
     friend class ScriptCallback;

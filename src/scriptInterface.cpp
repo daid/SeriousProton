@@ -28,16 +28,7 @@ int lua_destroyScript(lua_State* L)
 
 ScriptObject::ScriptObject()
 {
-    L = luaL_newstate();
-
-    lua_pushlightuserdata(L, this);
-    lua_setglobal(L, "__ScriptObjectPointer");
-    luaL_openlibs(L);
-    lua_register(L, "random", lua_random);
-    lua_register(L, "destroyScript", lua_destroyScript);
-    
-    for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
-        item->register_function(L);
+    createLuaState();
 }
 
 ScriptObject::ScriptObject(string filename)
@@ -46,21 +37,45 @@ ScriptObject::ScriptObject(string filename)
     run(filename);
 }
 
+static const luaL_Reg loadedlibs[] = {
+  {"_G", luaopen_base},
+//  {LUA_LOADLIBNAME, luaopen_package},
+//  {LUA_COLIBNAME, luaopen_coroutine},
+  {LUA_TABLIBNAME, luaopen_table},
+//  {LUA_IOLIBNAME, luaopen_io},
+//  {LUA_OSLIBNAME, luaopen_os},
+  {LUA_STRLIBNAME, luaopen_string},
+  {LUA_BITLIBNAME, luaopen_bit32},
+  {LUA_MATHLIBNAME, luaopen_math},
+//  {LUA_DBLIBNAME, luaopen_debug},
+  {NULL, NULL}
+};
+
+void ScriptObject::createLuaState()
+{
+    L = luaL_newstate();
+
+    lua_pushlightuserdata(L, this);
+    lua_setglobal(L, "__ScriptObjectPointer");
+    
+    /* call open functions from 'loadedlibs' and set results to global table */
+    for (const luaL_Reg *lib = loadedlibs; lib->func; lib++)
+    {
+        luaL_requiref(L, lib->name, lib->func, 1);
+        lua_pop(L, 1);  /* remove lib */
+    }
+    
+    lua_register(L, "random", lua_random);
+    lua_register(L, "destroyScript", lua_destroyScript);
+    
+    for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
+        item->register_function(L);
+}
+
 bool ScriptObject::run(string filename)
 {
     if (L == NULL)
-    {
-        L = luaL_newstate();
-    
-        lua_pushlightuserdata(L, this);
-        lua_setglobal(L, "__ScriptObjectPointer");
-        luaL_openlibs(L);
-        lua_register(L, "random", lua_random);
-        lua_register(L, "destroyScript", lua_destroyScript);
-        
-        for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
-            item->register_function(L);
-    }
+        createLuaState();
 
 #if AUTO_RELOAD_SCRIPT
     struct stat fileInfo;
