@@ -9,7 +9,23 @@ Logging::Logging(ELogLevel level, string file, int line, string function_name)
     do_logging = level >= global_level;
     
     if (do_logging)
-        printf(">");
+    {
+        switch(level)
+        {
+        case LOGLEVEL_DEBUG:
+            printf("[DEBUG] ");
+            break;
+        case LOGLEVEL_INFO:
+            printf("[INFO]  ");
+            break;
+        case LOGLEVEL_WARNING:
+            printf("[WARN]  ");
+            break;
+        case LOGLEVEL_ERROR:
+            printf("[ERROR] ");
+            break;
+        }
+    }
 }
 
 Logging::~Logging()
