@@ -4,27 +4,36 @@
 #include "resources.h"
 #include "scriptInterface.h"
 
+/// Object which can be used to create and run another script.
+/// Other scripts have their own lifetime, update and init functions.
+/// Scripts can destroy themselves, or be destroyed by the main script.
 REGISTER_SCRIPT_CLASS(ScriptObject)
 {
+    /// Run a script with a certain filename
     REGISTER_SCRIPT_CLASS_FUNCTION(ScriptObject, run);
+    /// Set a global variable in this script instance, this variable can be accessed in the main script.
     REGISTER_SCRIPT_CLASS_FUNCTION(ScriptObject, setGlobal);
 }
 
-int lua_random(lua_State* L)
+static int random(lua_State* L)
 {
     float rMin = luaL_checknumber(L, 1);
     float rMax = luaL_checknumber(L, 2);
     lua_pushnumber(L, random(rMin, rMax));
     return 1;
 }
+/// Generate a random number between the min and max value.
+REGISTER_SCRIPT_FUNCTION(random);
 
-int lua_destroyScript(lua_State* L)
+static int destroyScript(lua_State* L)
 {
     lua_getglobal(L, "__ScriptObjectPointer");
     ScriptObject* obj = static_cast<ScriptObject*>(lua_touserdata(L, -1));
     obj->destroy();
     return 0;
 }
+/// Destroy this script instance. Note that the script will keep running till the end of the current script call.
+REGISTER_SCRIPT_FUNCTION(destroyScript);
 
 ScriptObject::ScriptObject()
 {
@@ -64,9 +73,6 @@ void ScriptObject::createLuaState()
         luaL_requiref(L, lib->name, lib->func, 1);
         lua_pop(L, 1);  /* remove lib */
     }
-    
-    lua_register(L, "random", lua_random);
-    lua_register(L, "destroyScript", lua_destroyScript);
     
     for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
         item->register_function(L);
