@@ -12,7 +12,7 @@ REGISTER_SCRIPT_CLASS(ScriptObject)
     /// Run a script with a certain filename
     REGISTER_SCRIPT_CLASS_FUNCTION(ScriptObject, run);
     /// Set a global variable in this script instance, this variable can be accessed in the main script.
-    REGISTER_SCRIPT_CLASS_FUNCTION(ScriptObject, setGlobal);
+    REGISTER_SCRIPT_CLASS_FUNCTION(ScriptObject, setVariable);
 }
 
 static int random(lua_State* L)
@@ -27,13 +27,14 @@ REGISTER_SCRIPT_FUNCTION(random);
 
 static int destroyScript(lua_State* L)
 {
-    lua_getglobal(L, "__ScriptObjectPointer");
-    ScriptObject* obj = static_cast<ScriptObject*>(lua_touserdata(L, -1));
+    ScriptObject* obj = static_cast<ScriptObject*>(lua_touserdata(L, lua_upvalueindex(1)));
     obj->destroy();
     return 0;
 }
 /// Destroy this script instance. Note that the script will keep running till the end of the current script call.
-REGISTER_SCRIPT_FUNCTION(destroyScript);
+//REGISTER_SCRIPT_FUNCTION(destroyScript);//Not registered as a normal function, as it needs a reference to the ScriptObject, which is passed as an upvalue.
+
+lua_State* ScriptObject::L = NULL;
 
 ScriptObject::ScriptObject()
 {
@@ -42,7 +43,7 @@ ScriptObject::ScriptObject()
 
 ScriptObject::ScriptObject(string filename)
 {
-    L = NULL;
+    createLuaState();
     run(filename);
 }
 
@@ -62,35 +63,47 @@ static const luaL_Reg loadedlibs[] = {
 
 void ScriptObject::createLuaState()
 {
-    L = luaL_newstate();
-
-    lua_pushlightuserdata(L, this);
-    lua_setglobal(L, "__ScriptObjectPointer");
-    
-    /* call open functions from 'loadedlibs' and set results to global table */
-    for (const luaL_Reg *lib = loadedlibs; lib->func; lib++)
+    if (L == NULL)
     {
-        luaL_requiref(L, lib->name, lib->func, 1);
-        lua_pop(L, 1);  /* remove lib */
+        L = luaL_newstate();
+
+        /* call open functions from 'loadedlibs' and set results to global table */
+        for (const luaL_Reg *lib = loadedlibs; lib->func; lib++)
+        {
+            luaL_requiref(L, lib->name, lib->func, 1);
+            lua_pop(L, 1);  /* remove lib */
+        }
+        
+        for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
+            item->register_function(L);
     }
+
+    //Setup a new table as the first upvalue. This will be used as "global" environment for the script. And thus will prevent global namespace polution.
+    lua_newtable(L);  /* environment for loaded function */
     
-    for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
-        item->register_function(L);
+    lua_newtable(L);  /* meta table for the environment, with an __index pointing to the general global table so we can access every global function */
+    lua_pushstring(L, "__index");
+    lua_pushglobaltable(L);
+    lua_rawset(L, -3);
+    lua_setmetatable(L, -2);
+
+    //Register the destroyScript function. This needs a reference back to the script object, we pass this as an upvalue.
+    lua_pushstring(L, "destroyScript");
+    lua_pushlightuserdata(L, this);
+    lua_pushcclosure(L, destroyScript, 1);
+    lua_rawset(L, -3);
+    
+    //Register the environment table for this script object in the registry.
+    lua_pushlightuserdata(L, this);
+    lua_pushvalue(L, -2);
+    lua_settable(L, LUA_REGISTRYINDEX);
+    
+    //Pop the environment table from the stack
+    lua_pop(L, 1);
 }
 
 bool ScriptObject::run(string filename)
 {
-    if (L == NULL)
-        createLuaState();
-
-#if AUTO_RELOAD_SCRIPT
-    struct stat fileInfo;
-    stat(filename, &fileInfo);
-    scriptModifyTime = fileInfo.st_mtime;
-    lua_pushstring(L, filename);
-    lua_setglobal(L, "__ScriptFilename");
-#endif
-    
     LOG(INFO) << "Load script: " << filename;
     P<ResourceStream> stream = getResourceStream(filename);
     if (!stream)
@@ -105,66 +118,81 @@ bool ScriptObject::run(string filename)
         string line = stream->readLine();
         filecontents += line + "\n";
     }while(stream->tell() < stream->getSize());
-    
+
     if (luaL_loadstring(L, filecontents.c_str()))
     {
         LOG(ERROR) << "LUA: load: " << luaL_checkstring(L, -1);
         destroy();
         return false;
     }
+
+    //Get the environment table from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    //set the environment table it as 1st upvalue
+    lua_setupvalue(L, -2, 1);
+    
+    //Call the actual code.
     if (lua_pcall(L, 0, 0, 0))
     {
         LOG(ERROR) << "LUA: run: " << luaL_checkstring(L, -1);
+        lua_pop(L, 1);
         destroy();
         return false;
     }
     
-    lua_getglobal(L, "init");
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    lua_pushstring(L, "init");
+    lua_rawget(L, -2);
+    lua_remove(L, -2);
+    
     if (lua_isnil(L, -1))
     {
         lua_pop(L, 1);
-        //printf("WARNING(no init function): %s\n", filename);
+        //LOG(WARNING) << "WARNING(no init function): " << filename;
     }else if (lua_pcall(L, 0, 0, 0))
     {
         LOG(ERROR) << "LUA: init: " << luaL_checkstring(L, -1);
+        lua_pop(L, 1);
         return false;
     }
     return true;
 }
 
-void ScriptObject::setGlobal(string global_name, string value)
+void ScriptObject::setVariable(string variable_name, string value)
 {
-    if (L)
-    {
-        lua_pushstring(L, value.c_str());
-        lua_setglobal(L, global_name.c_str());
-    }
-}
-
-void ScriptObject::clean()
-{
-    if (L)
-    {
-        lua_close(L);
-        L = NULL;
-    }
+    //Get the environment table from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    
+    //Set our variable in this environment table
+    lua_pushstring(L, variable_name.c_str());
+    lua_pushstring(L, value.c_str());
+    lua_settable(L, -3);
+    
+    //Pop the table
+    lua_pop(L, 1);
 }
 
 void ScriptObject::registerObject(P<PObject> object, string variable_name)
 {
-    if (!L)
-        return;
-    string class_name = getScriptClassClassNameFromObject(object);
-    if (class_name != "")
+    //Get the environment table from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+
+    //Set our global in this environment table
+    lua_pushstring(L, variable_name.c_str());
+    
+    if (convert< P<PObject> >::returnType(L, object))
     {
-        P<PObject>** p = static_cast< P<PObject>** >(lua_newuserdata(L, sizeof(P<PObject>*)));
-        *p = new P<PObject>();
-        (**p) = object;
-        luaL_getmetatable(L, class_name.c_str());
-        lua_setmetatable(L, -2);
-        lua_setglobal(L, variable_name.c_str());
+        lua_settable(L, -3);
+        //Pop the environment table
+        lua_pop(L, 1);
     }else{
         LOG(ERROR) << "Failed to find class for object " << variable_name;
+        //Need to pop the variable name and the environment table.
+        lua_pop(L, 2);
     }
 }
 
@@ -172,7 +200,20 @@ bool ScriptObject::runCode(string code)
 {
     if (!L)
         return false;
-    if (luaL_dostring(L, code.c_str()))
+    if (luaL_loadstring(L, code.c_str()))
+    {
+        LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
+        lua_pop(L, 1);
+        return false;
+    }
+
+    //Get the environment table from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    //Set it as the first upvalue so it becomes the environment for this call.
+    lua_setupvalue(L, -2, 1);
+    
+    if (lua_pcall(L, 0, LUA_MULTRET, 0))
     {
         LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
         lua_pop(L, 1);
@@ -224,7 +265,20 @@ bool ScriptObject::runCode(string code, string& json_output)
 {
     if (!L)
         return false;
-    if (luaL_dostring(L, code.c_str()))
+    if (luaL_loadstring(L, code.c_str()))
+    {
+        LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
+        lua_pop(L, 1);
+        return false;
+    }
+
+    //Get the environment table from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    //Set it as the first upvalue so it becomes the environment for this call.
+    lua_setupvalue(L, -2, 1);
+    
+    if (lua_pcall(L, 0, LUA_MULTRET, 0))
     {
         LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
         lua_pop(L, 1);
@@ -246,18 +300,26 @@ bool ScriptObject::callFunction(string name)
 {
     if (!L)
         return false;
-    lua_getglobal(L, name.c_str());
+    //Get our environment from the registry
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    //Get the function from the environment
+    lua_pushstring(L, name.c_str());
+    lua_gettable(L, -2);
+    //Call the function
     if (lua_pcall(L, 0, 0, 0))
     {
         printf("ERROR(%s): %s\n", name.c_str(), luaL_checkstring(L, -1));
-        lua_pop(L, 1);
+        lua_pop(L, 2);
         return false;
     }
+    lua_pop(L, 1);
     return true;
 }
 
 static void runCyclesHook(lua_State *L, lua_Debug *ar)
 {
+    //TODO: !
     lua_pushstring(L, "Max execution limit reached. Aborting.");
     lua_error(L);
 }
@@ -266,64 +328,70 @@ void ScriptObject::setMaxRunCycles(int count)
 {
     if (!L)
         return;
+    //TODO: !
     lua_sethook(L, runCyclesHook, LUA_MASKCOUNT, count);
 }
 
 ScriptObject::~ScriptObject()
 {
-    clean();
+    //Remove our environment from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_pushnil(L);
+    lua_settable(L, LUA_REGISTRYINDEX);
 }
 
 void ScriptObject::update(float delta)
 {
-#if AUTO_RELOAD_SCRIPT
-    if (L)
-    {
-        lua_getglobal(L, "__ScriptFilename");
-        const char* filename = luaL_checkstring(L, -1);
-        lua_pop(L, 1);
-        
-        struct stat fileInfo;
-        stat(filename, &fileInfo);
-        if (scriptModifyTime != fileInfo.st_mtime)
-        {
-            scriptModifyTime = fileInfo.st_mtime;
-            printf("Reload: %s\n", filename);
-            if (luaL_loadfile(L, filename))
-            {
-                LOG(ERROR) << "LUA: load: " << luaL_checkstring(L, -1));
-                destroy();
-                return;
-            }
-            if (lua_pcall(L, 0, 0, 0))
-            {
-                LOG(ERROR) << "LUA: run: " << luaL_checkstring(L, -1));
-                destroy();
-                return;
-            }
-        }
-    }
-#endif
-
-    if (L)
-    {
 #ifdef DEBUG
-        //Run the garbage collector every update when debugging, to better debug references and leaks.
-        lua_gc(L, LUA_GCCOLLECT, 0);
+    //Run the garbage collector every update when debugging, to better debug references and leaks.
+    lua_gc(L, LUA_GCCOLLECT, 0);
 #endif
-        lua_getglobal(L, "update");
-        if (lua_isnil(L, -1))
+    // Get the reference to our environment from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    // Get the update function from the script environment
+    lua_pushstring(L, "update");
+    lua_gettable(L, -2);
+    
+    // If it's a function, call it, if not, pop the environment and the function from the stack.
+    if (!lua_isfunction(L, -1))
+    {
+        lua_pop(L, 2);
+    }else{
+        lua_pushnumber(L, delta);
+        if (lua_pcall(L, 1, 0, 0))
         {
-            lua_pop(L, 1);
-        }else{
-            lua_pushnumber(L, delta);
-            if (lua_pcall(L, 1, 0, 0))
-            {
-                LOG(ERROR) << "LUA: update: " << luaL_checkstring(L, -1);
-                lua_pop(L, 1);
-                return;
-            }
+            LOG(ERROR) << "LUA: update: " << luaL_checkstring(L, -1);
+            lua_pop(L, 2);
+            return;
         }
+        lua_pop(L, 1);
+    }
+}
+
+void ScriptObject::clearDestroyedObjects()
+{
+    lua_pushnil(L);
+    while (lua_next(L, LUA_REGISTRYINDEX) != 0)
+    {
+        if (lua_islightuserdata(L, -2) && lua_istable(L, -1))
+        {   
+            lua_pushstring(L, "__ptr");
+            lua_rawget(L, -2);
+            if (lua_isuserdata(L, -1))
+            {
+                P<PObject>** p = static_cast< P<PObject>** >(lua_touserdata(L, -1));
+                if (***p == NULL)
+                {
+                    lua_pushvalue(L, -3);
+                    lua_pushnil(L);
+                    lua_settable(L, LUA_REGISTRYINDEX);
+                }
+            }
+            lua_pop(L, 1);
+        }
+        /* removes 'value'; keeps 'key' for next iteration */
+        lua_pop(L, 1);
     }
 }
 
@@ -331,8 +399,9 @@ void ScriptCallback::operator() ()
 {
     if (functionName.size() < 1 || !script)
         return;
+    //TODO:
+    /*
     lua_State* L = script->L;
-    
     lua_getglobal(L, functionName.c_str());
     if (lua_isnil(L, -1))
     {
@@ -349,4 +418,5 @@ void ScriptCallback::operator() ()
         lua_pop(L, 1);
         return;
     }
+    */
 }

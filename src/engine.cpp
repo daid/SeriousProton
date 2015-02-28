@@ -59,6 +59,7 @@ void Engine::runMainLoop()
                 u->update(delta);
             elapsedTime += delta;
             CollisionManager::handleCollisions(delta);
+            ScriptObject::clearDestroyedObjects();
             
             sf::sleep(sf::seconds(1.0/60.0 - delta));
         }
@@ -140,6 +141,7 @@ void Engine::runMainLoop()
                 u->update(delta);
             elapsedTime += delta;
             CollisionManager::handleCollisions(delta);
+            ScriptObject::clearDestroyedObjects();
 
             // Clear the window
             windowManager->render();

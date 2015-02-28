@@ -66,7 +66,17 @@ template<class T> struct convert<T*>
 {
     static void param(lua_State* L, int& idx, T*& ptr)
     {
-        P<PObject>** p = static_cast< P<PObject>** >(lua_touserdata(L, idx++));
+        if (!lua_istable(L, idx))
+        {
+            const char *msg = lua_pushfstring(L, "Object expected, got %s", luaL_typename(L, idx));
+            luaL_argerror(L, idx, msg);
+            return;
+        }
+        lua_pushstring(L, "__ptr");
+        lua_gettable(L, idx++);
+        
+        P<PObject>** p = static_cast< P<PObject>** >(lua_touserdata(L, -1));
+        lua_pop(L, 1);
         if (p == NULL)
         {
             ptr = NULL;
@@ -84,7 +94,17 @@ template<class T> struct convert< P<T> >
 {
     static void param(lua_State* L, int& idx, P<T>& ptr)
     {
-        P<PObject>** p = static_cast< P<PObject>** >(lua_touserdata(L, idx++));
+        if (!lua_istable(L, idx))
+        {
+            const char *msg = lua_pushfstring(L, "Object expected, got %s", luaL_typename(L, idx));
+            luaL_argerror(L, idx, msg);
+            return;
+        }
+        lua_pushstring(L, "__ptr");
+        lua_gettable(L, idx++);
+        
+        P<PObject>** p = static_cast< P<PObject>** >(lua_touserdata(L, -1));
+        lua_pop(L, 1);
         if (p == NULL)
         {
             ptr = NULL;
@@ -98,14 +118,38 @@ template<class T> struct convert< P<T> >
     
     static int returnType(lua_State* L, P<T> object)
     {
+        PObject* ptr = *object;
+        if (!ptr)
+            return 0;
+        
+        //Try to find this object in the global registry.
+        lua_pushlightuserdata(L, ptr);
+        lua_gettable(L, LUA_REGISTRYINDEX);
+        if (lua_istable(L, -1))
+        {
+            //Object table already created, so just return a reference to that.
+            return 1;
+        }
+        lua_pop(L, 1);
+
         string class_name = getScriptClassClassNameFromObject(object);
         if (class_name != "")
         {
+            lua_newtable(L);
+
+            luaL_getmetatable(L, class_name.c_str());
+            lua_setmetatable(L, -2);
+            
+            lua_pushstring(L, "__ptr");
             P<PObject>** p = static_cast< P<PObject>** >(lua_newuserdata(L, sizeof(P<PObject>*)));
             *p = new P<PObject>();
             (**p) = object;
-            luaL_getmetatable(L, class_name.c_str());
-            lua_setmetatable(L, -2);
+            lua_settable(L, -3);
+
+            lua_pushlightuserdata(L, ptr);
+            lua_pushvalue(L, -2);
+            lua_settable(L, LUA_REGISTRYINDEX);
+            
             return 1;
         }
         return 0;
@@ -195,25 +239,19 @@ template<typename T> struct convert<std::vector<sf::Vector3<T> > >
 
 template<class T, typename FuncProto> struct call
 {
-    typedef P<T>* PT;
 };
 
 template<class T> struct call<T, void(T::*)() >
 {
-    typedef P<PObject>* PT;
     typedef void(T::*FuncProto)();
     
     static int function(lua_State* L)
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        if (p == NULL)
-        {
-            //Function called without object...
-            return 0;
-        }
-        T* obj = dynamic_cast<T*>(***p);
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
         if (obj)
             (obj->*func)();
         lua_pushvalue(L, 1);
@@ -223,20 +261,15 @@ template<class T> struct call<T, void(T::*)() >
 
 template<class T, class R> struct call<T, R(T::*)() >
 {
-    typedef P<PObject>* PT;
     typedef R(T::*FuncProto)();
     
     static int function(lua_State* L)
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        if (p == NULL)
-        {
-            //Function called without object...
-            return 0;
-        }
-        T* obj = dynamic_cast<T*>(***p);
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
         if (obj)
         {
             R r = (obj->*func)();
@@ -257,21 +290,19 @@ template<class T> struct call<T, ScriptCallback T::* >
     {
         CallbackProto* callback_ptr = reinterpret_cast<CallbackProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         CallbackProto callback = *callback_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        if (p == NULL)
-        {
-            //Function called without object...
-            return 0;
-        }
-        T* obj = dynamic_cast<T*>(***p);
+        T* obj;
+        convert< T* >::param(L, 1, obj);
         if (obj)
         {
+            /*
+            TODO:
             lua_getglobal(L, "__ScriptObjectPointer");
             ScriptObject* script = static_cast<ScriptObject*>(lua_touserdata(L, -1));
             lua_pop(L, 1);
             
             (obj->*callback).script = script;
             (obj->*callback).functionName = luaL_checkstring(L, 2);
+            */
         }
         lua_pushvalue(L, 1);
         return 1;
@@ -280,17 +311,16 @@ template<class T> struct call<T, ScriptCallback T::* >
 
 template<class T, typename P1> struct call<T, void(T::*)(P1) >
 {
-    typedef P<PObject>* PT;
     typedef void(T::*FuncProto)(P1 p1);
     
     static int function(lua_State* L)
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        T* obj = dynamic_cast<T*>(***p);
+        T* obj;
         P1 p1;
-        int idx = 2;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
         if (obj)
             (obj->*func)(p1);
@@ -301,17 +331,16 @@ template<class T, typename P1> struct call<T, void(T::*)(P1) >
 
 template<class T, typename R, typename P1> struct call<T, R(T::*)(P1) >
 {
-    typedef P<PObject>* PT;
     typedef R(T::*FuncProto)(P1 p1);
     
     static int function(lua_State* L)
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        T* obj = dynamic_cast<T*>(***p);
         P1 p1;
-        int idx = 2;
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
         if (obj)
         {
@@ -324,18 +353,17 @@ template<class T, typename R, typename P1> struct call<T, R(T::*)(P1) >
 
 template<class T, typename P1, typename P2> struct call<T, void(T::*)(P1, P2) >
 {
-    typedef P<PObject>* PT;
     typedef void(T::*FuncProto)(P1 p1, P2 p2);
     
     static int function(lua_State* L)
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        T* obj = dynamic_cast<T*>(***p);
         P1 p1;
         P2 p2;
-        int idx = 2;
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
         convert<P2>::param(L, idx, p2);
         if (obj)
@@ -347,19 +375,18 @@ template<class T, typename P1, typename P2> struct call<T, void(T::*)(P1, P2) >
 
 template<class T, typename P1, typename P2, typename P3> struct call<T, void(T::*)(P1, P2, P3) >
 {
-    typedef P<PObject>* PT;
     typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3);
     
     static int function(lua_State* L)
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        T* obj = dynamic_cast<T*>(***p);
         P1 p1;
         P2 p2;
         P3 p3;
-        int idx = 2;
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
         convert<P2>::param(L, idx, p2);
         convert<P3>::param(L, idx, p3);
@@ -372,20 +399,19 @@ template<class T, typename P1, typename P2, typename P3> struct call<T, void(T::
 
 template<class T, typename P1, typename P2, typename P3, typename P4> struct call<T, void(T::*)(P1, P2, P3, P4) >
 {
-    typedef P<PObject>* PT;
     typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3, P4 p4);
     
     static int function(lua_State* L)
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        T* obj = dynamic_cast<T*>(***p);
         P1 p1;
         P2 p2;
         P3 p3;
         P4 p4;
-        int idx = 2;
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
         convert<P2>::param(L, idx, p2);
         convert<P3>::param(L, idx, p3);
@@ -399,21 +425,20 @@ template<class T, typename P1, typename P2, typename P3, typename P4> struct cal
 
 template<class T, typename P1, typename P2, typename P3, typename P4, typename P5> struct call<T, void(T::*)(P1, P2, P3, P4, P5) >
 {
-    typedef P<PObject>* PT;
     typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5);
     
     static int function(lua_State* L)
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        T* obj = dynamic_cast<T*>(***p);
         P1 p1;
         P2 p2;
         P3 p3;
         P4 p4;
         P5 p5;
-        int idx = 2;
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
         convert<P2>::param(L, idx, p2);
         convert<P3>::param(L, idx, p3);
@@ -428,22 +453,21 @@ template<class T, typename P1, typename P2, typename P3, typename P4, typename P
 
 template<class T, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6> struct call<T, void(T::*)(P1, P2, P3, P4, P5, P6) >
 {
-    typedef P<PObject>* PT;
     typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6);
     
     static int function(lua_State* L)
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        PT* p = static_cast< PT* >(lua_touserdata(L, 1));
-        T* obj = dynamic_cast<T*>(***p);
         P1 p1;
         P2 p2;
         P3 p3;
         P4 p4;
         P5 p5;
         P6 p6;
-        int idx = 2;
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
         convert<P2>::param(L, idx, p2);
         convert<P3>::param(L, idx, p3);
@@ -466,25 +490,29 @@ public:
 
     static int gc_collect(lua_State* L)
     {
-        if (lua_istable(L, -1))//When a subclass is destroyed, it's metatable might call the __gc function on it's sub-metatable. So we can get tables here ignore them.
+        if (!lua_istable(L, -1))
             return 0;
-        PT* p = static_cast< PT* >(lua_touserdata(L, -1));
-        //printf("Collect: %p %s\n", dynamic_cast<T*>(***p), objectTypeName);
-        if (*p)
-            delete *p;
+        lua_pushstring(L, "__ptr");
+        lua_gettable(L, -2);
+        if (lua_isuserdata(L, -1)) //When a subclass is destroyed, it's metatable might call the __gc function on it's sub-metatable. So we can get nil values here, ignore that.
+        {
+            PT* p = static_cast< PT* >(lua_touserdata(L, -1));
+            if (*p)
+                delete *p;
+        }
+        lua_pop(L, 1);
         return 0;
     }
     
     static int create(lua_State* L)
     {
-        PT* p = static_cast< PT* >(lua_newuserdata(L, sizeof(PT)));
-        *p = new P<PObject>();
-        T* ptr = new T();
-        (**p) = ptr;
-        //printf("Create: %p %s\n", ptr, objectTypeName);
-        luaL_getmetatable(L, objectTypeName);
-        lua_setmetatable(L, -2);
-        return 1;
+        P<T> ptr = new T();
+        
+        if (convert< P<T> >::returnType(L, ptr))
+            return 1;
+        LOG(ERROR) << "Failed to register pointer in script when creating an object...";
+        ptr->destroy();
+        return 0;
     }
 
     static int no_create(lua_State* L)
@@ -494,16 +522,21 @@ public:
     
     static int isValid(lua_State* L)
     {
-        PT* p = static_cast< PT* >(lua_touserdata(L, -1));
-        lua_pushboolean(L, (***p) != NULL);
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
+        lua_pushboolean(L, obj != NULL);
         return 1;
     }
     
     static int destroy(lua_State* L)
     {
-        PT* p = static_cast< PT* >(lua_touserdata(L, -1));
-        if ((***p) != NULL)
-            (***p)->destroy();
+        T* obj;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
+        
+        if (obj != NULL)
+            obj->destroy();
         return 0;
     }
     
@@ -593,6 +626,7 @@ public:
     template<class TT, class FuncProto>
     static void addCallback(lua_State* L, int table, const char* functionName, FuncProto func)
     {
+        assert(false); //Callbacks are broken right now.
         lua_pushstring(L, functionName);
         FuncProto* ptr = reinterpret_cast<FuncProto*>(lua_newuserdata(L, sizeof(FuncProto)));
         *ptr = func;

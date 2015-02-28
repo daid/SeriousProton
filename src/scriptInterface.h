@@ -5,29 +5,24 @@
 #include "stringImproved.h"
 #include "Updatable.h"
 
-#define AUTO_RELOAD_SCRIPT 0
-
 class ScriptObject : public Updatable
 {
-    lua_State* L;
-#if AUTO_RELOAD_SCRIPT
-    time_t scriptModifyTime;
-#endif
+    static lua_State* L;
 public:
     ScriptObject();
     ScriptObject(string filename);
     virtual ~ScriptObject();
     
     bool run(string filename);
-    void clean();
     void registerObject(P<PObject> object, string variable_name);
-    void setGlobal(string global_name, string value);
+    void setVariable(string variable_name, string value);
     bool runCode(string code);
     bool runCode(string code, string& json_output);
     bool callFunction(string name);
     void setMaxRunCycles(int count);
     virtual void update(float delta);
 
+    static void clearDestroyedObjects();
 private:
     void createLuaState();
     

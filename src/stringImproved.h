@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string>
+#include <limits>
 #include <vector>
 #include <sstream>
 #include <iomanip>
@@ -60,7 +61,7 @@ public:
         substr works the same as the [start:end] operator in python, allowing negative indexes to get the back of the string.
         It is also garanteed to be safe. So if you request an out of range index, you will get an empty string.
     */
-    string substr(const int pos = 0, const int endpos = 0xFFFFFF) const //TODO: 0xFFFFFF should be INT_MAX
+    string substr(const int pos = 0, const int endpos = std::numeric_limits<int>::max()) const
     {
         int start = pos;
         int end = endpos;
