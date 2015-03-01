@@ -191,7 +191,7 @@ void Collisionable::setCollisionShape(const std::vector<sf::Vector2f>& shapeList
             b2FixtureDef shapeDef;
             shapeDef.shape = &shape;
             shapeDef.density = 1.0;
-            shapeDef.friction = 0.1;
+            shapeDef.friction = 0.0;
             shapeDef.isSensor = !enable_physics;
             body->CreateFixture(&shapeDef);
         }
@@ -228,7 +228,7 @@ void Collisionable::createBody(b2Shape* shape)
     b2FixtureDef shapeDef;
     shapeDef.shape = shape;
     shapeDef.density = 1.0;
-    shapeDef.friction = 0.1;
+    shapeDef.friction = 0.0;
     shapeDef.isSensor = !enable_physics;
     body->CreateFixture(&shapeDef);
 }
