@@ -4,17 +4,6 @@
 #include "resources.h"
 #include "scriptInterface.h"
 
-/// Object which can be used to create and run another script.
-/// Other scripts have their own lifetime, update and init functions.
-/// Scripts can destroy themselves, or be destroyed by the main script.
-REGISTER_SCRIPT_CLASS(ScriptObject)
-{
-    /// Run a script with a certain filename
-    REGISTER_SCRIPT_CLASS_FUNCTION(ScriptObject, run);
-    /// Set a global variable in this script instance, this variable can be accessed in the main script.
-    REGISTER_SCRIPT_CLASS_FUNCTION(ScriptObject, setVariable);
-}
-
 static int random(lua_State* L)
 {
     float rMin = luaL_checknumber(L, 1);
@@ -342,10 +331,6 @@ ScriptObject::~ScriptObject()
 
 void ScriptObject::update(float delta)
 {
-#ifdef DEBUG
-    //Run the garbage collector every update when debugging, to better debug references and leaks.
-    lua_gc(L, LUA_GCCOLLECT, 0);
-#endif
     // Get the reference to our environment from the registry.
     lua_pushlightuserdata(L, this);
     lua_gettable(L, LUA_REGISTRYINDEX);
@@ -369,8 +354,26 @@ void ScriptObject::update(float delta)
     }
 }
 
+void ScriptObject::destroy()
+{
+    //Remove our environment from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_pushnil(L);
+    lua_settable(L, LUA_REGISTRYINDEX);
+    
+    Updatable::destroy();
+    
+    //Running the garbage collector here is good for memory cleaning.
+    lua_gc(L, LUA_GCCOLLECT, 0);
+}
+
 void ScriptObject::clearDestroyedObjects()
 {
+#ifdef DEBUG
+    //Run the garbage collector every update when debugging, to better debug references and leaks.
+    lua_gc(L, LUA_GCCOLLECT, 0);
+#endif
+
     lua_pushnil(L);
     while (lua_next(L, LUA_REGISTRYINDEX) != 0)
     {

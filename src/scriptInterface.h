@@ -22,6 +22,8 @@ public:
     void setMaxRunCycles(int count);
     virtual void update(float delta);
 
+    virtual void destroy();
+
     static void clearDestroyedObjects();
 private:
     void createLuaState();
