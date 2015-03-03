@@ -288,24 +288,61 @@ template<class T> struct call<T, ScriptCallback T::* >
     
     static int setcallbackFunction(lua_State* L)
     {
+        //Check if the parameter is a function.
+        luaL_checktype(L, 2, LUA_TFUNCTION);
+        //Check if this function is a lua function, with an reference to the environment.
+        //  (We need the environment reference to see if the script to which the function belongs is destroyed when calling the callback)
+        if (lua_iscfunction(L, 2))
+            luaL_error(L, "Cannot set a binding as callback function.");
+        lua_getupvalue(L, 2, 1);
+        if (!lua_istable(L, -1))
+            luaL_error(L, "??? Upvalue 1 of function is not a table...");
+        lua_pushstring(L, "__script_pointer");
+        lua_gettable(L, -2);
+        if (!lua_islightuserdata(L, -1))
+            luaL_error(L, "??? Cannot find reference back to script...");
+        //Stack is now: [function_environment] [pointer]
+        
         CallbackProto* callback_ptr = reinterpret_cast<CallbackProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         CallbackProto callback = *callback_ptr;
         T* obj;
-        convert< T* >::param(L, 1, obj);
+        int idx = 1;
+        convert< T* >::param(L, idx, obj);
         if (obj)
         {
-            /*
-            TODO:
-            lua_getglobal(L, "__ScriptObjectPointer");
-            ScriptObject* script = static_cast<ScriptObject*>(lua_touserdata(L, -1));
-            lua_pop(L, 1);
+            ScriptCallback* callback_object = &obj->callback;
+            lua_pushlightuserdata(L, callback_object);
+            lua_gettable(L, LUA_REGISTRYINDEX);
+            //Get the table which matches this callback object. If there is no table, create it.
+            if (lua_isnil(L, -1))
+            {
+                lua_pop(L, 1);
+                lua_newtable(L);
+                lua_pushlightuserdata(L, callback_object);
+                lua_pushvalue(L, -2);
+                lua_settable(L, LUA_REGISTRYINDEX);
+            }
+            //The table at [-1] contains a list of callbacks.
+            //Stack is now [function_environment] [pointer] [callback_table]
             
-            (obj->*callback).script = script;
-            (obj->*callback).functionName = luaL_checkstring(L, 2);
-            */
+            int callback_count = luaL_len(L, -1);
+            lua_pushnumber(L, callback_count + 1);
+            //Push a new table on the stack, store the pointer to the script object and the function in there.
+            lua_newtable(L);
+            lua_pushstring(L, "script_pointer");
+            lua_pushvalue(L, -5);
+            lua_settable(L, -3);
+            lua_pushstring(L, "function");
+            lua_pushvalue(L, 2);
+            lua_settable(L, -3);
+            
+            //Stack is now [function_environment] [pointer] [callback_table] [callback_index] [this_callback_table]
+            //Push the new callback table in the list of callbacks.
+            lua_settable(L, -3);
+            
+            lua_pop(L, 3);
         }
-        lua_pushvalue(L, 1);
-        return 1;
+        return 0;
     }
 };
 
@@ -626,7 +663,6 @@ public:
     template<class TT, class FuncProto>
     static void addCallback(lua_State* L, int table, const char* functionName, FuncProto func)
     {
-        assert(false); //Callbacks are broken right now.
         lua_pushstring(L, functionName);
         FuncProto* ptr = reinterpret_cast<FuncProto*>(lua_newuserdata(L, sizeof(FuncProto)));
         *ptr = func;

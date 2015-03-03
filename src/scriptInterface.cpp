@@ -81,6 +81,11 @@ void ScriptObject::createLuaState()
     lua_pushlightuserdata(L, this);
     lua_pushcclosure(L, destroyScript, 1);
     lua_rawset(L, -3);
+
+    //Register a pointer to this script object in the environment. So we can get a reference back to this object.
+    lua_pushstring(L, "__script_pointer");
+    lua_pushlightuserdata(L, this);
+    lua_rawset(L, -3);
     
     //Register the environment table for this script object in the registry.
     lua_pushlightuserdata(L, this);
@@ -398,28 +403,59 @@ void ScriptObject::clearDestroyedObjects()
     }
 }
 
+ScriptCallback::ScriptCallback()
+{
+}
+
+ScriptCallback::~ScriptCallback()
+{
+    lua_State* L = ScriptObject::L;
+    
+    //Remove ourselves from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_pushnil(L);
+    lua_settable(L, LUA_REGISTRYINDEX);
+}
+
 void ScriptCallback::operator() ()
 {
-    if (functionName.size() < 1 || !script)
+    lua_State* L = ScriptObject::L;
+    
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    if (!lua_istable(L, -1))
         return;
-    //TODO:
-    /*
-    lua_State* L = script->L;
-    lua_getglobal(L, functionName.c_str());
-    if (lua_isnil(L, -1))
+    
+    lua_pushnil(L);
+    while (lua_next(L, -2) != 0)
     {
-        if (luaL_loadstring(L, functionName.c_str()))
+        if (lua_istable(L, -1))
         {
-            LOG(ERROR) << "LUA: " << functionName << ": " << luaL_checkstring(L, -1);
-            lua_pop(L, 1);
-            return;
+            lua_pushstring(L, "script_pointer");
+            lua_rawget(L, -2);
+            //Check if the script pointer is still available as key in the registry. If not, this reference is no longer valid and needs to be removed.
+            lua_gettable(L, LUA_REGISTRYINDEX);
+            if (!lua_istable(L, -1))
+            {
+                //Stack is [callback_table] [callback_key] [callback_entry_table] [script_pointer]
+                lua_pushvalue(L, -3);
+                lua_pushnil(L);
+                lua_settable(L, -6);
+                lua_pop(L, 1);
+            }else{
+                lua_pop(L, 1);
+
+                lua_pushstring(L, "function");
+                lua_rawget(L, -2);
+                
+                if (lua_pcall(L, 0, 0, 0))
+                {
+                    LOG(ERROR) << "Callback function error: " << lua_tostring(L, -1);
+                    lua_pop(L, 1);
+                }
+            }
         }
-    }
-    if (lua_pcall(L, 0, 0, 0))
-    {
-        LOG(ERROR) << "LUA: " << functionName << ": " << luaL_checkstring(L, -1);
+        /* removes 'value'; keeps 'key' for next iteration */
         lua_pop(L, 1);
-        return;
     }
-    */
 }

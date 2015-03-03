@@ -35,12 +35,11 @@ private:
 class ScriptCallback
 {
 public:
-    P<ScriptObject> script;
-    string functionName;
+    string name;
+    ScriptCallback();
+    ~ScriptCallback();
 
     void operator() ();
-    
-    void setCallback(const char* functionName);
 };
 
 #endif//SCRIPT_INTERFACE_H
