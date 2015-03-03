@@ -27,11 +27,15 @@ lua_State* ScriptObject::L = NULL;
 
 ScriptObject::ScriptObject()
 {
+    max_cycle_count = 0;
+    
     createLuaState();
 }
 
 ScriptObject::ScriptObject(string filename)
 {
+    max_cycle_count = 0;
+    
     createLuaState();
     run(filename);
 }
@@ -98,6 +102,8 @@ void ScriptObject::createLuaState()
 
 bool ScriptObject::run(string filename)
 {
+    setCycleLimit();
+
     LOG(INFO) << "Load script: " << filename;
     P<ResourceStream> stream = getResourceStream(filename);
     if (!stream)
@@ -115,7 +121,8 @@ bool ScriptObject::run(string filename)
 
     if (luaL_loadstring(L, filecontents.c_str()))
     {
-        LOG(ERROR) << "LUA: load: " << luaL_checkstring(L, -1);
+        error_string = luaL_checkstring(L, -1);
+        LOG(ERROR) << "LUA: load: " << error_string;
         destroy();
         return false;
     }
@@ -129,7 +136,8 @@ bool ScriptObject::run(string filename)
     //Call the actual code.
     if (lua_pcall(L, 0, 0, 0))
     {
-        LOG(ERROR) << "LUA: run: " << luaL_checkstring(L, -1);
+        error_string = luaL_checkstring(L, -1);
+        LOG(ERROR) << "LUA: run: " << error_string;
         lua_pop(L, 1);
         destroy();
         return false;
@@ -147,7 +155,8 @@ bool ScriptObject::run(string filename)
         //LOG(WARNING) << "WARNING(no init function): " << filename;
     }else if (lua_pcall(L, 0, 0, 0))
     {
-        LOG(ERROR) << "LUA: init: " << luaL_checkstring(L, -1);
+        error_string = luaL_checkstring(L, -1);
+        LOG(ERROR) << "LUA: init: " << error_string;
         lua_pop(L, 1);
         return false;
     }
@@ -192,11 +201,12 @@ void ScriptObject::registerObject(P<PObject> object, string variable_name)
 
 bool ScriptObject::runCode(string code)
 {
-    if (!L)
-        return false;
+    setCycleLimit();
+
     if (luaL_loadstring(L, code.c_str()))
     {
-        LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
+        error_string = luaL_checkstring(L, -1);
+        LOG(ERROR) << "LUA: " << code << ": " << error_string;
         lua_pop(L, 1);
         return false;
     }
@@ -209,7 +219,8 @@ bool ScriptObject::runCode(string code)
     
     if (lua_pcall(L, 0, LUA_MULTRET, 0))
     {
-        LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
+        error_string = luaL_checkstring(L, -1);
+        LOG(ERROR) << "LUA: " << code << ": " << error_string;
         lua_pop(L, 1);
         return false;
     }
@@ -261,7 +272,8 @@ bool ScriptObject::runCode(string code, string& json_output)
         return false;
     if (luaL_loadstring(L, code.c_str()))
     {
-        LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
+        error_string = luaL_checkstring(L, -1);
+        LOG(ERROR) << "LUA: " << code << ": " << error_string;
         lua_pop(L, 1);
         return false;
     }
@@ -274,7 +286,8 @@ bool ScriptObject::runCode(string code, string& json_output)
     
     if (lua_pcall(L, 0, LUA_MULTRET, 0))
     {
-        LOG(ERROR) << "LUA: " << code << ": " << luaL_checkstring(L, -1);
+        error_string = luaL_checkstring(L, -1);
+        LOG(ERROR) << "LUA: " << code << ": " << error_string;
         lua_pop(L, 1);
         return false;
     }
@@ -292,8 +305,8 @@ bool ScriptObject::runCode(string code, string& json_output)
 
 bool ScriptObject::callFunction(string name)
 {
-    if (!L)
-        return false;
+    setCycleLimit();
+
     //Get our environment from the registry
     lua_pushlightuserdata(L, this);
     lua_gettable(L, LUA_REGISTRYINDEX);
@@ -303,7 +316,8 @@ bool ScriptObject::callFunction(string name)
     //Call the function
     if (lua_pcall(L, 0, 0, 0))
     {
-        printf("ERROR(%s): %s\n", name.c_str(), luaL_checkstring(L, -1));
+        error_string = luaL_checkstring(L, -1);
+        LOG(ERROR) << "LUA: " << name << ": " << error_string;
         lua_pop(L, 2);
         return false;
     }
@@ -313,17 +327,21 @@ bool ScriptObject::callFunction(string name)
 
 static void runCyclesHook(lua_State *L, lua_Debug *ar)
 {
-    //TODO: !
     lua_pushstring(L, "Max execution limit reached. Aborting.");
     lua_error(L);
 }
 
+void ScriptObject::setCycleLimit()
+{
+    if (max_cycle_count)
+        lua_sethook(L, runCyclesHook, LUA_MASKCOUNT, max_cycle_count);
+    else
+        lua_sethook(L, NULL, 0, 0);
+}
+
 void ScriptObject::setMaxRunCycles(int count)
 {
-    if (!L)
-        return;
-    //TODO: !
-    lua_sethook(L, runCyclesHook, LUA_MASKCOUNT, count);
+    max_cycle_count = count;
 }
 
 ScriptObject::~ScriptObject()
@@ -334,8 +352,15 @@ ScriptObject::~ScriptObject()
     lua_settable(L, LUA_REGISTRYINDEX);
 }
 
+string ScriptObject::getError()
+{
+    return error_string;
+}
+
 void ScriptObject::update(float delta)
 {
+    setCycleLimit();
+
     // Get the reference to our environment from the registry.
     lua_pushlightuserdata(L, this);
     lua_gettable(L, LUA_REGISTRYINDEX);
@@ -448,6 +473,7 @@ void ScriptCallback::operator() ()
                 lua_pushstring(L, "function");
                 lua_rawget(L, -2);
                 
+                lua_sethook(L, NULL, 0, 0);
                 if (lua_pcall(L, 0, 0, 0))
                 {
                     LOG(ERROR) << "Callback function error: " << lua_tostring(L, -1);
