@@ -1,6 +1,8 @@
 #include "logging.h"
 #include "postProcessManager.h"
 
+bool PostProcessor::global_post_processor_enabled = true;
+
 static int powerOfTwo(int v)
 {
     v--;
@@ -35,7 +37,7 @@ PostProcessor::PostProcessor(string name, RenderChain* chain)
 
 void PostProcessor::render(sf::RenderTarget& window)
 {
-    if (!enabled || !sf::Shader::isAvailable())
+    if (!enabled || !sf::Shader::isAvailable() || !global_post_processor_enabled)
     {
         chain->render(window);
         return;
@@ -71,6 +73,6 @@ void PostProcessor::render(sf::RenderTarget& window)
 
 void PostProcessor::setUniform(string name, float value)
 {
-    if (sf::Shader::isAvailable())
+    if (sf::Shader::isAvailable() && global_post_processor_enabled)
         shader.setParameter(name, value);
 }
