@@ -68,7 +68,7 @@ bool HttpServerConnection::read()
         return false;
     memcpy(recvBuffer + recvBufferCount, buffer, size);
     recvBufferCount += size;
-    
+
     while(true)
     {
         char* ptr = (char*)memchr(recvBuffer, '\n', recvBufferCount);
@@ -88,6 +88,91 @@ bool HttpServerConnection::read()
     return true;
 }
 
+string HttpServerConnection::UriDecode(const string & sSrc)
+{
+   // Note from RFC1630: "Sequences which start with a percent
+   // sign but are not followed by two hexadecimal characters
+   // (0-9, A-F) are reserved for future extension"
+
+   const unsigned char * pSrc = (const unsigned char *)sSrc.c_str();
+   const int SRC_LEN = sSrc.length();
+   const unsigned char * const SRC_END = pSrc + SRC_LEN;
+   // const char DEC2HEX[16 + 1] = "0123456789ABCDEF";
+   // last decodable '%'
+   const unsigned char * const SRC_LAST_DEC = SRC_END - 2;
+
+   char * const pStart = new char[SRC_LEN];
+   char * pEnd = pStart;
+
+   while (pSrc < SRC_LAST_DEC)
+   {
+      if (*pSrc == '%')
+      {
+         char dec1, dec2;
+         if (-1 != (dec1 = HEX2DEC[*(pSrc + 1)])
+            && -1 != (dec2 = HEX2DEC[*(pSrc + 2)]))
+         {
+            *pEnd++ = (dec1 << 4) + dec2;
+            pSrc += 3;
+            continue;
+         }
+      }
+
+      *pEnd++ = *pSrc++;
+   }
+
+   // the last 2- chars
+   while (pSrc < SRC_END)
+      *pEnd++ = *pSrc++;
+
+   std::string sResult(pStart, pEnd);
+   delete [] pStart;
+   return (string) sResult;
+}
+
+void HttpServerConnection::parseUri(const string & sSrc)
+{
+    string uri = UriDecode(sSrc);
+    std::size_t found = uri.find('?');
+    if (found==std::string::npos)
+    {
+        request.path = uri;
+        return;
+    }
+    else
+    {
+        std::vector<string> parts = uri.split("?", 1);
+        request.path = parts[0];
+
+        std::vector<string> parameters = parts[1].split("&");
+        for (unsigned int n=0; n<parameters.size(); n++)
+        {
+            string param = parameters[n];
+            std::size_t found = param.find('=');
+            if (found==std::string::npos)
+            {
+                request.parameters[param] = sFALSE;
+                LOG(DEBUG) << "HTTP Parameter: " << param;
+            }
+            else
+            {
+                if (param.endswith('='))
+                {
+                    request.parameters[param.substr(0, param.length()-1)] = sFALSE;
+                    LOG(DEBUG) << "HTTP Parameter: " << param.substr(0, param.length()-1);
+                }
+                else
+                {
+                    std::vector<string> items = param.split("=", 1);
+                    request.parameters[items[0]] = items[1];
+                    LOG(DEBUG) << "HTTP Parameter: " << items[0] << " = " << items[1];
+                }
+            }
+        }
+    }
+    LOG(DEBUG) << "HTTP Path: " << request.path;
+}
+
 bool HttpServerConnection::handleLine(string line)
 {
     switch(status)
@@ -97,7 +182,8 @@ bool HttpServerConnection::handleLine(string line)
         if (parts.size() != 3)
             return false;
         request.method = parts[0];
-        request.path = parts[1];
+        parseUri(parts[1]);
+        //request.path = parts[1];
         status = HEADERS;
         }break;
     case HEADERS:
@@ -125,6 +211,14 @@ bool HttpServerConnection::handleLine(string line)
             }
             status = METHOD;
             LOG(DEBUG) << "HTTP request: " << request.path;
+#ifdef DEBUG
+            for (std::map<string, string>::iterator iter = request.headers.begin(); iter != request.headers.end(); iter++)
+            {
+                string key=iter->first;
+                string value=iter->second;
+                LOG(DEBUG) << "HTTP header: (" << key << ", " << value << ")";
+            }
+#endif // DEBUG
             handleRequest();
         }else{
             std::vector<string> parts = line.split(":", 1);
@@ -142,7 +236,7 @@ void HttpServerConnection::handleRequest()
 {
     reply_code = 200;
     headers_send = false;
-    
+
     for(unsigned int n=0; n<server->handlers.size(); n++)
     {
         if (server->handlers[n]->handleRequest(request, this))
@@ -150,7 +244,7 @@ void HttpServerConnection::handleRequest()
         if (headers_send)
             break;
     }
-    
+
     if (!headers_send)
     {
         reply_code = 404;
@@ -159,6 +253,7 @@ void HttpServerConnection::handleRequest()
     }
     string end_chunk = "0\r\n\r\n";
     socket.send(end_chunk.c_str(), end_chunk.size());
+    request.parameters.clear();
 }
 
 void HttpServerConnection::sendHeaders()
@@ -184,6 +279,30 @@ void HttpServerConnection::sendData(const char* data, size_t data_length)
     socket.send("\r\n", 2);
 }
 
+const char HttpServerConnection::HEX2DEC[256] =
+{
+    /*       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F */
+    /* 0 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 1 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 2 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 3 */  0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
+
+    /* 4 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 5 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 6 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 7 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+
+    /* 8 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 9 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* A */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* B */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+
+    /* C */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* D */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* E */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* F */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1
+};
+
 bool HttpRequestFileHandler::handleRequest(HttpRequest& request, HttpServerConnection* connection)
 {
     string replyData = "";
@@ -192,7 +311,7 @@ bool HttpRequestFileHandler::handleRequest(HttpRequest& request, HttpServerConne
         request.path = "/index.html";
     if (request.path.find("..") != -1)
         return false;
-    
+
     string fullPath = base_path + request.path;
     f = fopen(fullPath.c_str(), "rb");
     if (!f)

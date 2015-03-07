@@ -5,6 +5,9 @@
 #include "Updatable.h"
 #include "stringImproved.h"
 
+#define sFALSE  "FALSE"
+#define sOBJECT "OBJECT"
+
 class HttpRequest : public sf::NonCopyable
 {
 public:
@@ -12,6 +15,7 @@ public:
     string path;
     string post_data;
     std::map<string, string> headers;
+    std::map<string, string> parameters;
 };
 
 class HttpServer;
@@ -21,7 +25,7 @@ class HttpRequestHandler : public sf::NonCopyable
 public:
     HttpRequestHandler() {}
     virtual ~HttpRequestHandler() {}
-    
+
     virtual bool handleRequest(HttpRequest& request, HttpServerConnection* connection) = 0;
 };
 
@@ -30,7 +34,7 @@ class HttpRequestFileHandler : public HttpRequestHandler
     string base_path;
 public:
     HttpRequestFileHandler(string base_path) : base_path(base_path) {}
-    
+
     virtual bool handleRequest(HttpRequest& request, HttpServerConnection* connection);
 };
 
@@ -46,22 +50,23 @@ private:
     const static size_t recvBufferSize = 2048;
     char recvBuffer[recvBufferSize];
     size_t recvBufferCount;
-    
+    const static char HEX2DEC[256];
     HttpRequest request;
     HttpServer* server;
     int reply_code;
     bool headers_send;
 public:
     sf::TcpSocket socket;
-    
+
     HttpServerConnection(HttpServer* server);
     bool read();
-
     void sendData(const char* data, size_t data_length);
     void sendString(string data) { sendData(data.c_str(), data.length()); }
-private:    
+private:
     bool handleLine(string line);
-    
+
+    string UriDecode(const string & sSrc);
+    void parseUri(const string & sSrc);
     void handleRequest();
     void sendHeaders();
 };
@@ -77,11 +82,11 @@ private:
 public:
     HttpServer(int portNr = 80);
     ~HttpServer();
-    
+
     void addHandler(HttpRequestHandler* handler) { handlers.push_back(handler); }
-    
+
     virtual void update(float delta);
-    
+
     friend class HttpServerConnection;
 };
 
