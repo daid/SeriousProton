@@ -26,11 +26,13 @@ void HttpServer::update(float delta)
         if (selector.isReady(listenSocket))
         {
             HttpServerConnection* connection = new HttpServerConnection(this);
-            if (listenSocket.accept(connection->socket) == sf::Socket::Done)
+            sf::IpAddress ipAddr = connection->socket.getRemoteAddress();
+
+            if (filterAddress(ipAddr) && listenSocket.accept(connection->socket) == sf::Socket::Done)
             {
                 connections.push_back(connection);
                 selector.add(connection->socket);
-            }else{
+            } else {
                 delete connection;
             }
         }
@@ -47,6 +49,38 @@ void HttpServer::update(float delta)
             }
         }
     }
+}
+
+bool HttpServer::filterAddress(sf::IpAddress & ipAddr)
+{
+    std::vector<string> allow_from;
+    string sIpAddr;
+    expandedIp filterIp;
+    expandedIp remoteIp;
+    bool success = false;
+
+    allow_from.push_back("10.0.0.100");
+    sIpAddr = (string) ipAddr.toString();
+    remoteIp = sIpAddr.split(".");
+
+    for (unsigned int i = 0; i<allow_from.size(); i++ )
+    {
+        success = true;
+        filterIp = allow_from[i].split(".");
+        for (unsigned int n = 0; n<5; n++)
+        {
+            if ((filterIp[n] != remoteIp[n]) and (filterIp[n] != "*"))
+            {
+                success = false; // Match failed
+                break;
+            }
+        }
+        if (success == true)
+            LOG(DEBUG) << "Allowed connection from " << sIpAddr;
+            return success; // We have a match
+    }
+    LOG(DEBUG) << "Denied connection from " << sIpAddr;
+    return success;
 }
 
 HttpServerConnection::HttpServerConnection(HttpServer* server)

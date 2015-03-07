@@ -79,6 +79,9 @@ private:
     sf::SocketSelector selector;
     std::vector<HttpServerConnection*> connections;
     std::vector<HttpRequestHandler*> handlers;
+    bool filterAddress(sf::IpAddress & ipAddr);
+    typedef std::vector<string> expandedIp;
+
 public:
     HttpServer(int portNr = 80);
     ~HttpServer();
