@@ -19,6 +19,11 @@ HttpServer::~HttpServer()
         delete handlers[n];
 }
 
+HttpServerConnection::~HttpServerConnection()
+{
+    socket.disconnect();
+}
+
 void HttpServer::update(float delta)
 {
     if (selector.wait(sf::microseconds(1)))
@@ -26,15 +31,15 @@ void HttpServer::update(float delta)
         if (selector.isReady(listenSocket))
         {
             HttpServerConnection* connection = new HttpServerConnection(this);
-            sf::IpAddress ipAddr = connection->socket.getRemoteAddress();
-
-            if (filterAddress(ipAddr) && listenSocket.accept(connection->socket) == sf::Socket::Done)
+            if (listenSocket.accept(connection->socket) == sf::Socket::Done)
             {
-                connections.push_back(connection);
-                selector.add(connection->socket);
-            } else {
-                delete connection;
-            }
+                if (setPermissions(connection))
+                {
+                    connections.push_back(connection);
+                    selector.add(connection->socket);
+                }
+                else delete connection;
+            } else delete connection;
         }
         for(unsigned int n=0; n<connections.size(); n++)
         {
@@ -51,23 +56,67 @@ void HttpServer::update(float delta)
     }
 }
 
-bool HttpServer::filterAddress(sf::IpAddress & ipAddr)
+/** \brief Return true if the remote IP is allowed to do stuff
+ * Match IP-address with list of addresses in HttpServer::allowed_*_from
+ * Wildcard character is *
+ *
+ * \param HttpServerConnection * connection: Pointer to a Connection-object
+ * \return ConnPermission: Current permissions for this connection.
+ *
+ */
+ConnPermission HttpServer::setPermissions(HttpServerConnection * connection)
 {
+    sf::IpAddress ipAddr = connection->socket.getRemoteAddress();
     std::vector<string> allow_from;
     string sIpAddr;
-    expandedIp filterIp;
-    expandedIp remoteIp;
-    bool success = false;
+    expandedIP remoteIp;
 
-    allow_from.push_back("10.0.0.100");
     sIpAddr = (string) ipAddr.toString();
     remoteIp = sIpAddr.split(".");
 
-    for (unsigned int i = 0; i<allow_from.size(); i++ )
+    if (testPermissions(remoteIp, PERM_RW))
+    {
+        LOG(DEBUG) << "Accepted connection from " << sIpAddr << " with Read/Write permissions";
+        connection->permission = PERM_RW;
+        return PERM_RW;
+    }
+    else if (testPermissions(remoteIp, PERM_R))
+    {
+        LOG(DEBUG) << "Accepted connection from " << sIpAddr << " with Read permissions";
+        connection->permission = PERM_R;
+        return PERM_R;
+    }
+
+    LOG(DEBUG) << "Rejected connection from " << sIpAddr;
+    connection->permission = PERM_NONE;
+    return PERM_NONE;
+}
+
+/** \brief Test if an IP address matches permission-level
+ * Match address part by part, both literal and with *-wildcard
+ * \param remoteIp expandedIP&
+ * \param permission ConnPermission
+ * \return bool: True if address matches the given permission
+ *
+ */
+bool HttpServer::testPermissions(expandedIP & remoteIp, ConnPermission permission)
+{
+    bool success;
+    expandedIP filterIp;
+    std::vector<string> * allow_from;
+
+    // Switch the allow_from pointer to the list of addresses in HttpServer
+    if (permission == PERM_R)
+        allow_from = &allow_r_from;
+    else if (permission == PERM_RW)
+        allow_from = &allow_rw_from;
+
+    for (unsigned int i = 0; i<allow_from->size(); i++ )
     {
         success = true;
-        filterIp = allow_from[i].split(".");
-        for (unsigned int n = 0; n<5; n++)
+        filterIp = allow_from->at(i).split(".");
+
+        for (unsigned int n = 0; n<4; n++)
         {
             if ((filterIp[n] != remoteIp[n]) and (filterIp[n] != "*"))
             {
@@ -76,10 +125,8 @@ bool HttpServer::filterAddress(sf::IpAddress & ipAddr)
             }
         }
         if (success == true)
-            LOG(DEBUG) << "Allowed connection from " << sIpAddr;
             return success; // We have a match
     }
-    LOG(DEBUG) << "Denied connection from " << sIpAddr;
     return success;
 }
 
@@ -122,6 +169,13 @@ bool HttpServerConnection::read()
     return true;
 }
 
+/** \brief Decode a percent-encoded URI
+ * Uri decoding according to RFC1630, RFC1738, RFC2396
+ * Credits: Jin Qing
+ * \param sSrc const string&   Percent-encoded URI
+ * \return string              Decoded URI-string
+ *
+ */
 string HttpServerConnection::UriDecode(const string & sSrc)
 {
    // Note from RFC1630: "Sequences which start with a percent
@@ -131,7 +185,6 @@ string HttpServerConnection::UriDecode(const string & sSrc)
    const unsigned char * pSrc = (const unsigned char *)sSrc.c_str();
    const int SRC_LEN = sSrc.length();
    const unsigned char * const SRC_END = pSrc + SRC_LEN;
-   // const char DEC2HEX[16 + 1] = "0123456789ABCDEF";
    // last decodable '%'
    const unsigned char * const SRC_LAST_DEC = SRC_END - 2;
 
@@ -164,15 +217,18 @@ string HttpServerConnection::UriDecode(const string & sSrc)
    return (string) sResult;
 }
 
+/** \brief Parse a URL, splitting it in its part and optional parameters
+ *
+ * \param sSrc const string&  URL
+ * \return void
+ *
+ */
 void HttpServerConnection::parseUri(const string & sSrc)
 {
     string uri = UriDecode(sSrc);
     std::size_t found = uri.find('?');
     if (found==std::string::npos)
-    {
         request.path = uri;
-        return;
-    }
     else
     {
         std::vector<string> parts = uri.split("?", 1);
@@ -217,7 +273,6 @@ bool HttpServerConnection::handleLine(string line)
             return false;
         request.method = parts[0];
         parseUri(parts[1]);
-        //request.path = parts[1];
         status = HEADERS;
         }break;
     case HEADERS:
@@ -313,29 +368,7 @@ void HttpServerConnection::sendData(const char* data, size_t data_length)
     socket.send("\r\n", 2);
 }
 
-const char HttpServerConnection::HEX2DEC[256] =
-{
-    /*       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F */
-    /* 0 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 1 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 2 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 3 */  0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
-
-    /* 4 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 5 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 6 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 7 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-
-    /* 8 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 9 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* A */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* B */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-
-    /* C */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* D */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* E */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* F */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1
-};
+//const char HttpServerConnection::
 
 bool HttpRequestFileHandler::handleRequest(HttpRequest& request, HttpServerConnection* connection)
 {
