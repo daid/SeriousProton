@@ -74,7 +74,13 @@ ConnPermission HttpServer::setPermissions(HttpServerConnection * connection)
     sIpAddr = (string) ipAddr.toString();
     remoteIp = sIpAddr.split(".");
 
-    if (testPermissions(remoteIp, PERM_RW))
+    if (testPermissions(remoteIp, PERM_EXEC))
+    {
+        LOG(DEBUG) << "Accepted connection from " << sIpAddr << " with Execute permissions";
+        connection->permission = PERM_EXEC;
+        return PERM_EXEC;
+    }
+    else if (testPermissions(remoteIp, PERM_RW))
     {
         LOG(DEBUG) << "Accepted connection from " << sIpAddr << " with Read/Write permissions";
         connection->permission = PERM_RW;
@@ -110,6 +116,8 @@ bool HttpServer::testPermissions(expandedIP & remoteIp, ConnPermission permissio
         allow_from = &allow_r_from;
     else if (permission == PERM_RW)
         allow_from = &allow_rw_from;
+    else if (permission == PERM_EXEC)
+        allow_from = &allow_exec_from;
 
     for (unsigned int i = 0; i<allow_from->size(); i++ )
     {

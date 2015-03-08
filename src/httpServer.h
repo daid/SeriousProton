@@ -17,8 +17,8 @@ enum ConnPermission
 {
     PERM_NONE,
     PERM_R,
-    PERM_RW
-
+    PERM_RW,
+    PERM_EXEC
 };
 
 const char HEX2DEC[256] =
@@ -123,6 +123,7 @@ public:
     ~HttpServer();
     std::vector<string> allow_r_from;
     std::vector<string> allow_rw_from;
+    std::vector<string> allow_exec_from;
 
     ConnPermission setPermissions(HttpServerConnection * connection);
     void addHandler(HttpRequestHandler* handler) { handlers.push_back(handler); }
@@ -130,7 +131,6 @@ public:
     virtual void update(float delta);
 
     friend class HttpServerConnection;
-private:
 };
 
 
