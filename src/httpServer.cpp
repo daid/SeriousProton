@@ -177,99 +177,6 @@ bool HttpServerConnection::read()
     return true;
 }
 
-/** \brief Decode a percent-encoded URI
- * Uri decoding according to RFC1630, RFC1738, RFC2396
- * Credits: Jin Qing
- * \param sSrc const string&   Percent-encoded URI
- * \return string              Decoded URI-string
- *
- */
-string HttpServerConnection::UriDecode(const string & sSrc)
-{
-   // Note from RFC1630: "Sequences which start with a percent
-   // sign but are not followed by two hexadecimal characters
-   // (0-9, A-F) are reserved for future extension"
-
-   const unsigned char * pSrc = (const unsigned char *)sSrc.c_str();
-   const int SRC_LEN = sSrc.length();
-   const unsigned char * const SRC_END = pSrc + SRC_LEN;
-   // last decodable '%'
-   const unsigned char * const SRC_LAST_DEC = SRC_END - 2;
-
-   char * const pStart = new char[SRC_LEN];
-   char * pEnd = pStart;
-
-   while (pSrc < SRC_LAST_DEC)
-   {
-      if (*pSrc == '%')
-      {
-         char dec1, dec2;
-         if (-1 != (dec1 = HEX2DEC[*(pSrc + 1)])
-            && -1 != (dec2 = HEX2DEC[*(pSrc + 2)]))
-         {
-            *pEnd++ = (dec1 << 4) + dec2;
-            pSrc += 3;
-            continue;
-         }
-      }
-
-      *pEnd++ = *pSrc++;
-   }
-
-   // the last 2- chars
-   while (pSrc < SRC_END)
-      *pEnd++ = *pSrc++;
-
-   std::string sResult(pStart, pEnd);
-   delete [] pStart;
-   return (string) sResult;
-}
-
-/** \brief Parse a URL, splitting it in its part and optional parameters
- *
- * \param sSrc const string&  URL
- * \return void
- *
- */
-void HttpServerConnection::parseUri(const string & sSrc)
-{
-    string uri = UriDecode(sSrc);
-    std::size_t found = uri.find('?');
-    if (found==std::string::npos)
-        request.path = uri;
-    else
-    {
-        std::vector<string> parts = uri.split("?", 1);
-        request.path = parts[0];
-
-        std::vector<string> parameters = parts[1].split("&");
-        for (unsigned int n=0; n<parameters.size(); n++)
-        {
-            string param = parameters[n];
-            std::size_t found = param.find('=');
-            if (found==std::string::npos)
-            {
-                request.parameters[param] = sFALSE;
-                LOG(DEBUG) << "HTTP Parameter: " << param;
-            }
-            else
-            {
-                if (param.endswith('='))
-                {
-                    request.parameters[param.substr(0, param.length()-1)] = sFALSE;
-                    LOG(DEBUG) << "HTTP Parameter: " << param.substr(0, param.length()-1);
-                }
-                else
-                {
-                    std::vector<string> items = param.split("=", 1);
-                    request.parameters[items[0]] = items[1];
-                    LOG(DEBUG) << "HTTP Parameter: " << items[0] << " = " << items[1];
-                }
-            }
-        }
-    }
-    LOG(DEBUG) << "HTTP Path: " << request.path;
-}
 
 bool HttpServerConnection::handleLine(string line)
 {
@@ -280,7 +187,7 @@ bool HttpServerConnection::handleLine(string line)
         if (parts.size() != 3)
             return false;
         request.method = parts[0];
-        parseUri(parts[1]);
+        request.path = parts[1];
         status = HEADERS;
         }break;
     case HEADERS:
@@ -350,7 +257,6 @@ void HttpServerConnection::handleRequest()
     }
     string end_chunk = "0\r\n\r\n";
     socket.send(end_chunk.c_str(), end_chunk.size());
-    request.parameters.clear();
 }
 
 void HttpServerConnection::sendHeaders()
@@ -376,7 +282,6 @@ void HttpServerConnection::sendData(const char* data, size_t data_length)
     socket.send("\r\n", 2);
 }
 
-//const char HttpServerConnection::
 
 bool HttpRequestFileHandler::handleRequest(HttpRequest& request, HttpServerConnection* connection)
 {
