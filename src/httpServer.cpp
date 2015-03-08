@@ -222,7 +222,6 @@ bool HttpServerConnection::handleLine(string line)
             return false;
         request.method = parts[0];
         parseUri(parts[1]);
-        //request.path = parts[1];
         status = HEADERS;
         }break;
     case HEADERS:
