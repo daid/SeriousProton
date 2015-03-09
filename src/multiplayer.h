@@ -8,6 +8,32 @@
 
 class MultiplayerObject;
 
+
+#define REGISTER_MULTIPLAYER_ENUM(type) \
+    static inline sf::Packet& operator << (sf::Packet& packet, const type& e) { return packet << int8_t(e); } \
+    static inline sf::Packet& operator >> (sf::Packet& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
+
+
+#define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
+
+template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector2<T>& v)
+{
+    return packet << v.x << v.y;
+}
+template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector2<T>& v)
+{
+    return packet >> v.x >> v.y;
+}
+template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector3<T>& v)
+{
+    return packet << v.x << v.y << v.z;
+}
+template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3<T>& v)
+{
+    return packet >> v.x >> v.y >> v.z;
+}
+
+
 template <typename T> struct multiplayerReplicationFunctions
 {
     static bool isChanged(void* data, void* prev_data_ptr)
@@ -215,28 +241,5 @@ template<class T> MultiplayerObject* createMultiplayerObject()
 {
     return new T();
 }
-#define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
-
-template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector2<T>& v)
-{
-    return packet << v.x << v.y;
-}
-template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector2<T>& v)
-{
-    return packet >> v.x >> v.y;
-}
-template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector3<T>& v)
-{
-    return packet << v.x << v.y << v.z;
-}
-template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3<T>& v)
-{
-    return packet >> v.x >> v.y >> v.z;
-}
-
-#define REGISTER_MULTIPLAYER_ENUM(type) \
-    static inline sf::Packet& operator << (sf::Packet& packet, const type& e) { return packet << int8_t(e); } \
-    static inline sf::Packet& operator >> (sf::Packet& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
-
 
 #endif//MULTIPLAYER_H
