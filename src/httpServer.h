@@ -6,7 +6,6 @@
 #include "stringImproved.h"
 
 #define sFALSE  "FALSE"
-#define sOBJECT "OBJECT"
 
 class HttpRequest : public sf::NonCopyable
 {
