@@ -190,14 +190,14 @@ void HttpServerConnection::parseUri(const string & sSrc)
             std::size_t found = param.find('=');
             if (found==std::string::npos)
             {
-                request.parameters[param] = sFALSE;
+                request.parameters[param] = "";
                 LOG(DEBUG) << "HTTP Parameter: " << param;
             }
             else
             {
                 if (param.endswith('='))
                 {
-                    request.parameters[param.substr(0, param.length()-1)] = sFALSE;
+                    request.parameters[param.substr(0, param.length()-1)] = "";
                     LOG(DEBUG) << "HTTP Parameter: " << param.substr(0, param.length()-1);
                 }
                 else

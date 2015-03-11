@@ -5,8 +5,6 @@
 #include "Updatable.h"
 #include "stringImproved.h"
 
-#define sFALSE  "FALSE"
-
 class HttpRequest : public sf::NonCopyable
 {
 public:
