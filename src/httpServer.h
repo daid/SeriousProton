@@ -5,22 +5,7 @@
 #include "Updatable.h"
 #include "stringImproved.h"
 
-// Placeholder for empty URL-parameters
-#define sFALSE  "_FALSE_"
-// Use _OBJECT_ in URL-parameters to set used object to
-// something other than the default playerShip(-1)
-#define sOBJECT "_OBJECT_"
-
 typedef std::vector<string> expandedIP;
-
-enum ConnPermission
-{
-    PERM_NONE,
-    PERM_R,
-    PERM_RW,
-    PERM_EXEC
-};
-
 
 class HttpRequest : public sf::NonCopyable
 {
@@ -70,7 +55,6 @@ private:
     bool headers_send;
 public:
     sf::TcpSocket socket;
-    ConnPermission permission;
     HttpServerConnection(HttpServer* server);
     bool read();
 
@@ -92,16 +76,13 @@ private:
     sf::SocketSelector selector;
     std::vector<HttpServerConnection*> connections;
     std::vector<HttpRequestHandler*> handlers;
-    bool testPermissions(expandedIP & ipAddr, ConnPermission permission);
+    bool checkPermissions(HttpServerConnection * connection);
 
 public:
     HttpServer(int portNr = 80);
     ~HttpServer();
-    std::vector<string> allow_r_from;
-    std::vector<string> allow_rw_from;
-    std::vector<string> allow_exec_from;
+    std::vector<string> allow_http_from;
 
-    ConnPermission setPermissions(HttpServerConnection * connection);
     void addHandler(HttpRequestHandler* handler) { handlers.push_back(handler); }
 
     virtual void update(float delta);

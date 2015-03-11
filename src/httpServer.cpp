@@ -33,7 +33,7 @@ void HttpServer::update(float delta)
             HttpServerConnection* connection = new HttpServerConnection(this);
             if (listenSocket.accept(connection->socket) == sf::Socket::Done)
             {
-                if (setPermissions(connection))
+                if (checkPermissions(connection))
                 {
                     connections.push_back(connection);
                     selector.add(connection->socket);
@@ -56,73 +56,29 @@ void HttpServer::update(float delta)
     }
 }
 
-/** \brief Return true if the remote IP is allowed to do stuff
- * Match IP-address with list of addresses in HttpServer::allowed_*_from
+/** \brief Test if an IP address has access to the HTTP-server
+ * Match IP-address with list of addresses in HttpServer::allowed_http_from
  * Wildcard character is *
  *
  * \param HttpServerConnection * connection: Pointer to a Connection-object
- * \return ConnPermission: Current permissions for this connection.
+ * \return bool: True if address is allowed to access
  *
  */
-ConnPermission HttpServer::setPermissions(HttpServerConnection * connection)
+bool HttpServer::checkPermissions(HttpServerConnection * connection)
 {
-    sf::IpAddress ipAddr = connection->socket.getRemoteAddress();
-    std::vector<string> allow_from;
+    bool success;
     string sIpAddr;
     expandedIP remoteIp;
+    expandedIP filterIp;
 
+    sf::IpAddress ipAddr = connection->socket.getRemoteAddress();
     sIpAddr = (string) ipAddr.toString();
     remoteIp = sIpAddr.split(".");
 
-    if (testPermissions(remoteIp, PERM_EXEC))
-    {
-        LOG(DEBUG) << "Accepted connection from " << sIpAddr << " with Execute permissions";
-        connection->permission = PERM_EXEC;
-        return PERM_EXEC;
-    }
-    else if (testPermissions(remoteIp, PERM_RW))
-    {
-        LOG(DEBUG) << "Accepted connection from " << sIpAddr << " with Read/Write permissions";
-        connection->permission = PERM_RW;
-        return PERM_RW;
-    }
-    else if (testPermissions(remoteIp, PERM_R))
-    {
-        LOG(DEBUG) << "Accepted connection from " << sIpAddr << " with Read permissions";
-        connection->permission = PERM_R;
-        return PERM_R;
-    }
-
-    LOG(DEBUG) << "Rejected connection from " << sIpAddr;
-    connection->permission = PERM_NONE;
-    return PERM_NONE;
-}
-
-/** \brief Test if an IP address matches permission-level
- * Match address part by part, both literal and with *-wildcard
- * \param remoteIp expandedIP&
- * \param permission ConnPermission
- * \return bool: True if address matches the given permission
- *
- */
-bool HttpServer::testPermissions(expandedIP & remoteIp, ConnPermission permission)
-{
-    bool success;
-    expandedIP filterIp;
-    std::vector<string> * allow_from;
-
-    // Switch the allow_from pointer to the list of addresses in HttpServer
-    if (permission == PERM_R)
-        allow_from = &allow_r_from;
-    else if (permission == PERM_RW)
-        allow_from = &allow_rw_from;
-    else if (permission == PERM_EXEC)
-        allow_from = &allow_exec_from;
-
-    for (unsigned int i = 0; i<allow_from->size(); i++ )
+    for (unsigned int i = 0; i<allow_http_from.size(); i++ )
     {
         success = true;
-        filterIp = allow_from->at(i).split(".");
+        filterIp = allow_http_from.at(i).split(".");
 
         for (unsigned int n = 0; n<4; n++)
         {
@@ -133,8 +89,13 @@ bool HttpServer::testPermissions(expandedIP & remoteIp, ConnPermission permissio
             }
         }
         if (success == true)
+        {
+            LOG(DEBUG) << "Accepted connection from " << sIpAddr;
             return success; // We have a match
+        }
+
     }
+    LOG(DEBUG) << "Rejected connection from " << sIpAddr;
     return success;
 }
 
