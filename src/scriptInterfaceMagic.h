@@ -249,7 +249,7 @@ template<class T> struct call<T, void(T::*)() >
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         if (obj)
@@ -267,7 +267,7 @@ template<class T, class R> struct call<T, R(T::*)() >
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         if (obj)
@@ -305,7 +305,7 @@ template<class T> struct call<T, ScriptCallback T::* >
         
         CallbackProto* callback_ptr = reinterpret_cast<CallbackProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         CallbackProto callback = *callback_ptr;
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert< T* >::param(L, idx, obj);
         if (obj)
@@ -354,7 +354,7 @@ template<class T, typename P1> struct call<T, void(T::*)(P1) >
     {
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
-        T* obj;
+        T* obj = NULL;
         P1 p1;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
@@ -375,7 +375,7 @@ template<class T, typename R, typename P1> struct call<T, R(T::*)(P1) >
         FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
         FuncProto func = *func_ptr;
         P1 p1;
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
@@ -398,7 +398,7 @@ template<class T, typename P1, typename P2> struct call<T, void(T::*)(P1, P2) >
         FuncProto func = *func_ptr;
         P1 p1;
         P2 p2;
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
@@ -421,7 +421,7 @@ template<class T, typename P1, typename P2, typename P3> struct call<T, void(T::
         P1 p1;
         P2 p2;
         P3 p3;
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
@@ -446,7 +446,7 @@ template<class T, typename P1, typename P2, typename P3, typename P4> struct cal
         P2 p2;
         P3 p3;
         P4 p4;
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
@@ -473,7 +473,7 @@ template<class T, typename P1, typename P2, typename P3, typename P4, typename P
         P3 p3;
         P4 p4;
         P5 p5;
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
@@ -502,7 +502,7 @@ template<class T, typename P1, typename P2, typename P3, typename P4, typename P
         P4 p4;
         P5 p5;
         P6 p6;
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         convert<P1>::param(L, idx, p1);
@@ -559,7 +559,7 @@ public:
     
     static int isValid(lua_State* L)
     {
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         lua_pushboolean(L, obj != NULL);
@@ -568,7 +568,7 @@ public:
     
     static int destroy(lua_State* L)
     {
-        T* obj;
+        T* obj = NULL;
         int idx = 1;
         convert<T*>::param(L, idx, obj);
         
