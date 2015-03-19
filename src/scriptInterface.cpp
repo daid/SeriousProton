@@ -403,6 +403,8 @@ void ScriptObject::clearDestroyedObjects()
     //Run the garbage collector every update when debugging, to better debug references and leaks.
     lua_gc(L, LUA_GCCOLLECT, 0);
 #endif
+    if (lua_gettop(L) != 0)
+        LOG(WARNING) << "lua_gettop != 0, could indicate an error in the lua bindings!";
 
     lua_pushnil(L);
     while (lua_next(L, LUA_REGISTRYINDEX) != 0)
@@ -449,7 +451,10 @@ void ScriptCallback::operator() ()
     lua_pushlightuserdata(L, this);
     lua_gettable(L, LUA_REGISTRYINDEX);
     if (!lua_istable(L, -1))
+    {
+        lua_pop(L, 1);
         return;
+    }
     
     lua_pushnil(L);
     while (lua_next(L, -2) != 0)
@@ -484,4 +489,5 @@ void ScriptCallback::operator() ()
         /* removes 'value'; keeps 'key' for next iteration */
         lua_pop(L, 1);
     }
+    lua_pop(L, 1);
 }
