@@ -27,7 +27,7 @@ public:
     {
         push_back(c);
     }
-    
+
     string(const int nr) : std::string()
     {
         std::ostringstream stream;
@@ -56,7 +56,7 @@ public:
         stream << std::hex << nr;
         return stream.str();
     }
-    
+
     /*
         substr works the same as the [start:end] operator in python, allowing negative indexes to get the back of the string.
         It is also garanteed to be safe. So if you request an out of range index, you will get an empty string.
@@ -82,7 +82,7 @@ public:
         }
         return std::string::substr(start, end - start);
     }
-    
+
     string operator*(const int count)
     {
         if (count <= 0)
@@ -92,7 +92,7 @@ public:
             ret += *this;
         return ret;
     }
-    
+
     /*
         Return a copy of the string S with only its first character capitalized.
     */
@@ -123,13 +123,13 @@ public:
     {
         if (length() < sub.length())
             return 0;
-        int cnt = 0;
+        int count = 0;
         for(unsigned int n=0; n<=length() - sub.length(); n++)
         {
             if (substr(n, n + sub.length()) == sub)
-                cnt++;
+                count++;
         }
-        return cnt;
+        return count;
     }
 
     /*
@@ -201,14 +201,14 @@ public:
     */
     bool isalnum() const
     {
-        int cnt = 0;
+        int count = 0;
         for(unsigned int n=0; n<length(); n++)
         {
             if (!::isalnum((*this)[n]))
                 return false;
-            cnt++;
+            count++;
         }
-        return cnt > 0;
+        return count > 0;
     }
 
     /*
@@ -217,14 +217,14 @@ public:
     */
     bool isalpha() const
     {
-        int cnt = 0;
+        int count = 0;
         for(unsigned int n=0; n<length(); n++)
         {
             if (!::isalpha((*this)[n]))
                 return false;
-            cnt++;
+            count++;
         }
-        return cnt > 0;
+        return count > 0;
     }
 
     /*
@@ -233,14 +233,14 @@ public:
     */
     bool isdigit() const
     {
-        int cnt = 0;
+        int count = 0;
         for(unsigned int n=0; n<length(); n++)
         {
             if (!::isdigit((*this)[n]))
                 return false;
-            cnt++;
+            count++;
         }
-        return cnt > 0;
+        return count > 0;
     }
 
     /*
@@ -249,16 +249,16 @@ public:
     */
     bool islower() const
     {
-        int cnt = 0;
+        int count = 0;
         for(unsigned int n=0; n<length(); n++)
         {
             if ((*this)[n] == '\n')
                 continue;
             if (!::islower((*this)[n]))
                 return false;
-            cnt++;
+            count++;
         }
-        return cnt > 0;
+        return count > 0;
     }
 
     /*
@@ -267,14 +267,14 @@ public:
     */
     bool isspace() const
     {
-        int cnt = 0;
+        int count = 0;
         for(unsigned int n=0; n<length(); n++)
         {
             if (!::isspace((*this)[n]))
                 return false;
-            cnt++;
+            count++;
         }
-        return cnt > 0;
+        return count > 0;
     }
 
 
@@ -286,7 +286,7 @@ public:
     */
     bool istitle() const
     {
-        int cnt = 0;
+        int count = 0;
         bool needUpper = true;
         for(unsigned int n=0; n<length(); n++)
         {
@@ -303,9 +303,9 @@ public:
             }else{
                 needUpper = true;
             }
-            cnt++;
+            count++;
         }
-        return cnt > 0;
+        return count > 0;
     }
 
     /*
@@ -314,16 +314,16 @@ public:
     */
     bool isupper() const
     {
-        int cnt = 0;
+        int count = 0;
         for(unsigned int n=0; n<length(); n++)
         {
             if ((*this)[n] == '\n')
                 continue;
             if (!::isupper((*this)[n]))
                 return false;
-            cnt++;
+            count++;
         }
-        return cnt > 0;
+        return count > 0;
     }
 
 
@@ -585,8 +585,8 @@ public:
             return substr(0, 1) + string("0") * (width - length()) + substr(1);
         return string("0") * (width - length()) + *this;
     }
-    
-    
+
+
     /* Convert this string to a number */
     float toFloat() { return atof(c_str()); }
     int toInt() { return atoi(c_str()); }

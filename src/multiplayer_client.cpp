@@ -10,7 +10,7 @@ GameClient::GameClient(sf::IpAddress server, int portNr)
     assert(!game_server);
     assert(!game_client);
 
-    clientId = -1;
+    client_id = -1;
     game_client = this;
 
     if (socket.connect(server, portNr, sf::seconds(5)) != sf::TcpSocket::Done)
@@ -47,7 +47,7 @@ void GameClient::update(float delta)
     while((status = socket.receive(packet)) == sf::TcpSocket::Done)
     {
         last_receive_time.restart();
-        
+
         command_t command;
         packet >> command;
         switch(command)
@@ -101,7 +101,7 @@ void GameClient::update(float delta)
             }
             break;
         case CMD_SET_CLIENT_ID:
-            packet >> clientId;
+            packet >> client_id;
             break;
         case CMD_SET_GAME_SPEED:
             {
@@ -117,7 +117,7 @@ void GameClient::update(float delta)
             LOG(ERROR) << "Unknown command from server: " << command;
         }
     }
-    
+
     if (status == sf::TcpSocket::Disconnected || last_receive_time.getElapsedTime().asSeconds() > no_data_disconnect_time)
     {
         socket.disconnect();

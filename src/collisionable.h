@@ -19,7 +19,7 @@ public:
     static PVector<Collisionable> queryArea(sf::Vector2f lowerBound, sf::Vector2f upperBound);
 private:
     static b2World* world;
-    
+
     friend class Collisionable;
     friend class CollisionDebugDraw;
 };
@@ -30,20 +30,20 @@ private:
     b2Body* body;
     bool enable_physics;
     bool static_physics;
-    
+
     void createBody(b2Shape* shape);
 public:
     Collisionable(float radius);
     Collisionable(sf::Vector2f box_size, sf::Vector2f box_origin = sf::Vector2f(0, 0));
     Collisionable(const std::vector<sf::Vector2f>& shape);
     virtual ~Collisionable();
-    virtual void collision(Collisionable* target);
-    
+    virtual void collide(Collisionable* target);
+
     void setCollisionRadius(float radius);
     void setCollisionBox(sf::Vector2f box_size, sf::Vector2f box_origin = sf::Vector2f(0, 0));
     void setCollisionShape(const std::vector<sf::Vector2f>& shape);
     void setCollisionPhysics(bool enable_physics, bool static_physics);
-    
+
     void setPosition(sf::Vector2f v);
     sf::Vector2f getPosition();
     void setRotation(float angle);
@@ -53,14 +53,14 @@ public:
     void setAngularVelocity(float velocity);
     float getAngularVelocity();
     void applyImpulse(sf::Vector2f position, sf::Vector2f impulse);
-    
+
     sf::Vector2f toLocalSpace(sf::Vector2f v);
     sf::Vector2f toWorldSpace(sf::Vector2f v);
-    
+
     std::vector<sf::Vector2f> getCollisionShape(); //For debugging
 
     float multiplayer_replication_object_significant_range;
-    
+
     friend class CollisionManager;
 };
 
@@ -72,7 +72,7 @@ class CollisionDebugDraw : public Renderable, public b2Draw
     sf::RenderTarget* render_target;
 public:
     CollisionDebugDraw(RenderLayer* layer);
-    
+
     virtual void render(sf::RenderTarget& window);
 
 	virtual void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color);

@@ -197,7 +197,7 @@ public:
         registerMemberReplication(&member->y, update_delay);
         registerMemberReplication(&member->z, update_delay);
     }
-    
+
     void updateMemberReplicationUpdateDelay(void* data, float update_delay)
     {
         for(unsigned int n=0; n<memberReplicationInfo.size(); n++)
@@ -210,7 +210,7 @@ public:
     int32_t getMultiplayerId() { return multiplayerObjectId; }
     void sendClientCommand(sf::Packet& packet);//Send a command from the client to the server.
 
-    virtual void onReceiveClientCommand(int32_t clientId, sf::Packet& packet) {} //Got data from a client, handle it.
+    virtual void onReceiveClientCommand(int32_t client_id, sf::Packet& packet) {} //Got data from a client, handle it.
 private:
     friend class GameServer;
     friend class GameClient;

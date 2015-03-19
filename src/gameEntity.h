@@ -36,7 +36,7 @@ public:
 
     virtual void render(sf::RenderTarget& window);
 
-    virtual bool takeDamage(sf::Vector2f position, int damageType, int damageAmount);
+    virtual bool takeDamage(sf::Vector2f position, int damageType, int damage_amount);
 };
 
 #endif//GAME_ENTITY_H

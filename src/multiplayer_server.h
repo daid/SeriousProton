@@ -38,11 +38,11 @@ class GameServer : public Updatable
     struct ClientInfo
     {
         TcpSocket* socket;
-        int32_t clientId;
+        int32_t client_id;
         EClientReceiveState receiveState;
         int32_t command_object_id;
     };
-    int32_t nextClientId;
+    int32_t nextclient_id;
     std::vector<ClientInfo> clientList;
 
     int32_t nextObjectId;
@@ -54,7 +54,7 @@ public:
     virtual void update(float delta);
     inline float getSendDataRate() { return sendDataRate; }
     inline float getSendDataRatePerClient() { return sendDataRatePerClient; }
-    
+
     string getServerName() { return serverName; }
     void setServerName(string name) { serverName = name; }
 
@@ -67,8 +67,8 @@ private:
 
     friend class MultiplayerObject;
 public:
-    virtual void onNewClient(int32_t clientId) {}
-    virtual void onDisconnectClient(int32_t clientId) {}
+    virtual void onNewClient(int32_t client_id) {}
+    virtual void onDisconnectClient(int32_t client_id) {}
 };
 
 #endif//MULTIPLAYER_SERVER_H
