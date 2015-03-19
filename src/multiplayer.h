@@ -169,6 +169,11 @@ public:
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveData;
         info.cleanupFunction = NULL;
         memberReplicationInfo.push_back(info);
+#ifdef DEBUG
+        if (multiplayerReplicationFunctions<T>::isChanged(member, &info.prev_data))
+        {
+        }
+#endif
     }
 
     template <typename T> void registerMemberReplication_(F_PARAM std::vector<T>* member, float update_delay = 0.0)
