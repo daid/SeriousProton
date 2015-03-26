@@ -75,7 +75,7 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
     float time_sinds_update = engine->getElapsedTime() - rep_data->last_update_time;
     float significance = 0.0;
     float significant_range = 1.0;
-    
+
     foreach(Collisionable, sig, collisionable_significant)
     {
         float dist = sf::length(sig->getPosition() - position);
@@ -108,7 +108,7 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
         float time_between_updates = (1.0 - (position_score + velocity_score) * significance);
         if (time_between_updates < 0.05)
             time_between_updates = 0.05;
-        if (time_sinds_update > 0.5 || time_sinds_update > time_between_updates)
+        //if (time_sinds_update > 0.5 || time_sinds_update > time_between_updates)
         {
             rep_data->last_update_time = engine->getElapsedTime();
             rep_data->position = position;
@@ -172,7 +172,7 @@ void MultiplayerObject::registerCollisionableReplication(float object_significan
     info.name = "Collisionable_data";
 #endif
     info.prev_data = (int64_t)new CollisionableReplicationData();
-    info.update_delay = 0.0;
+    info.update_delay = 0.2;
     info.update_timeout = 0.0;
     info.isChangedFunction = &collisionable_isChanged;
     info.sendFunction = &collisionable_sendFunction;
