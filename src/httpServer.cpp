@@ -77,6 +77,11 @@ bool HttpServer::checkPermissions(HttpServerConnection * connection)
 
     for (unsigned int i = 0; i<allow_http_from.size(); i++ )
     {
+        if (filterIp.size() != 4)
+        {
+            LOG(WARNING) << "Invalid IPv4-address found in config: " << allow_http_from.at(i);
+            continue;
+        }
         success = true;
         filterIp = allow_http_from.at(i).split(".");
 
