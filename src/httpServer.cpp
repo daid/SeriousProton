@@ -186,6 +186,7 @@ string HttpServerConnection::UriDecode(const string & sSrc)
    return (string) sResult;
 }
 
+
 /**< Map to convert between character encodings */
 const char HttpServerConnection::HEX2DEC[256] =
 {

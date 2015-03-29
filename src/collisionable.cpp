@@ -56,7 +56,7 @@ class Collision
 public:
     P<Collisionable> A;
     P<Collisionable> B;
-    
+
     Collision(P<Collisionable> A, P<Collisionable> B)
     : A(A), B(B)
     {}
@@ -66,7 +66,7 @@ void CollisionManager::handleCollisions(float delta)
 {
     if (delta <= 0.0)
         return;
-    
+
     P<Collisionable> destroy = NULL;
     world->Step(delta, 4, 8);
     std::vector<Collision> collisions;
@@ -94,11 +94,11 @@ void CollisionManager::handleCollisions(float delta)
         Collisionable* B = *collisions[n].B;
         if (A && B)
         {
-            A->collision(B);
-            B->collision(A);
+            A->collide(B);
+            B->collide(A);
         }
     }
-    
+
     //Lazy cleanup of already destroyed bodies. We cannot destroy the bodies while we are walking trough the ContactList, as it would invalidate the contact we are iterating on.
     if (destroy)
     {
@@ -113,7 +113,7 @@ Collisionable::Collisionable(float radius)
     static_physics = false;
     body = NULL;
     multiplayer_replication_object_significant_range = -1;
-    
+
     setCollisionRadius(radius);
 }
 
@@ -122,7 +122,7 @@ Collisionable::Collisionable(sf::Vector2f box_size, sf::Vector2f box_origin)
     enable_physics = false;
     static_physics = false;
     body = NULL;
-    
+
     setCollisionBox(box_size, box_origin);
 }
 
@@ -131,7 +131,7 @@ Collisionable::Collisionable(const std::vector<sf::Vector2f>& shape)
     enable_physics = false;
     static_physics = false;
     body = NULL;
-    
+
     setCollisionShape(shape);
 }
 
@@ -166,12 +166,12 @@ void Collisionable::setCollisionShape(const std::vector<sf::Vector2f>& shapeList
             len = shapeList.size() - offset + 1;
         if (len < 3)
             break;
-        
+
         b2Vec2 points[b2_maxPolygonVertices];
         points[0] = v2b(shapeList[0]);
         for(unsigned int n=0; n<len-1; n++)
             points[n+1] = v2b(shapeList[n+offset]);
-        
+
         b2PolygonShape shape;
         bool valid = shape.Set(points, len);
         if (!valid)
@@ -224,7 +224,7 @@ void Collisionable::createBody(b2Shape* shape)
         bodyDef.allowSleep = false;
         body = CollisionManager::world->CreateBody(&bodyDef);
     }
-    
+
     b2FixtureDef shapeDef;
     shapeDef.shape = shape;
     shapeDef.density = 1.0;
@@ -233,7 +233,7 @@ void Collisionable::createBody(b2Shape* shape)
     body->CreateFixture(&shapeDef);
 }
 
-void Collisionable::collision(Collisionable* target)
+void Collisionable::collide(Collisionable* target)
 {
 }
 
@@ -336,7 +336,7 @@ CollisionDebugDraw::CollisionDebugDraw(RenderLayer* layer)
     SetFlags(e_shapeBit | e_jointBit | e_centerOfMassBit);
     CollisionManager::world->SetDebugDraw(this);
 }
-    
+
 void CollisionDebugDraw::render(sf::RenderTarget& window)
 {
     render_target = &window;

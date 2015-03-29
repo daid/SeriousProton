@@ -8,6 +8,32 @@
 
 class MultiplayerObject;
 
+
+#define REGISTER_MULTIPLAYER_ENUM(type) \
+    static inline sf::Packet& operator << (sf::Packet& packet, const type& e) { return packet << int8_t(e); } \
+    static inline sf::Packet& operator >> (sf::Packet& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
+
+
+#define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
+
+template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector2<T>& v)
+{
+    return packet << v.x << v.y;
+}
+template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector2<T>& v)
+{
+    return packet >> v.x >> v.y;
+}
+template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector3<T>& v)
+{
+    return packet << v.x << v.y << v.z;
+}
+template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3<T>& v)
+{
+    return packet >> v.x >> v.y >> v.z;
+}
+
+
 template <typename T> struct multiplayerReplicationFunctions
 {
     static bool isChanged(void* data, void* prev_data_ptr)
@@ -143,6 +169,11 @@ public:
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveData;
         info.cleanupFunction = NULL;
         memberReplicationInfo.push_back(info);
+#ifdef DEBUG
+        if (multiplayerReplicationFunctions<T>::isChanged(member, &info.prev_data))
+        {
+        }
+#endif
     }
 
     template <typename T> void registerMemberReplication_(F_PARAM std::vector<T>* member, float update_delay = 0.0)
@@ -171,7 +202,7 @@ public:
         registerMemberReplication(&member->y, update_delay);
         registerMemberReplication(&member->z, update_delay);
     }
-    
+
     void updateMemberReplicationUpdateDelay(void* data, float update_delay)
     {
         for(unsigned int n=0; n<memberReplicationInfo.size(); n++)
@@ -184,7 +215,7 @@ public:
     int32_t getMultiplayerId() { return multiplayerObjectId; }
     void sendClientCommand(sf::Packet& packet);//Send a command from the client to the server.
 
-    virtual void onReceiveClientCommand(int32_t clientId, sf::Packet& packet) {} //Got data from a client, handle it.
+    virtual void onReceiveClientCommand(int32_t client_id, sf::Packet& packet) {} //Got data from a client, handle it.
 private:
     friend class GameServer;
     friend class GameClient;
@@ -215,28 +246,5 @@ template<class T> MultiplayerObject* createMultiplayerObject()
 {
     return new T();
 }
-#define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
-
-template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector2<T>& v)
-{
-    return packet << v.x << v.y;
-}
-template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector2<T>& v)
-{
-    return packet >> v.x >> v.y;
-}
-template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector3<T>& v)
-{
-    return packet << v.x << v.y << v.z;
-}
-template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3<T>& v)
-{
-    return packet >> v.x >> v.y >> v.z;
-}
-
-#define REGISTER_MULTIPLAYER_ENUM(type) \
-    static inline sf::Packet& operator << (sf::Packet& packet, const type& e) { return packet << int8_t(e); } \
-    static inline sf::Packet& operator >> (sf::Packet& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
-
 
 #endif//MULTIPLAYER_H

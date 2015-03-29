@@ -28,7 +28,7 @@ GameServer::GameServer(string serverName, int versionNumber, int listenPort)
     aliveClock.restart();
 
     nextObjectId = 1;
-    nextClientId = 1;
+    nextclient_id = 1;
 
     if (listenSocket.listen(listenPort) != sf::TcpListener::Done)
     {
@@ -148,7 +148,7 @@ void GameServer::update(float gameDelta)
         boardcastServerDelay -= delta;
     }else{
         boardcastServerDelay = 5.0;
-        
+
         sf::Packet sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(versionNumber) << serverName;
         UDPbroadcastPacket(broadcastListenSocket, sendPacket, broadcastListenSocket.getLocalPort() + 1);
@@ -159,15 +159,15 @@ void GameServer::update(float gameDelta)
         ClientInfo info;
         info.socket = new TcpSocket();
         info.socket->setBlocking(false);
-        info.clientId = nextClientId;
+        info.client_id = nextclient_id;
         info.receiveState = CRS_Main;
-        nextClientId++;
+        nextclient_id++;
         listenSocket.accept(*info.socket);
         clientList.push_back(info);
         selector.add(*info.socket);
         {
             sf::Packet packet;
-            packet << CMD_SET_CLIENT_ID << info.clientId;
+            packet << CMD_SET_CLIENT_ID << info.client_id;
             info.socket->send(packet);
         }
         {
@@ -176,7 +176,7 @@ void GameServer::update(float gameDelta)
             info.socket->send(packet);
         }
 
-        onNewClient(info.clientId);
+        onNewClient(info.client_id);
 
         //On a new client, first create all the already existing objects. And update all the values.
         for(std::map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
@@ -220,14 +220,14 @@ void GameServer::update(float gameDelta)
                     break;
                 case CRS_Command:
                     if (objectMap.find(clientList[n].command_object_id) != objectMap.end() && objectMap[clientList[n].command_object_id])
-                        objectMap[clientList[n].command_object_id]->onReceiveClientCommand(clientList[n].clientId, packet);
+                        objectMap[clientList[n].command_object_id]->onReceiveClientCommand(clientList[n].client_id, packet);
                     clientList[n].receiveState = CRS_Main;
                     break;
                 }
             }
             if (status == sf::TcpSocket::Disconnected)
             {
-                onDisconnectClient(clientList[n].clientId);
+                onDisconnectClient(clientList[n].client_id);
                 selector.remove(*clientList[n].socket);
                 delete clientList[n].socket;
                 clientList.erase(clientList.begin() + n);
@@ -235,11 +235,11 @@ void GameServer::update(float gameDelta)
             }
         }
     }
-    
+
     if (aliveClock.getElapsedTime().asSeconds() > 10.0)
     {
         aliveClock.restart();
-        
+
         sf::Packet packet;
         packet << CMD_ALIVE;
         sendAll(packet);

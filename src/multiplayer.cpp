@@ -12,12 +12,12 @@ public:
     sf::Vector2f velocity;
     float rotation;
     float angularVelocity;
-    float last_update_time;
+    sf::Clock last_update_time;
     
     CollisionableReplicationData()
     : rotation(0), angularVelocity(0)
     {
-        last_update_time = engine->getElapsedTime();
+        last_update_time.restart();
     }
 };
 
@@ -72,10 +72,10 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
     sf::Vector2f velocity = c->getVelocity();
     float rotation = c->getRotation();
     float angular_velocity = c->getAngularVelocity();
-    float time_sinds_update = engine->getElapsedTime() - rep_data->last_update_time;
+    float time_after_update = rep_data->last_update_time.getElapsedTime().asSeconds();
     float significance = 0.0;
     float significant_range = 1.0;
-    
+
     foreach(Collisionable, sig, collisionable_significant)
     {
         float dist = sf::length(sig->getPosition() - position);
@@ -100,7 +100,7 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
     if (delta_position == 0.0 && delta_velocity == 0.0 && delta_rotation == 0.0 && delta_angular_velocity == 0.0)
     {
         //If we haven't moved then the client needs no update
-        rep_data->last_update_time = engine->getElapsedTime();
+        rep_data->last_update_time.restart();
     }else{
         float position_score = (delta_position / significant_range) * 100.f + delta_rotation * 10.f;
         float velocity_score = (delta_velocity / significant_range) * 100.f + delta_angular_velocity * 10.f;
@@ -108,15 +108,16 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
         float time_between_updates = (1.0 - (position_score + velocity_score) * significance);
         if (time_between_updates < 0.05)
             time_between_updates = 0.05;
-        if (time_sinds_update > 0.5 || time_sinds_update > time_between_updates)
+        if (time_after_update > 0.5 || time_after_update > time_between_updates)
         {
-            rep_data->last_update_time = engine->getElapsedTime();
+            rep_data->last_update_time.restart();
             rep_data->position = position;
             rep_data->velocity = velocity;
             rep_data->rotation = rotation;
             rep_data->angularVelocity = angular_velocity;
             return true;
         }
+        
     }
     return false;
 }
