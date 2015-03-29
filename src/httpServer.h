@@ -6,7 +6,6 @@
 #include "stringImproved.h"
 
 typedef std::vector<string> expandedIP;
-
 class HttpRequest : public sf::NonCopyable
 {
 public:
@@ -49,6 +48,7 @@ private:
     const static size_t recvBufferSize = 2048;
     char recvBuffer[recvBufferSize];
     size_t recvBufferCount;
+    const static char HEX2DEC[256];
     HttpRequest request;
     HttpServer* server;
     int reply_code;
@@ -60,10 +60,10 @@ public:
 
     void sendData(const char* data, size_t data_length);
     void sendString(string data) { sendData(data.c_str(), data.length()); }
-    ~HttpServerConnection();
 private:
     bool handleLine(string line);
-
+    string UriDecode(const string & sSrc);
+    void parseUri(const string & sSrc);
     void handleRequest();
     void sendHeaders();
 };
