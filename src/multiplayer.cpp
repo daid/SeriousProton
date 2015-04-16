@@ -117,7 +117,6 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
             rep_data->angularVelocity = angular_velocity;
             return true;
         }
-        
     }
     return false;
 }

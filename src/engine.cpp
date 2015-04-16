@@ -62,6 +62,8 @@ void Engine::runMainLoop()
             ScriptObject::clearDestroyedObjects();
             
             sf::sleep(sf::seconds(1.0/60.0 - delta));
+            //if (elapsedTime > 2.0)
+            //    break;
         }
     }else{
         sf::Clock frameTimeClock;
