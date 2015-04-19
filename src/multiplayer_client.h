@@ -13,7 +13,7 @@ extern P<GameClient> game_client;
 
 class GameClient : public Updatable
 {
-    const static float no_data_disconnect_time = 20.0f;
+    constexpr static float no_data_disconnect_time = 20.0f;
 
     TcpSocket socket;
     std::map<int32_t, P<MultiplayerObject> > objectMap;

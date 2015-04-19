@@ -22,7 +22,7 @@ private:
 
     std::vector<struct ServerInfo> serverList;
     int versionNumber;
-    const static float serverTimeout = 30.0;
+    constexpr static float serverTimeout = 30.0f;
 public:
 
     ServerScanner(int versionNumber, int serverPort = defaultServerPort);

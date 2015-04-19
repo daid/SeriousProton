@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdint.h>
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <iphlpapi.h>
 #else
@@ -108,7 +108,7 @@ void TcpSocket::update()
 
 void UDPbroadcastPacket(sf::UdpSocket& socket, sf::Packet packet, int port_nr)
 {
-#ifdef WIN32
+#ifdef _WIN32
     //On windows, using a single broadcast address seems to send the UPD package only on 1 interface.
     // So use the windows API to get all addresses, construct broadcast addresses and send out the packets to all of them.
     PMIB_IPADDRTABLE pIPAddrTable;
