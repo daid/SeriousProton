@@ -123,6 +123,7 @@ bool ScriptObject::run(string filename)
     {
         error_string = luaL_checkstring(L, -1);
         LOG(ERROR) << "LUA: load: " << error_string;
+        lua_pop(L, 1);
         destroy();
         return false;
     }
