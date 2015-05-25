@@ -21,6 +21,7 @@ Engine::Engine()
     InputHandler::initialize();
     gameSpeed = 1.0;
     running = true;
+    elapsedTime = 0.0;
 }
 Engine::~Engine()
 {
