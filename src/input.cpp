@@ -4,6 +4,7 @@
 P<WindowManager> InputHandler::windowManager;
 bool InputHandler::touch_screen = false;
 sf::Transform InputHandler::mouse_transform;
+PVector<InputEventHandler> InputHandler::input_event_handlers;
 
 sf::Vector2f InputHandler::mousePos;
 int InputHandler::mouse_wheel_delta;
@@ -16,7 +17,19 @@ bool InputHandler::mouseButtonReleased[sf::Mouse::ButtonCount];
 bool InputHandler::keyboardButtonDown[sf::Keyboard::KeyCount];
 bool InputHandler::keyboardButtonPressed[sf::Keyboard::KeyCount];
 bool InputHandler::keyboardButtonReleased[sf::Keyboard::KeyCount];
-string InputHandler::keyboard_text_entry;
+
+InputEventHandler::InputEventHandler()
+{
+    InputHandler::input_event_handlers.push_back(this);
+}
+
+InputEventHandler::~InputEventHandler()
+{
+}
+
+void InputEventHandler::handleKeyPress(sf::Keyboard::Key key, int unicode)
+{
+}
 
 void InputHandler::initialize()
 {
@@ -61,5 +74,13 @@ void InputHandler::update()
             mousePos.x = -1;
             mousePos.y = -1;
         }
+    }
+}
+
+void InputHandler::fireKeyEvent(sf::Keyboard::Key key, int unicode)
+{
+    foreach(InputEventHandler, e, input_event_handlers)
+    {
+        e->handleKeyPress(key, unicode);
     }
 }

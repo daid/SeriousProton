@@ -31,6 +31,8 @@ void ServerScanner::update(float gameDelta)
         serverList[n].timeout += delta;
         if (serverList[n].timeout > serverTimeout)
         {
+            if (removedServerCallback)
+                removedServerCallback(serverList[n].address);
             serverList.erase(serverList.begin() + n);
             n--;
         }
@@ -64,9 +66,18 @@ void ServerScanner::update(float gameDelta)
                 si.timeout = 0.0;
                 si.name = name;
                 serverList.push_back(si);
+                
+                if (newServerCallback)
+                    newServerCallback(recvAddress, name);
             }
         }
     }
+}
+
+void ServerScanner::addCallbacks(std::function<void(sf::IpAddress, string)> newServerCallback, std::function<void(sf::IpAddress)> removedServerCallback)
+{
+    this->newServerCallback = newServerCallback;
+    this->removedServerCallback = removedServerCallback;
 }
 
 std::vector<ServerScanner::ServerInfo> ServerScanner::getServerList()

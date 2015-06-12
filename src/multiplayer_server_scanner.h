@@ -19,15 +19,18 @@ public:
         string name;
     };
 private:
-
     std::vector<struct ServerInfo> serverList;
     int versionNumber;
     constexpr static float serverTimeout = 30.0f;
+    
+    std::function<void(sf::IpAddress, string)> newServerCallback;
+    std::function<void(sf::IpAddress)> removedServerCallback;
 public:
 
     ServerScanner(int versionNumber, int serverPort = defaultServerPort);
 
     virtual void update(float delta);
+    void addCallbacks(std::function<void(sf::IpAddress, string)> newServerCallback, std::function<void(sf::IpAddress)> removedServerCallback);
 
     std::vector<ServerInfo> getServerList();
 };

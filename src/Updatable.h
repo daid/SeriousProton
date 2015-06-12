@@ -1,6 +1,8 @@
 #ifndef UPDATABLE_H
 #define UPDATABLE_H
+
 #include "P.h"
+
 class Updatable;
 extern PVector<Updatable> updatableList;
 //Abstract class for entity that can be updated.

@@ -5,6 +5,17 @@
 #include "stringImproved.h"
 #include "Updatable.h"
 
+class InputEventHandler: public virtual PObject
+{
+    public:
+        InputEventHandler();
+        virtual ~InputEventHandler();
+        
+        virtual void handleKeyPress(sf::Keyboard::Key key, int unicode);
+    protected:
+    private:
+};
+
 class InputHandler
 {
     static P<WindowManager> windowManager;
@@ -20,19 +31,20 @@ class InputHandler
     static bool keyboardButtonDown[sf::Keyboard::KeyCount];
     static bool keyboardButtonPressed[sf::Keyboard::KeyCount];
     static bool keyboardButtonReleased[sf::Keyboard::KeyCount];
-    static string keyboard_text_entry;
 
     static void initialize();
+    
+    static void fireKeyEvent(sf::Keyboard::Key key, int unicode);
 public:
     static bool touch_screen;
     static sf::Transform mouse_transform;
+    static PVector<InputEventHandler> input_event_handlers;
 
     static void update();
 
     static bool keyboardIsDown(sf::Keyboard::Key key) { return keyboardButtonDown[key]; }
     static bool keyboardIsPressed(sf::Keyboard::Key key) { return keyboardButtonPressed[key]; }
     static bool keyboardIsReleased(sf::Keyboard::Key key) { return keyboardButtonReleased[key]; }
-    static string getKeyboarddrawTextEntry() { return keyboard_text_entry; }
 
     static sf::Vector2f getMousePos() { return mousePos; }
     static bool mouseIsDown(sf::Mouse::Button button) { return mouseButtonDown[button]; }
