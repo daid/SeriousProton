@@ -75,13 +75,15 @@ void WindowManager::create()
             windowWidth *= 0.8;
             windowHeight *= 0.8;
         }
-        //windowHeight *= (1.33333 / 1.25);
     }
 
+    sf::ContextSettings context_settings(24, 8, fsaa, 2, 0);
     if (fullscreen)
-        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "Game", sf::Style::Fullscreen, sf::ContextSettings(24, 8, fsaa, 2, 0));
+        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "Game", sf::Style::Fullscreen, context_settings);
     else
-        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "Game", sf::Style::None, sf::ContextSettings(24, 8, fsaa, 2, 0));
+        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "Game", sf::Style::None, context_settings);
+    sf::ContextSettings settings = window.getSettings();
+    LOG(INFO) << "OpenGL version: " << settings.majorVersion << "." << settings.minorVersion;
     window.setVerticalSyncEnabled(false);
     window.setFramerateLimit(60);
     window.setMouseCursorVisible(false);
