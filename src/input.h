@@ -21,7 +21,7 @@ class InputHandler
     static P<WindowManager> windowManager;
 
     static sf::Vector2f mousePos;
-    static int mouse_wheel_delta;
+    static float mouse_wheel_delta;
     static bool mouse_button_down[sf::Mouse::ButtonCount];
     static bool keyboard_button_down[sf::Keyboard::KeyCount];
 
@@ -50,7 +50,7 @@ public:
     static bool mouseIsDown(sf::Mouse::Button button) { return mouseButtonDown[button]; }
     static bool mouseIsPressed(sf::Mouse::Button button) { return mouseButtonPressed[button]; }
     static bool mouseIsReleased(sf::Mouse::Button button) { return mouseButtonReleased[button]; }
-    static int getMouseWheelDelta() { return mouse_wheel_delta; }
+    static float getMouseWheelDelta() { return mouse_wheel_delta; }
 
     friend class Engine;
 };

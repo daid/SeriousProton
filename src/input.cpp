@@ -7,7 +7,7 @@ sf::Transform InputHandler::mouse_transform;
 PVector<InputEventHandler> InputHandler::input_event_handlers;
 
 sf::Vector2f InputHandler::mousePos;
-int InputHandler::mouse_wheel_delta;
+float InputHandler::mouse_wheel_delta;
 bool InputHandler::mouse_button_down[sf::Mouse::ButtonCount];
 bool InputHandler::keyboard_button_down[sf::Keyboard::KeyCount];
 
