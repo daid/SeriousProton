@@ -1,6 +1,7 @@
 #ifndef MULTIPLAYER_SERVER_SCANER_H
 #define MULTIPLAYER_SERVER_SCANER_H
 
+#include <functional>
 #include "multiplayer_server.h"
 
 //Class to find all servers that have the correct version number. Creates a big nice list.
