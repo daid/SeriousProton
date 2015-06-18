@@ -1,7 +1,7 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
-#include <map>
+#include <unordered_map>
 #include "stringImproved.h"
 #include "P.h"
 
@@ -32,7 +32,7 @@ class Engine
     bool running;
     WindowManager* windowManager;
     
-    std::map<string, P<PObject> > objectMap;
+    std::unordered_map<string, P<PObject> > objectMap;
     float elapsedTime;
     float gameSpeed;
 public:

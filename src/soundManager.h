@@ -3,7 +3,7 @@
 
 #include <SFML/Audio.hpp>
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include "resources.h"
 #include "stringImproved.h"
@@ -15,7 +15,7 @@ class SoundManager
 private:
     sf::Music music;
     P<ResourceStream> musicStream;
-    std::map<string, sf::SoundBuffer*> soundMap;
+    std::unordered_map<string, sf::SoundBuffer*> soundMap;
     std::vector<sf::Sound> activeSoundList;
     float music_volume;
     bool positional_sound_enabled;

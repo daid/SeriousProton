@@ -7,7 +7,7 @@
 
 #if MULTIPLAYER_COLLECT_DATA_STATS
 sf::Clock multiplayer_stats_dump;
-static std::map<string, int> multiplayer_stats;
+static std::unordered_map<string, int> multiplayer_stats;
 #define ADD_MULTIPLAYER_STATS(name, bytes) multiplayer_stats[name] += (bytes)
 #else
 #define ADD_MULTIPLAYER_STATS(name, bytes) do {} while(0)
@@ -67,7 +67,7 @@ void GameServer::update(float gameDelta)
     }
 
     std::vector<int32_t> delList;
-    for(std::map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
+    for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
     {
         int id = i->first;
         P<MultiplayerObject> obj = i->second;
@@ -179,7 +179,7 @@ void GameServer::update(float gameDelta)
         onNewClient(info.client_id);
 
         //On a new client, first create all the already existing objects. And update all the values.
-        for(std::map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
+        for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
         {
             P<MultiplayerObject> obj = i->second;
             if (obj && obj->replicated)
@@ -256,10 +256,10 @@ void GameServer::update(float gameDelta)
         multiplayer_stats_dump.restart();
 
         int total = 0;
-        for(std::map<string, int >::iterator i=multiplayer_stats.begin(); i != multiplayer_stats.end(); i++)
+        for(std::unordered_map<string, int >::iterator i=multiplayer_stats.begin(); i != multiplayer_stats.end(); i++)
             total += i->second;
         printf("---------------------------------Total: %d\n", total);
-        for(std::map<string, int >::iterator i=multiplayer_stats.begin(); i != multiplayer_stats.end(); i++)
+        for(std::unordered_map<string, int >::iterator i=multiplayer_stats.begin(); i != multiplayer_stats.end(); i++)
         {
             printf("%60s: %d (%d%%)\n", i->first.c_str(), i->second, i->second * 100 / total);
         }

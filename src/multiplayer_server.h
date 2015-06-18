@@ -2,6 +2,7 @@
 #define MULTIPLAYER_SERVER_H
 
 #include <stdint.h>
+#include <unordered_map>
 #include "fixedSocket.h"
 #include "Updatable.h"
 #include "stringImproved.h"
@@ -46,7 +47,7 @@ class GameServer : public Updatable
     std::vector<ClientInfo> clientList;
 
     int32_t nextObjectId;
-    std::map<int32_t, P<MultiplayerObject> > objectMap;
+    std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
 public:
     GameServer(string serverName, int versionNumber, int listenPort = defaultServerPort);
 

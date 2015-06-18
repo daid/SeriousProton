@@ -16,7 +16,7 @@ class GameClient : public Updatable
     constexpr static float no_data_disconnect_time = 20.0f;
 
     TcpSocket socket;
-    std::map<int32_t, P<MultiplayerObject> > objectMap;
+    std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
     int32_t client_id;
     bool connected;
     sf::Clock last_receive_time;

@@ -1,7 +1,7 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 #include <SFML/System.hpp>
@@ -17,7 +17,7 @@ public:
 
 class EventManager
 {
-    std::map<string, PVector<EventHandler> > eventMap;
+    std::unordered_map<string, PVector<EventHandler> > eventMap;
 public:
     void fire(string eventName, void* param = NULL);
     void registerHandler(string eventName, P<EventHandler> handler);

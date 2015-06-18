@@ -595,4 +595,17 @@ public:
 
 void __stringTest();
 
+namespace std
+{
+    //Make a specialization of std::hash for this improved string class which uses the same std::hash as std::string.
+    //  (no clue why C++ not decides to use the specialization for the base class)
+    template <> struct hash< ::string>
+    {
+        std::size_t operator()(const ::string& k) const
+        {
+            return hash<std::string>()(k);
+        }
+    };
+}
+
 #endif//STRING_H

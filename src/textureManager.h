@@ -3,7 +3,7 @@
 
 #include <SFML/Graphics.hpp>
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include "stringImproved.h"
 
@@ -20,7 +20,7 @@ private:
     bool defaultRepeated;
     bool defaultSmooth;
     bool autoSprite;
-    std::map<string, TextureData> textureMap;
+    std::unordered_map<string, TextureData> textureMap;
 public:
     TextureManager();
     ~TextureManager();

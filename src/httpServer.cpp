@@ -249,7 +249,7 @@ bool HttpServerConnection::handleLine(string line)
             }
             status = METHOD;
 #ifdef DEBUG
-            for (std::map<string, string>::iterator iter = request.headers.begin(); iter != request.headers.end(); iter++)
+            for (std::unordered_map<string, string>::iterator iter = request.headers.begin(); iter != request.headers.end(); iter++)
             {
                 string key=iter->first;
                 string value=iter->second;

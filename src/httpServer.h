@@ -1,6 +1,7 @@
 #ifndef HTTP_SERVER_H
 #define HTTP_SERVER_H
 
+#include <unordered_map>
 #include <SFML/Network.hpp>
 #include "Updatable.h"
 #include "stringImproved.h"
@@ -11,8 +12,8 @@ public:
     string method;
     string path;
     string post_data;
-    std::map<string, string> headers;
-    std::map<string, string> parameters;
+    std::unordered_map<string, string> headers;
+    std::unordered_map<string, string> parameters;
 };
 
 class HttpServer;

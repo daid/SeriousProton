@@ -31,7 +31,7 @@ P<MultiplayerObject> GameClient::getObjectById(int32_t id)
 void GameClient::update(float delta)
 {
     std::vector<int32_t> delList;
-    for(std::map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
+    for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
     {
         int id = i->first;
         P<MultiplayerObject> obj = i->second;
