@@ -42,25 +42,38 @@ void InputHandler::update()
     if (!windowManager)
         windowManager = engine->getObject("windowManager");
 
-    mousePos = sf::Vector2f(sf::Mouse::getPosition());
-    mousePos = mousePos - sf::Vector2f(windowManager->window.getPosition());
-    mousePos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x);
-    mousePos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y);
-    mousePos = mouse_transform.transformPoint(mousePos);
-    for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
-    {
-        bool down = mouse_button_down[n];
-        mouseButtonPressed[n] = (!mouseButtonDown[n] && down);
-        mouseButtonReleased[n] = (mouseButtonDown[n] && !down);
-        mouseButtonDown[n] = down;
-    }
-    
     for(unsigned int n=0; n<sf::Keyboard::KeyCount; n++)
     {
         bool down = keyboard_button_down[n];
         keyboardButtonPressed[n] = (!keyboardButtonDown[n] && down);
         keyboardButtonReleased[n] = (keyboardButtonDown[n] && !down);
         keyboardButtonDown[n] = down;
+    }
+
+#ifdef __ANDROID__
+    if (sf::Touch::isDown(0))
+    {
+        mousePos = sf::Vector2f(sf::Touch::getPosition(0));
+        mouse_button_down[0] = true;
+    }else{
+        mouse_button_down[0] = false;
+        mousePos.x = -1;
+        mousePos.y = -1;
+    }
+#else
+    mousePos = sf::Vector2f(sf::Mouse::getPosition());
+#endif
+    mousePos = mousePos - sf::Vector2f(windowManager->window.getPosition());
+    mousePos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x);
+    mousePos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y);
+    mousePos = mouse_transform.transformPoint(mousePos);
+
+    for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
+    {
+        bool down = mouse_button_down[n];
+        mouseButtonPressed[n] = (!mouseButtonDown[n] && down);
+        mouseButtonReleased[n] = (mouseButtonDown[n] && !down);
+        mouseButtonDown[n] = down;
     }
     
     if (touch_screen)
