@@ -45,38 +45,37 @@ string ResourceStream::readLine()
 
 class FileResourceStream : public ResourceStream
 {
-    FILE* f;
+    sf::FileInputStream stream;
+    bool open_success;
 public:
-    FileResourceStream(FILE* f)
-    : f(f)
+    FileResourceStream(string filename)
     {
+        open_success = stream.open(filename);
     }
     virtual ~FileResourceStream()
     {
-        fclose(f);
+    }
+    
+    bool isOpen()
+    {
+        return open_success;
     }
     
     virtual sf::Int64 read(void* data, sf::Int64 size)
     {
-        return fread(data, 1, size, f);
+        return stream.read(data, size);
     }
     virtual sf::Int64 seek(sf::Int64 position)
     {
-        fseek(f, position, SEEK_SET);
-        return position;
+        return stream.seek(position);
     }
     virtual sf::Int64 tell()
     {
-        return ftell(f);
+        return stream.tell();
     }
     virtual sf::Int64 getSize()
     {
-        fpos_t pos;
-        fgetpos(f, &pos);
-        fseek(f, 0, SEEK_END);
-        sf::Int64 size = ftell(f);
-        fsetpos(f, &pos);
-        return size;
+        return stream.getSize();
     }
 };
 
@@ -88,10 +87,10 @@ DirectoryResourceProvider::DirectoryResourceProvider(string basepath)
 
 P<ResourceStream> DirectoryResourceProvider::getResourceStream(string filename)
 {
-    FILE* f = fopen((basepath + filename).c_str(), "rb");
-    if (f)
-        return new FileResourceStream(f);
-    return NULL;
+    P<FileResourceStream> stream = new FileResourceStream(basepath + filename);
+    if (stream->isOpen())
+        return stream;
+    return nullptr;
 }
 
 std::vector<string> DirectoryResourceProvider::findResources(string searchPattern)
@@ -108,7 +107,7 @@ void DirectoryResourceProvider::findResources(std::vector<string>& found_files, 
         return;
     
     struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL)
+    while ((entry = readdir(dir)) != nullptr)
     {
         if (entry->d_name[0] == '.')
             continue;

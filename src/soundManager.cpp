@@ -216,7 +216,6 @@ sf::SoundBuffer* SoundManager::loadSound(string name)
 
 void SoundManager::startMusic(P<ResourceStream> stream, bool loop)
 {
-    LOG(INFO) << "New music started";
     MusicChannel* channel = &primary_music;
     MusicChannel* other_channel = &secondary_music;
     
@@ -227,10 +226,10 @@ void SoundManager::startMusic(P<ResourceStream> stream, bool loop)
     }
     
     channel->music.stop();
-    channel->stream = stream;
     channel->mode = FadeIn;
     channel->fade_delay = fade_music_time;
-    channel->music.openFromStream(**channel->stream);
+    channel->music.openFromStream(**stream);
+    channel->stream = stream;
     channel->music.setLoop(loop);
     channel->music.setVolume(0);
     channel->music.play();

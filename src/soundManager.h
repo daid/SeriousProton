@@ -23,10 +23,10 @@ private:
     };
     struct MusicChannel
     {
+        P<ResourceStream> stream;
         sf::Music music;
         FadeMode mode;
         float fade_delay;
-        P<ResourceStream> stream;
     };
     sf::Clock clock;
     MusicChannel primary_music;
