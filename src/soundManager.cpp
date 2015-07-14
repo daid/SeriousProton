@@ -8,6 +8,7 @@
 #include "vectorUtils.h"
 #include "resources.h"
 #include "soundManager.h"
+#include "random.h"
 
 #define MAX_SOUNDS 16
 
@@ -15,13 +16,12 @@ SoundManager soundManager;
 
 SoundManager::SoundManager()
 {
-    //By creating a SoundBuffer we force SFML to load the sound subsystem. Else this is done when the first sound is loaded, causing a delay.
+    //By creating a SoundBuffer we force SFML to load the sound subsystem. Else this is done when the first sound is loaded, causing a delay at that point.
     sf::SoundBuffer forceLoadBuffer;
 
     for(unsigned int n=0; n<MAX_SOUNDS; n++)
         activeSoundList.push_back(sf::Sound());
     
-    musicStream = NULL;
     music_volume = 100.0;
     positional_sound_enabled = false;
 }
@@ -32,20 +32,23 @@ SoundManager::~SoundManager()
 
 void SoundManager::playMusic(string name)
 {
-    music.stop();
-    musicStream = getResourceStream(name);
-    if (musicStream)
-    {
-        music.openFromStream(**musicStream);
-        music.setLoop(true);
-        music.setVolume(music_volume);
-        music.play();
-    }
+    music_set.clear();
+    P<ResourceStream> stream = getResourceStream(name);
+    if (stream)
+        startMusic(stream, true);
+}
+
+void SoundManager::playMusicSet(std::vector<string> filenames)
+{
+    music_set = filenames;
+    startMusic(getResourceStream(music_set[irandom(0, music_set.size() - 1)]), false);
 }
 
 void SoundManager::stopMusic()
 {
-    music.stop();
+    music_set.clear();
+    primary_music.music.stop();
+    secondary_music.music.stop();
 }
 
 void SoundManager::setMusicVolume(float volume)
@@ -53,7 +56,10 @@ void SoundManager::setMusicVolume(float volume)
     if (music_volume != volume)
     {
         music_volume = volume;
-        music.setVolume(music_volume);
+        if (primary_music.mode == None)
+            primary_music.music.setVolume(music_volume);
+        if (secondary_music.mode == None)
+            secondary_music.music.setVolume(music_volume);
     }
 }
 
@@ -206,4 +212,93 @@ sf::SoundBuffer* SoundManager::loadSound(string name)
     LOG(INFO) << "Loaded: " << name << " of " << data->getDuration().asSeconds() << " seconds";
     soundMap[name] = data;
     return data;
+}
+
+void SoundManager::startMusic(P<ResourceStream> stream, bool loop)
+{
+    LOG(INFO) << "New music started";
+    MusicChannel* channel = &primary_music;
+    MusicChannel* other_channel = &secondary_music;
+    
+    if (primary_music.music.getStatus() != sf::Music::Stopped)
+    {
+        channel = &secondary_music;
+        other_channel = &primary_music;
+    }
+    
+    channel->music.stop();
+    channel->stream = stream;
+    channel->mode = FadeIn;
+    channel->fade_delay = fade_music_time;
+    channel->music.openFromStream(**channel->stream);
+    channel->music.setLoop(loop);
+    channel->music.setVolume(0);
+    channel->music.play();
+    
+    if (other_channel->music.getStatus() != sf::Music::Stopped)
+    {
+        other_channel->mode = FadeOut;
+        other_channel->fade_delay = fade_music_time;
+    }
+}
+
+void SoundManager::updateTick()
+{
+    float delta = clock.restart().asSeconds();
+    updateChannel(primary_music, delta);
+    updateChannel(secondary_music, delta);
+    
+    if (music_set.size() > 0)
+    {
+        if (primary_music.music.getStatus() == sf::Music::Playing && primary_music.mode == None)
+        {
+            if (secondary_music.music.getStatus() == sf::Music::Stopped)
+            {
+                if (primary_music.music.getPlayingOffset() > primary_music.music.getDuration() - sf::seconds(fade_music_time))
+                {
+                    startMusic(getResourceStream(music_set[irandom(0, music_set.size() - 1)]), false);
+                }
+            }
+        }
+
+        if (secondary_music.music.getStatus() == sf::Music::Playing && secondary_music.mode == None)
+        {
+            if (primary_music.music.getStatus() == sf::Music::Stopped)
+            {
+                if (secondary_music.music.getPlayingOffset() > secondary_music.music.getDuration() - sf::seconds(fade_music_time))
+                {
+                    startMusic(getResourceStream(music_set[irandom(0, music_set.size() - 1)]), false);
+                }
+            }
+        }
+    }
+}
+
+void SoundManager::updateChannel(MusicChannel& channel, float delta)
+{
+    switch(channel.mode)
+    {
+    case None:
+        break;
+    case FadeIn:
+        channel.fade_delay -= delta;
+        if (channel.fade_delay > 0.0)
+        {
+            channel.music.setVolume(music_volume * (1.0 - (channel.fade_delay / fade_music_time)));
+        }else{
+            channel.music.setVolume(music_volume);
+            channel.mode = None;
+        }
+        break;
+    case FadeOut:
+        channel.fade_delay -= delta;
+        if (channel.fade_delay > 0.0)
+        {
+            channel.music.setVolume(music_volume * (channel.fade_delay / fade_music_time));
+        }else{
+            channel.music.stop();
+            channel.mode = None;
+        }
+        break;
+    }
 }

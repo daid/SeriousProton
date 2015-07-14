@@ -61,6 +61,7 @@ void Engine::runMainLoop()
             elapsedTime += delta;
             CollisionManager::handleCollisions(delta);
             ScriptObject::clearDestroyedObjects();
+            soundManager.updateTick();
             
             sf::sleep(sf::seconds(1.0/60.0 - delta));
             //if (elapsedTime > 2.0)
@@ -139,8 +140,7 @@ void Engine::runMainLoop()
             }
 #endif
 
-            float delta = frameTimeClock.getElapsedTime().asSeconds();
-            frameTimeClock.restart();
+            float delta = frameTimeClock.restart().asSeconds();
             if (delta > 0.5)
                 delta = 0.5;
             if (delta < 0.001)
@@ -160,6 +160,7 @@ void Engine::runMainLoop()
             elapsedTime += delta;
             CollisionManager::handleCollisions(delta);
             ScriptObject::clearDestroyedObjects();
+            soundManager.updateTick();
 
             // Clear the window
             windowManager->render();

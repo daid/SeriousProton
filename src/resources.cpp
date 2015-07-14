@@ -96,19 +96,28 @@ P<ResourceStream> DirectoryResourceProvider::getResourceStream(string filename)
 
 std::vector<string> DirectoryResourceProvider::findResources(string searchPattern)
 {
-    std::vector<string> foundFiles;
-    DIR* dir = opendir(basepath.c_str());
+    std::vector<string> found_files;
+    findResources(found_files, "", searchPattern);
+    return found_files;
+}
+
+void DirectoryResourceProvider::findResources(std::vector<string>& found_files, const string path, const string searchPattern)
+{
+    DIR* dir = opendir((basepath + path).c_str());
+    if (!dir)
+        return;
+    
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL)
     {
         if (entry->d_name[0] == '.')
             continue;
-        string name = string(entry->d_name);
+        string name = path + string(entry->d_name);
         if (searchMatch(name, searchPattern))
-            foundFiles.push_back(name);
+            found_files.push_back(name);
+        findResources(found_files, path + string(entry->d_name) + "/", searchPattern);
     }
     closedir(dir);
-    return foundFiles;
 }
 
 P<ResourceStream> getResourceStream(string filename)

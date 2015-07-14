@@ -13,8 +13,27 @@ extern SoundManager soundManager;
 class SoundManager
 {
 private:
-    sf::Music music;
-    P<ResourceStream> musicStream;
+    static constexpr float fade_music_time = 10.0;
+
+    enum FadeMode
+    {
+        None,
+        FadeIn,
+        FadeOut
+    };
+    struct MusicChannel
+    {
+        sf::Music music;
+        FadeMode mode;
+        float fade_delay;
+        P<ResourceStream> stream;
+    };
+    sf::Clock clock;
+    MusicChannel primary_music;
+    MusicChannel secondary_music;
+    
+    std::vector<string> music_set;
+    
     std::unordered_map<string, sf::SoundBuffer*> soundMap;
     std::vector<sf::Sound> activeSoundList;
     float music_volume;
@@ -23,7 +42,8 @@ public:
     SoundManager();
     ~SoundManager();
     
-    void playMusic(string name);
+    void playMusic(string filename);
+    void playMusicSet(std::vector<string> filenames);
     void stopMusic();
     void setMusicVolume(float volume);
     float getMusicVolume();
@@ -39,6 +59,13 @@ public:
 private:
     void playSoundData(sf::SoundBuffer* data, float pitch, float volume);
     sf::SoundBuffer* loadSound(string name);
+    
+    void startMusic(P<ResourceStream> stream, bool loop=false);
+    
+    void updateTick();
+    void updateChannel(MusicChannel& channel, float delta);
+    
+    friend class Engine;
 };
 
 #endif//SOUNDMANAGER_H
