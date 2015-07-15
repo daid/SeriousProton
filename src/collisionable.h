@@ -4,12 +4,6 @@
 #include "P.h"
 #include "Box2D/Box2D.h"
 
-enum ECollisionType
-{
-    CT_Circle,
-    CT_Line
-};
-
 class Collisionable;
 class CollisionManager
 {
