@@ -131,6 +131,9 @@ void Engine::runMainLoop()
                 //  Recreate the window in this case to fix the viewport.
                 if (event.type == sf::Event::Resized)
                     windowManager->create();
+                if (event.type == sf::Event::TouchBegan || event.type == sf::Event::TouchMoved || event.type == sf::Event::TouchEnded)
+                    InputHandler::mousePos = InputHandler::realWindowPosToVirtual(sf::Vector2i(event.touch.x, event.touch.y));
+                
 #endif//__ANDROID__
             }
             if (last_key_press != sf::Keyboard::Unknown)
