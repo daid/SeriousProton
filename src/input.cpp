@@ -54,11 +54,17 @@ void InputHandler::update()
     if (sf::Touch::isDown(0))
     {
         mousePos = sf::Vector2f(sf::Touch::getPosition(0));
-        mouse_button_down[0] = true;
+        mouse_button_down[sf::Mouse::Left] = true;
     }else{
-        mouse_button_down[0] = false;
-        mousePos.x = -1;
-        mousePos.y = -1;
+        if (mouse_button_down[sf::Mouse::Left])
+        {
+            mouse_button_down[sf::Mouse::Left] = false;
+        }
+        else
+        {
+            mousePos.x = -1;
+            mousePos.y = -1;
+        }
     }
 #else
     mousePos = sf::Vector2f(sf::Mouse::getPosition());
