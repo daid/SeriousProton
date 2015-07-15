@@ -9,7 +9,7 @@
 #include "stringImproved.h"
 
 class SoundManager;
-extern SoundManager soundManager;
+extern SoundManager* soundManager;
 class SoundManager
 {
 private:

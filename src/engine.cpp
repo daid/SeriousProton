@@ -16,15 +16,19 @@ Engine::Engine()
 {
     engine = this;
     initRandom();
-    windowManager = NULL;
+    windowManager = nullptr;
     CollisionManager::initialize();
     InputHandler::initialize();
     gameSpeed = 1.0;
     running = true;
     elapsedTime = 0.0;
+    
+    soundManager = new SoundManager();
 }
 Engine::~Engine()
 {
+    delete soundManager;
+    soundManager = nullptr;
 }
 
 void Engine::registerObject(string name, P<PObject> obj)
@@ -61,7 +65,7 @@ void Engine::runMainLoop()
             elapsedTime += delta;
             CollisionManager::handleCollisions(delta);
             ScriptObject::clearDestroyedObjects();
-            soundManager.updateTick();
+            soundManager->updateTick();
             
             sf::sleep(sf::seconds(1.0/60.0 - delta));
             //if (elapsedTime > 2.0)
@@ -160,12 +164,12 @@ void Engine::runMainLoop()
             elapsedTime += delta;
             CollisionManager::handleCollisions(delta);
             ScriptObject::clearDestroyedObjects();
-            soundManager.updateTick();
+            soundManager->updateTick();
 
             // Clear the window
             windowManager->render();
         }
-        soundManager.stopMusic();
+        soundManager->stopMusic();
     }
 }
 

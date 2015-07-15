@@ -12,7 +12,7 @@
 
 #define MAX_SOUNDS 16
 
-SoundManager soundManager;
+SoundManager* soundManager;
 
 SoundManager::SoundManager()
 {
