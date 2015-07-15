@@ -35,6 +35,7 @@ class InputHandler
     static void initialize();
     
     static void fireKeyEvent(sf::Keyboard::Key key, int unicode);
+    static sf::Vector2f realWindowPosToVirtual(sf::Vector2i position);
 public:
     static bool touch_screen;
     static sf::Transform mouse_transform;

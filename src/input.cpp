@@ -53,7 +53,7 @@ void InputHandler::update()
 #ifdef __ANDROID__
     if (sf::Touch::isDown(0))
     {
-        mousePos = sf::Vector2f(sf::Touch::getPosition(0));
+        mousePos = realWindowPosToVirtual(sf::Touch::getPosition(0));
         mouse_button_down[sf::Mouse::Left] = true;
     }else{
         if (mouse_button_down[sf::Mouse::Left])
@@ -67,12 +67,9 @@ void InputHandler::update()
         }
     }
 #else
-    mousePos = sf::Vector2f(sf::Mouse::getPosition());
-#endif
-    mousePos = mousePos - sf::Vector2f(windowManager->window.getPosition());
-    mousePos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x);
-    mousePos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y);
+    mousePos = realWindowPosToVirtual(sf::Mouse::getPosition());
     mousePos = mouse_transform.transformPoint(mousePos);
+#endif
 
     for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
     {
@@ -102,4 +99,22 @@ void InputHandler::fireKeyEvent(sf::Keyboard::Key key, int unicode)
     {
         e->handleKeyPress(key, unicode);
     }
+}
+
+sf::Vector2f InputHandler::realWindowPosToVirtual(sf::Vector2i position)
+{
+#ifndef __ANDROID__
+    sf::FloatRect viewport = windowManager->window.getView().getViewport();
+    sf::Vector2f pos = sf::Vector2f(position - windowManager->window.getPosition());
+    
+    pos.x -= viewport.left * float(windowManager->window.getSize().x);
+    pos.y -= viewport.top * float(windowManager->window.getSize().y);
+    pos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x) / viewport.width;
+    pos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y) / viewport.height;
+#else
+    sf::Vector2f pos = sf::Vector2f(position - windowManager->window.getPosition());
+    pos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x);
+    pos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y);
+#endif
+    return pos;
 }
