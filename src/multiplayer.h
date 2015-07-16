@@ -155,7 +155,6 @@ public:
     {
         assert(!replicated);
         assert(memberReplicationInfo.size() < 0xFFFF);
-        assert(sizeof(T) <= sizeof(int64_t));
         MemberReplicationInfo info;
 #ifdef DEBUG
         info.name = name;
@@ -180,7 +179,6 @@ public:
     {
         assert(!replicated);
         assert(memberReplicationInfo.size() < 0xFFFF);
-        assert(sizeof(T) <= sizeof(int64_t));
         MemberReplicationInfo info;
 #ifdef DEBUG
         info.name = name;
