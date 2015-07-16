@@ -126,12 +126,8 @@ void Engine::runMainLoop()
                     InputHandler::mouse_button_down[event.mouseButton.button] = true;
                 if (event.type == sf::Event::MouseButtonReleased)
                     InputHandler::mouse_button_down[event.mouseButton.button] = false;
-#ifdef __ANDROID__
                 if (event.type == sf::Event::Resized)
-                {
-                    //TODO: Fix the viewport of the window.
-                }
-#endif//__ANDROID__
+                    windowManager->setupView();
             }
             if (last_key_press != sf::Keyboard::Unknown)
             {

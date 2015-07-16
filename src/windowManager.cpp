@@ -87,14 +87,20 @@ void WindowManager::create()
     window.setVerticalSyncEnabled(false);
     window.setFramerateLimit(60);
     window.setMouseCursorVisible(false);
+    setupView();
+}
+
+void WindowManager::setupView()
+{
+    sf::Vector2f window_size = sf::Vector2f(window.getSize());
     sf::View view(sf::Vector2f(virtualSize.x/2,virtualSize.y/2), sf::Vector2f(virtualSize.x, virtualSize.y));
-    if (windowWidth * 1.1 > windowHeight * virtualSize.x / virtualSize.y)
+    if (window_size.x * 1.1 > window_size.y * virtualSize.x / virtualSize.y)
     {
-        float aspect = float(windowHeight) * float(virtualSize.x) / float(virtualSize.y) / float(windowWidth);
+        float aspect = window_size.y * float(virtualSize.x) / float(virtualSize.y) / window_size.x;
         float offset = 0.5 - 0.5 * aspect;
         view.setViewport(sf::FloatRect(offset, 0, aspect, 1));
     }else{
-        float aspect = float(windowWidth) / float(windowHeight) * float(virtualSize.y) / float(virtualSize.x);
+        float aspect = window_size.x / window_size.y * float(virtualSize.y) / float(virtualSize.x);
         float offset = 0.5 - 0.5 * aspect;
         view.setViewport(sf::FloatRect(0, offset, 1, aspect));
     }

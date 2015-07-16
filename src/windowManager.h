@@ -9,6 +9,7 @@ class WindowManager : public virtual PObject
 {
 private:
     bool windowHasFocus;
+    bool allow_horizontal_stretch;
     sf::Vector2i virtualSize;
     sf::RenderWindow window;
     RenderChain* renderChain;
@@ -33,6 +34,7 @@ public:
 
 private:
     void create();
+    void setupView();
 };
 
 #endif//WINDOW_MANAGER_H
