@@ -127,13 +127,10 @@ void Engine::runMainLoop()
                 if (event.type == sf::Event::MouseButtonReleased)
                     InputHandler::mouse_button_down[event.mouseButton.button] = false;
 #ifdef __ANDROID__
-                // Android gives resize events when switching from/to landscape mode.
-                //  Recreate the window in this case to fix the viewport.
                 if (event.type == sf::Event::Resized)
-                    windowManager->create();
-                if (event.type == sf::Event::TouchBegan || event.type == sf::Event::TouchMoved || event.type == sf::Event::TouchEnded)
-                    InputHandler::mousePos = InputHandler::realWindowPosToVirtual(sf::Vector2i(event.touch.x, event.touch.y));
-                
+                {
+                    //TODO: Fix the viewport of the window.
+                }
 #endif//__ANDROID__
             }
             if (last_key_press != sf::Keyboard::Unknown)

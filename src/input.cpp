@@ -62,8 +62,8 @@ void InputHandler::update()
         }
         else
         {
-            //mousePos.x = -1;
-            //mousePos.y = -1;
+            mousePos.x = -1;
+            mousePos.y = -1;
         }
     }
 #else
