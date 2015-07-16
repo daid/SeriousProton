@@ -216,6 +216,9 @@ sf::SoundBuffer* SoundManager::loadSound(string name)
 
 void SoundManager::startMusic(P<ResourceStream> stream, bool loop)
 {
+    if (!stream)
+        return;
+    
     MusicChannel* channel = &primary_music;
     MusicChannel* other_channel = &secondary_music;
     
