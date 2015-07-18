@@ -35,6 +35,8 @@ class Engine
     std::unordered_map<string, P<PObject> > objectMap;
     float elapsedTime;
     float gameSpeed;
+    
+    sf::Keyboard::Key last_key_press;
 public:
     Engine();
     ~Engine();
@@ -48,6 +50,8 @@ public:
     
     void runMainLoop();
     void shutdown();
+private:
+    void handleEvent(sf::Event& event);
 };
 
 #endif//ENGINE_H

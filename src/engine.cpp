@@ -76,7 +76,7 @@ void Engine::runMainLoop()
 #ifdef DEBUG
         sf::Clock debugOutputClock;
 #endif
-        sf::Keyboard::Key last_key_press = sf::Keyboard::Unknown;
+        last_key_press = sf::Keyboard::Unknown;
         
         while (windowManager->window.isOpen())
         {
@@ -85,49 +85,7 @@ void Engine::runMainLoop()
             sf::Event event;
             while (windowManager->window.pollEvent(event))
             {
-                // Window closed: exit
-                if ((event.type == sf::Event::Closed))
-                {
-                    windowManager->window.close();
-                    break;
-                }
-                if (event.type == sf::Event::GainedFocus)
-                    windowManager->windowHasFocus = true;
-                if (event.type == sf::Event::LostFocus)
-                    windowManager->windowHasFocus = false;
-#ifdef DEBUG
-                if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L))
-                {
-                    int n = 0;
-                    printf("---------------------\n");
-                    for(PObject* obj = DEBUG_PobjListStart; obj; obj = obj->DEBUG_PobjListNext)
-                        printf("%c%4d: %4d: %s\n", obj->isDestroyed() ? '>' : ' ', n++, obj->getRefCount(), typeid(*obj).name());
-                    printf("---------------------\n");
-                }
-#endif
-                if (event.type == sf::Event::KeyPressed)
-                {
-                    InputHandler::keyboard_button_down[event.key.code] = true;
-                    last_key_press = event.key.code;
-                }
-                if (event.type == sf::Event::KeyReleased)
-                    InputHandler::keyboard_button_down[event.key.code] = false;
-                if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
-                {
-                    if (last_key_press != sf::Keyboard::Unknown)
-                    {
-                        InputHandler::fireKeyEvent(last_key_press, event.text.unicode);
-                        last_key_press = sf::Keyboard::Unknown;
-                    }
-                }
-                if (event.type == sf::Event::MouseWheelMoved)
-                    InputHandler::mouse_wheel_delta += event.mouseWheel.delta;
-                if (event.type == sf::Event::MouseButtonPressed)
-                    InputHandler::mouse_button_down[event.mouseButton.button] = true;
-                if (event.type == sf::Event::MouseButtonReleased)
-                    InputHandler::mouse_button_down[event.mouseButton.button] = false;
-                if (event.type == sf::Event::Resized)
-                    windowManager->setupView();
+                handleEvent(event);
             }
             if (last_key_press != sf::Keyboard::Unknown)
             {
@@ -152,12 +110,12 @@ void Engine::runMainLoop()
             if (delta < 0.001)
                 delta = 0.001;
             delta *= gameSpeed;
-    #ifdef DEBUG
+#ifdef DEBUG
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tab))
                 delta /= 5.0;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tilde))
                 delta *= 5.0;
-    #endif
+#endif
             
             InputHandler::update();
             entityList.update();
@@ -173,6 +131,72 @@ void Engine::runMainLoop()
         }
         soundManager->stopMusic();
     }
+}
+
+void Engine::handleEvent(sf::Event& event)
+{
+    // Window closed: exit
+    if ((event.type == sf::Event::Closed))
+    {
+        windowManager->window.close();
+    }
+    if (event.type == sf::Event::GainedFocus)
+        windowManager->windowHasFocus = true;
+    if (event.type == sf::Event::LostFocus)
+        windowManager->windowHasFocus = false;
+#ifdef DEBUG
+    if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L))
+    {
+        int n = 0;
+        printf("---------------------\n");
+        for(PObject* obj = DEBUG_PobjListStart; obj; obj = obj->DEBUG_PobjListNext)
+            printf("%c%4d: %4d: %s\n", obj->isDestroyed() ? '>' : ' ', n++, obj->getRefCount(), typeid(*obj).name());
+        printf("---------------------\n");
+    }
+#endif
+    if (event.type == sf::Event::KeyPressed)
+    {
+        InputHandler::keyboard_button_down[event.key.code] = true;
+        last_key_press = event.key.code;
+    }
+    if (event.type == sf::Event::KeyReleased)
+        InputHandler::keyboard_button_down[event.key.code] = false;
+    if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
+    {
+        if (last_key_press != sf::Keyboard::Unknown)
+        {
+            InputHandler::fireKeyEvent(last_key_press, event.text.unicode);
+            last_key_press = sf::Keyboard::Unknown;
+        }
+    }
+    if (event.type == sf::Event::MouseWheelMoved)
+        InputHandler::mouse_wheel_delta += event.mouseWheel.delta;
+    if (event.type == sf::Event::MouseButtonPressed)
+        InputHandler::mouse_button_down[event.mouseButton.button] = true;
+    if (event.type == sf::Event::MouseButtonReleased)
+        InputHandler::mouse_button_down[event.mouseButton.button] = false;
+    if (event.type == sf::Event::Resized)
+        windowManager->setupView();
+#ifdef __ANDROID__
+    //Focus lost and focus gained events are used when the application window is created and destroyed.
+    if (event.type == sf::Event::LostFocus)
+    {
+        windowManager->window.close();
+    }
+    
+    //The MouseEntered and MouseLeft events are received when the activity needs to pause or resume.
+    if (event.type == sf::Event::MouseLeft)
+    {
+        //Pause is when a small popup is on top of the window. So keep running.
+        while(windowManager->window.isOpen() && windowManager->window.waitEvent(event))
+        {
+            if (event.type != sf::Event::MouseLeft)
+                handleEvent(event);
+            if (event.type == sf::Event::MouseEntered)
+                break;
+        }
+    }
+#endif//__ANDROID__
 }
 
 void Engine::setGameSpeed(float speed)
