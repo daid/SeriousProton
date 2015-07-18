@@ -35,6 +35,9 @@ void InputHandler::initialize()
 {
     memset(mouse_button_down, 0, sizeof(mouse_button_down));
     memset(keyboard_button_down, 0, sizeof(keyboard_button_down));
+#ifndef __ANDROID__
+    touch_screen = true;
+#endif
 }
 
 void InputHandler::update()
@@ -56,20 +59,12 @@ void InputHandler::update()
         mousePos = realWindowPosToVirtual(sf::Touch::getPosition(0));
         mouse_button_down[sf::Mouse::Left] = true;
     }else{
-        if (mouse_button_down[sf::Mouse::Left])
-        {
-            mouse_button_down[sf::Mouse::Left] = false;
-        }
-        else
-        {
-            mousePos.x = -1;
-            mousePos.y = -1;
-        }
+        mouse_button_down[sf::Mouse::Left] = false;
     }
 #else
     mousePos = realWindowPosToVirtual(sf::Mouse::getPosition());
-    mousePos = mouse_transform.transformPoint(mousePos);
 #endif
+    mousePos = mouse_transform.transformPoint(mousePos);
 
     for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
     {
