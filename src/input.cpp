@@ -35,7 +35,7 @@ void InputHandler::initialize()
 {
     memset(mouse_button_down, 0, sizeof(mouse_button_down));
     memset(keyboard_button_down, 0, sizeof(keyboard_button_down));
-#ifndef __ANDROID__
+#ifdef __ANDROID__
     touch_screen = true;
 #endif
 }
