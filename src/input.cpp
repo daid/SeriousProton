@@ -98,7 +98,6 @@ void InputHandler::fireKeyEvent(sf::Keyboard::Key key, int unicode)
 
 sf::Vector2f InputHandler::realWindowPosToVirtual(sf::Vector2i position)
 {
-#ifdef __ANDROID__
     sf::FloatRect viewport = windowManager->window.getView().getViewport();
     sf::Vector2f pos = sf::Vector2f(position - windowManager->window.getPosition());
     
@@ -106,10 +105,5 @@ sf::Vector2f InputHandler::realWindowPosToVirtual(sf::Vector2i position)
     pos.y -= viewport.top * float(windowManager->window.getSize().y);
     pos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x) / viewport.width;
     pos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y) / viewport.height;
-#else
-    sf::Vector2f pos = sf::Vector2f(position - windowManager->window.getPosition());
-    pos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x);
-    pos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y);
-#endif
     return pos;
 }

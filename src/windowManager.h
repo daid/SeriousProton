@@ -9,7 +9,9 @@ class WindowManager : public virtual PObject
 {
 private:
     bool windowHasFocus;
-    bool allow_horizontal_stretch;
+    float min_aspect_ratio;
+    bool allow_virtual_resize;
+    
     sf::Vector2i virtualSize;
     sf::RenderWindow window;
     RenderChain* renderChain;
@@ -28,6 +30,8 @@ public:
     void setFullscreen(bool fullscreen);
     int getFSAA() { return fsaa; }
     void setFSAA(int fsaa);
+    
+    void setAllowVirtualResize(bool allow) { allow_virtual_resize = allow; setupView(); }
 
     friend class InputHandler;
     friend class Engine;

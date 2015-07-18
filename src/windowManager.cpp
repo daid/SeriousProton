@@ -11,6 +11,8 @@ WindowManager::WindowManager(int virtualWidth, int virtualHeight, bool fullscree
 {
     srand(time(NULL));
     windowHasFocus = true;
+    min_aspect_ratio = float(virtualWidth) / float(virtualHeight);
+    allow_virtual_resize = false;
 
     create();
     glewInit();
@@ -93,16 +95,23 @@ void WindowManager::create()
 void WindowManager::setupView()
 {
     sf::Vector2f window_size = sf::Vector2f(window.getSize());
-    sf::View view(sf::Vector2f(virtualSize.x/2,virtualSize.y/2), sf::Vector2f(virtualSize.x, virtualSize.y));
-    if (window_size.x * 1.1 > window_size.y * virtualSize.x / virtualSize.y)
+    if (window_size.x / window_size.y > min_aspect_ratio)
     {
+        if (allow_virtual_resize)
+            virtualSize.x = virtualSize.y * (window_size.x / window_size.y);
+        
         float aspect = window_size.y * float(virtualSize.x) / float(virtualSize.y) / window_size.x;
-        float offset = 0.5 - 0.5 * aspect;
+        float offset = 0;//0.5 - 0.5 * aspect;
+        sf::View view(sf::Vector2f(virtualSize.x/2,virtualSize.y/2), sf::Vector2f(virtualSize.x, virtualSize.y));
         view.setViewport(sf::FloatRect(offset, 0, aspect, 1));
+        window.setView(view);
     }else{
+        virtualSize.x = virtualSize.y * min_aspect_ratio;
+        
         float aspect = window_size.x / window_size.y * float(virtualSize.y) / float(virtualSize.x);
         float offset = 0.5 - 0.5 * aspect;
+        sf::View view(sf::Vector2f(virtualSize.x/2,virtualSize.y/2), sf::Vector2f(virtualSize.x, virtualSize.y));
         view.setViewport(sf::FloatRect(0, offset, 1, aspect));
+        window.setView(view);
     }
-    window.setView(view);
 }
