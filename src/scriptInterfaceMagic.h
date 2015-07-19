@@ -341,6 +341,10 @@ template<class T> struct call<T, ScriptCallback T::* >
             lua_settable(L, -3);
             
             lua_pop(L, 3);
+            
+            //Put the object on the stack again.
+            lua_pushvalue(L, 1);
+            return 1;
         }
         return 0;
     }
