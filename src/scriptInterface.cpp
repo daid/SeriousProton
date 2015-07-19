@@ -400,6 +400,8 @@ void ScriptObject::destroy()
 
 void ScriptObject::clearDestroyedObjects()
 {
+    if (!L)
+        return;
 #ifdef DEBUG
     //Run the garbage collector every update when debugging, to better debug references and leaks.
     lua_gc(L, LUA_GCCOLLECT, 0);

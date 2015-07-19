@@ -310,7 +310,7 @@ template<class T> struct call<T, ScriptCallback T::* >
         convert< T* >::param(L, idx, obj);
         if (obj)
         {
-            ScriptCallback* callback_object = &obj->callback;
+            ScriptCallback* callback_object = &((*obj).*(callback));
             lua_pushlightuserdata(L, callback_object);
             lua_gettable(L, LUA_REGISTRYINDEX);
             //Get the table which matches this callback object. If there is no table, create it.
