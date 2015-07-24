@@ -29,6 +29,15 @@ extern Engine* engine;
 
 class Engine
 {
+public:
+    class EngineTiming
+    {
+    public:
+        float update;
+        float collision;
+        float render;
+    };
+private:
     bool running;
     WindowManager* windowManager;
     
@@ -37,6 +46,7 @@ class Engine
     float gameSpeed;
     
     sf::Keyboard::Key last_key_press;
+    EngineTiming last_engine_timing;
 public:
     Engine();
     ~Engine();
@@ -44,6 +54,7 @@ public:
     void setGameSpeed(float speed);
     float getGameSpeed();
     float getElapsedTime();
+    EngineTiming getEngineTiming();
 
     void registerObject(string name, P<PObject> obj);
     P<PObject> getObject(string name);

@@ -116,18 +116,25 @@ void Engine::runMainLoop()
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tilde))
                 delta *= 5.0;
 #endif
+            EngineTiming engine_timing;
             
+            sf::Clock engine_timing_clock;
             InputHandler::update();
             entityList.update();
             foreach(Updatable, u, updatableList)
                 u->update(delta);
             elapsedTime += delta;
+            engine_timing.update = engine_timing_clock.restart().asSeconds();
             CollisionManager::handleCollisions(delta);
+            engine_timing.collision = engine_timing_clock.restart().asSeconds();
             ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();
 
             // Clear the window
             windowManager->render();
+            engine_timing.render = engine_timing_clock.restart().asSeconds();
+            
+            last_engine_timing = engine_timing;
         }
         soundManager->stopMusic();
     }
@@ -212,6 +219,11 @@ float Engine::getGameSpeed()
 float Engine::getElapsedTime()
 {
     return elapsedTime;
+}
+
+Engine::EngineTiming Engine::getEngineTiming()
+{
+    return last_engine_timing;
 }
 
 void Engine::shutdown()

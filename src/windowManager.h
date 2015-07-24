@@ -32,6 +32,7 @@ public:
     void setFSAA(int fsaa);
     
     void setAllowVirtualResize(bool allow) { allow_virtual_resize = allow; setupView(); }
+    void setFrameLimit(int limit) { window.setFramerateLimit(limit); }
 
     friend class InputHandler;
     friend class Engine;
