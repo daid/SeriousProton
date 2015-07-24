@@ -50,6 +50,7 @@ class GameServer : public Updatable
     std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
 public:
     GameServer(string serverName, int versionNumber, int listenPort = defaultServerPort);
+    virtual ~GameServer();
 
     P<MultiplayerObject> getObjectById(int32_t id);
     virtual void update(float delta);

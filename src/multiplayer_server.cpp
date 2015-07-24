@@ -42,6 +42,12 @@ GameServer::GameServer(string serverName, int versionNumber, int listenPort)
     selector.add(broadcastListenSocket);
 }
 
+GameServer::~GameServer()
+{
+    for(ClientInfo& info : clientList)
+        delete info.socket;
+}
+
 P<MultiplayerObject> GameServer::getObjectById(int32_t id)
 {
     if (objectMap.find(id) != objectMap.end())

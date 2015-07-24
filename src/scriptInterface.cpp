@@ -11,6 +11,7 @@ static int random(lua_State* L)
     lua_pushnumber(L, random(rMin, rMax));
     return 1;
 }
+/// random(min_value, max_value)
 /// Generate a random number between the min and max value.
 REGISTER_SCRIPT_FUNCTION(random);
 
