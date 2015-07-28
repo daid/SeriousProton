@@ -414,6 +414,30 @@ template<class T, typename P1, typename P2> struct call<T, void(T::*)(P1, P2) >
     }
 };
 
+template<class T, typename R, typename P1, typename P2> struct call<T, R(T::*)(P1, P2) >
+{
+    typedef R(T::*FuncProto)(P1 p1, P2 p2);
+    
+    static int function(lua_State* L)
+    {
+        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
+        FuncProto func = *func_ptr;
+        P1 p1;
+        P2 p2;
+        T* obj = NULL;
+        int idx = 1;
+        convert<T*>::param(L, idx, obj);
+        convert<P1>::param(L, idx, p1);
+        convert<P2>::param(L, idx, p2);
+        if (obj)
+        {
+            R r = (obj->*func)(p1, p2);
+            return convert<R>::returnType(L, r);
+        }
+        return 0;
+    }
+};
+
 template<class T, typename P1, typename P2, typename P3> struct call<T, void(T::*)(P1, P2, P3) >
 {
     typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3);
