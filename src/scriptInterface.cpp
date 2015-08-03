@@ -120,12 +120,11 @@ bool ScriptObject::run(string filename)
         filecontents += line + "\n";
     }while(stream->tell() < stream->getSize());
 
-    if (luaL_loadstring(L, filecontents.c_str()))
+    if (luaL_loadbuffer(L, filecontents.c_str(), filecontents.length(), filename.c_str()))
     {
         error_string = luaL_checkstring(L, -1);
         LOG(ERROR) << "LUA: load: " << error_string;
         lua_pop(L, 1);
-        destroy();
         return false;
     }
 
@@ -141,7 +140,6 @@ bool ScriptObject::run(string filename)
         error_string = luaL_checkstring(L, -1);
         LOG(ERROR) << "LUA: run: " << error_string;
         lua_pop(L, 1);
-        destroy();
         return false;
     }
     
