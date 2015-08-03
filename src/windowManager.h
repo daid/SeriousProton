@@ -36,7 +36,7 @@ public:
 
     friend class InputHandler;
     friend class Engine;
-
+    friend class Clipboard;
 private:
     void create();
     void setupView();

@@ -23,6 +23,7 @@
 #include "event.h"
 #include "logging.h"
 #include "tween.h"
+#include "clipboard.h"
 
 class Engine;
 extern Engine* engine;
