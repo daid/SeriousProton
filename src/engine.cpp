@@ -27,6 +27,8 @@ Engine::Engine()
 }
 Engine::~Engine()
 {
+    if (windowManager)
+        windowManager->close();
     delete soundManager;
     soundManager = nullptr;
 }
@@ -78,7 +80,7 @@ void Engine::runMainLoop()
 #endif
         last_key_press = sf::Keyboard::Unknown;
         
-        while (windowManager->window.isOpen())
+        while(running && windowManager->window.isOpen())
         {
             InputHandler::mouse_wheel_delta = 0;
             // Handle events
@@ -95,7 +97,7 @@ void Engine::runMainLoop()
 
 #ifdef DEBUG
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && windowManager->hasFocus())
-                windowManager->window.close();
+                running = false;
 
             if (debugOutputClock.getElapsedTime().asSeconds() > 1.0)
             {
@@ -144,9 +146,7 @@ void Engine::handleEvent(sf::Event& event)
 {
     // Window closed: exit
     if ((event.type == sf::Event::Closed))
-    {
-        windowManager->window.close();
-    }
+        running = false;
     if (event.type == sf::Event::GainedFocus)
         windowManager->windowHasFocus = true;
     if (event.type == sf::Event::LostFocus)
@@ -187,9 +187,7 @@ void Engine::handleEvent(sf::Event& event)
 #ifdef __ANDROID__
     //Focus lost and focus gained events are used when the application window is created and destroyed.
     if (event.type == sf::Event::LostFocus)
-    {
-        windowManager->window.close();
-    }
+        running = false;
     
     //The MouseEntered and MouseLeft events are received when the activity needs to pause or resume.
     if (event.type == sf::Event::MouseLeft)
@@ -228,7 +226,5 @@ Engine::EngineTiming Engine::getEngineTiming()
 
 void Engine::shutdown()
 {
-    if (windowManager)
-        windowManager->close();
     running = false;
 }
