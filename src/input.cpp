@@ -126,7 +126,7 @@ void InputHandler::update()
             
         float axis_pos;
         axis_pos = sf::Joystick::getAxisPosition(0, sf::Joystick::Z);
-        if (abs(axis_pos) > joystick_z_hysteresis)
+        if (fabs(axis_pos) > joystick_z_hysteresis)
             if (axis_pos > 0.0) // retain resolution
                 joystick_pos_z = (axis_pos - joystick_z_hysteresis) * ((joystick_z_hysteresis / 100) + 1);
             else
@@ -135,7 +135,7 @@ void InputHandler::update()
             joystick_pos_z = 0.0;
             
         axis_pos = sf::Joystick::getAxisPosition(0, sf::Joystick::R);
-        if (abs(axis_pos) > joystick_r_hysteresis)
+        if (fabs(axis_pos) > joystick_r_hysteresis)
             if (axis_pos > 0.0) // retain resolution
                 joystick_pos_r = (axis_pos - joystick_r_hysteresis) * ((joystick_r_hysteresis / 100) + 1);
             else
