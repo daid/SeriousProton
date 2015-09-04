@@ -31,6 +31,19 @@ class InputHandler
     static bool keyboardButtonDown[sf::Keyboard::KeyCount];
     static bool keyboardButtonPressed[sf::Keyboard::KeyCount];
     static bool keyboardButtonReleased[sf::Keyboard::KeyCount];
+    static bool joystickButtonDown[sf::Joystick::ButtonCount];
+    static bool joystickButtonPressed[sf::Joystick::ButtonCount];
+    static bool joystickButtonReleased[sf::Joystick::ButtonCount];
+    
+    static sf::Vector2f joystick_pos_xy;
+    static float joystick_pos_z;
+    static float joystick_pos_r;
+    static float joystick_xy_delta;
+    static bool  joystick_button_down[sf::Joystick::ButtonCount];
+    static float joystick_axis_pos[sf::Joystick::AxisCount];
+    constexpr static float joystick_xy_hysteresis = 10;
+    constexpr static float joystick_z_hysteresis = 3;
+    constexpr static float joystick_r_hysteresis = 10;
 
     static void initialize();
     
@@ -38,6 +51,7 @@ class InputHandler
     static sf::Vector2f realWindowPosToVirtual(sf::Vector2i position);
 public:
     static bool touch_screen;
+    static bool joystick;
     static sf::Transform mouse_transform;
     static PVector<InputEventHandler> input_event_handlers;
 
@@ -52,6 +66,10 @@ public:
     static bool mouseIsPressed(sf::Mouse::Button button) { return mouseButtonPressed[button]; }
     static bool mouseIsReleased(sf::Mouse::Button button) { return mouseButtonReleased[button]; }
     static float getMouseWheelDelta() { return mouse_wheel_delta; }
+    
+    static sf::Vector2f getJoysticXYPos() { return joystick_pos_xy; }
+    static float        getJoysticZPos()  { return joystick_pos_z; }
+    static float        getJoysticRPos()  { return joystick_pos_r; }
 
     friend class Engine;
 };
