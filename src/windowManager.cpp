@@ -83,7 +83,7 @@ void WindowManager::create()
     if (fullscreen)
         window.create(sf::VideoMode(windowWidth, windowHeight, 32), "Game", sf::Style::Fullscreen, context_settings);
     else
-        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "Game", sf::Style::None, context_settings);
+        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "Game", sf::Style::Default, context_settings);
     sf::ContextSettings settings = window.getSettings();
     LOG(INFO) << "OpenGL version: " << settings.majorVersion << "." << settings.minorVersion;
     window.setVerticalSyncEnabled(false);

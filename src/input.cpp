@@ -76,7 +76,7 @@ void InputHandler::update()
         mouse_button_down[sf::Mouse::Left] = false;
     }
 #else
-    mousePos = realWindowPosToVirtual(sf::Mouse::getPosition());
+    mousePos = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
 #endif
     mousePos = mouse_transform.transformPoint(mousePos);
 
@@ -164,7 +164,7 @@ void InputHandler::fireKeyEvent(sf::Keyboard::Key key, int unicode)
 sf::Vector2f InputHandler::realWindowPosToVirtual(sf::Vector2i position)
 {
     sf::FloatRect viewport = windowManager->window.getView().getViewport();
-    sf::Vector2f pos = sf::Vector2f(position - windowManager->window.getPosition());
+    sf::Vector2f pos = sf::Vector2f(position);
     
     pos.x -= viewport.left * float(windowManager->window.getSize().x);
     pos.y -= viewport.top * float(windowManager->window.getSize().y);
