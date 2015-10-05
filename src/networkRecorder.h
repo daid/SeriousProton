@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <list>
 
-#include "updatable.h"
+#include "Updatable.h"
 
 class NetworkAudioRecorder : private sf::SoundRecorder, public Updatable
 {
