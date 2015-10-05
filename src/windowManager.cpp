@@ -72,10 +72,10 @@ void WindowManager::create()
         windowWidth *= scale - 1;
         windowHeight *= scale - 1;
         
-        while(windowWidth >= int(desktop.width) || windowHeight >= int(desktop.height))
+        while(windowWidth >= int(desktop.width) || windowHeight >= int(desktop.height) - 100)
         {
-            windowWidth *= 0.8;
-            windowHeight *= 0.8;
+            windowWidth *= 0.9;
+            windowHeight *= 0.9;
         }
     }
 

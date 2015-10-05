@@ -15,8 +15,8 @@ static std::unordered_map<string, int> multiplayer_stats;
 
 P<GameServer> game_server;
 
-GameServer::GameServer(string serverName, int versionNumber, int listenPort)
-: serverName(serverName), versionNumber(versionNumber)
+GameServer::GameServer(string server_name, int version_number, int listen_port)
+: server_name(server_name), listen_port(listen_port), version_number(version_number), master_server_update_thread(&GameServer::runMasterServerUpdateThread, this)
 {
     assert(!game_server);
     assert(!game_client);
@@ -30,13 +30,13 @@ GameServer::GameServer(string serverName, int versionNumber, int listenPort)
     nextObjectId = 1;
     nextclient_id = 1;
 
-    if (listenSocket.listen(listenPort) != sf::TcpListener::Done)
+    if (listenSocket.listen(listen_port) != sf::TcpListener::Done)
     {
-        LOG(ERROR) << "Failed to listen on TCP port: " << listenPort;
+        LOG(ERROR) << "Failed to listen on TCP port: " << listen_port;
     }
-    if (broadcastListenSocket.bind(listenPort) != sf::UdpSocket::Done)
+    if (broadcastListenSocket.bind(listen_port) != sf::UdpSocket::Done)
     {
-        LOG(ERROR) << "Failed to listen on UDP port: " << listenPort;
+        LOG(ERROR) << "Failed to listen on UDP port: " << listen_port;
     }
     selector.add(listenSocket);
     selector.add(broadcastListenSocket);
@@ -46,6 +46,19 @@ GameServer::~GameServer()
 {
     for(ClientInfo& info : clientList)
         delete info.socket;
+    master_server_update_thread.wait();
+}
+
+void GameServer::destroy()
+{
+    for(ClientInfo& info : clientList)
+        delete info.socket;
+    clientList.clear();
+    
+    listenSocket.close();
+    broadcastListenSocket.unbind();
+
+    Updatable::destroy();
 }
 
 P<MultiplayerObject> GameServer::getObjectById(int32_t id)
@@ -146,7 +159,7 @@ void GameServer::update(float gameDelta)
 
         //We do not care about what we received. Reply that we live!
         sf::Packet sendPacket;
-        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(versionNumber) << serverName;
+        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
         broadcastListenSocket.send(sendPacket, recvAddress, recvPort);
     }
     if (boardcastServerDelay > 0.0)
@@ -156,7 +169,7 @@ void GameServer::update(float gameDelta)
         boardcastServerDelay = 5.0;
 
         sf::Packet sendPacket;
-        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(versionNumber) << serverName;
+        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
         UDPbroadcastPacket(broadcastListenSocket, sendPacket, broadcastListenSocket.getLocalPort() + 1);
     }
 
@@ -322,6 +335,49 @@ void GameServer::sendAll(sf::Packet& packet)
     sendDataCounterPerClient += packet.getDataSize();
     for(unsigned int n=0; n<clientList.size(); n++)
         clientList[n].socket->send(packet);
+}
+
+void GameServer::registerOnMasterServer(string master_server_url)
+{
+    this->master_server_url = master_server_url;
+    master_server_update_thread.launch();
+}
+
+void GameServer::runMasterServerUpdateThread()
+{
+    if (!master_server_url.startswith("http://"))
+    {
+        LOG(ERROR) << "Master server URL does not start with \"http://\"";
+        return;
+    }
+    string hostname = master_server_url.substr(7);
+    int path_start = hostname.find("/");
+    if (path_start < 0)
+    {
+        LOG(ERROR) << "Master server URL has no uri after hostname";
+        return;
+    }
+    string uri = hostname.substr(path_start + 1);
+    hostname = hostname.substr(0, path_start);
+    
+    LOG(INFO) << "Registering at master server";
+    
+    sf::Http http(hostname);
+    while(!isDestroyed())
+    {
+        sf::Http::Request request(uri, sf::Http::Request::Post);
+        request.setBody("port=" + string(listen_port) + "&name=" + server_name);
+        
+        sf::Http::Response response = http.sendRequest(request, sf::seconds(10.0f));
+        
+        if (response.getStatus() != sf::Http::Response::Ok)
+        {
+            LOG(WARNING) << "Failed to register at master server (" << response.getStatus() << ")";
+        }
+        
+        for(int n=0;n<60 && !isDestroyed();n++)
+            sf::sleep(sf::seconds(1.0f));
+    }
 }
 
 void GameServer::gotAudioPacket(int32_t client_id, int32_t target_identifier, std::vector<int16_t>& audio_data)

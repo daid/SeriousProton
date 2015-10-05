@@ -21,6 +21,11 @@ GameClient::GameClient(sf::IpAddress server, int portNr)
     connect_thread.launch();
 }
 
+GameClient::~GameClient()
+{
+    connect_thread.wait();
+}
+
 P<MultiplayerObject> GameClient::getObjectById(int32_t id)
 {
     if (objectMap.find(id) != objectMap.end())
@@ -135,8 +140,6 @@ void GameClient::sendPacket(sf::Packet& packet)
 
 void GameClient::runConnect()
 {
-    P<GameClient> keep_object_alive = this;
-    
     if (socket.connect(server, port_nr, sf::seconds(5)) != sf::TcpSocket::Done)
         connected = true;
     last_receive_time.restart();

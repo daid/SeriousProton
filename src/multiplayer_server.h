@@ -22,8 +22,9 @@ class GameServer : public Updatable
     sf::UdpSocket broadcastListenSocket;
     sf::TcpListener listenSocket;
     sf::SocketSelector selector;
-    string serverName;
-    int versionNumber;
+    string server_name;
+    int listen_port;
+    int version_number;
     int sendDataCounter;
     int sendDataCounterPerClient;
     float sendDataRate;
@@ -48,17 +49,24 @@ class GameServer : public Updatable
 
     int32_t nextObjectId;
     std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
+
+    string master_server_url;
+    sf::Thread master_server_update_thread;
 public:
-    GameServer(string serverName, int versionNumber, int listenPort = defaultServerPort);
+    GameServer(string server_name, int versionNumber, int listenPort = defaultServerPort);
     virtual ~GameServer();
+
+    virtual void destroy() override;
 
     P<MultiplayerObject> getObjectById(int32_t id);
     virtual void update(float delta);
     inline float getSendDataRate() { return sendDataRate; }
     inline float getSendDataRatePerClient() { return sendDataRatePerClient; }
 
-    string getServerName() { return serverName; }
-    void setServerName(string name) { serverName = name; }
+    string getServerName() { return server_name; }
+    void setServerName(string name) { server_name = name; }
+    
+    void registerOnMasterServer(string master_server_url);
 
     void gotAudioPacket(int32_t client_id, int32_t target_identifier, std::vector<int16_t>& audio_data);
 private:
@@ -67,6 +75,8 @@ private:
 
     void genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet);
     void genenerateDeletePacketFor(int32_t id, sf::Packet& packet);
+    
+    void runMasterServerUpdateThread();
 
     friend class MultiplayerObject;
 public:

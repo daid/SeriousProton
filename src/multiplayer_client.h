@@ -28,6 +28,7 @@ class GameClient : public Updatable
     sf::Thread connect_thread;
 public:
     GameClient(sf::IpAddress server, int port_nr = defaultServerPort);
+    virtual ~GameClient();
 
     P<MultiplayerObject> getObjectById(int32_t id);
     virtual void update(float delta);
