@@ -60,6 +60,7 @@ public:
     string getServerName() { return serverName; }
     void setServerName(string name) { serverName = name; }
 
+    void gotAudioPacket(int32_t client_id, int32_t target_identifier, std::vector<int16_t>& audio_data);
 private:
     void registerObject(P<MultiplayerObject> obj);
     void sendAll(sf::Packet& packet);

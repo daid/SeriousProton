@@ -219,6 +219,22 @@ void GameServer::update(float gameDelta)
                             packet >> clientList[n].command_object_id;
                             clientList[n].receiveState = CRS_Command;
                             break;
+                        case CMD_CLIENT_AUDIO_COMM:
+                            {
+                                int32_t target_identifier;
+                                uint32_t sample_count;
+                                std::vector<int16_t> samples;
+                                packet >> target_identifier;
+                                packet >> sample_count;
+                                samples.reserve(sample_count);
+                                for(unsigned int n=0; n<sample_count; n++)
+                                {
+                                    int16_t sample;
+                                    packet >> sample;
+                                    samples.push_back(sample);
+                                }
+                                gotAudioPacket(n, target_identifier, samples);
+                            }
                         default:
                             LOG(ERROR) << "Unknown command from client: " << command;
                         }
@@ -306,4 +322,8 @@ void GameServer::sendAll(sf::Packet& packet)
     sendDataCounterPerClient += packet.getDataSize();
     for(unsigned int n=0; n<clientList.size(); n++)
         clientList[n].socket->send(packet);
+}
+
+void GameServer::gotAudioPacket(int32_t client_id, int32_t target_identifier, std::vector<int16_t>& audio_data)
+{
 }

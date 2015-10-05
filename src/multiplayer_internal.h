@@ -10,5 +10,6 @@ static const command_t CMD_SET_CLIENT_ID = 0x0004;
 static const command_t CMD_SET_GAME_SPEED = 0x0005;
 static const command_t CMD_CLIENT_COMMAND = 0x0006;
 static const command_t CMD_ALIVE = 0x0007;
+static const command_t CMD_CLIENT_AUDIO_COMM = 0x0008;
 
 #endif//MULTIPLAYER_INTERNAL_H

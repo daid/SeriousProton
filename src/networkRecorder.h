@@ -1,29 +1,44 @@
-#ifndef NETWORK_RECORDER_H
-#define NETWORK_RECORDER_H
+#ifndef NETWORK_AUDIO_RECORDER_H
+#define NETWORK_AUDIO_RECORDER_H
 
 #include <SFML/Audio.hpp>
 #include <SFML/Network.hpp>
+#include <SFML/Window.hpp>
 #include <stdint.h>
-#include <iostream>
+#include <list>
 
-class NetworkRecorder: public sf::SoundRecorder
+#include "updatable.h"
+
+class NetworkAudioRecorder : private sf::SoundRecorder, public Updatable
 {
-    public:
-        NetworkRecorder(const sf::IpAddress& _host = sf::IpAddress("127.0.0.1"), unsigned short _port = 9002) : host(_host), port(_port){};
-        void setCommands(const int16_t _voice_command, const int16_t _open_voice,int16_t _close_voice);
-    protected:
+private:
+    enum Mode
+    {
+        None,
+        VoiceActivation,
+        KeyActivation
+    };
+    Mode mode;
+    int32_t samplerate;
+    float trigger_level;
+    sf::Keyboard::Key activation_key;
+    sf::Clock record_start_time;
+    sf::Mutex sample_buffer_mutex;
+    std::vector<sf::Int16> sample_buffer;
+    int32_t target_identifier;
+    
+public:
+    NetworkAudioRecorder();
+    virtual ~NetworkAudioRecorder();
 
-        // Inherited functions
-        virtual bool onStart();
-        virtual bool onProcessSamples(const sf::Int16* samples, std::size_t sample_count);
-        virtual void onStop();
-        int16_t voice_command;
-        int16_t open_voice;
-        int16_t close_voice;
-        //Members
-        sf::IpAddress  host;   // Address of the remote host
-        unsigned short port;   // Remote port
-        sf::TcpSocket  socket; // Socket used to communicate with the server
+    void setVoiceActivation(float trigger_level);
+    void setKeyActivation(sf::Keyboard::Key key);
+
+protected:
+    virtual bool onProcessSamples(const sf::Int16* samples, std::size_t sample_count) override;
+
+public:
+    virtual void update(float delta) override;
 };
 
-#endif //NETWORKRECORDER_H
+#endif //NETWORK_VOICE_RECORDER_H
