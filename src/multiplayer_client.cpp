@@ -6,19 +6,19 @@
 P<GameClient> game_client;
 
 GameClient::GameClient(sf::IpAddress server, int portNr)
+: server(server), port_nr(port_nr), connect_thread(&GameClient::runConnect, this)
 {
     assert(!game_server);
     assert(!game_client);
 
     client_id = -1;
     game_client = this;
+    connected = false;
+    connecting = true;
 
-    if (socket.connect(server, portNr, sf::seconds(5)) != sf::TcpSocket::Done)
-        connected = false;
-    else
-        connected = true;
     last_receive_time.restart();
-    socket.setBlocking(false);
+    
+    connect_thread.launch();
 }
 
 P<MultiplayerObject> GameClient::getObjectById(int32_t id)
@@ -30,6 +30,9 @@ P<MultiplayerObject> GameClient::getObjectById(int32_t id)
 
 void GameClient::update(float delta)
 {
+    if (!connected)
+        return;
+
     std::vector<int32_t> delList;
     for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
     {
@@ -128,4 +131,16 @@ void GameClient::update(float delta)
 void GameClient::sendPacket(sf::Packet& packet)
 {
     socket.send(packet);
+}
+
+void GameClient::runConnect()
+{
+    P<GameClient> keep_object_alive = this;
+    
+    if (socket.connect(server, port_nr, sf::seconds(5)) != sf::TcpSocket::Done)
+        connected = true;
+    last_receive_time.restart();
+    socket.setBlocking(false);
+    
+    connecting = false;
 }
