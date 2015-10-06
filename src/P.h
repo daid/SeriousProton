@@ -144,6 +144,11 @@ public:
         check_release();
         return ptr;
     }
+    
+    T* operator*() const
+    {
+        return ptr;
+    }
 
     operator bool()
     {
@@ -252,23 +257,19 @@ public:
 };
 #define foreach(type, var, list) for(Piterator<type> var(list); var; var.next())
 
-template<class T>
-bool operator == (P<T>& p, const PObject* ptr)
+template<class T> bool operator == (P<T>& p, const PObject* ptr)
 {
     return *p == ptr;
 }
-template<class T>
-bool operator != (P<T>& p, const PObject* ptr)
+template<class T> bool operator != (P<T>& p, const PObject* ptr)
 {
     return *p != ptr;
 }
-template<class T1, class T2>
-bool operator == (P<T1>& p1, P<T2>& p2)
+template<class T1, class T2> bool operator == (P<T1>& p1, P<T2>& p2)
 {
     return *p1 == *p2;
 }
-template<class T1, class T2>
-bool operator != (P<T1>& p1, P<T2>& p2)
+template<class T1, class T2> bool operator != (P<T1>& p1, P<T2>& p2)
 {
     return *p1 != *p2;
 }

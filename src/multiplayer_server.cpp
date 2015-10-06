@@ -366,7 +366,7 @@ void GameServer::runMasterServerUpdateThread()
     while(!isDestroyed())
     {
         sf::Http::Request request(uri, sf::Http::Request::Post);
-        request.setBody("port=" + string(listen_port) + "&name=" + server_name);
+        request.setBody("port=" + string(listen_port) + "&name=" + server_name + "&version=" + string(version_number));
         
         sf::Http::Response response = http.sendRequest(request, sf::seconds(10.0f));
         
