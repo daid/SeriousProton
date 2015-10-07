@@ -19,7 +19,7 @@ class GameServer : public Updatable
 {
     sf::Clock updateTimeClock;
     sf::Clock aliveClock;
-    sf::UdpSocket broadcastListenSocket;
+    sf::UdpSocket broadcast_listen_socket;
     sf::TcpListener listenSocket;
     sf::SocketSelector selector;
     string server_name;
@@ -34,6 +34,7 @@ class GameServer : public Updatable
 
     enum EClientReceiveState
     {
+        CRS_Auth,
         CRS_Main,
         CRS_Command
     };
@@ -41,7 +42,7 @@ class GameServer : public Updatable
     {
         TcpSocket* socket;
         int32_t client_id;
-        EClientReceiveState receiveState;
+        EClientReceiveState receive_state;
         int32_t command_object_id;
     };
     int32_t nextclient_id;
@@ -76,7 +77,11 @@ private:
     void genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet);
     void genenerateDeletePacketFor(int32_t id, sf::Packet& packet);
     
+    void handleNewClient(ClientInfo& info);
+    
     void runMasterServerUpdateThread();
+    
+    void handleBroadcastUDPSocket(float delta);
 
     friend class MultiplayerObject;
 public:

@@ -7,6 +7,7 @@
 //The sf::TcpSocket has some problems with sending partial packets when the the OS buffers are full.
 //The TcpSocket of SeriousProton solves this by storing the partial packet in a buffer, and storing all other packets after that as well.
 //This requires the call to TcpSocket::update() in an attempt to resend this data properly.
+//NOTE: This has been fixed in SFML-2.3 with the addition of sf::Socket::Status::Partial, but we're still using our old code, which is known to work.
 class TcpSocket : public sf::TcpSocket
 {
 private:

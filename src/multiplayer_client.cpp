@@ -5,19 +5,17 @@
 
 P<GameClient> game_client;
 
-GameClient::GameClient(sf::IpAddress server, int portNr)
-: server(server), port_nr(port_nr), connect_thread(&GameClient::runConnect, this)
+GameClient::GameClient(int version_number, sf::IpAddress server, int port_nr)
+: version_number(version_number), server(server), port_nr(port_nr), connect_thread(&GameClient::runConnect, this)
 {
     assert(!game_server);
     assert(!game_client);
 
     client_id = -1;
     game_client = this;
-    connected = false;
-    connecting = true;
+    status = Connecting;
 
     last_receive_time.restart();
-    
     connect_thread.launch();
 }
 
@@ -35,7 +33,7 @@ P<MultiplayerObject> GameClient::getObjectById(int32_t id)
 
 void GameClient::update(float delta)
 {
-    if (!connected)
+    if (status == Disconnected || status == Connecting)
         return;
 
     std::vector<int32_t> delList;
@@ -51,85 +49,114 @@ void GameClient::update(float delta)
 
     socket.update();
     sf::Packet packet;
-    sf::TcpSocket::Status status;
-    while((status = socket.receive(packet)) == sf::TcpSocket::Done)
+    sf::TcpSocket::Status socket_status;
+    while((socket_status = socket.receive(packet)) == sf::TcpSocket::Done)
     {
         last_receive_time.restart();
 
         command_t command;
         packet >> command;
-        switch(command)
+        switch(status)
         {
-        case CMD_CREATE:
+        case Connecting:
+        case Authenticating:
+            switch(command)
             {
-                int32_t id;
-                string name;
-                packet >> id >> name;
-                for(MultiplayerClassListItem* i = multiplayerClassListStart; i; i = i->next)
+            case CMD_REQUEST_AUTH:
                 {
-                    if (i->name == name)
+                    int32_t server_version;
+                    bool require_password;
+                    packet >> server_version >> require_password;
+                    
+                    sf::Packet reply;
+                    reply << CMD_CLIENT_SEND_AUTH << int32_t(version_number) << string("");
+                    socket.send(reply);
+                }
+                break;
+            case CMD_SET_CLIENT_ID:
+                packet >> client_id;
+                status = Connected;
+                break;
+            case CMD_ALIVE:
+                //Alive packet, just to keep the connection alive.
+                break;
+            default:
+                LOG(ERROR) << "Unknown command from server: " << command;
+            }
+            break;
+        case Connected:
+            switch(command)
+            {
+            case CMD_CREATE:
+                {
+                    int32_t id;
+                    string name;
+                    packet >> id >> name;
+                    for(MultiplayerClassListItem* i = multiplayerClassListStart; i; i = i->next)
                     {
-                        LOG(INFO) << "Created " << name << " from server replication";
-                        MultiplayerObject* obj = i->func();
-                        obj->multiplayerObjectId = id;
-                        objectMap[id] = obj;
+                        if (i->name == name)
+                        {
+                            LOG(INFO) << "Created " << name << " from server replication";
+                            MultiplayerObject* obj = i->func();
+                            obj->multiplayerObjectId = id;
+                            objectMap[id] = obj;
 
-                        int16_t idx;
+                            int16_t idx;
+                            while(packet >> idx)
+                            {
+                                if (idx < int16_t(obj->memberReplicationInfo.size()))
+                                    (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
+                            }
+                        }
+                    }
+                }
+                break;
+            case CMD_DELETE:
+                {
+                    int32_t id;
+                    packet >> id;
+                    if (objectMap.find(id) != objectMap.end() && objectMap[id])
+                        objectMap[id]->destroy();
+                }
+                break;
+            case CMD_UPDATE_VALUE:
+                {
+                    int32_t id;
+                    int16_t idx;
+                    packet >> id;
+                    if (objectMap.find(id) != objectMap.end() && objectMap[id])
+                    {
+                        P<MultiplayerObject> obj = objectMap[id];
                         while(packet >> idx)
                         {
-                            if (idx < int16_t(obj->memberReplicationInfo.size()))
+                            if (idx < int32_t(obj->memberReplicationInfo.size()))
                                 (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
                         }
                     }
                 }
-            }
-            break;
-        case CMD_DELETE:
-            {
-                int32_t id;
-                packet >> id;
-                if (objectMap.find(id) != objectMap.end() && objectMap[id])
-                    objectMap[id]->destroy();
-            }
-            break;
-        case CMD_UPDATE_VALUE:
-            {
-                int32_t id;
-                int16_t idx;
-                packet >> id;
-                if (objectMap.find(id) != objectMap.end() && objectMap[id])
+                break;
+            case CMD_SET_GAME_SPEED:
                 {
-                    P<MultiplayerObject> obj = objectMap[id];
-                    while(packet >> idx)
-                    {
-                        if (idx < int32_t(obj->memberReplicationInfo.size()))
-                            (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
-                    }
+                    float gamespeed;
+                    packet >> gamespeed;
+                    engine->setGameSpeed(gamespeed);
                 }
+                break;
+            case CMD_ALIVE:
+                //Alive packet, just to keep the connection alive.
+                break;
+            default:
+                LOG(ERROR) << "Unknown command from server: " << command;
             }
+        case Disconnected:
             break;
-        case CMD_SET_CLIENT_ID:
-            packet >> client_id;
-            break;
-        case CMD_SET_GAME_SPEED:
-            {
-                float gamespeed;
-                packet >> gamespeed;
-                engine->setGameSpeed(gamespeed);
-            }
-            break;
-        case CMD_ALIVE:
-            //Alive packet, just to keep the connection alive.
-            break;
-        default:
-            LOG(ERROR) << "Unknown command from server: " << command;
         }
     }
 
-    if (status == sf::TcpSocket::Disconnected || last_receive_time.getElapsedTime().asSeconds() > no_data_disconnect_time)
+    if (socket_status == sf::TcpSocket::Disconnected || last_receive_time.getElapsedTime().asSeconds() > no_data_disconnect_time)
     {
         socket.disconnect();
-        connected = false;
+        status = Disconnected;
     }
 }
 
@@ -140,10 +167,13 @@ void GameClient::sendPacket(sf::Packet& packet)
 
 void GameClient::runConnect()
 {
-    if (socket.connect(server, port_nr, sf::seconds(5)) != sf::TcpSocket::Done)
-        connected = true;
-    last_receive_time.restart();
+    if (socket.connect(server, port_nr, sf::seconds(5)) == sf::TcpSocket::Done)
+    {
+        LOG(INFO) << "GameClient: Connected, waiting for authentication";
+        status = Authenticating;
+    }else{
+        LOG(INFO) << "GameClient: Failed to connect";
+        status = Disconnected;
+    }
     socket.setBlocking(false);
-    
-    connecting = false;
 }

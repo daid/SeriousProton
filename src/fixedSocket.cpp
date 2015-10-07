@@ -20,6 +20,7 @@
 #endif
 
 #include "fixedSocket.h"
+#include "logging.h"
 
 TcpSocket::TcpSocket()
 {
@@ -102,7 +103,10 @@ void TcpSocket::update()
             send_backlog.pop_front();
         }
         if (backlog_clock.getElapsedTime().asSeconds() > 20.0)
+        {
+            LOG(DEBUG) << "Socket backlog clock timeout, disconnecting.";
             disconnect();
+        }
     }
 }
 

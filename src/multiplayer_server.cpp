@@ -34,12 +34,12 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     {
         LOG(ERROR) << "Failed to listen on TCP port: " << listen_port;
     }
-    if (broadcastListenSocket.bind(listen_port) != sf::UdpSocket::Done)
+    if (broadcast_listen_socket.bind(listen_port) != sf::UdpSocket::Done)
     {
         LOG(ERROR) << "Failed to listen on UDP port: " << listen_port;
     }
     selector.add(listenSocket);
-    selector.add(broadcastListenSocket);
+    selector.add(broadcast_listen_socket);
 }
 
 GameServer::~GameServer()
@@ -58,7 +58,7 @@ void GameServer::destroy()
     clientList.clear();
     
     listenSocket.close();
-    broadcastListenSocket.unbind();
+    broadcast_listen_socket.unbind();
 
     Updatable::destroy();
 }
@@ -152,28 +152,7 @@ void GameServer::update(float gameDelta)
     }
 
     selector.wait(sf::microseconds(1));//Seems to delay 1ms on Windows. Not ideal, but fast enough. (other option is using threads, which I rather avoid)
-    if (selector.isReady(broadcastListenSocket))
-    {
-        sf::IpAddress recvAddress;
-        unsigned short recvPort;
-        sf::Packet recvPacket;
-        broadcastListenSocket.receive(recvPacket, recvAddress, recvPort);
-
-        //We do not care about what we received. Reply that we live!
-        sf::Packet sendPacket;
-        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
-        broadcastListenSocket.send(sendPacket, recvAddress, recvPort);
-    }
-    if (boardcastServerDelay > 0.0)
-    {
-        boardcastServerDelay -= delta;
-    }else{
-        boardcastServerDelay = 5.0;
-
-        sf::Packet sendPacket;
-        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
-        UDPbroadcastPacket(broadcastListenSocket, sendPacket, broadcastListenSocket.getLocalPort() + 1);
-    }
+    handleBroadcastUDPSocket(delta);
 
     if (selector.isReady(listenSocket))
     {
@@ -181,36 +160,18 @@ void GameServer::update(float gameDelta)
         info.socket = new TcpSocket();
         info.socket->setBlocking(false);
         info.client_id = nextclient_id;
-        info.receiveState = CRS_Main;
+        info.receive_state = CRS_Auth;
         nextclient_id++;
         listenSocket.accept(*info.socket);
         clientList.push_back(info);
         selector.add(*info.socket);
         {
             sf::Packet packet;
-            packet << CMD_SET_CLIENT_ID << info.client_id;
+            bool need_password = false;
+            packet << CMD_REQUEST_AUTH << int32_t(version_number) << need_password;
             info.socket->send(packet);
         }
-        {
-            sf::Packet packet;
-            packet << CMD_SET_GAME_SPEED << lastGameSpeed;
-            info.socket->send(packet);
-        }
-
-        onNewClient(info.client_id);
-
-        //On a new client, first create all the already existing objects. And update all the values.
-        for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
-        {
-            P<MultiplayerObject> obj = i->second;
-            if (obj && obj->replicated)
-            {
-                sf::Packet packet;
-                genenerateCreatePacketFor(obj, packet);
-                sendDataCounter += packet.getDataSize();
-                info.socket->send(packet);
-            }
-        }
+        LOG(INFO) << "New connection: " << info.client_id << " waiting for authentication";
     }
 
     for(unsigned int n=0; n<clientList.size(); n++)
@@ -222,8 +183,34 @@ void GameServer::update(float gameDelta)
             sf::TcpSocket::Status status;
             while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
             {
-                switch(clientList[n].receiveState)
+                switch(clientList[n].receive_state)
                 {
+                case CRS_Auth:
+                    {
+                        command_t command;
+                        packet >> command;
+                        switch(command)
+                        {
+                        case CMD_CLIENT_SEND_AUTH:
+                            {
+                                int32_t client_version;
+                                string client_password;
+                                packet >> client_version >> client_password;
+                                
+                                if (version_number == client_version || version_number == 0 || client_version == 0)
+                                {
+                                    clientList[n].receive_state = CRS_Main;
+                                    handleNewClient(clientList[n]);
+                                }
+                                break;
+                            }
+                            break;
+                        default:
+                            LOG(ERROR) << "Unknown command from client while authenticating: " << command;
+                            break;
+                        }
+                    }
+                    break;
                 case CRS_Main:
                     {
                         command_t command;
@@ -232,7 +219,7 @@ void GameServer::update(float gameDelta)
                         {
                         case CMD_CLIENT_COMMAND:
                             packet >> clientList[n].command_object_id;
-                            clientList[n].receiveState = CRS_Command;
+                            clientList[n].receive_state = CRS_Command;
                             break;
                         case CMD_CLIENT_AUDIO_COMM:
                             {
@@ -258,7 +245,7 @@ void GameServer::update(float gameDelta)
                 case CRS_Command:
                     if (objectMap.find(clientList[n].command_object_id) != objectMap.end() && objectMap[clientList[n].command_object_id])
                         objectMap[clientList[n].command_object_id]->onReceiveClientCommand(clientList[n].client_id, packet);
-                    clientList[n].receiveState = CRS_Main;
+                    clientList[n].receive_state = CRS_Main;
                     break;
                 }
             }
@@ -305,6 +292,61 @@ void GameServer::update(float gameDelta)
 #endif
 }
 
+void GameServer::handleNewClient(ClientInfo& info)
+{
+    {
+        sf::Packet packet;
+        packet << CMD_SET_CLIENT_ID << info.client_id;
+        info.socket->send(packet);
+    }
+    {
+        sf::Packet packet;
+        packet << CMD_SET_GAME_SPEED << lastGameSpeed;
+        info.socket->send(packet);
+    }
+
+    onNewClient(info.client_id);
+
+    //On a new client, first create all the already existing objects. And update all the values.
+    for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
+    {
+        P<MultiplayerObject> obj = i->second;
+        if (obj && obj->replicated)
+        {
+            sf::Packet packet;
+            genenerateCreatePacketFor(obj, packet);
+            sendDataCounter += packet.getDataSize();
+            info.socket->send(packet);
+        }
+    }
+}
+
+void GameServer::handleBroadcastUDPSocket(float delta)
+{
+    if (selector.isReady(broadcast_listen_socket))
+    {
+        sf::IpAddress recvAddress;
+        unsigned short recvPort;
+        sf::Packet recvPacket;
+        broadcast_listen_socket.receive(recvPacket, recvAddress, recvPort);
+
+        //We do not care about what we received. Reply that we live!
+        sf::Packet sendPacket;
+        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
+        broadcast_listen_socket.send(sendPacket, recvAddress, recvPort);
+    }
+    if (boardcastServerDelay > 0.0)
+    {
+        boardcastServerDelay -= delta;
+    }else{
+        boardcastServerDelay = 5.0;
+
+        sf::Packet sendPacket;
+        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
+        UDPbroadcastPacket(broadcast_listen_socket, sendPacket, broadcast_listen_socket.getLocalPort() + 1);
+    }
+}
+
 void GameServer::registerObject(P<MultiplayerObject> obj)
 {
     //Note, at this point in time, the pointed object is only of the MultiplayerObject class.
@@ -336,7 +378,10 @@ void GameServer::sendAll(sf::Packet& packet)
 {
     sendDataCounterPerClient += packet.getDataSize();
     for(unsigned int n=0; n<clientList.size(); n++)
-        clientList[n].socket->send(packet);
+    {
+        if (clientList[n].receive_state != CRS_Auth)
+            clientList[n].socket->send(packet);
+    }
 }
 
 void GameServer::registerOnMasterServer(string master_server_url)
