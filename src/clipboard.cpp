@@ -29,7 +29,7 @@ string Clipboard::readClipboard()
     FILE* pipe = popen("/usr/bin/xclip -o -selection clipboard", "r");
     if (!pipe)
     {
-        LOG(WARNING) << "Failed to execute /usr/bin/xclip for clipboard access");
+        LOG(WARNING) << "Failed to execute /usr/bin/xclip for clipboard access";
         return "";
     }
     char buffer[1024];
@@ -73,7 +73,7 @@ void Clipboard::setClipboard(string value)
     FILE* pipe = popen("/usr/bin/xclip -i -selection clipboard -silent", "we");
     if (!pipe)
     {
-        LOG(WARNING) << "Failed to execute /usr/bin/xclip for clipboard access");
+        LOG(WARNING) << "Failed to execute /usr/bin/xclip for clipboard access";
         return;
     }
     fwrite(value.c_str(), value.size(), 1, pipe);
