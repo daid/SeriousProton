@@ -19,6 +19,7 @@ public:
     {
         Connecting,
         Authenticating,
+        WaitingForPassword,
         Connected,
         Disconnected
     };
@@ -46,6 +47,7 @@ public:
 
     void sendPacket(sf::Packet& packet);
 
+    void sendPassword(string password);
 private:
     void runConnect();
 };

@@ -60,6 +60,7 @@ void GameClient::update(float delta)
         {
         case Connecting:
         case Authenticating:
+        case WaitingForPassword:
             switch(command)
             {
             case CMD_REQUEST_AUTH:
@@ -68,9 +69,14 @@ void GameClient::update(float delta)
                     bool require_password;
                     packet >> server_version >> require_password;
                     
-                    sf::Packet reply;
-                    reply << CMD_CLIENT_SEND_AUTH << int32_t(version_number) << string("");
-                    socket.send(reply);
+                    if (!require_password)
+                    {
+                        sf::Packet reply;
+                        reply << CMD_CLIENT_SEND_AUTH << int32_t(version_number) << string("");
+                        socket.send(reply);
+                    }else{
+                        status = WaitingForPassword;
+                    }
                 }
                 break;
             case CMD_SET_CLIENT_ID:
@@ -163,6 +169,18 @@ void GameClient::update(float delta)
 void GameClient::sendPacket(sf::Packet& packet)
 {
     socket.send(packet);
+}
+
+void GameClient::sendPassword(string password)
+{
+    if (status != WaitingForPassword)
+        return;
+
+    sf::Packet reply;
+    reply << CMD_CLIENT_SEND_AUTH << int32_t(version_number) << password;
+    socket.send(reply);
+    
+    status = Authenticating;
 }
 
 void GameClient::runConnect()

@@ -167,8 +167,7 @@ void GameServer::update(float gameDelta)
         selector.add(*info.socket);
         {
             sf::Packet packet;
-            bool need_password = false;
-            packet << CMD_REQUEST_AUTH << int32_t(version_number) << need_password;
+            packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
             info.socket->send(packet);
         }
         LOG(INFO) << "New connection: " << info.client_id << " waiting for authentication";
@@ -199,14 +198,26 @@ void GameServer::update(float gameDelta)
                                 
                                 if (version_number == client_version || version_number == 0 || client_version == 0)
                                 {
-                                    clientList[n].receive_state = CRS_Main;
-                                    handleNewClient(clientList[n]);
+                                    if (server_password == "" || client_password == server_password)
+                                    {
+                                        clientList[n].receive_state = CRS_Main;
+                                        handleNewClient(clientList[n]);
+                                    }else{
+                                        //Wrong password, send a new auth request so the client knows the password was not accepted.
+                                        sf::Packet packet;
+                                        packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
+                                        clientList[n].socket->send(packet);
+                                    }
+                                }else{
+                                    LOG(ERROR) << n << ":Client version mismatch: " << version_number << " != " << client_version;
+                                    clientList[n].socket->disconnect();
                                 }
                                 break;
                             }
                             break;
                         default:
                             LOG(ERROR) << "Unknown command from client while authenticating: " << command;
+                            clientList[n].socket->disconnect();
                             break;
                         }
                     }
@@ -356,6 +367,11 @@ void GameServer::registerObject(P<MultiplayerObject> obj)
     nextObjectId++;
 
     objectMap[obj->multiplayerObjectId] = obj;
+}
+
+void GameServer::setPassword(string password)
+{
+    server_password = password;
 }
 
 void GameServer::genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet)
