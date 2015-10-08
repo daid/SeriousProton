@@ -3,6 +3,9 @@
 #ifdef __WIN32__
 #include <windows.h>
 #endif
+#ifdef __linux__
+#include <stdio.h>
+#endif
 
 string Clipboard::readClipboard()
 {
@@ -22,6 +25,22 @@ string Clipboard::readClipboard()
     CloseClipboard();
     return ret;
 #endif//__WIN32__
+#ifdef __linux__
+    FILE* pipe = popen("/usr/bin/xclip -o -selection clipboard", "r");
+    if (!pipe)
+    {
+        LOG(WARNING) << "Failed to execute /usr/bin/xclip for clipboard access");
+        return "";
+    }
+    char buffer[1024];
+    std::string result = "";
+    while (!feof(pipe))
+    {
+        if (fgets(buffer, 1024, pipe) != NULL)
+            result += buffer;
+    }
+    pclose(pipe);
+#endif
     return "";
 }
 
@@ -50,4 +69,14 @@ void Clipboard::setClipboard(string value)
 
     CloseClipboard();
 #endif//__WIN32__
+#ifdef __linux__
+    FILE* pipe = popen("/usr/bin/xclip -i -selection clipboard -silent", "we");
+    if (!pipe)
+    {
+        LOG(WARNING) << "Failed to execute /usr/bin/xclip for clipboard access");
+        return;
+    }
+    fwrite(value.c_str(), value.size(), 1, pipe);
+    pclose(pipe);
+#endif
 }
