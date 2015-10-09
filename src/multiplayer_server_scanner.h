@@ -40,6 +40,7 @@ public:
     virtual void update(float delta);
     void addCallbacks(std::function<void(sf::IpAddress, string)> newServerCallback, std::function<void(sf::IpAddress)> removedServerCallback);
     
+    void scanLocalNetwork();
     void scanMasterServer(string url);
 
     std::vector<ServerInfo> getServerList();

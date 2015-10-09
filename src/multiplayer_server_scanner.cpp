@@ -3,12 +3,6 @@
 ServerScanner::ServerScanner(int version_number, int server_port)
 : server_port(server_port), version_number(version_number), master_server_scan_thread(&ServerScanner::masterServerScanThread, this)
 {
-    int port_nr = server_port + 1;
-    while(socket.bind(port_nr) != sf::UdpSocket::Done)
-        port_nr++;
-    
-    socket.setBlocking(false);
-    broadcast_clock.restart();
 }
 
 ServerScanner::~ServerScanner()
@@ -17,16 +11,24 @@ ServerScanner::~ServerScanner()
     master_server_scan_thread.wait();
 }
 
+void ServerScanner::scanMasterServer(string url)
+{
+    master_server_url = url;
+    master_server_scan_thread.launch();
+}
+
+void ServerScanner::scanLocalNetwork()
+{
+    int port_nr = server_port + 1;
+    while(socket.bind(port_nr) != sf::UdpSocket::Done)
+        port_nr++;
+    
+    socket.setBlocking(false);
+    broadcast_clock.restart();
+}
+
 void ServerScanner::update(float gameDelta)
 {
-    if (broadcast_clock.getElapsedTime().asSeconds() > BroadcastTimeout)
-    {
-        sf::Packet sendPacket;
-        sendPacket << multiplayerVerficationNumber << "ServerQuery" << int32_t(version_number);
-        UDPbroadcastPacket(socket, sendPacket, server_port);
-        broadcast_clock.restart();
-    }
-    
     server_list_mutex.lock();
     for(unsigned int n=0; n<server_list.size(); n++)
     {
@@ -40,17 +42,28 @@ void ServerScanner::update(float gameDelta)
     }
     server_list_mutex.unlock();
 
-    sf::IpAddress recvAddress;
-    unsigned short recvPort;
-    sf::Packet recvPacket;
-    if (socket.receive(recvPacket, recvAddress, recvPort) == sf::UdpSocket::Done)
+    if (socket.getLocalPort() != 0)
     {
-        int32_t verification, versionNr;
-        string name;
-        recvPacket >> verification >> versionNr >> name;
-        if (verification == multiplayerVerficationNumber && (versionNr == version_number || versionNr == 0 || version_number == 0))
+        if (broadcast_clock.getElapsedTime().asSeconds() > BroadcastTimeout)
         {
-            updateServerEntry(recvAddress, recvPort, name);
+            sf::Packet sendPacket;
+            sendPacket << multiplayerVerficationNumber << "ServerQuery" << int32_t(version_number);
+            UDPbroadcastPacket(socket, sendPacket, server_port);
+            broadcast_clock.restart();
+        }
+
+        sf::IpAddress recv_address;
+        unsigned short recv_port;
+        sf::Packet recv_packet;
+        while(socket.receive(recv_packet, recv_address, recv_port) == sf::UdpSocket::Done)
+        {
+            int32_t verification, version_nr;
+            string name;
+            recv_packet >> verification >> version_nr >> name;
+            if (verification == multiplayerVerficationNumber && (version_nr == version_number || version_nr == 0 || version_number == 0))
+            {
+                updateServerEntry(recv_address, recv_port, name);
+            }
         }
     }
 }
@@ -95,12 +108,6 @@ std::vector<ServerScanner::ServerInfo> ServerScanner::getServerList()
     ret = server_list;
     server_list_mutex.unlock();
     return ret;
-}
-
-void ServerScanner::scanMasterServer(string url)
-{
-    master_server_url = url;
-    master_server_scan_thread.launch();
 }
 
 void ServerScanner::masterServerScanThread()
