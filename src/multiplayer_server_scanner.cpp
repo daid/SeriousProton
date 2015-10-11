@@ -141,7 +141,6 @@ void ServerScanner::masterServerScanThread()
         }
         for(string line : string(response.getBody()).split("\n"))
         {
-            LOG(DEBUG) << "Line:" << line;
             std::vector<string> parts = line.split(":", 3);
             if (parts.size() == 4)
             {
