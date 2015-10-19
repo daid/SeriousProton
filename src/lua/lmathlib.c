@@ -298,7 +298,7 @@ static int math_type (lua_State *L) {
 ** Deprecated functions (for compatibility only)
 ** ===================================================================
 */
-#if defined(LUA_COMPAT_MATHLIB)
+//#if defined(LUA_COMPAT_MATHLIB)
 
 static int math_cosh (lua_State *L) {
   lua_pushnumber(L, l_mathop(cosh)(luaL_checknumber(L, 1)));
@@ -341,7 +341,7 @@ static int math_log10 (lua_State *L) {
   return 1;
 }
 
-#endif
+//#endif
 /* }================================================================== */
 
 
@@ -370,7 +370,7 @@ static const luaL_Reg mathlib[] = {
   {"sqrt",  math_sqrt},
   {"tan",   math_tan},
   {"type", math_type},
-#if defined(LUA_COMPAT_MATHLIB)
+//#if defined(LUA_COMPAT_MATHLIB)
   {"atan2", math_atan},
   {"cosh",   math_cosh},
   {"sinh",   math_sinh},
@@ -379,7 +379,7 @@ static const luaL_Reg mathlib[] = {
   {"frexp", math_frexp},
   {"ldexp", math_ldexp},
   {"log10", math_log10},
-#endif
+//#endif
   /* placeholders */
   {"pi", NULL},
   {"huge", NULL},
