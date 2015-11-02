@@ -24,6 +24,8 @@ SoundManager::SoundManager()
     
     music_volume = 100.0;
     positional_sound_enabled = false;
+    primary_music.mode = None;
+    secondary_music.mode = None;
 }
 
 SoundManager::~SoundManager()
