@@ -17,6 +17,7 @@ class GameClient : public Updatable
 public:
     enum Status
     {
+        ReadyToConnect,
         Connecting,
         Authenticating,
         WaitingForPassword,

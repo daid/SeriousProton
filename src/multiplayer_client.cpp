@@ -16,7 +16,6 @@ GameClient::GameClient(int version_number, sf::IpAddress server, int port_nr)
     status = Connecting;
 
     last_receive_time.restart();
-    connect_thread.launch();
 }
 
 GameClient::~GameClient()
@@ -33,6 +32,11 @@ P<MultiplayerObject> GameClient::getObjectById(int32_t id)
 
 void GameClient::update(float delta)
 {
+    if (status == ReadyToConnect)
+    {
+        status = Connecting;
+        connect_thread.launch();
+    }
     if (status == Disconnected || status == Connecting)
         return;
 
@@ -58,6 +62,7 @@ void GameClient::update(float delta)
         packet >> command;
         switch(status)
         {
+        case ReadyToConnect:
         case Connecting:
         case Authenticating:
         case WaitingForPassword:
