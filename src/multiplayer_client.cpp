@@ -13,7 +13,7 @@ GameClient::GameClient(int version_number, sf::IpAddress server, int port_nr)
 
     client_id = -1;
     game_client = this;
-    status = Connecting;
+    status = ReadyToConnect;
 
     last_receive_time.restart();
 }

@@ -15,6 +15,17 @@ static int random(lua_State* L)
 /// Generate a random number between the min and max value.
 REGISTER_SCRIPT_FUNCTION(random);
 
+static int irandom(lua_State* L)
+{
+    int rMin = luaL_checkinteger(L, 1);
+    int rMax = luaL_checkinteger(L, 2);
+    lua_pushinteger(L, irandom(rMin, rMax));
+    return 1;
+}
+/// random(min_value, max_value)
+/// Generate a random number between the min and max value.
+REGISTER_SCRIPT_FUNCTION(irandom);
+
 static int destroyScript(lua_State* L)
 {
     ScriptObject* obj = static_cast<ScriptObject*>(lua_touserdata(L, lua_upvalueindex(1)));
