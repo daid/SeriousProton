@@ -33,6 +33,7 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     if (listenSocket.listen(listen_port) != sf::TcpListener::Done)
     {
         LOG(ERROR) << "Failed to listen on TCP port: " << listen_port;
+        destroy();
     }
     if (broadcast_listen_socket.bind(listen_port) != sf::UdpSocket::Done)
     {
