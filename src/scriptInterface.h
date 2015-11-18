@@ -37,7 +37,7 @@ private:
     friend class ScriptCallback;
 };
 
-class ScriptCallback
+class ScriptCallback : public sf::NonCopyable
 {
 public:
     string name;
