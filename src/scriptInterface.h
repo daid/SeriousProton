@@ -40,7 +40,6 @@ private:
 class ScriptCallback : public sf::NonCopyable
 {
 public:
-    string name;
     ScriptCallback();
     ~ScriptCallback();
 
