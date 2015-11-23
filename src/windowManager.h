@@ -33,6 +33,9 @@ public:
     
     void setAllowVirtualResize(bool allow) { allow_virtual_resize = allow; setupView(); }
     void setFrameLimit(int limit) { window.setFramerateLimit(limit); }
+    
+    sf::Vector2f mapPixelToCoords(const sf::Vector2i& point) const;
+    sf::Vector2i mapCoordsToPixel(const sf::Vector2f& point) const;
 
     friend class InputHandler;
     friend class Engine;

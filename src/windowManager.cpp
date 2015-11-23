@@ -54,6 +54,16 @@ void WindowManager::setFSAA(int new_fsaa)
     create();
 }
 
+sf::Vector2f WindowManager::mapPixelToCoords(const sf::Vector2i& point) const
+{
+    return window.mapPixelToCoords(point);
+}
+
+sf::Vector2i WindowManager::mapCoordsToPixel(const sf::Vector2f& point) const
+{
+    return window.mapCoordsToPixel(point);
+}
+
 void WindowManager::create()
 {
     // Create the window of the application

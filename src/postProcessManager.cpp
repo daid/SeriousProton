@@ -49,7 +49,7 @@ void PostProcessor::render(sf::RenderTarget& window)
         int h = window.getView().getViewport().height * window.getSize().y;
         int tw = powerOfTwo(w);
         int th = powerOfTwo(h);
-        sf::View view(sf::Vector2f(window.getView().getSize().x/2,window.getView().getSize().y/2), sf::Vector2f(window.getView().getSize()));
+        sf::View view(window.getView());
         view.setViewport(sf::FloatRect(0, 1.0 - float(h) / float(th), float(w) / float(tw), float(h) / float(th)));
 
         renderTexture.create(tw, th, true);
