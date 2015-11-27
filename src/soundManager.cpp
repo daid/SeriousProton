@@ -43,7 +43,10 @@ void SoundManager::playMusic(string name)
 void SoundManager::playMusicSet(std::vector<string> filenames)
 {
     music_set = filenames;
-    startMusic(getResourceStream(music_set[irandom(0, music_set.size() - 1)]), false);
+    if (music_set.size() > 0)
+        startMusic(getResourceStream(music_set[irandom(0, music_set.size() - 1)]), false);
+    else
+        stopMusic();
 }
 
 void SoundManager::stopMusic()
