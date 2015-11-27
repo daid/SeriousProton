@@ -52,8 +52,10 @@ void SoundManager::playMusicSet(std::vector<string> filenames)
 void SoundManager::stopMusic()
 {
     music_set.clear();
-    primary_music.music.stop();
-    secondary_music.music.stop();
+    if (primary_music.music.getStatus() != sf::Music::Stopped)
+        primary_music.music.stop();
+    if (secondary_music.music.getStatus() != sf::Music::Stopped)
+        secondary_music.music.stop();
 }
 
 void SoundManager::setMusicVolume(float volume)
@@ -61,9 +63,9 @@ void SoundManager::setMusicVolume(float volume)
     if (music_volume != volume)
     {
         music_volume = volume;
-        if (primary_music.mode == None)
+        if (primary_music.mode == None && primary_music.music.getStatus() != sf::Music::Stopped)
             primary_music.music.setVolume(music_volume);
-        if (secondary_music.mode == None)
+        if (secondary_music.mode == None && secondary_music.music.getStatus() != sf::Music::Stopped)
             secondary_music.music.setVolume(music_volume);
     }
 }
@@ -233,7 +235,8 @@ void SoundManager::startMusic(P<ResourceStream> stream, bool loop)
         other_channel = &primary_music;
     }
     
-    channel->music.stop();
+    if (channel->music.getStatus() != sf::Music::Stopped)
+        channel->music.stop();
     channel->mode = FadeIn;
     channel->fade_delay = fade_music_time;
     channel->music.openFromStream(**stream);
