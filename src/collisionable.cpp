@@ -56,9 +56,10 @@ class Collision
 public:
     P<Collisionable> A;
     P<Collisionable> B;
+    float collision_force;
 
-    Collision(P<Collisionable> A, P<Collisionable> B)
-    : A(A), B(B)
+    Collision(P<Collisionable> A, P<Collisionable> B, float collision_force)
+    : A(A), B(B), collision_force(collision_force)
     {}
 };
 
@@ -78,7 +79,12 @@ void CollisionManager::handleCollisions(float delta)
             Collisionable* B = (Collisionable*)contact->GetFixtureB()->GetBody()->GetUserData();
             if (!A->isDestroyed() && !B->isDestroyed())
             {
-                collisions.push_back(Collision(A, B));
+                float collision_force = 0.0f;
+                for (int n = 0; n < contact->GetManifold()->pointCount; n++)
+                {
+                    collision_force += contact->GetManifold()->points[n].normalImpulse * BOX2D_SCALE;
+                }
+                collisions.push_back(Collision(A, B, collision_force));
             }else{
                 if (A->isDestroyed())
                     destroy = A;
@@ -94,8 +100,8 @@ void CollisionManager::handleCollisions(float delta)
         Collisionable* B = *collisions[n].B;
         if (A && B)
         {
-            A->collide(B);
-            B->collide(A);
+            A->collide(B, collisions[n].collision_force);
+            B->collide(A, collisions[n].collision_force);
         }
     }
 
@@ -233,7 +239,7 @@ void Collisionable::createBody(b2Shape* shape)
     body->CreateFixture(&shapeDef);
 }
 
-void Collisionable::collide(Collisionable* target)
+void Collisionable::collide(Collisionable* target, float force)
 {
 }
 

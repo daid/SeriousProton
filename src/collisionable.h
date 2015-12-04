@@ -31,7 +31,7 @@ public:
     Collisionable(sf::Vector2f box_size, sf::Vector2f box_origin = sf::Vector2f(0, 0));
     Collisionable(const std::vector<sf::Vector2f>& shape);
     virtual ~Collisionable();
-    virtual void collide(Collisionable* target);
+    virtual void collide(Collisionable* target, float force);
 
     void setCollisionRadius(float radius);
     void setCollisionBox(sf::Vector2f box_size, sf::Vector2f box_origin = sf::Vector2f(0, 0));
