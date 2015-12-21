@@ -13,7 +13,7 @@ extern SoundManager* soundManager;
 class SoundManager
 {
 private:
-    static constexpr float fade_music_time = 10.0;
+    static constexpr float fade_music_time = 1.0;
 
     enum FadeMode
     {
@@ -24,13 +24,13 @@ private:
     struct MusicChannel
     {
         P<ResourceStream> stream;
+        P<ResourceStream> next_stream;
         sf::Music music;
         FadeMode mode;
         float fade_delay;
     };
     sf::Clock clock;
-    MusicChannel primary_music;
-    MusicChannel secondary_music;
+    MusicChannel music_channel;
     
     std::vector<string> music_set;
     
