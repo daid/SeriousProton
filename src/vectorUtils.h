@@ -215,12 +215,4 @@ namespace sf
     }
 }
 
-namespace sf
-{
-    static inline Color operator *(const Color& c, const float& f)
-    {
-        return Color(c.r * f, c.g * f, c.b * f, c.a * f);
-    }
-}
-
 #endif//SFML_EXTRA_VECTOR_UTILS_H
