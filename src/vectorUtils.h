@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <SFML/System.hpp>
+#include <SFML/Graphics/Color.hpp>
 /** math.h no longer defines M_PI in C++11. For... reasons? */
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -213,4 +214,13 @@ namespace sf
         return Vector3<T>(v0.y * v1.z - v1.y * v0.z, v1.x*v0.z - v0.x*v1.z, v0.x*v1.y - v0.y*v1.x);
     }
 }
+
+namespace sf
+{
+    static inline Color operator *(const Color& c, const float& f)
+    {
+        return Color(c.r * f, c.g * f, c.b * f, c.a * f);
+    }
+}
+
 #endif//SFML_EXTRA_VECTOR_UTILS_H

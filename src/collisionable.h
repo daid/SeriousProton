@@ -36,7 +36,9 @@ public:
     void setCollisionRadius(float radius);
     void setCollisionBox(sf::Vector2f box_size, sf::Vector2f box_origin = sf::Vector2f(0, 0));
     void setCollisionShape(const std::vector<sf::Vector2f>& shape);
+    void setCollisionChain(const std::vector<sf::Vector2f>& points, bool loop);
     void setCollisionPhysics(bool enable_physics, bool static_physics);
+    void setCollisionFriction(float amount);
 
     void setPosition(sf::Vector2f v);
     sf::Vector2f getPosition();

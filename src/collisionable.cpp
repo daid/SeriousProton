@@ -204,6 +204,35 @@ void Collisionable::setCollisionShape(const std::vector<sf::Vector2f>& shapeList
     }
 }
 
+void Collisionable::setCollisionChain(const std::vector<sf::Vector2f>& points, bool loop)
+{
+    b2ChainShape shape;
+    std::vector<b2Vec2> b_points;
+    b_points.reserve(points.size());
+    for(sf::Vector2f point : points)
+    {
+        b_points.push_back(v2b(point));
+    }
+    if (loop)
+    {
+        shape.CreateLoop(b_points.data(), b_points.size());
+    }
+    else
+    {
+        shape.CreateChain(b_points.data(), b_points.size());
+    }
+
+    createBody(&shape);
+}
+
+void Collisionable::setCollisionFriction(float amount)
+{
+    for(b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext())
+    {
+        f->SetFriction(amount);
+    }
+}
+
 void Collisionable::setCollisionPhysics(bool enable_physics, bool static_physics)
 {
     this->enable_physics = enable_physics;

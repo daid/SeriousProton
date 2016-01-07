@@ -33,7 +33,6 @@ template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, 
     return packet >> v.x >> v.y >> v.z;
 }
 
-
 template <typename T> struct multiplayerReplicationFunctions
 {
     static bool isChanged(void* data, void* prev_data_ptr)
