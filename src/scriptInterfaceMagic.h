@@ -209,30 +209,16 @@ template<typename T> struct convert<sf::Vector3<T> >
     }
 };
 
-/* Convert parameters to std::vector<sf::Vector2> objects. */
-template<typename T> struct convert<std::vector<sf::Vector2<T> > >
+/* Convert parameters to std::vector<?> objects. */
+template<typename T> struct convert<std::vector<T> >
 {
-    static void param(lua_State* L, int& idx, std::vector<sf::Vector2<T> >& v)
+    static void param(lua_State* L, int& idx, std::vector<T>& v)
     {
-        while(idx < lua_gettop(L))
+        while(idx <= lua_gettop(L))
         {
-            T x = luaL_checknumber(L, idx++);
-            T y = luaL_checknumber(L, idx++);
-            v.push_back(sf::Vector2f(x, y));
-        }
-    }
-};
-/* Convert parameters to std::vector<sf::Vector3> objects. */
-template<typename T> struct convert<std::vector<sf::Vector3<T> > >
-{
-    static void param(lua_State* L, int& idx, std::vector<sf::Vector3<T> >& v)
-    {
-        while(idx < lua_gettop(L))
-        {
-            T x = luaL_checknumber(L, idx++);
-            T y = luaL_checknumber(L, idx++);
-            T z = luaL_checknumber(L, idx++);
-            v.push_back(sf::Vector3f(x, y, z));
+            T var;
+            convert<T>::param(L, idx, var);
+            v.push_back(var);
         }
     }
 };
