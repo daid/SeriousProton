@@ -48,7 +48,7 @@ private:
     const static size_t recvBufferSize = 2048;
     char recvBuffer[recvBufferSize];
     size_t recvBufferCount;
-    const static char HEX2DEC[256];
+    const static signed char HEX2DEC[256];
     HttpRequest request;
     HttpServer* server;
     int reply_code;
