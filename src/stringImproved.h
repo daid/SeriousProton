@@ -337,7 +337,7 @@ public:
         for(unsigned int n=0; n<list.size(); n++)
         {
             if (n > 0)
-                ret += " ";
+                ret += *this;
             ret += list[n];
         }
         return ret;
