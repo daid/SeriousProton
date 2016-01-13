@@ -589,7 +589,7 @@ public:
 
     /* Convert this string to a number */
     float toFloat() { return atof(c_str()); }
-    int toInt() { return atoi(c_str()); }
+    int toInt(int bits_per_digit=10) { return strtol(c_str(), nullptr, bits_per_digit); }
 };
 #undef _WHITESPACE
 

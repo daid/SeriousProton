@@ -10,6 +10,7 @@
 #include "P.h"
 #include "stringImproved.h"
 #include "lua/lua.hpp"
+#include <SFML/Graphics/Color.hpp>
 
 class ScriptClassInfo;
 
@@ -181,6 +182,8 @@ template<> void convert<const char*>::param(lua_State* L, int& idx, const char*&
 template<> void convert<string>::param(lua_State* L, int& idx, string& str);
 
 template<> void convert<bool>::param(lua_State* L, int& idx, bool& b);
+
+template<> void convert<sf::Color>::param(lua_State* L, int& idx, sf::Color& color);
 
 /* Convert parameters to sf::Vector2 objects. */
 template<typename T> struct convert<sf::Vector2<T> >
