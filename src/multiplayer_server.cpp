@@ -45,9 +45,6 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
 
 GameServer::~GameServer()
 {
-    for(ClientInfo& info : clientList)
-        delete info.socket;
-    
     destroy();
     master_server_update_thread.wait();
 }
