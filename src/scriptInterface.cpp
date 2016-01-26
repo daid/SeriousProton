@@ -417,7 +417,7 @@ void ScriptObject::clearDestroyedObjects()
     lua_gc(L, LUA_GCCOLLECT, 0);
 #endif
     if (lua_gettop(L) != 0)
-        LOG(WARNING) << "lua_gettop != 0, could indicate an error in the lua bindings!";
+        LOG(WARNING) << "lua_gettop != 0, could indicate an error in the lua bindings! (" << lua_gettop(L) << ")";
 
     lua_pushnil(L);
     while (lua_next(L, LUA_REGISTRYINDEX) != 0)
@@ -503,4 +503,141 @@ void ScriptCallback::operator() ()
         lua_pop(L, 1);
     }
     lua_pop(L, 1);
+}
+
+ScriptSimpleCallback::ScriptSimpleCallback()
+{
+    //The ScriptSimpleCallback simply stores a single table with a script object reference and a function reference,
+    // this is stored in the registry at the pointer location of this object.
+}
+
+ScriptSimpleCallback::~ScriptSimpleCallback()
+{
+    lua_State* L = ScriptObject::L;
+
+    //Remove ourselves from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_pushnil(L);
+    lua_settable(L, LUA_REGISTRYINDEX);
+}
+
+ScriptSimpleCallback::ScriptSimpleCallback(const ScriptSimpleCallback& other)
+{
+    *this = other;
+}
+
+ScriptSimpleCallback& ScriptSimpleCallback::operator =(const ScriptSimpleCallback& other)
+{
+    lua_State* L = ScriptObject::L;
+    
+    //First push our own pointer on the stack, we will need this later.
+    lua_pushlightuserdata(L, this);
+    
+    //Get the table of the other ScriptSimpleCallback from the registry
+    lua_pushlightuserdata(L, (void*)&other);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    
+    //The stack is now [this], [table from other]. So call settable to store this table as our own reference as well.
+    lua_settable(L, LUA_REGISTRYINDEX);
+    
+    return *this;
+}
+
+//Call this script function.
+//Returns false when the executed function is no longer available, or returns nil or false.
+// else it will return true.
+bool ScriptSimpleCallback::call()
+{
+    lua_State* L = ScriptObject::L;
+    
+    //Get the simple table from the registry. If it's not available, then this callback was never set to anything.
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    if (!lua_istable(L, -1))
+    {
+        lua_pop(L, 1);
+        return false;
+    }
+    //Stack is: [table]
+    
+    //Push the key "script_pointer" to retrieve the pointer to this script object.
+    lua_pushstring(L, "script_pointer");
+    lua_rawget(L, -2);
+    //Stack is: [table] [pointer to script object]
+    //Check if the script pointer is still available as key in the registry. If not, this reference is no longer valid and needs to be removed.
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    if (!lua_istable(L, -1))
+    {
+        lua_pop(L, 2);
+        return false;
+    }
+    //Remove the script pointer table from the stack, we only needed to check if it exists.
+    lua_pop(L, 1);
+    //Stack is: [table]
+
+    //Next get our actual function from the stack
+    lua_pushstring(L, "function");
+    lua_rawget(L, -2);
+
+    //Stack is: [table] [lua function]
+    lua_sethook(L, NULL, 0, 0);
+    if (lua_pcall(L, 0, 1, 0))
+    {
+        LOG(ERROR) << "Callback function error: " << lua_tostring(L, -1);
+        lua_pop(L, 2);
+        return false;
+    }
+    //Stack is: [table] [call result]
+    if (lua_toboolean(L, -1))
+    {
+        lua_pop(L, 2);
+        return true;
+    }
+    lua_pop(L, 2);
+    return false;
+}
+
+template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, ScriptSimpleCallback& callback_object)
+{
+    if (lua_isnil(L, idx))
+    {
+        //Nil given as parameter to this callback, clear out the callback.
+        lua_pushlightuserdata(L, &callback_object);
+        lua_pushnil(L);
+        lua_settable(L, LUA_REGISTRYINDEX);
+        return;
+    }
+    //Check if the parameter is a function.
+    luaL_checktype(L, idx, LUA_TFUNCTION);
+    //Check if this function is a lua function, with an reference to the environment.
+    //  (We need the environment reference to see if the script to which the function belongs is destroyed when calling the callback)
+    if (lua_iscfunction(L, idx))
+        luaL_error(L, "Cannot set a binding as callback function.");
+    lua_getupvalue(L, idx, 1);
+    if (!lua_istable(L, -1))
+        luaL_error(L, "??? Upvalue 1 of function is not a table...");
+    //Stack is now: [function_environment]
+    
+    lua_pushlightuserdata(L, &callback_object);
+    lua_newtable(L);
+    lua_pushstring(L, "script_pointer");
+
+    //Stack is now: [function_environment] [callback object pointer] [table] "script_pointer"
+    lua_pushstring(L, "__script_pointer");
+    lua_gettable(L, -5);
+    if (!lua_islightuserdata(L, -1))
+        luaL_error(L, "??? Cannot find reference back to script...");
+    //Stack is now: [function_environment] [callback object pointer] [table] "script_pointer" [pointer to script object]
+    lua_rawset(L, -3);
+    //Stack is now: [function_environment] [callback object pointer] [table]
+    lua_pushstring(L, "function");
+    lua_pushvalue(L, idx);
+    //Stack is now: [function_environment] [callback object pointer] [table] "function" [lua function reference]
+    lua_rawset(L, -3);
+    
+    //Stack is now: [function_environment] [callback object pointer] [table]
+    lua_settable(L, LUA_REGISTRYINDEX);
+    lua_pop(L, 1);
+    
+    idx++;
 }

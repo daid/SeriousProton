@@ -115,8 +115,10 @@ void GameClient::update(float delta)
                             int16_t idx;
                             while(packet >> idx)
                             {
-                                if (idx < int16_t(obj->memberReplicationInfo.size()))
+                                if (idx >= 0 && idx < int16_t(obj->memberReplicationInfo.size()))
                                     (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
+                                else
+                                    LOG(DEBUG) << "Odd index from server replication: " << idx;
                             }
                         }
                     }

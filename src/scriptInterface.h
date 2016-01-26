@@ -35,6 +35,7 @@ private:
     
     //Make the ScriptCallback our friend, so we can access the lua_State from the callback class.
     friend class ScriptCallback;
+    friend class ScriptSimpleCallback;
 };
 
 class ScriptCallback : public sf::NonCopyable
@@ -45,5 +46,25 @@ public:
 
     void operator() ();
 };
+
+/**
+ Simple callback to the scripting interface.
+ This callback only holds a single reference to a script function, is copyable, and can be used as parameter for script binded functions.
+*/
+class ScriptSimpleCallback
+{
+public:
+    ScriptSimpleCallback();
+    ~ScriptSimpleCallback();
+
+    ScriptSimpleCallback(const ScriptSimpleCallback&);
+    ScriptSimpleCallback& operator =(const ScriptSimpleCallback&);
+
+    //Call this script function.
+    //Returns false when the executed function is no longer available, or returns nil or false.
+    // else it will return true.
+    bool call();
+};
+template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, ScriptSimpleCallback& callback);
 
 #endif//SCRIPT_INTERFACE_H
