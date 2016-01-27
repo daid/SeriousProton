@@ -68,6 +68,9 @@ public:
     // else it will return true.
     bool call();
     
+    //Unset this script callback reference.
+    void clear();
+    
     //Return the script object linked to this callback, if any.
     P<ScriptObject> getScriptObject();
 };

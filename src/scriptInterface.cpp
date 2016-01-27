@@ -628,6 +628,16 @@ bool ScriptSimpleCallback::call()
     return false;
 }
 
+void ScriptSimpleCallback::clear()
+{
+    lua_State* L = ScriptObject::L;
+
+    //Remove ourselves from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_pushnil(L);
+    lua_settable(L, LUA_REGISTRYINDEX);
+}
+
 P<ScriptObject> ScriptSimpleCallback::getScriptObject()
 {
     lua_State* L = ScriptObject::L;
