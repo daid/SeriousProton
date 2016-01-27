@@ -60,6 +60,9 @@ public:
     ScriptSimpleCallback(const ScriptSimpleCallback&);
     ScriptSimpleCallback& operator =(const ScriptSimpleCallback&);
 
+    //Returns true if this callback is set and the scriptobject that set it is still valid.
+    bool isSet();
+
     //Call this script function.
     //Returns false when the executed function is no longer available, or returns nil or false.
     // else it will return true.
