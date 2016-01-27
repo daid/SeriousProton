@@ -597,6 +597,38 @@ bool ScriptSimpleCallback::call()
     return false;
 }
 
+P<ScriptObject> ScriptSimpleCallback::getScriptObject()
+{
+    lua_State* L = ScriptObject::L;
+    
+    //First get our simple table from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    if (!lua_istable(L, -1))
+    {
+        lua_pop(L, 1);
+        return nullptr;
+    }
+
+    //Push the key "script_pointer" to retrieve the pointer to this script object.
+    lua_pushstring(L, "script_pointer");
+    lua_rawget(L, -2);
+    //Stack is: [table] [pointer to script object]
+    lua_pushvalue(L, -1);
+    //Stack is: [table] [pointer to script object] [pointer to script object]
+    //Check if the script pointer is still available as key in the registry. If not, this reference is no longer valid and needs to be removed.
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    //Stack is: [table] [pointer to script object] [table script object or nil when object is destroyed]
+    if (!lua_istable(L, -1))
+    {
+        lua_pop(L, 3);
+        return nullptr;
+    }
+    P<ScriptObject> ret = static_cast<ScriptObject*>(lua_touserdata(L, -2));
+    lua_pop(L, 3);
+    return ret;
+}
+
 template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, ScriptSimpleCallback& callback_object)
 {
     if (lua_isnil(L, idx))

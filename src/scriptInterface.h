@@ -64,6 +64,9 @@ public:
     //Returns false when the executed function is no longer available, or returns nil or false.
     // else it will return true.
     bool call();
+    
+    //Return the script object linked to this callback, if any.
+    P<ScriptObject> getScriptObject();
 };
 template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, ScriptSimpleCallback& callback);
 
