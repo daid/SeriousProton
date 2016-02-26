@@ -113,7 +113,7 @@ template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, 
 //I'm assuming that it should be a pure virtual class though.
 class MultiplayerObject : public virtual PObject
 {
-    const static int32_t noId = 0xFFFFFFFF;
+    constexpr static int32_t noId = 0xFFFFFFFF;
     int32_t multiplayerObjectId;
     bool replicated;
     bool on_server;

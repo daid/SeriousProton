@@ -54,6 +54,7 @@ void GameServer::destroy()
     for(ClientInfo& info : clientList)
         delete info.socket;
     clientList.clear();
+    objectMap.clear();
     
     listenSocket.close();
     broadcast_listen_socket.unbind();
