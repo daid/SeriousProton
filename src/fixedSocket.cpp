@@ -135,3 +135,29 @@ void UDPbroadcastPacket(sf::UdpSocket& socket, sf::Packet packet, int port_nr)
     socket.send(packet, sf::IpAddress::Broadcast, port_nr);
 #endif
 }
+
+void UDPbroadcastPacket(sf::UdpSocket& socket, const void* data, std::size_t size, int port_nr)
+{
+#ifdef _WIN32
+    //On windows, using a single broadcast address seems to send the UPD package only on 1 interface.
+    // So use the windows API to get all addresses, construct broadcast addresses and send out the packets to all of them.
+    PMIB_IPADDRTABLE pIPAddrTable;
+    DWORD tableSize = 0;
+    GetIpAddrTable(NULL, &tableSize, 0);
+    if (tableSize > 0)
+    {
+        pIPAddrTable = (PMIB_IPADDRTABLE)calloc(tableSize, 1);
+        if (GetIpAddrTable(pIPAddrTable, &tableSize, 0) == NO_ERROR)
+        {
+            for(unsigned int n=0; n<pIPAddrTable->dwNumEntries; n++)
+            {
+                sf::IpAddress ip(ntohl((pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask));
+                socket.send(data, size, ip, port_nr);
+            }
+        }
+        free(pIPAddrTable);
+    }
+#else
+    socket.send(data, size, sf::IpAddress::Broadcast, port_nr);
+#endif
+}

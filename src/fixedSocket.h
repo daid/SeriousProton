@@ -28,5 +28,6 @@ private:
 
 //Utility function to assist in broadcasting UDP packets.
 void UDPbroadcastPacket(sf::UdpSocket& socket, sf::Packet packet, int port_nr);
+void UDPbroadcastPacket(sf::UdpSocket& socket, const void* data, std::size_t size, int port_nr);
 
 #endif//FIXED_SOCKET_H
