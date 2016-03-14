@@ -74,7 +74,9 @@ void TextureManager::loadTexture(string name, sf::Vector2i subDiv)
     if (!stream || !tmpImage.loadFromStream(**stream))
     {
         LOG(WARNING) << "Failed to load: " << name;
-        data.texture.create(8, 8);
+        sf::Image image;
+        image.create(8, 8, sf::Color(255, 0, 255, 128));
+        data.texture.loadFromImage(image);
         return;
     }
     
