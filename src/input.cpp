@@ -153,6 +153,15 @@ void InputHandler::update()
     }
 }
 
+void InputHandler::setMousePos(sf::Vector2f position)
+{
+    if (!windowManager)
+        windowManager = engine->getObject("windowManager");
+
+    sf::Mouse::setPosition(virtualWindowPosToReal(position), windowManager->window);
+    mousePos = position;
+}
+
 void InputHandler::fireKeyEvent(sf::Keyboard::Key key, int unicode)
 {
     foreach(InputEventHandler, e, input_event_handlers)
@@ -171,4 +180,16 @@ sf::Vector2f InputHandler::realWindowPosToVirtual(sf::Vector2i position)
     pos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x) / viewport.width;
     pos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y) / viewport.height;
     return pos;
+}
+
+sf::Vector2i InputHandler::virtualWindowPosToReal(sf::Vector2f position)
+{
+    sf::FloatRect viewport = windowManager->window.getView().getViewport();
+
+    position.x /= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x) / viewport.width;
+    position.y /= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y) / viewport.height;
+    
+    position.x += viewport.left * float(windowManager->window.getSize().x);
+    position.y += viewport.top * float(windowManager->window.getSize().y);
+    return sf::Vector2i(position);
 }

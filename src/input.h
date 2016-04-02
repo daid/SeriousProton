@@ -49,6 +49,7 @@ class InputHandler
     
     static void fireKeyEvent(sf::Keyboard::Key key, int unicode);
     static sf::Vector2f realWindowPosToVirtual(sf::Vector2i position);
+    static sf::Vector2i virtualWindowPosToReal(sf::Vector2f position);
 public:
     static bool touch_screen;
     static bool joystick;
@@ -62,6 +63,7 @@ public:
     static bool keyboardIsReleased(sf::Keyboard::Key key) { return keyboardButtonReleased[key]; }
 
     static sf::Vector2f getMousePos() { return mousePos; }
+    static void setMousePos(sf::Vector2f position);
     static bool mouseIsDown(sf::Mouse::Button button) { return mouseButtonDown[button]; }
     static bool mouseIsPressed(sf::Mouse::Button button) { return mouseButtonPressed[button]; }
     static bool mouseIsReleased(sf::Mouse::Button button) { return mouseButtonReleased[button]; }
