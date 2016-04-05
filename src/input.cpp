@@ -159,7 +159,7 @@ void InputHandler::setMousePos(sf::Vector2f position)
         windowManager = engine->getObject("windowManager");
 
     sf::Mouse::setPosition(virtualWindowPosToReal(position), windowManager->window);
-    mousePos = position;
+    mousePos = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
 }
 
 void InputHandler::fireKeyEvent(sf::Keyboard::Key key, int unicode)

@@ -12,10 +12,14 @@ string Clipboard::readClipboard()
 #ifdef __WIN32__
     P<WindowManager> windowManager = engine->getObject("windowManager");
     if (!OpenClipboard(windowManager->window.getSystemHandle()))
+    {
+        LOG(WARNING) << "Failed to open the clipboard for reading";
         return "";
+    }
     HANDLE handle = GetClipboardData(CF_TEXT);
     if (!handle)
     {
+        LOG(WARNING) << "Failed to open the clipboard for reading";
         CloseClipboard();
         return "";
     }
@@ -40,7 +44,9 @@ string Clipboard::readClipboard()
             result += buffer;
     }
     pclose(pipe);
+    return result;
 #endif
+
     return "";
 }
 
@@ -49,7 +55,10 @@ void Clipboard::setClipboard(string value)
 #ifdef __WIN32__
     P<WindowManager> windowManager = engine->getObject("windowManager");
     if (!OpenClipboard(windowManager->window.getSystemHandle()))
+    {
+        LOG(WARNING) << "Failed to open the clipboard for writing";
         return;
+    }
 
     EmptyClipboard();
 
@@ -59,6 +68,7 @@ void Clipboard::setClipboard(string value)
 
     if (!string_handle)
     {
+        LOG(WARNING) << "Failed to allocate a string for the clipboard writing";
         CloseClipboard();
         return;
     }
