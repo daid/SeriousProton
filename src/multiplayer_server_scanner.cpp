@@ -13,12 +13,37 @@ ServerScanner::~ServerScanner()
 
 void ServerScanner::scanMasterServer(string url)
 {
+    socket.unbind();
+
+    server_list_mutex.lock();
+    for(unsigned int n=0; n<server_list.size(); n++)
+    {
+        if (removedServerCallback)
+            removedServerCallback(server_list[n].address);
+        server_list.erase(server_list.begin() + n);
+        n--;
+    }
+    server_list_mutex.unlock();
+    
     master_server_url = url;
     master_server_scan_thread.launch();
 }
 
 void ServerScanner::scanLocalNetwork()
 {
+    socket.unbind();
+    master_server_url = "";
+
+    server_list_mutex.lock();
+    for(unsigned int n=0; n<server_list.size(); n++)
+    {
+        if (removedServerCallback)
+            removedServerCallback(server_list[n].address);
+        server_list.erase(server_list.begin() + n);
+        n--;
+    }
+    server_list_mutex.unlock();
+    
     int port_nr = server_port + 1;
     while(socket.bind(port_nr) != sf::UdpSocket::Done)
         port_nr++;
@@ -130,7 +155,7 @@ void ServerScanner::masterServerScanThread()
     LOG(INFO) << "Reading servers from master server";
     
     sf::Http http(hostname);
-    while(!isDestroyed())
+    while(!isDestroyed() && master_server_url != "")
     {
         sf::Http::Request request(uri, sf::Http::Request::Get);
         sf::Http::Response response = http.sendRequest(request, sf::seconds(10.0f));
@@ -156,7 +181,7 @@ void ServerScanner::masterServerScanThread()
             }
         }
         
-        for(int n=0;n<10 && !isDestroyed(); n++)
+        for(int n=0;n<10 && !isDestroyed() && master_server_url != ""; n++)
             sf::sleep(sf::seconds(1.0f));
     }
 }
