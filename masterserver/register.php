@@ -33,7 +33,23 @@ $db->exec("CREATE TABLE IF NOT EXISTS `servers` (
   PRIMARY KEY (`ip`,`port`)
 );");
 
+$q = $db->prepare("SELECT * FROM `servers` WHERE `ip` = :ip AND `port` = :port AND `version` = :version");
+$result = $q->execute(array("ip" => $_SERVER['REMOTE_ADDR'], "port" => $port, "version" => $version));
+if($q->fetch() === false)
+{
+    //First time server is added. Try if we can connect to the server. If not, then port forwarding is most likely not setup.
+    $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+    $result = @socket_connect($socket, $_SERVER['REMOTE_ADDR'], $port);
+    if ($result === false)
+    {
+        die("CONNECT FAILED: " . $_SERVER['REMOTE_ADDR'] . ":" . $port);
+    }else{
+        socket_close($socket);
+    }
+}
+
 $q = $db->prepare("INSERT INTO `servers`(`ip`, `port`, `version`, `name`) VALUES (:ip, :port, :version, :name) ON DUPLICATE KEY UPDATE `name` = :name, `version` = :version, `last_update` = NOW()");
 $q->execute(array("ip" => $_SERVER['REMOTE_ADDR'], "port" => $port, "version" => $version, "name" => $name));
 
+echo "OK";
 ?>

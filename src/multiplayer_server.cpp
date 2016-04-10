@@ -431,10 +431,12 @@ void GameServer::runMasterServerUpdateThread()
         request.setBody("port=" + string(listen_port) + "&name=" + server_name + "&version=" + string(version_number));
         
         sf::Http::Response response = http.sendRequest(request, sf::seconds(10.0f));
-        
         if (response.getStatus() != sf::Http::Response::Ok)
         {
             LOG(WARNING) << "Failed to register at master server (" << response.getStatus() << ")";
+        }else if (response.getBody() != "OK")
+        {
+            LOG(WARNING) << "Master server reports error on registering: " << response.getBody();
         }
         
         for(int n=0;n<60 && !isDestroyed();n++)
