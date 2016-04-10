@@ -151,12 +151,17 @@ void ServerScanner::masterServerScanThread()
                 
                 if (version == version_number || version == 0 || version_number == 0)
                 {
-                    updateServerEntry(address, port, name);
+                    sf::TcpSocket socket;
+                    if (socket.connect(address, port, sf::seconds(1.0)) == sf::Socket::Done)
+                    {
+                        socket.disconnect();
+                        updateServerEntry(address, port, name);
+                    }
                 }
             }
         }
         
-        for(int n=0;n<10 && !isDestroyed();n++)
+        for(int n=0;n<10 && !isDestroyed(); n++)
             sf::sleep(sf::seconds(1.0f));
     }
 }
