@@ -71,6 +71,7 @@ public:
     void setServerName(string name) { server_name = name; }
     
     void registerOnMasterServer(string master_server_url);
+    void stopMasterServerRegistry();
     void setPassword(string password);
 
     void gotAudioPacket(int32_t client_id, int32_t target_identifier, std::vector<int16_t>& audio_data);

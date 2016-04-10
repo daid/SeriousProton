@@ -405,6 +405,11 @@ void GameServer::registerOnMasterServer(string master_server_url)
     master_server_update_thread.launch();
 }
 
+void GameServer::stopMasterServerRegistry()
+{
+    this->master_server_url = "";
+}
+
 void GameServer::runMasterServerUpdateThread()
 {
     if (!master_server_url.startswith("http://"))
@@ -425,7 +430,7 @@ void GameServer::runMasterServerUpdateThread()
     LOG(INFO) << "Registering at master server";
     
     sf::Http http(hostname);
-    while(!isDestroyed())
+    while(!isDestroyed() && master_server_url != "")
     {
         sf::Http::Request request(uri, sf::Http::Request::Post);
         request.setBody("port=" + string(listen_port) + "&name=" + server_name + "&version=" + string(version_number));
@@ -439,7 +444,7 @@ void GameServer::runMasterServerUpdateThread()
             LOG(WARNING) << "Master server reports error on registering: " << response.getBody();
         }
         
-        for(int n=0;n<60 && !isDestroyed();n++)
+        for(int n=0;n<60 && !isDestroyed() && master_server_url != "";n++)
             sf::sleep(sf::seconds(1.0f));
     }
 }
