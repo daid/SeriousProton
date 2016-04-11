@@ -6,11 +6,12 @@
 #include "logging.h"
 
 ELogLevel Logging::global_level = LOGLEVEL_ERROR;
+FILE* Logging::log_stream = nullptr;
 
 #ifdef __ANDROID__
 #define print_func(...) __android_log_print(ANDROID_LOG_INFO, "SeriousProton", __VA_ARGS__)
 #else
-#define print_func(...) printf(__VA_ARGS__)
+#define print_func(...) fprintf(Logging::log_stream, __VA_ARGS__)
 #endif
 
 Logging::Logging(ELogLevel level, string file, int line, string function_name)
@@ -19,6 +20,8 @@ Logging::Logging(ELogLevel level, string file, int line, string function_name)
     
     if (do_logging)
     {
+        if (log_stream == nullptr)
+            log_stream = stderr;
         switch(level)
         {
         case LOGLEVEL_DEBUG:
@@ -53,4 +56,9 @@ const Logging& operator<<(const Logging& log, const char* str)
 void Logging::setLogLevel(ELogLevel level)
 {
     global_level = level;
+}
+
+void Logging::setLogFile(string filename)
+{
+    log_stream = fopen(filename.c_str(), "wt");
 }
