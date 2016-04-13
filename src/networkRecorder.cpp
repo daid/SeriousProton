@@ -50,7 +50,7 @@ bool NetworkAudioRecorder::onProcessSamples(const sf::Int16* samples, std::size_
             rms_squared += samples[n] * samples[n];
         }
         double rms = sqrt(rms_squared / sample_count) / std::numeric_limits<sf::Int16>::max();
-        LOG(INFO) << rms;
+        LOG(INFO) << "Network recorder RMS: " << rms;
     }
     
     if (mode == KeyActivation)
