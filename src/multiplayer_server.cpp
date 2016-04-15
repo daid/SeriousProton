@@ -71,6 +71,8 @@ P<MultiplayerObject> GameServer::getObjectById(int32_t id)
 
 void GameServer::update(float gameDelta)
 {
+    sf::Clock update_run_time_clock;    //Clock used to measure how much time this update cycle is costing us.
+    
     //Calculate our own delta, as we want wall-time delta, the gameDelta can be modified by the current game speed (could even be 0 on pause)
     float delta = updateTimeClock.getElapsedTime().asSeconds();
     updateTimeClock.restart();
@@ -300,6 +302,7 @@ void GameServer::update(float gameDelta)
         multiplayer_stats.clear();
     }
 #endif
+    update_run_time = update_run_time_clock.getElapsedTime().asSeconds();
 }
 
 void GameServer::handleNewClient(ClientInfo& info)

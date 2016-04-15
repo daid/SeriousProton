@@ -147,6 +147,9 @@ void Engine::runMainLoop()
             // Clear the window
             windowManager->render();
             engine_timing.render = engine_timing_clock.restart().asSeconds();
+            engine_timing.server_update = 0.0f;
+            if (game_server)
+                engine_timing.server_update = game_server->getUpdateTime();
             
             last_engine_timing = engine_timing;
         }

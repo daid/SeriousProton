@@ -37,6 +37,7 @@ public:
         float update;
         float collision;
         float render;
+        float server_update;
     };
 private:
     bool running;
