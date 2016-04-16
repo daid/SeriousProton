@@ -389,7 +389,32 @@ public:
         old replaced by new.  If the optional argument count is
         given, only the first count occurrences are replaced.
     */
-    string replace(const string old, const string _new, const int count=-1) const;
+    string replace(const string old, const string _new, const int count=-1) const
+    {
+        if (old.length() < 1 || count == 0)
+            return *this;
+        
+        string result;
+        result.reserve(length());
+        int start = 0;
+        int end = 0;
+        while(true)
+        {
+            start = find(old, end);
+            if (start < 0)
+                break;
+            if (count > -1)
+            {
+                count--;
+                if (count == 0)
+                    break;
+            }
+            result += substr(end, start) + _new;
+            end = start + old.length();
+        }
+        result += substr(end);
+        return result;
+    }
 
     /*
         Return the highest index in S where substring sub is found,
