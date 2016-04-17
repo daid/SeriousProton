@@ -391,24 +391,18 @@ public:
     */
     string replace(const string old, const string _new, const int count=-1) const
     {
-        if (old.length() < 1 || count == 0)
+        if (old.length() < 1)
             return *this;
         
         string result;
         result.reserve(length());
         int start = 0;
         int end = 0;
-        while(true)
+        for(int amount=0; amount!=count;amount++)
         {
             start = find(old, end);
             if (start < 0)
                 break;
-            if (count > -1)
-            {
-                count--;
-                if (count == 0)
-                    break;
-            }
             result += substr(end, start) + _new;
             end = start + old.length();
         }
