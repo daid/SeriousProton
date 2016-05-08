@@ -48,7 +48,7 @@ template<typename T> struct convert
     {
         //If you get a compile error here, then the function you are trying to register has an parameter that is not handled by the specialized converters, nor
         // by the default number conversion.
-        t = luaL_checknumber(L, idx++);
+        t = (T) luaL_checknumber(L, idx++);
     }
     static int returnType(lua_State* L, T t)
     {
@@ -723,4 +723,8 @@ public:
     }\
     ScriptClassInfo scriptClassInfo ## F ( # F , "" , registerFunctionFunction ## F , NULL );
 
+#ifdef _MSC_VER
+// MFC: GCC does proper external template instantiation, VC++ doesn't.
+#include "scriptInterfaceMagic.hpp"
+#endif
 #endif//SCRIPT_INTERFACE_MAGIC_H

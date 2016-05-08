@@ -7,6 +7,7 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
+#include <algorithm> // MFC -- std::min std::max on Win32/MSDEV
 
 /*
     The improved string class. while this class is not always the most efficient in terms of execution speed.
@@ -28,19 +29,21 @@ public:
         push_back(c);
     }
 
-    string(const int nr) : std::string()
+    template<typename T> string(const T nr) : std::string()
     {
         std::ostringstream stream;
         stream << nr;
         *this = stream.str();
     }
 
+	/*
     string(const unsigned int nr) : std::string()
     {
         std::ostringstream stream;
         stream << nr;
         *this = stream.str();
     }
+	*/
 
     string(const float nr, int decimals = 2) : std::string()
     {
@@ -141,7 +144,8 @@ public:
     {
         if (suffix.length() == 0)
             return true;
-        return substr(-suffix.length()) == suffix;
+		// MFC: length() returns size_t which is unsigned.
+        return substr(-(int)suffix.length()) == suffix;
     }
 
     /*

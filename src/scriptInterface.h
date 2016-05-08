@@ -76,4 +76,9 @@ public:
 };
 template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, ScriptSimpleCallback& callback);
 
+#ifdef _MSC_VER
+// MFC: GCC does proper external template instantiation, VC++ doesn't.
+#include "scriptInterface.hpp"
+#endif
+
 #endif//SCRIPT_INTERFACE_H

@@ -46,22 +46,7 @@ MultiplayerObject::~MultiplayerObject()
             memberReplicationInfo[n].cleanupFunction(&memberReplicationInfo[n].prev_data);
 }
 
-template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr)
-{
-    string* ptr = (string*)data;
-    int64_t* hash_ptr = (int64_t*)prev_data_ptr;
 
-    int64_t hash = 5381;
-    hash = ((hash << 5) + hash) + ptr->length();
-    for(unsigned int n=0; n<ptr->length(); n++)
-        hash = (hash * 33) + (*ptr)[n];
-    if (*hash_ptr != hash)
-    {
-        *hash_ptr = hash;
-        return true;
-    }
-    return false;
-}
 
 static bool collisionable_isChanged(void* data, void* prev_data_ptr)
 {
@@ -194,3 +179,6 @@ void MultiplayerObject::sendClientCommand(sf::Packet& packet)
         game_client->sendPacket(packet);
     }
 }
+#ifndef _MSC_VER
+#include "multiplayer.hpp"
+#endif /* _MSC_VER */

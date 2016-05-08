@@ -1,11 +1,6 @@
 #include "tween.h"
 
-template<> sf::Color Tween<sf::Color>::tweenApply(float f, const sf::Color& value0, const sf::Color& value1)
-{
-    return sf::Color(
-        value0.r + (value1.r - value0.r) * f,
-        value0.g + (value1.g - value0.g) * f,
-        value0.b + (value1.b - value0.b) * f,
-        value0.a + (value1.a - value0.a) * f
-    );
-}
+#ifndef _MSC_VER
+// MFC: GCC does proper external template instantiation, VC++ doesn't.
+#include "tween.hpp"
+#endif /* _MSC_VER */

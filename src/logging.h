@@ -32,13 +32,14 @@ public:
 
 const Logging& operator<<(const Logging& log, const char* str);
 inline const Logging& operator<<(const Logging& log, const std::string& s) { return log << (s.c_str()); }
-inline const Logging& operator<<(const Logging& log, const int i) { return log << string(i).c_str(); }
-inline const Logging& operator<<(const Logging& log, const unsigned int i) { return log << string(i).c_str(); }
-inline const Logging& operator<<(const Logging& log, const long i) { return log << string(int(i)).c_str(); }
-inline const Logging& operator<<(const Logging& log, const unsigned long i) { return log << string(int(i)).c_str(); }
-inline const Logging& operator<<(const Logging& log, const float f) { return log << string(f).c_str(); }
+// inline const Logging& operator<<(const Logging& log, const int i) { return log << string(i).c_str(); }
+// inline const Logging& operator<<(const Logging& log, const unsigned int i) { return log << string(i).c_str(); }
+// inline const Logging& operator<<(const Logging& log, const long i) { return log << string(int(i)).c_str(); }
+// inline const Logging& operator<<(const Logging& log, const unsigned long i) { return log << string(int(i)).c_str(); }
+// inline const Logging& operator<<(const Logging& log, const float f) { return log << string(f).c_str(); }
 inline const Logging& operator<<(const Logging& log, const double f) { return log << string(f, 2).c_str(); }
 template<typename T> inline const Logging& operator<<(const Logging& log, const sf::Vector2<T> v) { return log << v.x << "," << v.y; }
 template<typename T> inline const Logging& operator<<(const Logging& log, const sf::Rect<T> v) { return log << v.left << "," << v.top << ":" << v.width << "x" << v.height; }
+template<typename T> inline const Logging& operator<<(const Logging& log, const T v) { return log << string(v).c_str(); }
 
 #endif//LOGGING_H

@@ -243,5 +243,9 @@ template<class T> MultiplayerObject* createMultiplayerObject()
 {
     return new T();
 }
+#ifdef _MSC_VER
+// MFC: GCC does proper external template instantiation, VC++ doesn't.
+#include "multiplayer.hpp"
+#endif
 
 #endif//MULTIPLAYER_H

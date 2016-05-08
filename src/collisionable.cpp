@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <utility>
+#include <stddef.h>
 #include "collisionable.h"
 #include "Renderable.h"
 #include "vectorUtils.h"

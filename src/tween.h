@@ -45,4 +45,9 @@ public:
 
 template<> sf::Color Tween<sf::Color>::tweenApply(float f, const sf::Color& value0, const sf::Color& value1);
 
+#ifdef _MSC_VER
+// MFC: GCC does proper external template instantiation, VC++ doesn't.
+#include "tween.hpp"
+#endif
+
 #endif//TWEEN_H
