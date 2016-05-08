@@ -178,11 +178,20 @@ void Engine::handleEvent(sf::Event& event)
 #endif
     if (event.type == sf::Event::KeyPressed)
     {
+		if (event.key.code != sf::Keyboard::Unknown)
         InputHandler::keyboard_button_down[event.key.code] = true;
+#ifdef DEBUG
+		else printf("Unknown key code pressed");
+#endif
         last_key_press = event.key.code;
     }
-    if (event.type == sf::Event::KeyReleased)
+	if (event.type == sf::Event::KeyReleased) {
+		if (event.key.code != sf::Keyboard::Unknown)
         InputHandler::keyboard_button_down[event.key.code] = false;
+#ifdef DEBUG
+		else printf("Unknown key code released");
+#endif
+	}
     if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
     {
         if (last_key_press != sf::Keyboard::Unknown)
