@@ -27,15 +27,15 @@ class QueryCallback : public b2QueryCallback
 public:
     PVector<Collisionable> list;
 
-	/// Called for each fixture found in the query AABB.
-	/// @return false to terminate the query.
-	virtual bool ReportFixture(b2Fixture* fixture)
-	{
+        /// Called for each fixture found in the query AABB.
+        /// @return false to terminate the query.
+        virtual bool ReportFixture(b2Fixture* fixture)
+        {
         P<Collisionable> ptr = (Collisionable*)fixture->GetBody()->GetUserData();
         if (ptr)
             list.push_back(ptr);
         return true;
-	}
+        }
 };
 
 PVector<Collisionable> CollisionManager::queryArea(sf::Vector2f lowerBound, sf::Vector2f upperBound)
