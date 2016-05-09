@@ -8,6 +8,7 @@ static int random(lua_State* L)
 {
     float rMin = luaL_checknumber(L, 1);
     float rMax = luaL_checknumber(L, 2);
+    rMin = std::min(rMin, rMax);
     lua_pushnumber(L, random(rMin, rMax));
     return 1;
 }
@@ -19,6 +20,7 @@ static int irandom(lua_State* L)
 {
     int rMin = luaL_checkinteger(L, 1);
     int rMax = luaL_checkinteger(L, 2);
+    rMin = std::min(rMin, rMax);
     lua_pushinteger(L, irandom(rMin, rMax));
     return 1;
 }
