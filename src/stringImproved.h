@@ -29,21 +29,29 @@ public:
         push_back(c);
     }
 
-    template<typename T> string(const T nr) : std::string()
+    string(const int nr) : std::string()
     {
         std::ostringstream stream;
         stream << nr;
         *this = stream.str();
     }
 
-	/*
     string(const unsigned int nr) : std::string()
     {
         std::ostringstream stream;
         stream << nr;
         *this = stream.str();
     }
-	*/
+
+#ifdef _MSC_VER
+    // MFC: size_t is __uint64 on Win32.
+    string(const size_t nr) : std::string()
+    {
+        std::ostringstream stream;
+        stream << nr;
+        *this = stream.str();
+    }
+#endif
 
     string(const float nr, int decimals = 2) : std::string()
     {
