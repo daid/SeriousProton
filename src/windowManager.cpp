@@ -26,7 +26,7 @@ void WindowManager::render()
 {
     // Clear the window
     window.clear(sf::Color(20, 20, 20));
-    
+
     //Call the first item of the rendering chain.
     renderChain->render(window);
 
@@ -69,7 +69,7 @@ void WindowManager::create()
     // Create the window of the application
     int windowWidth = virtualSize.x;
     int windowHeight = virtualSize.y;
-    
+
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
     if (fullscreen)
     {
@@ -81,7 +81,7 @@ void WindowManager::create()
             scale += 1;
         windowWidth *= scale - 1;
         windowHeight *= scale - 1;
-        
+
         while(windowWidth >= int(desktop.width) || windowHeight >= int(desktop.height) - 100)
         {
             windowWidth *= 0.9;
@@ -91,9 +91,9 @@ void WindowManager::create()
 
     sf::ContextSettings context_settings(24, 8, fsaa, 2, 0);
     if (fullscreen)
-        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "Game", sf::Style::Fullscreen, context_settings);
+        window.create(sf::VideoMode(windowWidth, windowHeight, 32), WINDOW_TITLE, sf::Style::Fullscreen, context_settings);
     else
-        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "Game", sf::Style::Default, context_settings);
+        window.create(sf::VideoMode(windowWidth, windowHeight, 32), WINDOW_TITLE, sf::Style::Default, context_settings);
     sf::ContextSettings settings = window.getSettings();
     LOG(INFO) << "OpenGL version: " << settings.majorVersion << "." << settings.minorVersion;
     window.setVerticalSyncEnabled(false);
@@ -109,7 +109,7 @@ void WindowManager::setupView()
     {
         if (allow_virtual_resize)
             virtualSize.x = virtualSize.y * (window_size.x / window_size.y);
-        
+
         float aspect = window_size.y * float(virtualSize.x) / float(virtualSize.y) / window_size.x;
         float offset = 0;//0.5 - 0.5 * aspect;
         sf::View view(sf::Vector2f(virtualSize.x/2,virtualSize.y/2), sf::Vector2f(virtualSize.x, virtualSize.y));
@@ -117,7 +117,7 @@ void WindowManager::setupView()
         window.setView(view);
     }else{
         virtualSize.x = virtualSize.y * min_aspect_ratio;
-        
+
         float aspect = window_size.x / window_size.y * float(virtualSize.y) / float(virtualSize.x);
         float offset = 0.5 - 0.5 * aspect;
         sf::View view(sf::Vector2f(virtualSize.x/2,virtualSize.y/2), sf::Vector2f(virtualSize.x, virtualSize.y));
