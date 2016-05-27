@@ -273,5 +273,13 @@ template<class T1, class T2> bool operator != (P<T1>& p1, P<T2>& p2)
 {
     return *p1 != *p2;
 }
+template<class T1, class T2> bool operator == (const P<T1>& p1, const P<T2>& p2)
+{
+    return *p1 == *p2;
+}
+template<class T1, class T2> bool operator != (const P<T1>& p1, const P<T2>& p2)
+{
+    return *p1 != *p2;
+}
 
 #endif//PEE_POINTER_H
