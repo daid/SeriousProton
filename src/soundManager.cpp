@@ -82,7 +82,7 @@ void SoundManager::stopSound(int index)
     return;
 }
 
-int SoundManager::playSound(string name, float pitch, float volume)
+int SoundManager::playSound(string name, float pitch, float volume, bool loop)
 {
     sf::SoundBuffer* data = soundMap[name];
     if (data == NULL)
@@ -90,7 +90,7 @@ int SoundManager::playSound(string name, float pitch, float volume)
 
     // Return the sound's index in activeSoundList[].
     // Returns -1 if the list was full of playing sounds.
-    return playSoundData(data, pitch, volume);
+    return playSoundData(data, pitch, volume, loop);
 }
 
 void SoundManager::setListenerPosition(sf::Vector2f position, float angle)
@@ -106,7 +106,7 @@ void SoundManager::disablePositionalSound()
     positional_sound_enabled = false;
 }
 
-int SoundManager::playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch, float volume)
+int SoundManager::playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch, float volume, bool loop)
 {
     if (!positional_sound_enabled)
         return -1;
@@ -128,6 +128,7 @@ int SoundManager::playSound(string name, sf::Vector2f position, float min_distan
             sound.setPosition(position.x, 0, position.y);
             sound.setPitch(pitch);
             sound.setVolume(volume);
+            sound.setLoop(loop);
             sound.play();
             return n;
         }
@@ -165,7 +166,7 @@ void SoundManager::playTextToSpeech(string text)
     sf::SoundBuffer* data = soundMap[name];
     if (data != NULL)
     {
-        playSoundData(data, 1.0, 100.0);
+        playSoundData(data, 1.0, 100.0, false);
         return;
     }
 
@@ -180,7 +181,7 @@ void SoundManager::playTextToSpeech(string text)
         sf::SoundBuffer* data = new sf::SoundBuffer();
         data->loadFromMemory(wave.data(), wave.size());
         soundMap[name] = data;
-        playSoundData(data, 1.0, 100.0);
+        playSoundData(data, 1.0, 100.0, false);
     }
     else
     {
@@ -188,7 +189,7 @@ void SoundManager::playTextToSpeech(string text)
     }
 }
 
-int SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volume)
+int SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volume, bool loop)
 {
     for(int n = 0; n < activeSoundList.size(); n++)
     {
@@ -202,14 +203,13 @@ int SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volume
             sound.setPitch(pitch);
             sound.setVolume(volume);
             sound.setPosition(0, 0, 0);
+            sound.setLoop(loop);
             sound.play();
-            LOG(INFO) << "Playing sound. Returning " << string(n);
             return n;
         }
     }
 
     // No room in activeSoundList; return -1.
-    LOG(INFO) << "Not playing sound. Returning -1.";
     return -1;
 }
 
