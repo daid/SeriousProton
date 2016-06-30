@@ -116,7 +116,7 @@ int SoundManager::playSound(string name, sf::Vector2f position, float min_distan
     if (data->getChannelCount() > 1)
         LOG(WARNING) << name << ": Used as positional sound but has more than 1 channel.";
 
-    for(int n = 0; n < activeSoundList.size(); n++)
+    for(unsigned int n = 0; n < activeSoundList.size(); n++)
     {
         sf::Sound& sound = activeSoundList[n];
         if (sound.getStatus() == sf::Sound::Stopped)
@@ -130,9 +130,12 @@ int SoundManager::playSound(string name, sf::Vector2f position, float min_distan
             sound.setVolume(volume);
             sound.setLoop(loop);
             sound.play();
-            return n;
+            return int(n);
         }
     }
+
+    // No room in activeSoundList; return -1.
+    return -1;
 }
 
 void SoundManager::setTextToSpeachVoice(string name)
@@ -191,7 +194,7 @@ void SoundManager::playTextToSpeech(string text)
 
 int SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volume, bool loop)
 {
-    for(int n = 0; n < activeSoundList.size(); n++)
+    for(unsigned int n = 0; n < activeSoundList.size(); n++)
     {
         sf::Sound& sound = activeSoundList[n];
         if (sound.getStatus() == sf::Sound::Stopped)
@@ -205,7 +208,7 @@ int SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volume
             sound.setPosition(0, 0, 0);
             sound.setLoop(loop);
             sound.play();
-            return n;
+            return int(n);
         }
     }
 
