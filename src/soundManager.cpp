@@ -74,12 +74,51 @@ float SoundManager::getMusicVolume()
 void SoundManager::stopSound(int index)
 {
     sf::Sound& sound = activeSoundList[index];
-    if (sound.getStatus() != sf::Sound::Stopped)
+    if (sound.getStatus() == sf::Sound::Playing)
     {
         sound.setLoop(false);
         sound.stop();
     }
-    return;
+}
+
+void SoundManager::setSoundVolume(int index, float volume)
+{
+    sf::Sound& sound = activeSoundList[index];
+    if (sound.getStatus() == sf::Sound::Playing)
+    {
+        // Bound volume between 0.0f and 100.0f.
+        volume = std::max(0.0f, std::min(100.0f, volume));
+        sound.setVolume(volume);
+    }
+}
+
+float SoundManager::getSoundVolume(int index)
+{
+    sf::Sound& sound = activeSoundList[index];
+    if (sound.getStatus() == sf::Sound::Playing)
+    {
+        return sound.getVolume();
+    }
+}
+
+void SoundManager::setSoundPitch(int index, float pitch)
+{
+    sf::Sound& sound = activeSoundList[index];
+    if (sound.getStatus() == sf::Sound::Playing)
+    {
+        // Bound pitch to 0.0f or greater.
+        pitch = std::max(0.0f, pitch);
+        sound.setPitch(pitch);
+    }
+}
+
+float SoundManager::getSoundPitch(int index)
+{
+    sf::Sound& sound = activeSoundList[index];
+    if (sound.getStatus() == sf::Sound::Playing)
+    {
+        return sound.getPitch();
+    }
 }
 
 int SoundManager::playSound(string name, float pitch, float volume, bool loop)

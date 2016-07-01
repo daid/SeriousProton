@@ -14,6 +14,7 @@ class SoundManager
 {
 private:
     static constexpr float fade_music_time = 1.0;
+    static constexpr float fade_sound_time = 0.3;
 
     enum FadeMode
     {
@@ -42,19 +43,29 @@ public:
     SoundManager();
     ~SoundManager();
 
+    // Music
     void playMusic(string filename);
     void playMusicSet(std::vector<string> filenames);
     void stopMusic();
     void setMusicVolume(float volume);
     float getMusicVolume();
+
+    // Non-positional sounds
     int playSound(string name, float pitch = 1.0f, float volume = 100.0f, bool loop = false);
 
     // Positional sounds
+    int playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch = 1.0f, float volume = 100.0f, bool loop = false);
     void setListenerPosition(sf::Vector2f position, float angle);
     void disablePositionalSound();
-    void stopSound(int index);
-    int playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch = 1.0f, float volume = 100.0f, bool loop = false);
 
+    // Sound management
+    void stopSound(int index);
+    void setSoundVolume(int index, float volume); // Valid values 0.0f-100.0f
+    float getSoundVolume(int index);
+    void setSoundPitch(int index, float volume); // Valid values 0.0f+; 1.0 = default
+    float getSoundPitch(int index);
+
+    // TTS
     void setTextToSpeachVoice(string name);
     void playTextToSpeech(string text);
 private:
