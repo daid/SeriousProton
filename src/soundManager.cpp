@@ -73,6 +73,8 @@ float SoundManager::getMusicVolume()
 
 void SoundManager::stopSound(int index)
 {
+    if (index < 0 || index >= MAX_SOUNDS)
+        return;
     sf::Sound& sound = activeSoundList[index];
     if (sound.getStatus() == sf::Sound::Playing)
     {
