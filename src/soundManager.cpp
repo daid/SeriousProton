@@ -16,10 +16,12 @@ SoundManager* soundManager;
 
 SoundManager::SoundManager()
 {
-    //By creating a SoundBuffer we force SFML to load the sound subsystem. Else this is done when the first sound is loaded, causing a delay at that point.
+    // By creating a SoundBuffer we force SFML to load the sound subsystem.
+    // Else this is done when the first sound is loaded, causing a delay at that
+    // point.
     sf::SoundBuffer forceLoadBuffer;
 
-    for(unsigned int n=0; n<MAX_SOUNDS; n++)
+    for(unsigned int n = 0; n < MAX_SOUNDS; n++)
         activeSoundList.push_back(sf::Sound());
     
     music_volume = 100.0;
@@ -69,13 +71,65 @@ float SoundManager::getMusicVolume()
     return music_volume;
 }
 
-void SoundManager::playSound(string name, float pitch, float volume)
+void SoundManager::stopSound(int index)
+{
+    sf::Sound& sound = activeSoundList[index];
+    if (sound.getStatus() == sf::Sound::Playing)
+    {
+        sound.setLoop(false);
+        sound.stop();
+    }
+}
+
+void SoundManager::setSoundVolume(int index, float volume)
+{
+    sf::Sound& sound = activeSoundList[index];
+    if (sound.getStatus() == sf::Sound::Playing)
+    {
+        // Bound volume between 0.0f and 100.0f.
+        volume = std::max(0.0f, std::min(100.0f, volume));
+        sound.setVolume(volume);
+    }
+}
+
+float SoundManager::getSoundVolume(int index)
+{
+    sf::Sound& sound = activeSoundList[index];
+    if (sound.getStatus() == sf::Sound::Playing)
+    {
+        return sound.getVolume();
+    }
+}
+
+void SoundManager::setSoundPitch(int index, float pitch)
+{
+    sf::Sound& sound = activeSoundList[index];
+    if (sound.getStatus() == sf::Sound::Playing)
+    {
+        // Bound pitch to 0.0f or greater.
+        pitch = std::max(0.0f, pitch);
+        sound.setPitch(pitch);
+    }
+}
+
+float SoundManager::getSoundPitch(int index)
+{
+    sf::Sound& sound = activeSoundList[index];
+    if (sound.getStatus() == sf::Sound::Playing)
+    {
+        return sound.getPitch();
+    }
+}
+
+int SoundManager::playSound(string name, float pitch, float volume, bool loop)
 {
     sf::SoundBuffer* data = soundMap[name];
     if (data == NULL)
         data = loadSound(name);
-    
-    playSoundData(data, pitch, volume);
+
+    // Return the sound's index in activeSoundList[].
+    // Returns -1 if the list was full of playing sounds.
+    return playSoundData(data, pitch, volume, loop);
 }
 
 void SoundManager::setListenerPosition(sf::Vector2f position, float angle)
@@ -91,17 +145,17 @@ void SoundManager::disablePositionalSound()
     positional_sound_enabled = false;
 }
 
-void SoundManager::playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch, float volume)
+int SoundManager::playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch, float volume, bool loop)
 {
     if (!positional_sound_enabled)
-        return;
+        return -1;
     sf::SoundBuffer* data = soundMap[name];
     if (data == NULL)
         data = loadSound(name);
     if (data->getChannelCount() > 1)
-        LOG(WARNING) << name << ": Used as positional sound but has more then 1 channel.";
-    
-    for(unsigned int n=0; n<activeSoundList.size(); n++)
+        LOG(WARNING) << name << ": Used as positional sound but has more than 1 channel.";
+
+    for(unsigned int n = 0; n < activeSoundList.size(); n++)
     {
         sf::Sound& sound = activeSoundList[n];
         if (sound.getStatus() == sf::Sound::Stopped)
@@ -113,10 +167,14 @@ void SoundManager::playSound(string name, sf::Vector2f position, float min_dista
             sound.setPosition(position.x, 0, position.y);
             sound.setPitch(pitch);
             sound.setVolume(volume);
+            sound.setLoop(loop);
             sound.play();
-            return;
+            return int(n);
         }
     }
+
+    // No room in activeSoundList; return -1.
+    return -1;
 }
 
 void SoundManager::setTextToSpeachVoice(string name)
@@ -133,7 +191,7 @@ string url_encode(const string &value) {
         if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
             escaped << c;
         }
-        else if (c == ' ')  {
+        else if (c == ' ') {
             escaped << '+';
         }
         else {
@@ -150,14 +208,14 @@ void SoundManager::playTextToSpeech(string text)
     sf::SoundBuffer* data = soundMap[name];
     if (data != NULL)
     {
-        playSoundData(data, 1.0, 100.0);
+        playSoundData(data, 1.0, 100.0, false);
         return;
     }
 
     sf::Http http("localhost", 59125);
     sf::Http::Request request("process?INPUT_TEXT=" + url_encode(text) + "&INPUT_TYPE=TEXT&OUTPUT_TYPE=AUDIO&AUDIO=WAVE_FILE&LOCALE=en_US&VOICE=dfki-prudence");
     sf::Http::Response response = http.sendRequest(request);
-    
+
     sf::Http::Response::Status status = response.getStatus();
     if (status == sf::Http::Response::Ok)
     {
@@ -165,7 +223,7 @@ void SoundManager::playTextToSpeech(string text)
         sf::SoundBuffer* data = new sf::SoundBuffer();
         data->loadFromMemory(wave.data(), wave.size());
         soundMap[name] = data;
-        playSoundData(data, 1.0, 100.0);
+        playSoundData(data, 1.0, 100.0, false);
     }
     else
     {
@@ -173,9 +231,9 @@ void SoundManager::playTextToSpeech(string text)
     }
 }
 
-void SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volume)
+int SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volume, bool loop)
 {
-    for(unsigned int n=0; n<activeSoundList.size(); n++)
+    for(unsigned int n = 0; n < activeSoundList.size(); n++)
     {
         sf::Sound& sound = activeSoundList[n];
         if (sound.getStatus() == sf::Sound::Stopped)
@@ -187,10 +245,14 @@ void SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volum
             sound.setPitch(pitch);
             sound.setVolume(volume);
             sound.setPosition(0, 0, 0);
+            sound.setLoop(loop);
             sound.play();
-            return;
+            return int(n);
         }
     }
+
+    // No room in activeSoundList; return -1.
+    return -1;
 }
 
 sf::SoundBuffer* SoundManager::loadSound(string name)
@@ -198,9 +260,9 @@ sf::SoundBuffer* SoundManager::loadSound(string name)
     sf::SoundBuffer* data = soundMap[name];
     if (data)
         return data;
-    
+
     data = new sf::SoundBuffer();
-    
+
     P<ResourceStream> stream = getResourceStream(name);
     if (!stream) stream = getResourceStream(name + ".wav");
     if (!stream || !data->loadFromStream(**stream))
@@ -209,7 +271,7 @@ sf::SoundBuffer* SoundManager::loadSound(string name)
         soundMap[name] = data;
         return data;
     }
-    
+
     LOG(INFO) << "Loaded: " << name << " of " << data->getDuration().asSeconds() << " seconds";
     soundMap[name] = data;
     return data;
