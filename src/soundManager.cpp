@@ -100,6 +100,8 @@ float SoundManager::getSoundVolume(int index)
     if (sound.getStatus() == sf::Sound::Playing)
     {
         return sound.getVolume();
+    } else {
+        return 0.0f;
     }
 }
 
@@ -120,6 +122,8 @@ float SoundManager::getSoundPitch(int index)
     if (sound.getStatus() == sf::Sound::Playing)
     {
         return sound.getPitch();
+    } else {
+        return 0.0f;
     }
 }
 
