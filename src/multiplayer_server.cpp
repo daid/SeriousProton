@@ -392,6 +392,14 @@ void GameServer::genenerateDeletePacketFor(int32_t id, sf::Packet& packet)
     packet << CMD_DELETE << id;
 }
 
+void GameServer::broadcastServerCommandFromObject(int32_t id, sf::Packet& packet)
+{
+    sf::Packet p;
+    p << CMD_SERVER_COMMAND << id;
+    p.append(packet.getData(), packet.getDataSize());
+    sendAll(p);
+}
+
 void GameServer::sendAll(sf::Packet& packet)
 {
     sendDataCounterPerClient += packet.getDataSize();

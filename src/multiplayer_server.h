@@ -79,6 +79,7 @@ public:
     void gotAudioPacket(int32_t client_id, int32_t target_identifier, std::vector<int16_t>& audio_data);
 private:
     void registerObject(P<MultiplayerObject> obj);
+    void broadcastServerCommandFromObject(int32_t id, sf::Packet& packet);
     void sendAll(sf::Packet& packet);
 
     void genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet);

@@ -212,8 +212,10 @@ public:
     int32_t getMultiplayerId() { return multiplayerObjectId; }
     const string& getMultiplayerClassIdentifier() { return multiplayerClassIdentifier; }
     void sendClientCommand(sf::Packet& packet);//Send a command from the client to the server.
+    void broadcastServerCommand(sf::Packet& packet);//Send a command from the server to all clients.
 
     virtual void onReceiveClientCommand(int32_t client_id, sf::Packet& packet) {} //Got data from a client, handle it.
+    virtual void onReceiveServerCommand(sf::Packet& packet) {} //Got data from a server, handle it.
 private:
     friend class GameServer;
     friend class GameClient;

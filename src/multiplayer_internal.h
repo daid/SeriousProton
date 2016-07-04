@@ -13,5 +13,6 @@ static const command_t CMD_ALIVE = 0x0007;
 static const command_t CMD_CLIENT_AUDIO_COMM = 0x0008;
 static const command_t CMD_REQUEST_AUTH = 0x0009;
 static const command_t CMD_CLIENT_SEND_AUTH = 0x0010;
+static const command_t CMD_SERVER_COMMAND = 0x0011;
 
 #endif//MULTIPLAYER_INTERNAL_H

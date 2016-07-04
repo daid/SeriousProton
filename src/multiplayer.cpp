@@ -194,3 +194,12 @@ void MultiplayerObject::sendClientCommand(sf::Packet& packet)
         game_client->sendPacket(packet);
     }
 }
+
+void MultiplayerObject::broadcastServerCommand(sf::Packet& packet)
+{
+    if (game_server)
+    {
+        onReceiveServerCommand(packet);
+        game_server->broadcastServerCommandFromObject(multiplayerObjectId, packet);
+    }
+}

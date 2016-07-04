@@ -155,6 +155,17 @@ void GameClient::update(float delta)
                     engine->setGameSpeed(gamespeed);
                 }
                 break;
+            case CMD_SERVER_COMMAND:
+                {
+                    int32_t id;
+                    packet >> id;
+                    if (objectMap.find(id) != objectMap.end() && objectMap[id])
+                    {
+                        P<MultiplayerObject> obj = objectMap[id];
+                        obj->onReceiveServerCommand(packet);
+                    }
+                }
+                break;
             case CMD_ALIVE:
                 //Alive packet, just to keep the connection alive.
                 break;
