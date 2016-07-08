@@ -11,7 +11,7 @@ class InputEventHandler: public virtual PObject
         InputEventHandler();
         virtual ~InputEventHandler();
         
-        virtual void handleKeyPress(sf::Keyboard::Key key, int unicode);
+        virtual void handleKeyPress(sf::Event::KeyEvent key, int unicode) = 0;
     protected:
     private:
 };
@@ -47,7 +47,7 @@ class InputHandler
 
     static void initialize();
     
-    static void fireKeyEvent(sf::Keyboard::Key key, int unicode);
+    static void fireKeyEvent(sf::Event::KeyEvent key, int unicode);
     static sf::Vector2f realWindowPosToVirtual(sf::Vector2i position);
     static sf::Vector2i virtualWindowPosToReal(sf::Vector2f position);
 public:

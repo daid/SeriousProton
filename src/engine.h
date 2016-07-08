@@ -47,7 +47,7 @@ private:
     float elapsedTime;
     float gameSpeed;
     
-    sf::Keyboard::Key last_key_press;
+    sf::Event::KeyEvent last_key_press;
     EngineTiming last_engine_timing;
 public:
     Engine();

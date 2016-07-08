@@ -38,10 +38,6 @@ InputEventHandler::~InputEventHandler()
 {
 }
 
-void InputEventHandler::handleKeyPress(sf::Keyboard::Key key, int unicode)
-{
-}
-
 void InputHandler::initialize()
 {
     memset(mouse_button_down, 0, sizeof(mouse_button_down));
@@ -162,7 +158,7 @@ void InputHandler::setMousePos(sf::Vector2f position)
     mousePos = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
 }
 
-void InputHandler::fireKeyEvent(sf::Keyboard::Key key, int unicode)
+void InputHandler::fireKeyEvent(sf::Event::KeyEvent key, int unicode)
 {
     foreach(InputEventHandler, e, input_event_handlers)
     {

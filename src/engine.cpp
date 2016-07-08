@@ -90,7 +90,7 @@ void Engine::runMainLoop()
 #ifdef DEBUG
         sf::Clock debugOutputClock;
 #endif
-        last_key_press = sf::Keyboard::Unknown;
+        last_key_press.code = sf::Keyboard::Unknown;
         
         while(running && windowManager->window.isOpen())
         {
@@ -101,10 +101,10 @@ void Engine::runMainLoop()
             {
                 handleEvent(event);
             }
-            if (last_key_press != sf::Keyboard::Unknown)
+            if (last_key_press.code != sf::Keyboard::Unknown)
             {
                 InputHandler::fireKeyEvent(last_key_press, -1);
-                last_key_press = sf::Keyboard::Unknown;
+                last_key_press.code = sf::Keyboard::Unknown;
             }
 
 #ifdef DEBUG
@@ -178,26 +178,25 @@ void Engine::handleEvent(sf::Event& event)
 #endif
     if (event.type == sf::Event::KeyPressed)
     {
-		if (event.key.code != sf::Keyboard::Unknown)
-        InputHandler::keyboard_button_down[event.key.code] = true;
-#ifdef DEBUG
-		else printf("Unknown key code pressed");
-#endif
-        last_key_press = event.key.code;
+        if (event.key.code > sf::Keyboard::Unknown && event.key.code < sf::Keyboard::KeyCount)
+            InputHandler::keyboard_button_down[event.key.code] = true;
+        else
+            LOG(DEBUG) << "Unknown key code pressed: " << int(event.key.code);
+        last_key_press = event.key;
     }
-	if (event.type == sf::Event::KeyReleased) {
-		if (event.key.code != sf::Keyboard::Unknown)
-        InputHandler::keyboard_button_down[event.key.code] = false;
-#ifdef DEBUG
-		else printf("Unknown key code released");
-#endif
+	if (event.type == sf::Event::KeyReleased)
+	{
+        if (event.key.code > sf::Keyboard::Unknown && event.key.code < sf::Keyboard::KeyCount)
+            InputHandler::keyboard_button_down[event.key.code] = false;
+        else
+            LOG(DEBUG) << "Unknown key code released: " << int(event.key.code);
 	}
     if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
     {
-        if (last_key_press != sf::Keyboard::Unknown)
+        if (last_key_press.code != sf::Keyboard::Unknown)
         {
             InputHandler::fireKeyEvent(last_key_press, event.text.unicode);
-            last_key_press = sf::Keyboard::Unknown;
+            last_key_press.code = sf::Keyboard::Unknown;
         }
     }
     if (event.type == sf::Event::MouseWheelMoved)
