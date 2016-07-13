@@ -38,6 +38,7 @@ private:
     std::unordered_map<string, sf::SoundBuffer*> soundMap;
     std::vector<sf::Sound> activeSoundList;
     float music_volume;
+    float master_sound_volume;
     bool positional_sound_enabled;
 public:
     SoundManager();
@@ -60,6 +61,8 @@ public:
 
     // Sound management
     void stopSound(int index);
+    void setMasterSoundVolume(float volume); // Valid values 0.0f-100.0f
+    float getMasterSoundVolume();
     void setSoundVolume(int index, float volume); // Valid values 0.0f-100.0f
     float getSoundVolume(int index);
     void setSoundPitch(int index, float volume); // Valid values 0.0f+; 1.0 = default

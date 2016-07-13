@@ -24,6 +24,7 @@ SoundManager::SoundManager()
     for(unsigned int n = 0; n < MAX_SOUNDS; n++)
         activeSoundList.push_back(sf::Sound());
     
+    master_sound_volume = 100.0;
     music_volume = 100.0;
     positional_sound_enabled = false;
     music_channel.mode = None;
@@ -83,6 +84,18 @@ void SoundManager::stopSound(int index)
     }
 }
 
+void SoundManager::setMasterSoundVolume(float volume)
+{
+    // Set factor by which sound effect playback is multiplied.
+    // Bound volume between 0.0f and 100.0f.
+    master_sound_volume = std::max(0.0f, std::min(100.0f, volume));
+}
+
+float SoundManager::getMasterSoundVolume()
+{
+    return master_sound_volume;
+}
+
 void SoundManager::setSoundVolume(int index, float volume)
 {
     sf::Sound& sound = activeSoundList[index];
@@ -135,7 +148,7 @@ int SoundManager::playSound(string name, float pitch, float volume, bool loop)
 
     // Return the sound's index in activeSoundList[].
     // Returns -1 if the list was full of playing sounds.
-    return playSoundData(data, pitch, volume, loop);
+    return playSoundData(data, pitch, volume * (master_sound_volume / 100.0), loop);
 }
 
 void SoundManager::setListenerPosition(sf::Vector2f position, float angle)
@@ -172,7 +185,7 @@ int SoundManager::playSound(string name, sf::Vector2f position, float min_distan
             sound.setAttenuation(attenuation);
             sound.setPosition(position.x, 0, position.y);
             sound.setPitch(pitch);
-            sound.setVolume(volume);
+            sound.setVolume(volume * (master_sound_volume / 100.0));
             sound.setLoop(loop);
             sound.play();
             return int(n);
