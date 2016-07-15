@@ -26,6 +26,7 @@ private:
     bool static_physics;
 
     void createBody(b2Shape* shape);
+    void destroyBody();
 public:
     Collisionable(float radius);
     Collisionable(sf::Vector2f box_size, sf::Vector2f box_origin = sf::Vector2f(0, 0));

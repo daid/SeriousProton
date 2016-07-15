@@ -143,16 +143,20 @@ Collisionable::Collisionable(const std::vector<sf::Vector2f>& shape)
 
 Collisionable::~Collisionable()
 {
-    if (body)
-        CollisionManager::world->DestroyBody(body);
+    destroyBody();
 }
 
 void Collisionable::setCollisionRadius(float radius)
 {
-    b2CircleShape shape;
-    shape.m_radius = radius / BOX2D_SCALE;
+    if (radius <= 0)
+    {
+        destroyBody();
+    }else{
+        b2CircleShape shape;
+        shape.m_radius = radius / BOX2D_SCALE;
 
-    createBody(&shape);
+        createBody(&shape);
+    }
 }
 
 void Collisionable::setCollisionBox(sf::Vector2f box_size, sf::Vector2f box_origin)
@@ -227,6 +231,8 @@ void Collisionable::setCollisionChain(const std::vector<sf::Vector2f>& points, b
 
 void Collisionable::setCollisionFriction(float amount)
 {
+    if (!body)
+        return;
     for(b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext())
     {
         f->SetFriction(amount);
@@ -266,6 +272,13 @@ void Collisionable::createBody(b2Shape* shape)
     shapeDef.friction = 0.0;
     shapeDef.isSensor = !enable_physics;
     body->CreateFixture(&shapeDef);
+}
+
+void Collisionable::destroyBody()
+{
+    if (body)
+        CollisionManager::world->DestroyBody(body);
+    body = nullptr;
 }
 
 void Collisionable::collide(Collisionable* target, float force)
