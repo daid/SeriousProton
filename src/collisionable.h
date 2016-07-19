@@ -40,6 +40,7 @@ public:
     void setCollisionChain(const std::vector<sf::Vector2f>& points, bool loop);
     void setCollisionPhysics(bool enable_physics, bool static_physics);
     void setCollisionFriction(float amount);
+    void setCollisionFilter(uint16_t category_bits, uint16_t mask_bits);    //Collision happens if (A->category_bits & B->mask_bits) && (B->category_bits & A->mask_bits)
 
     void setPosition(sf::Vector2f v);
     sf::Vector2f getPosition();

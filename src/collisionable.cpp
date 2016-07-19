@@ -239,6 +239,19 @@ void Collisionable::setCollisionFriction(float amount)
     }
 }
 
+void Collisionable::setCollisionFilter(uint16_t category_bits, uint16_t mask_bits)
+{
+    if (!body)
+        return;
+    b2Filter filter;
+    filter.categoryBits = category_bits;
+    filter.maskBits = mask_bits;
+    for(b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext())
+    {
+        f->SetFilterData(filter);
+    }
+}
+
 void Collisionable::setCollisionPhysics(bool enable_physics, bool static_physics)
 {
     this->enable_physics = enable_physics;
