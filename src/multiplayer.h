@@ -2,6 +2,7 @@
 #define MULTIPLAYER_H
 
 #include <SFML/Network.hpp>
+#include <SFML/Graphics/Color.hpp>
 #include <stdint.h>
 #include "Updatable.h"
 #include "stringImproved.h"
@@ -32,6 +33,9 @@ template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, 
 {
     return packet >> v.x >> v.y >> v.z;
 }
+
+static inline sf::Packet& operator << (sf::Packet& packet, const sf::Color& c) { return packet << c.r << c.g << c.b << c.a; } \
+static inline sf::Packet& operator >> (sf::Packet& packet, sf::Color& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
 
 template <typename T> struct multiplayerReplicationFunctions
 {
