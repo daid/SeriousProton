@@ -8,6 +8,7 @@
 #include "input.h"
 #include "windowManager.h"
 #include "postProcessManager.h"
+#include "shaderManager.h"
 #include "scriptInterface.h"
 #include "resources.h"
 #include "soundManager.h"
