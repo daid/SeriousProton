@@ -150,7 +150,7 @@ public:
         return ptr;
     }
 
-    operator bool()
+    explicit operator bool()
     {
         check_release();
         return ptr != NULL;
