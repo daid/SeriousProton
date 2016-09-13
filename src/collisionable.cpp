@@ -68,7 +68,7 @@ void CollisionManager::handleCollisions(float delta)
     if (delta <= 0.0)
         return;
 
-    P<Collisionable> destroy = NULL;
+    Collisionable* destroy = NULL;
     world->Step(delta, 4, 8);
     std::vector<Collision> collisions;
     for(b2Contact* contact = world->GetContactList(); contact; contact = contact->GetNext())
