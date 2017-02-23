@@ -87,11 +87,24 @@ void CollisionManager::handleCollisions(float delta)
                 collisions.push_back(Collision(A, B, collision_force));
             }else{
                 if (A->isDestroyed())
+                {
+                    contact->GetFixtureA()->SetSensor(true);
                     destroy = A;
+                }
                 if (B->isDestroyed())
+                {
+                    contact->GetFixtureB()->SetSensor(true);
                     destroy = B;
+                }
             }
         }
+    }
+
+    //Lazy cleanup of already destroyed bodies. We cannot destroy the bodies while we are walking trough the ContactList, as it would invalidate the contact we are iterating on.
+    if (destroy && destroy->body)
+    {
+        world->DestroyBody(destroy->body);
+        destroy->body = NULL;
     }
 
     for(unsigned int n=0; n<collisions.size(); n++)
@@ -103,13 +116,6 @@ void CollisionManager::handleCollisions(float delta)
             A->collide(B, collisions[n].collision_force);
             B->collide(A, collisions[n].collision_force);
         }
-    }
-
-    //Lazy cleanup of already destroyed bodies. We cannot destroy the bodies while we are walking trough the ContactList, as it would invalidate the contact we are iterating on.
-    if (destroy)
-    {
-        world->DestroyBody(destroy->body);
-        destroy->body = NULL;
     }
 }
 
