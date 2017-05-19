@@ -1,0 +1,30 @@
+#                                               -*- cmake -*-
+#
+#  SeriousProtonConfig.cmake(.in)
+#
+
+# Use the following variables to compile and link against SeriousProton:
+#  SERIOUSPROTON_FOUND          - True if SeriousProton was found on your system
+#  SERIOUSPROTON_USE_FILE       - The file making SeriousProton usable
+#  SERIOUSPROTON_DEFINITIONS    - Definitions needed to build with SeriousProton
+#  SERIOUSPROTON_INCLUDE_DIR    - SeriousProton headers location
+#  SERIOUSPROTON_INCLUDE_DIRS   - List of directories where SeriousProton header file are
+#  SERIOUSPROTON_LIBRARY        - Library name
+#  SERIOUSPROTON_LIBRARIES      - List of libraries to link against
+#  SERIOUSPROTON_LIBRARY_DIRS   - List of directories containing SeriousProton libraries
+#  SERIOUSPROTON_ROOT_DIR       - The base directory of SeriousProton
+#  SERIOUSPROTON_VERSION_STRING - A human-readable string containing the version
+
+set ( SERIOUSPROTON_FOUND 1 )
+set ( SERIOUSPROTON_USE_FILE     "@SERIOUSPROTON_USE_FILE@" )
+
+set ( SERIOUSPROTON_DEFINITIONS  "@SERIOUSPROTON_DEFINITIONS@" )
+set ( SERIOUSPROTON_INCLUDE_DIR  "@SERIOUSPROTON_INCLUDE_DIR@" )
+set ( SERIOUSPROTON_INCLUDE_DIRS "@SERIOUSPROTON_INCLUDE_DIRS@" )
+set ( SERIOUSPROTON_LIBRARY      "@SERIOUSPROTON_LIBRARY@" )
+set ( SERIOUSPROTON_LIBRARIES    "@SERIOUSPROTON_LIBRARIES@" )
+set ( SERIOUSPROTON_LIBRARY_DIRS "@SERIOUSPROTON_LIBRARY_DIRS@" )
+set ( SERIOUSPROTON_ROOT_DIR     "@CMAKE_INSTALL_PREFIX@" )
+
+set ( SERIOUSPROTON_VERSION_STRING "@SERIOUSPROTON_VERSION@" )
+
