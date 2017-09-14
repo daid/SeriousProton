@@ -76,3 +76,9 @@ if(NOT ${SFML_FOUND})
 endif()
 include_directories(${SFML_INCLUDE_DIR})
 target_link_libraries(seriousproton ${SFML_LIBRARIES})
+
+#--------------------------------Installation----------------------------------
+install(TARGETS seriousproton
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+)
