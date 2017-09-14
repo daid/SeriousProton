@@ -91,5 +91,10 @@ install(
 install(
 	DIRECTORY ${seriousproton_include_dir}
 	DESTINATION include/seriousproton
-	FILES_MATCHING PATTERN "*.h|*.hpp"
+	FILES_MATCHING PATTERN "*.h"
+)
+install(
+	DIRECTORY ${seriousproton_include_dir}
+	DESTINATION include/seriousproton
+	FILES_MATCHING PATTERN "*.hpp"
 )
