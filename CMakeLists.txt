@@ -42,78 +42,7 @@ foreach(source_file_relative ${source_files_relative})
 	list(APPEND source_files ${CMAKE_CURRENT_SOURCE_DIR}/${source_file_relative})
 endforeach()
 
-set(header_files_relative #Header files that must be installed somewhere.
-	src/clipboard.h
-	src/collisionable.h
-	src/engine.h
-	src/event.h
-	src/fixedSocket.h
-	src/gameEntity.h
-	src/httpServer.h
-	src/input.h
-	src/logging.h
-	src/multiplayer.h
-	src/multiplayer_client.h
-	src/multiplayer_internal.h
-	src/multiplayer_server.h
-	src/multiplayer_server_scanner.h
-	src/networkAudioStream.h
-	src/networkRecorder.h
-	src/P.h
-	src/PlayerController.h
-	src/postProcessManager.h
-	src/random.h
-	src/Renderable.h
-	src/resources.h
-	src/scriptInterface.h
-	src/scriptInterfaceMagic.h
-	src/shaderManager.h
-	src/soundManager.h
-	src/stringImproved.h
-	src/textureManager.h
-	src/tween.h
-	src/Updatable.h
-	src/vectorUtils.h
-	src/windowManager.h
-)
-set(header_files "")
-foreach(header_file_relative ${header_files_relative})
-	list(APPEND header_files ${CMAKE_CURRENT_SOURCE_DIR}/${header_file_relative})
-endforeach()
-
-set(lua_header_files_relative
-	src/lua/lua.hpp
-	src/lua/lapi.h
-	src/lua/lauxlib.h
-	src/lua/lcode.h
-	src/lua/lctype.h
-	src/lua/ldebug.h
-	src/lua/ldo.h
-	src/lua/lfunc.h
-	src/lua/lgc.h
-	src/lua/llex.h
-	src/lua/llimits.h
-	src/lua/lmem.h
-	src/lua/lobject.h
-	src/lua/lopcodes.h
-	src/lua/lparser.h
-	src/lua/lprefix.h
-	src/lua/lstate.h
-	src/lua/lstring.h
-	src/lua/ltable.h
-	src/lua/ltm.h
-	src/lua/lua.h
-	src/lua/lua.hpp
-	src/lua/luaconf.h
-	src/lua/lualib.h
-	src/lua/lundump.h
-	src/lua/lvm.h
-	src/lua/lzio.h
-)
-set(lua_header_files "")
-foreach(lua_header_file_relative ${lua_header_files_relative})
-	list(APPEND lua_header_files ${CMAKE_CURRENT_SOURCE_DIR}/${lua_header_file_relative})
-endforeach()
+set(seriousproton_include_dir ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}
@@ -160,11 +89,7 @@ install(
 	ARCHIVE DESTINATION lib
 )
 install(
-	FILES ${header_files}
+	DIRECTORY ${seriousproton_include_dir}
 	DESTINATION include/seriousproton
+	FILES_MATCHING PATTERN "*.h"
 )
-install(
-	FILES ${lua_header_files}
-	DESTINATION include/seriousproton/lua
-)
-
