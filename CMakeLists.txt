@@ -42,6 +42,45 @@ foreach(source_file_relative ${source_files_relative})
 	list(APPEND source_files ${CMAKE_CURRENT_SOURCE_DIR}/${source_file_relative})
 endforeach()
 
+set(header_files_relative #Header files that must be installed somewhere.
+	src/clipboard.h
+	src/collisionable.h
+	src/engine.h
+	src/event.h
+	src/fixedSocket.h
+	src/gameEntity.h
+	src/httpServer.h
+	src/input.h
+	src/logging.h
+	src/multiplayer.h
+	src/multiplayer_client.h
+	src/multiplayer_internal.h
+	src/multiplayer_server.h
+	src/multiplayer_server_scanner.h
+	src/networkAudioStream.h
+	src/networkRecorder.h
+	src/P.h
+	src/PlayerController.h
+	src/postProcessManager.h
+	src/random.h
+	src/Renderable.h
+	src/resources.h
+	src/scriptInterface.h
+	src/scriptInterfaceMagic.h
+	src/shaderManager.h
+	src/soundManager.h
+	src/stringImproved.h
+	src/textureManager.h
+	src/tween.h
+	src/Updatable.h
+	src/vectorUtils.h
+	src/windowManager.h
+)
+set(header_files "")
+foreach(header_file_relative ${header_files_relative})
+	list(APPEND header_files ${CMAKE_CURRENT_SOURCE_DIR}/${header_file_relative})
+endforeach()
+
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -78,7 +117,12 @@ include_directories(${SFML_INCLUDE_DIR})
 target_link_libraries(seriousproton ${SFML_LIBRARIES})
 
 #--------------------------------Installation----------------------------------
-install(TARGETS seriousproton
+install(
+	TARGETS seriousproton
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
+)
+install(
+	FILES ${header_files}
+	DESTINATION include
 )
