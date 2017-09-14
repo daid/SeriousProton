@@ -99,7 +99,7 @@ add_dependencies(seriousproton box2d)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/lua)
 add_dependencies(seriousproton lua)
 
-find_package(SFML 2.4 COMPONENTS system audio network window graphics)
+find_package(SFML 2.3 COMPONENTS system audio network window graphics)
 if(NOT ${SFML_FOUND})
 	message(STATUS "Couldn't find SFML. Building it from scratch. Installing to ${CMAKE_INSTALL_PREFIX}")
 	ExternalProject_Add(SFML
