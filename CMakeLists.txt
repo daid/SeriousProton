@@ -83,6 +83,32 @@ endforeach()
 
 set(lua_header_files_relative
 	src/lua/lua.hpp
+	src/lua/lapi.h
+	src/lua/lauxlib.h
+	src/lua/lcode.h
+	src/lua/lctype.h
+	src/lua/ldebug.h
+	src/lua/ldo.h
+	src/lua/lfunc.h
+	src/lua/lgc.h
+	src/lua/llex.h
+	src/lua/llimits.h
+	src/lua/lmem.h
+	src/lua/lobject.h
+	src/lua/lopcodes.h
+	src/lua/lparser.h
+	src/lua/lprefix.h
+	src/lua/lstate.h
+	src/lua/lstring.h
+	src/lua/ltable.h
+	src/lua/ltm.h
+	src/lua/lua.h
+	src/lua/lua.hpp
+	src/lua/luaconf.h
+	src/lua/lualib.h
+	src/lua/lundump.h
+	src/lua/lvm.h
+	src/lua/lzio.h
 )
 set(lua_header_files "")
 foreach(lua_header_file_relative ${lua_header_files_relative})
