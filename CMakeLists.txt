@@ -75,6 +75,8 @@ set(header_files_relative #Header files that must be installed somewhere.
 	src/Updatable.h
 	src/vectorUtils.h
 	src/windowManager.h
+
+	src/lua/lua.hpp
 )
 set(header_files "")
 foreach(header_file_relative ${header_files_relative})
