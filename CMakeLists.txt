@@ -127,5 +127,5 @@ install(
 )
 install(
 	FILES ${header_files}
-	DESTINATION include
+	DESTINATION include/seriousproton
 )
