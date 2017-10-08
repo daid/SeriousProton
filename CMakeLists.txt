@@ -86,6 +86,7 @@ target_link_libraries(seriousproton ${SFML_LIBRARIES})
 #--------------------------------Installation----------------------------------
 install(
 	TARGETS seriousproton
+	EXPORT seriousproton
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
 )
@@ -98,4 +99,8 @@ install(
 	DIRECTORY ${seriousproton_include_dir}
 	DESTINATION include/seriousproton
 	FILES_MATCHING PATTERN "*.hpp"
+)
+install(
+	EXPORT seriousproton
+	DESTINATION share/seriousproton
 )

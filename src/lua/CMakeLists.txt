@@ -46,3 +46,14 @@ include_directories(
 
 #----------------------------------Compiling-----------------------------------
 add_library(lua STATIC ${source_files})
+
+#--------------------------------Installation----------------------------------
+install(
+	TARGETS lua
+	EXPORT lua
+	DESTINATION lib
+)
+install(
+	EXPORT lua
+	DESTINATION share/lua
+)

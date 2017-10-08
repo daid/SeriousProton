@@ -65,3 +65,14 @@ include_directories(
 
 #----------------------------------Compiling-----------------------------------
 add_library(box2d STATIC ${source_files})
+
+#--------------------------------Installation----------------------------------
+install(
+	TARGETS box2d
+	EXPORT box2d
+	DESTINATION lib
+)
+install(
+	EXPORT box2d
+	DESTINATION share/box2d
+)
