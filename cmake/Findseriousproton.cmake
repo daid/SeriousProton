@@ -14,33 +14,22 @@
 # - SERIOUS_PROTON_INCLUDE_DIR:
 #		Directory containing the header files for Serious Proton.
 
-set(find_serious_proton_paths
-	~/Library/Frameworks
-    /Library/Frameworks
-    /usr/local
-    /usr
-    /sw
-    /opt/local
-    /opt/csw
-    /opt
-)
 
 find_library(SERIOUS_PROTON_LIB
-	NAMES seriousproton
-	PATH_SUFFIXES lib
-	PATHS ${find_serious_proton_paths}
+	NAMES seriousproton libseriousproton
 )
 
 find_path(SERIOUS_PROTON_INCLUDE_DIR
 	NAMES multiplayer_server_scanner.h
-	PATH_SUFFIXES src
-	PATHS ${find_serious_proton_paths}
+	PATH_SUFFIXES seriousproton
 )
 
-if(${SERIOUS_PROTON_LIB})
+string(FIND ${SERIOUS_PROTON_LIB} "-NOTFOUND" LIBRARY_FOUND)
+string(FIND ${SERIOUS_PROTON_INCLUDE_DIR} "-NOTFOUND" HEADERS_FOUND)
+if(${LIBRARY_FOUND} LESS 0 AND ${HEADERS_FOUND} LESS 0)
 	set(SERIOUS_PROTON_FOUND TRUE)
-	message(STATUS "Found SeriousProton!")
+	message(STATUS "Found seriousproton!")
 else()
 	set(SERIOUS_PROTON_FOUND FALSE)
-	message(WARNING "Could NOT find SeriousProton!")
+	message(WARNING "Could NOT find seriousproton!")
 endif()
