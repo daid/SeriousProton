@@ -78,10 +78,10 @@ if(NOT ${SFML_FOUND})
 		libsfml-system
 		libsfml-window
 	)
+	add_dependencies(seriousproton SFML)
 endif()
 include_directories(${SFML_INCLUDE_DIR})
 target_link_libraries(seriousproton ${SFML_LIBRARIES})
-add_dependencies(seriousproton SFML)
 
 #--------------------------------Installation----------------------------------
 install(
