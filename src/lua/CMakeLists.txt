@@ -54,6 +54,11 @@ install(
 	DESTINATION lib
 )
 install(
+	DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	DESTINATION include/lua
+	FILES_MATCHING PATTERN "*.h"
+)
+install(
 	EXPORT lua
 	DESTINATION share/lua
 )
