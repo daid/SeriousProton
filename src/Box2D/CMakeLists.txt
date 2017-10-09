@@ -4,6 +4,7 @@ project(Box2D)
 #---------------------------------File lists-----------------------------------
 set(source_files_relative
 	Collision/b2BroadPhase.cpp
+	Collision/b2CollideEdge.cpp
 	Collision/b2CollideCircle.cpp
 	Collision/b2CollidePolygon.cpp
 	Collision/b2Collision.cpp
