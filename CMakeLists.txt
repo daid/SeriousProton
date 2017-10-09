@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1) #Only tested with 3.5.1 so far.
+cmake_minimum_required(VERSION 3.2.3) #Only tested with 3.5.1 and 3.2.3 so far.
 project(SeriousProton)
 set(CMAKE_MODULE_PATH
 	${CMAKE_SOURCE_DIR}/cmake/
