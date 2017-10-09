@@ -1,7 +1,7 @@
 #Finds an installation of Serious Proton on your system.
 #
 #Usage:
-# find_package(SeriousProton)
+# find_package(seriousproton)
 #
 #Output:
 # The following variables will be defined by this script:

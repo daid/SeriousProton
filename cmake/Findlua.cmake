@@ -1,7 +1,7 @@
 #Finds an installation of Lua on your system.
 #
 #Usage:
-# find_package(Lua)
+# find_package(lua)
 #
 #Output:
 # The following variables will be defined by this script:
