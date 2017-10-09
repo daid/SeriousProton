@@ -71,15 +71,15 @@ if(NOT ${SFML_FOUND})
 	ExternalProject_Add(SFML
 		GIT_REPOSITORY https://github.com/SFML/SFML.git
 		GIT_TAG 2.4.2 #Always build with this tag, so we're sure it is stable.
-		CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+		CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DBUILD_SHARED_LIBS=OFF
 	)
 	set(SFML_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include) #Otherwise this is filled by FindSFML.cmake.
 	set(SFML_LIBRARIES
-		libsfml-audio
-		libsfml-graphics
-		libsfml-network
-		libsfml-system
-		libsfml-window
+		${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-audio${CMAKE_STATIC_LIBRARY_SUFFIX}
+		${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-graphics${CMAKE_STATIC_LIBRARY_SUFFIX}
+		${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-network${CMAKE_STATIC_LIBRARY_SUFFIX}
+		${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-system${CMAKE_STATIC_LIBRARY_SUFFIX}
+		${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-window${CMAKE_STATIC_LIBRARY_SUFFIX}
 	)
 	add_dependencies(seriousproton SFML)
 endif()
