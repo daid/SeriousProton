@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2.3) #Only tested with 3.5.1 and 3.2.3 so far.
+cmake_minimum_required(VERSION 2.8.12)
 project(SeriousProton)
 set(CMAKE_MODULE_PATH
 	${CMAKE_SOURCE_DIR}/cmake/
@@ -50,7 +50,14 @@ include_directories(
 )
 
 #----------------------------------Compiling-----------------------------------
-set(CMAKE_CXX_STANDARD 11)
+if(CMAKE_VERSION VERSION_LESS "3.1")
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		set(CMAKE_CXX_FLAGS "-std=gnu++11 ${CMAKE_CXX_FLAGS}")
+	endif()
+else()
+	set(CMAKE_CXX_STANDARD 11)
+endif()
+
 add_library(seriousproton STATIC ${source_files})
 
 #--------------------------------Dependencies----------------------------------

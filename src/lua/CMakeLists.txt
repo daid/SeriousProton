@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2.3) #Only tested with 3.2.3 and 3.5.1 so far.
+cmake_minimum_required(VERSION 2.8.12)
 project(Box2D)
 
 #---------------------------------File lists-----------------------------------
