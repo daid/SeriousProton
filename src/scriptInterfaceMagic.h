@@ -63,10 +63,11 @@ template<> int convert<string>::returnType(lua_State* L, string s);
 
 /* Convert parameters to PObject pointers */
 template<class T> struct convert<T*>
-//TODO: Possible addition, make sure T is a subclass of PObject
 {
     static void param(lua_State* L, int& idx, T*& ptr)
     {
+        static_assert(std::is_base_of<PObject, T>::value, "T must be a descendant of PObject");
+
         if (!lua_istable(L, idx))
         {
             const char *msg = lua_pushfstring(L, "Object expected, got %s", luaL_typename(L, idx));
