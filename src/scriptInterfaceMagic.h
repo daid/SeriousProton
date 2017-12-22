@@ -286,11 +286,11 @@ template<class T> struct call<T, ScriptCallback T::* >
             luaL_error(L, "Cannot set a binding as callback function.");
         lua_getupvalue(L, 2, 1);
         if (!lua_istable(L, -1))
-            luaL_error(L, "??? Upvalue 1 of function is not a table...");
+            luaL_error(L, "??[setcallbackFunction] Upvalue 1 of function is not a table...");
         lua_pushstring(L, "__script_pointer");
         lua_gettable(L, -2);
         if (!lua_islightuserdata(L, -1))
-            luaL_error(L, "??? Cannot find reference back to script...");
+            luaL_error(L, "??[setcallbackFunction] Cannot find reference back to script...");
         //Stack is now: [function_environment] [pointer]
         
         CallbackProto* callback_ptr = reinterpret_cast<CallbackProto*>(lua_touserdata(L, lua_upvalueindex (1)));

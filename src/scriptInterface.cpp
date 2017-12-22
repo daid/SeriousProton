@@ -561,6 +561,11 @@ bool ScriptSimpleCallback::isSet()
     //Push the key "script_pointer" to retrieve the pointer to this script object.
     lua_pushstring(L, "script_pointer");
     lua_rawget(L, -2);
+    if (lua_isnil(L, -1))
+    {
+        lua_pop(L, 2);
+        return true;
+    }
     //Stack is: [table] [pointer to script object]
     lua_pushvalue(L, -1);
     //Stack is: [table] [pointer to script object] [pointer to script object]
@@ -596,13 +601,18 @@ bool ScriptSimpleCallback::call()
     //Push the key "script_pointer" to retrieve the pointer to this script object.
     lua_pushstring(L, "script_pointer");
     lua_rawget(L, -2);
-    //Stack is: [table] [pointer to script object]
-    //Check if the script pointer is still available as key in the registry. If not, this reference is no longer valid and needs to be removed.
-    lua_gettable(L, LUA_REGISTRYINDEX);
-    if (!lua_istable(L, -1))
+    if (lua_isnil(L, -1))
     {
-        lua_pop(L, 2);
-        return false;
+        //Callback function didn't have an script environment attached to it, so we cannot check if that script still exists.
+    }else{
+        //Stack is: [table] [pointer to script object]
+        //Check if the script pointer is still available as key in the registry. If not, this reference is no longer valid and needs to be removed.
+        lua_gettable(L, LUA_REGISTRYINDEX);
+        if (!lua_istable(L, -1))
+        {
+            lua_pop(L, 2);
+            return false;
+        }
     }
     //Remove the script pointer table from the stack, we only needed to check if it exists.
     lua_pop(L, 1);
@@ -656,6 +666,11 @@ P<ScriptObject> ScriptSimpleCallback::getScriptObject()
     //Push the key "script_pointer" to retrieve the pointer to this script object.
     lua_pushstring(L, "script_pointer");
     lua_rawget(L, -2);
+    if (lua_isnil(L, -1))
+    {
+        lua_pop(L, 2);
+        return nullptr;
+    }
     //Stack is: [table] [pointer to script object]
     lua_pushvalue(L, -1);
     //Stack is: [table] [pointer to script object] [pointer to script object]
@@ -690,7 +705,7 @@ template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, Scr
         luaL_error(L, "Cannot set a binding as callback function.");
     lua_getupvalue(L, idx, 1);
     if (!lua_istable(L, -1))
-        luaL_error(L, "??? Upvalue 1 of function is not a table...");
+        luaL_error(L, "??[convert<ScriptSimpleCallback>::param] Upvalue 1 of function is not a table...");
     //Stack is now: [function_environment]
     
     lua_pushlightuserdata(L, &callback_object);
@@ -700,8 +715,13 @@ template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, Scr
     //Stack is now: [function_environment] [callback object pointer] [table] "script_pointer"
     lua_pushstring(L, "__script_pointer");
     lua_gettable(L, -5);
-    if (!lua_islightuserdata(L, -1))
-        luaL_error(L, "??? Cannot find reference back to script...");
+    if (lua_isnil(L, -1))
+    {
+        //Simple functions that do not access globals do not inherit their environment from their creator, so they have nil here.
+    }else if (!lua_islightuserdata(L, -1))
+    {
+        luaL_error(L, "??[convert<ScriptSimpleCallback>::param] Cannot find reference back to script...");
+    }
     //Stack is now: [function_environment] [callback object pointer] [table] "script_pointer" [pointer to script object]
     lua_rawset(L, -3);
     //Stack is now: [function_environment] [callback object pointer] [table]
