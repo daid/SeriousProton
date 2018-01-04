@@ -90,22 +90,16 @@ void Engine::runMainLoop()
 #ifdef DEBUG
         sf::Clock debugOutputClock;
 #endif
-        last_key_press.code = sf::Keyboard::Unknown;
-        
         while(running && windowManager->window.isOpen())
         {
-            InputHandler::mouse_wheel_delta = 0;
+            InputHandler::preEventsUpdate();
             // Handle events
             sf::Event event;
             while (windowManager->window.pollEvent(event))
             {
                 handleEvent(event);
             }
-            if (last_key_press.code != sf::Keyboard::Unknown)
-            {
-                InputHandler::fireKeyEvent(last_key_press, -1);
-                last_key_press.code = sf::Keyboard::Unknown;
-            }
+            InputHandler::postEventsUpdate();
 
 #ifdef DEBUG
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && windowManager->hasFocus())
@@ -133,7 +127,6 @@ void Engine::runMainLoop()
             EngineTiming engine_timing;
             
             sf::Clock engine_timing_clock;
-            InputHandler::update();
             entityList.update();
             foreach(Updatable, u, updatableList)
                 u->update(delta);
@@ -176,35 +169,7 @@ void Engine::handleEvent(sf::Event& event)
         printf("---------------------\n");
     }
 #endif
-    if (event.type == sf::Event::KeyPressed)
-    {
-        if (event.key.code > sf::Keyboard::Unknown && event.key.code < sf::Keyboard::KeyCount)
-            InputHandler::keyboard_button_down[event.key.code] = true;
-        else
-            LOG(DEBUG) << "Unknown key code pressed: " << int(event.key.code);
-        last_key_press = event.key;
-    }
-	if (event.type == sf::Event::KeyReleased)
-	{
-        if (event.key.code > sf::Keyboard::Unknown && event.key.code < sf::Keyboard::KeyCount)
-            InputHandler::keyboard_button_down[event.key.code] = false;
-        else
-            LOG(DEBUG) << "Unknown key code released: " << int(event.key.code);
-	}
-    if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
-    {
-        if (last_key_press.code != sf::Keyboard::Unknown)
-        {
-            InputHandler::fireKeyEvent(last_key_press, event.text.unicode);
-            last_key_press.code = sf::Keyboard::Unknown;
-        }
-    }
-    if (event.type == sf::Event::MouseWheelMoved)
-        InputHandler::mouse_wheel_delta += event.mouseWheel.delta;
-    if (event.type == sf::Event::MouseButtonPressed)
-        InputHandler::mouse_button_down[event.mouseButton.button] = true;
-    if (event.type == sf::Event::MouseButtonReleased)
-        InputHandler::mouse_button_down[event.mouseButton.button] = false;
+    InputHandler::handleEvent(event);
     if (event.type == sf::Event::Resized)
         windowManager->setupView();
 #ifdef __ANDROID__

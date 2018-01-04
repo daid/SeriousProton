@@ -3,31 +3,25 @@
 
 P<WindowManager> InputHandler::windowManager;
 bool InputHandler::touch_screen = false;
-bool InputHandler::joystick = false;
 sf::Transform InputHandler::mouse_transform;
 PVector<InputEventHandler> InputHandler::input_event_handlers;
 
-sf::Vector2f InputHandler::mousePos;
+bool InputHandler::keyboard_button_down[sf::Keyboard::KeyCount];
+bool InputHandler::keyboard_button_pressed[sf::Keyboard::KeyCount];
+bool InputHandler::keyboard_button_released[sf::Keyboard::KeyCount];
+sf::Event::KeyEvent InputHandler::last_key_press;
+
+sf::Vector2f InputHandler::mouse_position;
 float InputHandler::mouse_wheel_delta;
 bool InputHandler::mouse_button_down[sf::Mouse::ButtonCount];
-bool InputHandler::keyboard_button_down[sf::Keyboard::KeyCount];
+bool InputHandler::mouse_button_pressed[sf::Mouse::ButtonCount];
+bool InputHandler::mouse_button_released[sf::Mouse::ButtonCount];
 
 sf::Vector2f InputHandler::joystick_pos_xy = sf::Vector2f();
 float InputHandler::joystick_pos_z = 0.0f;
 float InputHandler::joystick_pos_r = 0.0f;
 float InputHandler::joystick_xy_delta;
-bool InputHandler::joystick_button_down[sf::Joystick::ButtonCount];
 float InputHandler::joystick_axis_pos[sf::Joystick::AxisCount];
-
-bool InputHandler::mouseButtonDown[sf::Mouse::ButtonCount];
-bool InputHandler::mouseButtonPressed[sf::Mouse::ButtonCount];
-bool InputHandler::mouseButtonReleased[sf::Mouse::ButtonCount];
-bool InputHandler::keyboardButtonDown[sf::Keyboard::KeyCount];
-bool InputHandler::keyboardButtonPressed[sf::Keyboard::KeyCount];
-bool InputHandler::keyboardButtonReleased[sf::Keyboard::KeyCount];
-bool InputHandler::joystickButtonDown[sf::Joystick::ButtonCount];
-bool InputHandler::joystickButtonPressed[sf::Joystick::ButtonCount];
-bool InputHandler::joystickButtonReleased[sf::Joystick::ButtonCount];
 
 InputEventHandler::InputEventHandler()
 {
@@ -42,58 +36,107 @@ void InputHandler::initialize()
 {
     memset(mouse_button_down, 0, sizeof(mouse_button_down));
     memset(keyboard_button_down, 0, sizeof(keyboard_button_down));
-    memset(joystick_button_down, 0, sizeof(joystick_button_down));
     memset(joystick_axis_pos, 0, sizeof(joystick_axis_pos));
 #ifdef __ANDROID__
     touch_screen = true;
 #endif
-    joystick = sf::Joystick::isConnected(0);
+    last_key_press.code = sf::Keyboard::Unknown;
 }
 
-void InputHandler::update()
+void InputHandler::preEventsUpdate()
 {
     if (!windowManager)
         windowManager = engine->getObject("windowManager");
 
     for(unsigned int n=0; n<sf::Keyboard::KeyCount; n++)
     {
-        bool down = keyboard_button_down[n];
-        keyboardButtonPressed[n] = (!keyboardButtonDown[n] && down);
-        keyboardButtonReleased[n] = (keyboardButtonDown[n] && !down);
-        keyboardButtonDown[n] = down;
+        keyboard_button_pressed[n] = false;
+        keyboard_button_released[n] = false;
+    }
+    for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
+    {
+        mouse_button_pressed[n] = false;
+        mouse_button_released[n] = false;
+    }
+
+    mouse_wheel_delta = 0;
+}
+
+void InputHandler::handleEvent(sf::Event& event)
+{
+    if (event.type == sf::Event::KeyPressed)
+    {
+        if (event.key.code > sf::Keyboard::Unknown && event.key.code < sf::Keyboard::KeyCount)
+        {
+            keyboard_button_down[event.key.code] = true;
+            keyboard_button_pressed[event.key.code] = true;
+        }
+        last_key_press = event.key;
+    }
+	if (event.type == sf::Event::KeyReleased)
+	{
+        if (event.key.code > sf::Keyboard::Unknown && event.key.code < sf::Keyboard::KeyCount)
+        {
+            keyboard_button_down[event.key.code] = false;
+            keyboard_button_released[event.key.code] = true;
+        }
+	}
+    if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
+    {
+        if (last_key_press.code != sf::Keyboard::Unknown)
+        {
+            fireKeyEvent(last_key_press, event.text.unicode);
+            last_key_press.code = sf::Keyboard::Unknown;
+        }
+    }
+    if (event.type == sf::Event::MouseWheelMoved)
+        mouse_wheel_delta += event.mouseWheel.delta;
+    if (event.type == sf::Event::MouseButtonPressed)
+    {
+        mouse_button_down[event.mouseButton.button] = true;
+        mouse_button_pressed[event.mouseButton.button] = true;
+    }
+    if (event.type == sf::Event::MouseButtonReleased)
+    {
+        mouse_button_down[event.mouseButton.button] = false;
+        mouse_button_released[event.mouseButton.button] = true;
+    }
+}
+
+void InputHandler::postEventsUpdate()
+{
+    if (last_key_press.code != sf::Keyboard::Unknown)
+    {
+        InputHandler::fireKeyEvent(last_key_press, -1);
+        last_key_press.code = sf::Keyboard::Unknown;
     }
 
 #ifdef __ANDROID__
     if (sf::Touch::isDown(0))
     {
-        mousePos = realWindowPosToVirtual(sf::Touch::getPosition(0));
+        mouse_position = realWindowPosToVirtual(sf::Touch::getPosition(0));
+        if (!mouse_button_down[sf::Mouse::Left])
+            mouse_button_pressed[sf::Mouse::Left] = true;
         mouse_button_down[sf::Mouse::Left] = true;
     }else{
+        if (mouse_button_down[sf::Mouse::Left])
+            mouse_button_released[sf::Mouse::Left] = true;
         mouse_button_down[sf::Mouse::Left] = false;
     }
 #else
-    mousePos = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
+    mouse_position = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
 #endif
-    mousePos = mouse_transform.transformPoint(mousePos);
-
-    for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
-    {
-        bool down = mouse_button_down[n];
-        mouseButtonPressed[n] = (!mouseButtonDown[n] && down);
-        mouseButtonReleased[n] = (mouseButtonDown[n] && !down);
-        mouseButtonDown[n] = down;
-    }
+    mouse_position = mouse_transform.transformPoint(mouse_position);
     
     if (touch_screen)
     {
         bool any_button_down = false;
         for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
-            if (mouseButtonDown[n] || mouseButtonReleased[n])
+            if (mouse_button_down[n] || mouse_button_released[n])
                 any_button_down = true;
         if (!any_button_down)
         {
-            mousePos.x = -1;
-            mousePos.y = -1;
+            mouse_position = sf::Vector2f(-1, -1);
         }
     }
     
@@ -138,14 +181,6 @@ void InputHandler::update()
                 joystick_pos_r = (axis_pos + joystick_r_hysteresis) * ((joystick_r_hysteresis / 100) + 1);
         else
             joystick_pos_r = 0.0;
-
-        for(unsigned int n=0; n<sf::Joystick::ButtonCount; n++)
-        {
-            bool down = joystick_button_down[n];
-            joystickButtonPressed[n] = (!joystickButtonDown[n] && down);
-            joystickButtonReleased[n] = (joystickButtonDown[n] && !down);
-            joystickButtonDown[n] = down;
-        }
     }
 }
 
@@ -155,7 +190,7 @@ void InputHandler::setMousePos(sf::Vector2f position)
         windowManager = engine->getObject("windowManager");
 
     sf::Mouse::setPosition(virtualWindowPosToReal(position), windowManager->window);
-    mousePos = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
+    mouse_position = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
 }
 
 void InputHandler::fireKeyEvent(sf::Event::KeyEvent key, int unicode)
