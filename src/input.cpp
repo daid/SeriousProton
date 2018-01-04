@@ -50,13 +50,17 @@ void InputHandler::preEventsUpdate()
 
     for(unsigned int n=0; n<sf::Keyboard::KeyCount; n++)
     {
-        keyboard_button_pressed[n] = false;
-        keyboard_button_released[n] = false;
+        if (keyboard_button_pressed[n])
+            keyboard_button_pressed[n] = false;
+        else
+            keyboard_button_released[n] = false;
     }
     for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
     {
-        mouse_button_pressed[n] = false;
-        mouse_button_released[n] = false;
+        if (mouse_button_pressed[n])
+            mouse_button_pressed[n] = false;
+        else
+            mouse_button_released[n] = false;
     }
 
     mouse_wheel_delta = 0;

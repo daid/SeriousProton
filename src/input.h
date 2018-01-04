@@ -26,13 +26,13 @@ public:
 
     static bool keyboardIsDown(sf::Keyboard::Key key) { return keyboard_button_down[key]; }
     static bool keyboardIsPressed(sf::Keyboard::Key key) { return keyboard_button_pressed[key]; }
-    static bool keyboardIsReleased(sf::Keyboard::Key key) { return keyboard_button_released[key]; }
+    static bool keyboardIsReleased(sf::Keyboard::Key key) { return !keyboard_button_pressed[key] && keyboard_button_released[key]; }
 
     static sf::Vector2f getMousePos() { return mouse_position; }
     static void setMousePos(sf::Vector2f position);
     static bool mouseIsDown(sf::Mouse::Button button) { return mouse_button_down[button]; }
     static bool mouseIsPressed(sf::Mouse::Button button) { return mouse_button_pressed[button]; }
-    static bool mouseIsReleased(sf::Mouse::Button button) { return mouse_button_released[button]; }
+    static bool mouseIsReleased(sf::Mouse::Button button) { return !mouse_button_pressed[button] && mouse_button_released[button]; }
     static float getMouseWheelDelta() { return mouse_wheel_delta; }
     
     static sf::Vector2f getJoysticXYPos() { return joystick_pos_xy; }
