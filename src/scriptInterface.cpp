@@ -581,6 +581,12 @@ bool ScriptSimpleCallback::isSet()
     return true;
 }
 
+//Add an argument when the function is called.
+void ScriptSimpleCallback::addObjectArgument(P<PObject> object)
+{
+    arguments.push_back(object);
+}
+
 //Call this script function.
 //Returns false when the executed function is no longer available, or returns nil or false.
 // else it will return true.
@@ -622,21 +628,35 @@ bool ScriptSimpleCallback::call()
     lua_pushstring(L, "function");
     lua_rawget(L, -2);
 
+    std::vector<int>::size_type i = 0;
+    for(; i != arguments.size(); i++) {
+        if (!convert< P<PObject> >::returnType(L, arguments[i]))
+        {
+            LOG(ERROR) << "Failed to find class for object argument number " << i;
+            lua_pop(L, 2 + i);
+            arguments.clear();
+            return false;
+        }
+    }
+
     //Stack is: [table] [lua function]
     lua_sethook(L, NULL, 0, 0);
-    if (lua_pcall(L, 0, 1, 0))
+    if (lua_pcall(L, i, 1, 0))
     {
         LOG(ERROR) << "Callback function error: " << lua_tostring(L, -1);
         lua_pop(L, 2);
+        arguments.clear();
         return false;
     }
     //Stack is: [table] [call result]
     if (lua_toboolean(L, -1))
     {
         lua_pop(L, 2);
+        arguments.clear();
         return true;
     }
     lua_pop(L, 2);
+    arguments.clear();
     return false;
 }
 

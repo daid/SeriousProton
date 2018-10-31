@@ -53,6 +53,8 @@ public:
 */
 class ScriptSimpleCallback
 {
+private:
+    std::vector<P<PObject>> arguments;
 public:
     ScriptSimpleCallback();
     ~ScriptSimpleCallback();
@@ -62,6 +64,9 @@ public:
 
     //Returns true if this callback is set and the scriptobject that set it is still valid.
     bool isSet();
+
+    //Add an argument when the function is called.
+    void addObjectArgument(P<PObject> object);
 
     //Call this script function.
     //Returns false when the executed function is no longer available, or returns nil or false.
