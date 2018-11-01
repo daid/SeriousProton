@@ -56,6 +56,18 @@ template<> int convert<bool>::returnType(lua_State* L, bool b)
     return 1;
 }
 
+template<> int convert<long>::returnType(lua_State* L, long i)
+{
+    lua_pushinteger(L, i);
+    return 1;
+}
+
+template<> int convert<int>::returnType(lua_State* L, int i)
+{
+    lua_pushinteger(L, i);
+    return 1;
+}
+
 template<> int convert<string>::returnType(lua_State* L, string s)
 {
     lua_pushstring(L, s.c_str());
