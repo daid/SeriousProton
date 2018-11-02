@@ -581,65 +581,6 @@ bool ScriptSimpleCallback::isSet()
     return true;
 }
 
-//Call this script function.
-//Returns false when the executed function is no longer available, or returns nil or false.
-// else it will return true.
-bool ScriptSimpleCallback::call()
-{
-    lua_State* L = ScriptObject::L;
-    
-    //Get the simple table from the registry. If it's not available, then this callback was never set to anything.
-    lua_pushlightuserdata(L, this);
-    lua_gettable(L, LUA_REGISTRYINDEX);
-    if (!lua_istable(L, -1))
-    {
-        lua_pop(L, 1);
-        return false;
-    }
-    //Stack is: [table]
-    
-    //Push the key "script_pointer" to retrieve the pointer to this script object.
-    lua_pushstring(L, "script_pointer");
-    lua_rawget(L, -2);
-    if (lua_isnil(L, -1))
-    {
-        //Callback function didn't have an script environment attached to it, so we cannot check if that script still exists.
-    }else{
-        //Stack is: [table] [pointer to script object]
-        //Check if the script pointer is still available as key in the registry. If not, this reference is no longer valid and needs to be removed.
-        lua_gettable(L, LUA_REGISTRYINDEX);
-        if (!lua_istable(L, -1))
-        {
-            lua_pop(L, 2);
-            return false;
-        }
-    }
-    //Remove the script pointer table from the stack, we only needed to check if it exists.
-    lua_pop(L, 1);
-    //Stack is: [table]
-
-    //Next get our actual function from the stack
-    lua_pushstring(L, "function");
-    lua_rawget(L, -2);
-
-    //Stack is: [table] [lua function]
-    lua_sethook(L, NULL, 0, 0);
-    if (lua_pcall(L, 0, 1, 0))
-    {
-        LOG(ERROR) << "Callback function error: " << lua_tostring(L, -1);
-        lua_pop(L, 2);
-        return false;
-    }
-    //Stack is: [table] [call result]
-    if (lua_toboolean(L, -1))
-    {
-        lua_pop(L, 2);
-        return true;
-    }
-    lua_pop(L, 2);
-    return false;
-}
-
 void ScriptSimpleCallback::clear()
 {
     lua_State* L = ScriptObject::L;
