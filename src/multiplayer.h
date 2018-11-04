@@ -211,13 +211,6 @@ public:
                 memberReplicationInfo[n].update_delay = update_delay;
     }
 
-    void forceMemberReplicationUpdate(void* data)
-    {
-        for(unsigned int n=0; n<memberReplicationInfo.size(); n++)
-            if (memberReplicationInfo[n].ptr == data)
-                memberReplicationInfo[n].update_timeout = 0.0;
-    }
-
     void registerCollisionableReplication(float object_significant_range = -1);
 
     int32_t getMultiplayerId() { return multiplayerObjectId; }
