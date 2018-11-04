@@ -82,8 +82,8 @@ private:
     void broadcastServerCommandFromObject(int32_t id, sf::Packet& packet);
     void sendAll(sf::Packet& packet);
 
-    void genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet);
-    void genenerateDeletePacketFor(int32_t id, sf::Packet& packet);
+    void generateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet);
+    void generateDeletePacketFor(int32_t id, sf::Packet& packet);
     
     void handleNewClient(ClientInfo& info);
     

@@ -100,7 +100,7 @@ void GameServer::update(float gameDelta)
                 obj->replicated = true;
 
                 sf::Packet packet;
-                genenerateCreatePacketFor(obj, packet);
+                generateCreatePacketFor(obj, packet);
                 //Call the isChanged function for each replication info, so the prev_data is updated.
                 for(unsigned int n=0; n<obj->memberReplicationInfo.size(); n++)
                     obj->memberReplicationInfo[n].isChangedFunction(obj->memberReplicationInfo[n].ptr, &obj->memberReplicationInfo[n].prev_data);
@@ -146,7 +146,7 @@ void GameServer::update(float gameDelta)
     for(unsigned int n=0; n<delList.size(); n++)
     {
         sf::Packet packet;
-        genenerateDeletePacketFor(delList[n], packet);
+        generateDeletePacketFor(delList[n], packet);
         sendAll(packet);
         ADD_MULTIPLAYER_STATS("???::DELETE", packet.getDataSize());
         objectMap.erase(delList[n]);
@@ -327,7 +327,7 @@ void GameServer::handleNewClient(ClientInfo& info)
         if (obj && obj->replicated)
         {
             sf::Packet packet;
-            genenerateCreatePacketFor(obj, packet);
+            generateCreatePacketFor(obj, packet);
             sendDataCounter += packet.getDataSize();
             info.socket->send(packet);
         }
@@ -376,7 +376,7 @@ void GameServer::setPassword(string password)
     server_password = password;
 }
 
-void GameServer::genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet)
+void GameServer::generateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet)
 {
     packet << CMD_CREATE << obj->multiplayerObjectId << obj->multiplayerClassIdentifier;
 
@@ -387,7 +387,7 @@ void GameServer::genenerateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet&
     }
 }
 
-void GameServer::genenerateDeletePacketFor(int32_t id, sf::Packet& packet)
+void GameServer::generateDeletePacketFor(int32_t id, sf::Packet& packet)
 {
     packet << CMD_DELETE << id;
 }
