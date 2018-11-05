@@ -58,6 +58,10 @@ template<typename T> struct convert
 };
 //Specialized template for the bool return type, so we return a lua boolean.
 template<> int convert<bool>::returnType(lua_State* L, bool b);
+//Specialized template for the long return type, so we return a lua 64-bit integer.
+template<> int convert<long>::returnType(lua_State* L, long b);
+//Specialized template for the int return type, so we return a lua 32-bit integer.
+template<> int convert<int>::returnType(lua_State* L, int b);
 //Specialized template for the string return type, so we return a lua string.
 template<> int convert<string>::returnType(lua_State* L, string s);
 
