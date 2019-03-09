@@ -5,6 +5,7 @@ P<WindowManager> InputHandler::windowManager;
 bool InputHandler::touch_screen = false;
 sf::Transform InputHandler::mouse_transform;
 PVector<InputEventHandler> InputHandler::input_event_handlers;
+PVector<JoystickEventHandler> InputHandler::joystick_event_handlers;
 
 bool InputHandler::keyboard_button_down[sf::Keyboard::KeyCount];
 bool InputHandler::keyboard_button_pressed[sf::Keyboard::KeyCount];
@@ -17,11 +18,10 @@ bool InputHandler::mouse_button_down[sf::Mouse::ButtonCount];
 bool InputHandler::mouse_button_pressed[sf::Mouse::ButtonCount];
 bool InputHandler::mouse_button_released[sf::Mouse::ButtonCount];
 
-sf::Vector2f InputHandler::joystick_pos_xy = sf::Vector2f();
-float InputHandler::joystick_pos_z = 0.0f;
-float InputHandler::joystick_pos_r = 0.0f;
-float InputHandler::joystick_xy_delta;
 float InputHandler::joystick_axis_pos[sf::Joystick::AxisCount];
+float InputHandler::joystick_axis_changed[sf::Joystick::AxisCount];
+bool InputHandler::joystick_button_down[sf::Joystick::ButtonCount];
+bool InputHandler::joystick_button_changed[sf::Joystick::ButtonCount];
 
 InputEventHandler::InputEventHandler()
 {
@@ -29,6 +29,15 @@ InputEventHandler::InputEventHandler()
 }
 
 InputEventHandler::~InputEventHandler()
+{
+}
+
+JoystickEventHandler::JoystickEventHandler()
+{
+    InputHandler::joystick_event_handlers.push_back(this);
+}
+
+JoystickEventHandler::~JoystickEventHandler()
 {
 }
 
@@ -62,7 +71,14 @@ void InputHandler::preEventsUpdate()
         else
             mouse_button_released[n] = false;
     }
-
+    for(unsigned int n=0; n<sf::Joystick::AxisCount; n++)
+    {
+        joystick_axis_changed[n] = false;
+    }
+    for(unsigned int n=0; n<sf::Joystick::ButtonCount; n++)
+    {
+        joystick_button_changed[n] = false;
+    }
     mouse_wheel_delta = 0;
 }
 
@@ -77,7 +93,7 @@ void InputHandler::handleEvent(sf::Event& event)
         }
         last_key_press = event.key;
     }
-	if (event.type == sf::Event::KeyReleased)
+	else if (event.type == sf::Event::KeyReleased)
 	{
         if (event.key.code > sf::Keyboard::Unknown && event.key.code < sf::Keyboard::KeyCount)
         {
@@ -85,7 +101,7 @@ void InputHandler::handleEvent(sf::Event& event)
             keyboard_button_released[event.key.code] = true;
         }
 	}
-    if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
+    else if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
     {
         if (last_key_press.code != sf::Keyboard::Unknown)
         {
@@ -93,17 +109,42 @@ void InputHandler::handleEvent(sf::Event& event)
             last_key_press.code = sf::Keyboard::Unknown;
         }
     }
-    if (event.type == sf::Event::MouseWheelMoved)
+    else if (event.type == sf::Event::MouseWheelMoved)
         mouse_wheel_delta += event.mouseWheel.delta;
     if (event.type == sf::Event::MouseButtonPressed)
     {
         mouse_button_down[event.mouseButton.button] = true;
         mouse_button_pressed[event.mouseButton.button] = true;
     }
-    if (event.type == sf::Event::MouseButtonReleased)
+    else if (event.type == sf::Event::MouseButtonReleased)
     {
         mouse_button_down[event.mouseButton.button] = false;
         mouse_button_released[event.mouseButton.button] = true;
+    }
+    else if (event.type == sf::Event::JoystickMoved && event.joystickMove.joystickId == 0)
+    {
+        float axis_pos;
+        if (event.joystickMove.position > joystick_axis_snap_to_0_range) {
+            axis_pos = (event.joystickMove.position - joystick_axis_snap_to_0_range) * ((joystick_axis_snap_to_0_range / 100) + 1);
+        } else if (event.joystickMove.position < -joystick_axis_snap_to_0_range) {
+            axis_pos = (event.joystickMove.position + joystick_axis_snap_to_0_range) * ((joystick_axis_snap_to_0_range / 100) + 1);
+        } else {
+            axis_pos = 0.0;
+        }
+        if (joystick_axis_pos[event.joystickMove.axis] != axis_pos){
+            joystick_axis_changed[event.joystickMove.axis] = true;
+        }
+        joystick_axis_pos[event.joystickMove.axis] = axis_pos;
+    }
+    else if (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.joystickId == 0)
+    {
+        joystick_button_down[event.joystickButton.button] = true;
+        joystick_button_changed[event.joystickButton.button] = true;
+    }
+    else if (event.type == sf::Event::JoystickButtonReleased && event.joystickButton.joystickId == 0)
+    {
+        joystick_button_down[event.joystickButton.button] = false;
+        joystick_button_changed[event.joystickButton.button] = true;
     }
 }
 
@@ -143,48 +184,25 @@ void InputHandler::postEventsUpdate()
             mouse_position = sf::Vector2f(-1, -1);
         }
     }
-    
-    if (sf::Joystick::isConnected(0))
+    for(unsigned int n=0; n<sf::Joystick::AxisCount; n++)
     {
-        sf::Vector2f joystick_position;
-        joystick_position.x = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
-        joystick_position.y = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
-        if (sqrt((joystick_position.x * joystick_position.x) + 
-                 (joystick_position.y * joystick_position.y)) 
-            > joystick_xy_hysteresis)
+        if(joystick_axis_changed[n])
         {
-            if (joystick_position.x > 0.0)
-                joystick_pos_xy.x = (joystick_position.x - joystick_xy_hysteresis) * ((joystick_xy_hysteresis / 100) + 1);
-            if (joystick_position.x < 0.0)
-                joystick_pos_xy.x = (joystick_position.x + joystick_xy_hysteresis) * ((joystick_xy_hysteresis / 100) + 1);
-            if (joystick_position.y > 0.0)
-                joystick_pos_xy.y = (joystick_position.y - joystick_xy_hysteresis) * ((joystick_xy_hysteresis / 100) + 1);
-            if (joystick_position.y < 0.0)
-                joystick_pos_xy.y = (joystick_position.y + joystick_xy_hysteresis) * ((joystick_xy_hysteresis / 100) + 1);
+            foreach(JoystickEventHandler, e, joystick_event_handlers)
+            {
+                e->handleJoystickAxis(0, (sf::Joystick::Axis) n, joystick_axis_pos[n]);
+            }
         }
-        else
+    }
+    for(unsigned int n=0; n<sf::Joystick::ButtonCount; n++)
+    {
+        if(joystick_button_changed[n])
         {
-            joystick_pos_xy = sf::Vector2f(0.0f, 0.0f);
+            foreach(JoystickEventHandler, e, joystick_event_handlers)
+            {
+                e->handleJoystickButton(0, n, joystick_button_down[n]);
+            }
         }
-            
-        float axis_pos;
-        axis_pos = sf::Joystick::getAxisPosition(0, sf::Joystick::Z);
-        if (fabs(axis_pos) > joystick_z_hysteresis)
-            if (axis_pos > 0.0) // retain resolution
-                joystick_pos_z = (axis_pos - joystick_z_hysteresis) * ((joystick_z_hysteresis / 100) + 1);
-            else
-                joystick_pos_z = (axis_pos + joystick_z_hysteresis) * ((joystick_z_hysteresis / 100) + 1);
-        else
-            joystick_pos_z = 0.0;
-            
-        axis_pos = sf::Joystick::getAxisPosition(0, sf::Joystick::R);
-        if (fabs(axis_pos) > joystick_r_hysteresis)
-            if (axis_pos > 0.0) // retain resolution
-                joystick_pos_r = (axis_pos - joystick_r_hysteresis) * ((joystick_r_hysteresis / 100) + 1);
-            else
-                joystick_pos_r = (axis_pos + joystick_r_hysteresis) * ((joystick_r_hysteresis / 100) + 1);
-        else
-            joystick_pos_r = 0.0;
     }
 }
 
