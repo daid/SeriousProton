@@ -179,9 +179,10 @@ void GameServer::update(float gameDelta)
         clientList[n].socket->update();
         if (selector.isReady(*clientList[n].socket))
         {
+            bool disconnectClient = false;
             sf::Packet packet;
             sf::TcpSocket::Status status;
-            while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
+            while(!disconnectClient && (status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
             {
                 switch(clientList[n].receive_state)
                 {
@@ -211,14 +212,14 @@ void GameServer::update(float gameDelta)
                                     }
                                 }else{
                                     LOG(ERROR) << n << ":Client version mismatch: " << version_number << " != " << client_version;
-                                    clientList[n].socket->disconnect();
+                                    disconnectClient = true;//Slate to be disconnected.
                                 }
                                 break;
                             }
                             break;
                         default:
                             LOG(ERROR) << "Unknown command from client while authenticating: " << command;
-                            clientList[n].socket->disconnect();
+                            disconnectClient = true;//Slate to be disconnected.
                             break;
                         }
                     }
@@ -261,7 +262,15 @@ void GameServer::update(float gameDelta)
                     break;
                 }
             }
-            if (status == sf::TcpSocket::Disconnected)
+            LOG(ERROR) << "status" << status;
+            if (disconnectClient) {
+                selector.remove(*clientList[n].socket);
+                clientList[n].socket->disconnect();
+                delete clientList[n].socket;
+                clientList.erase(clientList.begin() + n);
+                n--;
+            }
+            else if (status == sf::TcpSocket::Disconnected)
             {
                 onDisconnectClient(clientList[n].client_id);
                 selector.remove(*clientList[n].socket);
