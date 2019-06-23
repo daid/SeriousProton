@@ -181,7 +181,7 @@ void GameServer::update(float gameDelta)
         {
             sf::Packet packet;
             sf::TcpSocket::Status status;
-            while((status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
+            while(clientList[n].socket && (status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
             {
                 switch(clientList[n].receive_state)
                 {
@@ -212,6 +212,8 @@ void GameServer::update(float gameDelta)
                                 }else{
                                     LOG(ERROR) << n << ":Client version mismatch: " << version_number << " != " << client_version;
                                     clientList[n].socket->disconnect();
+                                    selector.remove(*clientList[n].socket);
+                                    clientList[n].socket = NULL;
                                 }
                                 break;
                             }
@@ -219,6 +221,8 @@ void GameServer::update(float gameDelta)
                         default:
                             LOG(ERROR) << "Unknown command from client while authenticating: " << command;
                             clientList[n].socket->disconnect();
+                            selector.remove(*clientList[n].socket);
+                            clientList[n].socket = NULL;
                             break;
                         }
                     }
@@ -261,11 +265,14 @@ void GameServer::update(float gameDelta)
                     break;
                 }
             }
-            if (status == sf::TcpSocket::Disconnected)
+            if (status == sf::TcpSocket::Disconnected || clientList[n].socket == NULL)
             {
-                onDisconnectClient(clientList[n].client_id);
-                selector.remove(*clientList[n].socket);
-                delete clientList[n].socket;
+                if (clientList[n].socket)
+                {
+                    onDisconnectClient(clientList[n].client_id);
+                    selector.remove(*clientList[n].socket);
+                    delete clientList[n].socket;
+                }
                 clientList.erase(clientList.begin() + n);
                 n--;
             }
