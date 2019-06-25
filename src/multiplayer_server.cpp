@@ -211,8 +211,8 @@ void GameServer::update(float gameDelta)
                                     }
                                 }else{
                                     LOG(ERROR) << n << ":Client version mismatch: " << version_number << " != " << client_version;
-                                    clientList[n].socket->disconnect();
                                     selector.remove(*clientList[n].socket);
+                                    clientList[n].socket->disconnect();
                                     clientList[n].socket = NULL;
                                 }
                                 break;
@@ -220,8 +220,8 @@ void GameServer::update(float gameDelta)
                             break;
                         default:
                             LOG(ERROR) << "Unknown command from client while authenticating: " << command;
-                            clientList[n].socket->disconnect();
                             selector.remove(*clientList[n].socket);
+                            clientList[n].socket->disconnect();
                             clientList[n].socket = NULL;
                             break;
                         }
