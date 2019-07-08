@@ -47,12 +47,12 @@ public:
     static bool mouseIsReleased(sf::Mouse::Button button) { return !mouse_button_pressed[button] && mouse_button_released[button]; }
     static float getMouseWheelDelta() { return mouse_wheel_delta; }
     
-    static sf::Vector2f getJoysticXYPos() { return sf::Vector2f(joystick_axis_pos[sf::Joystick::X], joystick_axis_pos[sf::Joystick::Y]); }
-    static float        getJoysticZPos()  { return joystick_axis_pos[sf::Joystick::Z]; }
-    static float        getJoysticRPos()  { return joystick_axis_pos[sf::Joystick::R]; }
+    static sf::Vector2f getJoysticXYPos() { return sf::Vector2f(joystick_axis_pos[0][sf::Joystick::X], joystick_axis_pos[0][sf::Joystick::Y]); }
+    static float        getJoysticZPos()  { return joystick_axis_pos[0][sf::Joystick::Z]; }
+    static float        getJoysticRPos()  { return joystick_axis_pos[0][sf::Joystick::R]; }
 
-    static float getJoysticAxisPos(unsigned int joystick, sf::Joystick::Axis axis){ return joystick_axis_pos[axis];}
-    static bool getJoysticButtonState(unsigned int joystick, unsigned int button){ return joystick_button_down[button];}
+    static float getJoysticAxisPos(unsigned int joystickId, sf::Joystick::Axis axis){ return joystick_axis_pos[joystickId][axis];}
+    static bool getJoysticButtonState(unsigned int joystickId, unsigned int button){ return joystick_button_down[joystickId][button];}
 
 private:
     static P<WindowManager> windowManager;
@@ -68,10 +68,10 @@ private:
     static bool mouse_button_pressed[sf::Mouse::ButtonCount];
     static bool mouse_button_released[sf::Mouse::ButtonCount];
     
-    static float joystick_axis_pos[sf::Joystick::AxisCount];
-    static float joystick_axis_changed[sf::Joystick::AxisCount];
-    static bool joystick_button_down[sf::Joystick::ButtonCount];
-    static bool joystick_button_changed[sf::Joystick::ButtonCount];
+    static float joystick_axis_pos[sf::Joystick::Count][sf::Joystick::AxisCount];
+    static float joystick_axis_changed[sf::Joystick::Count][sf::Joystick::AxisCount];
+    static bool joystick_button_down[sf::Joystick::Count][sf::Joystick::ButtonCount];
+    static bool joystick_button_changed[sf::Joystick::Count][sf::Joystick::ButtonCount];
     constexpr static float joystick_axis_snap_to_0_range = 5;
 
     static void initialize();
