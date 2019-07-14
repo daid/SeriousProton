@@ -205,7 +205,7 @@ void InputHandler::postEventsUpdate()
             {
                 foreach(JoystickEventHandler, e, joystick_event_handlers)
                 {
-                    e->handleJoystickButton(i, n, joystick_button_down[n]);
+                    e->handleJoystickButton(i, n, joystick_button_down[i][n]);
                 }
             }
         }
