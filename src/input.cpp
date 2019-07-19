@@ -39,6 +39,7 @@ JoystickEventHandler::JoystickEventHandler()
 
 JoystickEventHandler::~JoystickEventHandler()
 {
+    InputHandler::joystick_event_handlers.remove(this);
 }
 
 void InputHandler::initialize()
