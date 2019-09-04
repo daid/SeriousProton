@@ -285,7 +285,7 @@ template<class T1, class T2> bool operator != (const P<T1>& p1, const P<T2>& p2)
 namespace std
 {
     //Make a specialization of std::hash 
-    template <class T> struct hash<P<T>> : public __hash_base<size_t, P<T>>
+    template <class T> struct hash<P<T>>
     {
         size_t operator()(const P<T>& k) const noexcept
         {
