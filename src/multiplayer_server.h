@@ -48,6 +48,8 @@ class GameServer : public Updatable
         int32_t client_id;
         EClientReceiveState receive_state;
         int32_t command_object_id;
+        sf::Clock round_trip_time;
+        int32_t ping;
     };
     int32_t nextclient_id;
     std::vector<ClientInfo> clientList;
@@ -80,6 +82,7 @@ public:
 private:
     void registerObject(P<MultiplayerObject> obj);
     void broadcastServerCommandFromObject(int32_t id, sf::Packet& packet);
+    void keepAliveAll();
     void sendAll(sf::Packet& packet);
 
     void generateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet);

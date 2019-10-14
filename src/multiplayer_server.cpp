@@ -218,6 +218,11 @@ void GameServer::update(float gameDelta)
                                 break;
                             }
                             break;
+                        case CMD_ALIVE_RESP:
+                            {
+                                clientList[n].ping = clientList[n].round_trip_time.getElapsedTime().asMilliseconds();
+                            }
+                            break;
                         default:
                             LOG(ERROR) << "Unknown command from client while authenticating: " << command;
                             selector.remove(*clientList[n].socket);
@@ -253,6 +258,11 @@ void GameServer::update(float gameDelta)
                                 }
                                 gotAudioPacket(n, target_identifier, samples);
                             }
+                        case CMD_ALIVE_RESP:
+                            {
+                                clientList[n].ping = clientList[n].round_trip_time.getElapsedTime().asMilliseconds();
+                            }
+                            break;
                         default:
                             LOG(ERROR) << "Unknown command from client: " << command;
                         }
@@ -283,9 +293,7 @@ void GameServer::update(float gameDelta)
     {
         aliveClock.restart();
 
-        sf::Packet packet;
-        packet << CMD_ALIVE;
-        sendAll(packet);
+        keepAliveAll();
     }
 
     float dataPerSecond = float(sendDataCounter) / delta;
@@ -405,6 +413,18 @@ void GameServer::broadcastServerCommandFromObject(int32_t id, sf::Packet& packet
     p << CMD_SERVER_COMMAND << id;
     p.append(packet.getData(), packet.getDataSize());
     sendAll(p);
+}
+
+void GameServer::keepAliveAll()
+{
+    sf::Packet packet;
+    packet << CMD_ALIVE;
+    sendDataCounterPerClient += packet.getDataSize();
+    for(unsigned int n=0; n<clientList.size(); n++)
+    {
+        clientList[n].round_trip_time.restart();
+        clientList[n].socket->send(packet);
+    }
 }
 
 void GameServer::sendAll(sf::Packet& packet)
