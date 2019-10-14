@@ -52,6 +52,7 @@ void GameClient::update(float delta)
         objectMap.erase(delList[n]);
 
     socket.update();
+    sf::Packet reply;
     sf::Packet packet;
     sf::TcpSocket::Status socket_status;
     while((socket_status = socket.receive(packet)) == sf::TcpSocket::Done)
@@ -76,7 +77,7 @@ void GameClient::update(float delta)
                     
                     if (!require_password)
                     {
-                        sf::Packet reply;
+                        reply.clear();
                         reply << CMD_CLIENT_SEND_AUTH << int32_t(version_number) << string("");
                         socket.send(reply);
                     }else{
@@ -89,7 +90,10 @@ void GameClient::update(float delta)
                 status = Connected;
                 break;
             case CMD_ALIVE:
-                //Alive packet, just to keep the connection alive.
+                // send response to calculate ping
+                reply.clear();
+                reply << CMD_ALIVE_RESP;
+                socket.send(reply);
                 break;
             default:
                 LOG(ERROR) << "Unknown command from server: " << command;
@@ -167,7 +171,10 @@ void GameClient::update(float delta)
                 }
                 break;
             case CMD_ALIVE:
-                //Alive packet, just to keep the connection alive.
+                // send response to calculate ping
+                reply.clear();
+                reply << CMD_ALIVE_RESP;
+                socket.send(reply);
                 break;
             default:
                 LOG(ERROR) << "Unknown command from server: " << command;
