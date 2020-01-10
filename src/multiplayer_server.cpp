@@ -356,6 +356,7 @@ void GameServer::handleBroadcastUDPSocket(float delta)
         sf::IpAddress recvAddress;
         unsigned short recvPort;
         sf::Packet recvPacket;
+        broadcast_listen_socket.SetBlocking(false);
         broadcast_listen_socket.receive(recvPacket, recvAddress, recvPort);
 
         //We do not care about what we received. Reply that we live!
