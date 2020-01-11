@@ -452,20 +452,20 @@ void GameServer::runMasterServerUpdateThread()
 {
     if (!master_server_url.startswith("http://"))
     {
-        LOG(ERROR) << "Master server URL does not start with \"http://\"";
+        LOG(ERROR) << "Master server URL " << master_server_url << " does not start with \"http://\"";
         return;
     }
     string hostname = master_server_url.substr(7);
     int path_start = hostname.find("/");
     if (path_start < 0)
     {
-        LOG(ERROR) << "Master server URL has no uri after hostname";
+        LOG(ERROR) << "Master server URL " << master_server_url << " does not have a URI after the hostname";
         return;
     }
     string uri = hostname.substr(path_start + 1);
     hostname = hostname.substr(0, path_start);
     
-    LOG(INFO) << "Registering at master server";
+    LOG(INFO) << "Registering at master server " << master_server_url;
     
     sf::Http http(hostname);
     while(!isDestroyed() && master_server_url != "")
@@ -476,10 +476,10 @@ void GameServer::runMasterServerUpdateThread()
         sf::Http::Response response = http.sendRequest(request, sf::seconds(10.0f));
         if (response.getStatus() != sf::Http::Response::Ok)
         {
-            LOG(WARNING) << "Failed to register at master server (" << response.getStatus() << ")";
+            LOG(WARNING) << "Failed to register at master server " << master_server_url << " (status " << response.getStatus() << ")";
         }else if (response.getBody() != "OK")
         {
-            LOG(WARNING) << "Master server reports error on registering: " << response.getBody();
+            LOG(WARNING) << "Master server " << master_server_url << " reports error on registering: " << response.getBody();
         }
         
         for(int n=0;n<60 && !isDestroyed() && master_server_url != "";n++)
