@@ -74,6 +74,11 @@ void GameClient::update(float delta)
                     int32_t server_version;
                     bool require_password;
                     packet >> server_version >> require_password;
+
+		    if (server_version != 0 && server_version != version_number)
+		    {
+                        LOG(INFO) << "Server version " << server_version << " does not match client version " << version_number;
+		    }
                     
                     if (!require_password)
                     {
