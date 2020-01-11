@@ -462,12 +462,22 @@ void GameServer::runMasterServerUpdateThread()
         LOG(ERROR) << "Master server URL " << master_server_url << " does not have a URI after the hostname";
         return;
     }
+    int port = 80;
+    int port_start = hostname.find(":");
     string uri = hostname.substr(path_start + 1);
-    hostname = hostname.substr(0, path_start);
+    if (port_start >= 0)
+    {
+        // If a port is attached to the hostname, parse it out.
+        // No validation is performed.
+        port = hostname.substr(port_start + 1, hostname.length() - port_start + 1).toInt();
+        hostname = hostname.substr(0, port_start);
+    }else{
+        hostname = hostname.substr(0, path_start);
+    }
     
     LOG(INFO) << "Registering at master server " << master_server_url;
     
-    sf::Http http(hostname);
+    sf::Http http(hostname, port);
     while(!isDestroyed() && master_server_url != "")
     {
         sf::Http::Request request(uri, sf::Http::Request::Post);
