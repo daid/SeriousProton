@@ -139,20 +139,20 @@ void ServerScanner::masterServerScanThread()
 {
     if (!master_server_url.startswith("http://"))
     {
-        LOG(ERROR) << "Master server URL does not start with \"http://\"";
+        LOG(ERROR) << "Master server URL " << master_server_url << " does not start with \"http://\"";
         return;
     }
     string hostname = master_server_url.substr(7);
     int path_start = hostname.find("/");
     if (path_start < 0)
     {
-        LOG(ERROR) << "Master server URL has no uri after hostname";
+        LOG(ERROR) << "Master server URL " << master_server_url << " does not have a URI after the hostname";
         return;
     }
     string uri = hostname.substr(path_start + 1);
     hostname = hostname.substr(0, path_start);
     
-    LOG(INFO) << "Reading servers from master server";
+    LOG(INFO) << "Reading servers from master server " << master_server_url;
     
     sf::Http http(hostname);
     while(!isDestroyed() && master_server_url != "")
@@ -162,7 +162,7 @@ void ServerScanner::masterServerScanThread()
         
         if (response.getStatus() != sf::Http::Response::Ok)
         {
-            LOG(WARNING) << "Failed to query master server (" << response.getStatus() << ")";
+            LOG(WARNING) << "Failed to query master server " << master_server_url << " (status " << response.getStatus() << ")";
         }
         for(string line : string(response.getBody()).split("\n"))
         {
