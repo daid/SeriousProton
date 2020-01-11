@@ -1,4 +1,4 @@
-<?
+<?php
 require("config.inc.php");
 
 $db = new PDO($database['dsn'], $database['user'], $database['password']);

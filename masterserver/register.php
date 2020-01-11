@@ -1,4 +1,4 @@
-<?
+<?php
 require("config.inc.php");
 
 if (!isset($_POST['port']))
