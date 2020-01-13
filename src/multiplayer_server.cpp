@@ -469,7 +469,7 @@ void GameServer::runMasterServerUpdateThread()
     {
         // If a port is attached to the hostname, parse it out.
         // No validation is performed.
-        port = hostname.substr(port_start + 1, hostname.length() - port_start + 1).toInt();
+        port = hostname.substr(port_start + 1, path_start).toInt();
         hostname = hostname.substr(0, port_start);
     }else{
         hostname = hostname.substr(0, path_start);
