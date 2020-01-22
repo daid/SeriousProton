@@ -4,6 +4,13 @@
 #include "Updatable.h"
 #include "collisionable.h"
 
+#ifdef __linux__
+#include <fenv.h>
+#endif
+#ifdef __WIN32__
+#include <float.h>
+#endif
+
 #ifdef DEBUG
 #include <typeinfo>
 int DEBUG_PobjCount;
@@ -27,6 +34,13 @@ Engine::Engine()
     ExcHndlInit();
 #endif//__WIN32__
 #endif//ENABLE_CRASH_LOGGER
+#ifdef __linux__
+    feenableexcept(FE_DIVBYZERO | FE_INVALID);
+#endif
+#ifdef __WIN32__
+    unsigned int current_word = 0;
+    _controlfp_s(&current_word, _EM_INVALID | _EM_ZERODIVIDE, _MCW_EM);
+#endif
     initRandom();
     windowManager = nullptr;
     CollisionManager::initialize();
