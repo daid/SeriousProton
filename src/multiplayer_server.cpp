@@ -35,12 +35,12 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
         LOG(ERROR) << "Failed to listen on TCP port: " << listen_port;
         destroy();
     }
+    listenSocket.setBlocking(false);
     if (broadcast_listen_socket.bind(listen_port) != sf::UdpSocket::Done)
     {
         LOG(ERROR) << "Failed to listen on UDP port: " << listen_port;
     }
-    selector.add(listenSocket);
-    selector.add(broadcast_listen_socket);
+    broadcast_listen_socket.setBlocking(false);
 }
 
 GameServer::~GameServer()
@@ -152,20 +152,17 @@ void GameServer::update(float gameDelta)
         objectMap.erase(delList[n]);
     }
 
-    selector.wait(sf::microseconds(1));//Seems to delay 1ms on Windows. Not ideal, but fast enough. (other option is using threads, which I rather avoid)
     handleBroadcastUDPSocket(delta);
 
-    if (selector.isReady(listenSocket))
+    ClientInfo info;
+    info.socket = new TcpSocket();
+    info.socket->setBlocking(false);
+    if (listenSocket.accept(*info.socket)==sf::Socket::Status::Done)
     {
-        ClientInfo info;
-        info.socket = new TcpSocket();
-        info.socket->setBlocking(false);
         info.client_id = nextclient_id;
         info.receive_state = CRS_Auth;
         nextclient_id++;
-        listenSocket.accept(*info.socket);
         clientList.push_back(info);
-        selector.add(*info.socket);
         {
             sf::Packet packet;
             packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
@@ -177,115 +174,109 @@ void GameServer::update(float gameDelta)
     for(unsigned int n=0; n<clientList.size(); n++)
     {
         clientList[n].socket->update();
-        if (selector.isReady(*clientList[n].socket))
+        sf::Packet packet;
+        sf::TcpSocket::Status status;
+        while(clientList[n].socket && (status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
         {
-            sf::Packet packet;
-            sf::TcpSocket::Status status;
-            while(clientList[n].socket && (status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
+            switch(clientList[n].receive_state)
             {
-                switch(clientList[n].receive_state)
+            case CRS_Auth:
                 {
-                case CRS_Auth:
+                    command_t command;
+                    packet >> command;
+                    switch(command)
                     {
-                        command_t command;
-                        packet >> command;
-                        switch(command)
+                    case CMD_CLIENT_SEND_AUTH:
                         {
-                        case CMD_CLIENT_SEND_AUTH:
+                            int32_t client_version;
+                            string client_password;
+                            packet >> client_version >> client_password;
+
+                            if (version_number == client_version || version_number == 0 || client_version == 0)
                             {
-                                int32_t client_version;
-                                string client_password;
-                                packet >> client_version >> client_password;
-                                
-                                if (version_number == client_version || version_number == 0 || client_version == 0)
+                                if (server_password == "" || client_password == server_password)
                                 {
-                                    if (server_password == "" || client_password == server_password)
-                                    {
-                                        clientList[n].receive_state = CRS_Main;
-                                        handleNewClient(clientList[n]);
-                                    }else{
-                                        //Wrong password, send a new auth request so the client knows the password was not accepted.
-                                        sf::Packet packet;
-                                        packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
-                                        clientList[n].socket->send(packet);
-                                    }
+                                    clientList[n].receive_state = CRS_Main;
+                                    handleNewClient(clientList[n]);
                                 }else{
-                                    LOG(ERROR) << n << ":Client version mismatch: " << version_number << " != " << client_version;
-                                    selector.remove(*clientList[n].socket);
-                                    clientList[n].socket->disconnect();
-                                    clientList[n].socket = NULL;
+                                    //Wrong password, send a new auth request so the client knows the password was not accepted.
+                                    sf::Packet packet;
+                                    packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
+                                    clientList[n].socket->send(packet);
                                 }
-                                break;
+                            }else{
+                                LOG(ERROR) << n << ":Client version mismatch: " << version_number << " != " << client_version;
+                                clientList[n].socket->disconnect();
+                                clientList[n].socket = NULL;
                             }
-                            break;
-                        case CMD_ALIVE_RESP:
-                            {
-                                clientList[n].ping = clientList[n].round_trip_time.getElapsedTime().asMilliseconds();
-                            }
-                            break;
-                        default:
-                            LOG(ERROR) << "Unknown command from client while authenticating: " << command;
-                            selector.remove(*clientList[n].socket);
-                            clientList[n].socket->disconnect();
-                            clientList[n].socket = NULL;
                             break;
                         }
-                    }
-                    break;
-                case CRS_Main:
-                    {
-                        command_t command;
-                        packet >> command;
-                        switch(command)
+                        break;
+                    case CMD_ALIVE_RESP:
                         {
-                        case CMD_CLIENT_COMMAND:
-                            packet >> clientList[n].command_object_id;
-                            clientList[n].receive_state = CRS_Command;
-                            break;
-                        case CMD_CLIENT_AUDIO_COMM:
-                            {
-                                int32_t target_identifier;
-                                uint32_t sample_count;
-                                std::vector<int16_t> samples;
-                                packet >> target_identifier;
-                                packet >> sample_count;
-                                samples.reserve(sample_count);
-                                for(unsigned int n=0; n<sample_count; n++)
-                                {
-                                    int16_t sample;
-                                    packet >> sample;
-                                    samples.push_back(sample);
-                                }
-                                gotAudioPacket(n, target_identifier, samples);
-                            }
-                        case CMD_ALIVE_RESP:
-                            {
-                                clientList[n].ping = clientList[n].round_trip_time.getElapsedTime().asMilliseconds();
-                            }
-                            break;
-                        default:
-                            LOG(ERROR) << "Unknown command from client: " << command;
+                            clientList[n].ping = clientList[n].round_trip_time.getElapsedTime().asMilliseconds();
                         }
+                        break;
+                    default:
+                        LOG(ERROR) << "Unknown command from client while authenticating: " << command;
+                        clientList[n].socket->disconnect();
+                        clientList[n].socket = NULL;
+                        break;
                     }
-                    break;
-                case CRS_Command:
-                    if (objectMap.find(clientList[n].command_object_id) != objectMap.end() && objectMap[clientList[n].command_object_id])
-                        objectMap[clientList[n].command_object_id]->onReceiveClientCommand(clientList[n].client_id, packet);
-                    clientList[n].receive_state = CRS_Main;
-                    break;
                 }
-            }
-            if (status == sf::TcpSocket::Disconnected || clientList[n].socket == NULL)
-            {
-                if (clientList[n].socket)
+                break;
+            case CRS_Main:
                 {
-                    onDisconnectClient(clientList[n].client_id);
-                    selector.remove(*clientList[n].socket);
-                    delete clientList[n].socket;
+                    command_t command;
+                    packet >> command;
+                    switch(command)
+                    {
+                    case CMD_CLIENT_COMMAND:
+                        packet >> clientList[n].command_object_id;
+                        clientList[n].receive_state = CRS_Command;
+                        break;
+                    case CMD_CLIENT_AUDIO_COMM:
+                        {
+                            int32_t target_identifier;
+                            uint32_t sample_count;
+                            std::vector<int16_t> samples;
+                            packet >> target_identifier;
+                            packet >> sample_count;
+                            samples.reserve(sample_count);
+                            for(unsigned int n=0; n<sample_count; n++)
+                            {
+                                int16_t sample;
+                                packet >> sample;
+                                samples.push_back(sample);
+                            }
+                            gotAudioPacket(n, target_identifier, samples);
+                        }
+                    case CMD_ALIVE_RESP:
+                        {
+                            clientList[n].ping = clientList[n].round_trip_time.getElapsedTime().asMilliseconds();
+                        }
+                    break;
+                    default:
+                        LOG(ERROR) << "Unknown command from client: " << command;
+                    }
                 }
-                clientList.erase(clientList.begin() + n);
-                n--;
+                break;
+            case CRS_Command:
+                if (objectMap.find(clientList[n].command_object_id) != objectMap.end() && objectMap[clientList[n].command_object_id])
+                    objectMap[clientList[n].command_object_id]->onReceiveClientCommand(clientList[n].client_id, packet);
+                clientList[n].receive_state = CRS_Main;
+                break;
             }
+        }
+        if (status == sf::TcpSocket::Disconnected || clientList[n].socket == NULL)
+        {
+            if (clientList[n].socket)
+            {
+                onDisconnectClient(clientList[n].client_id);
+                delete clientList[n].socket;
+            }
+            clientList.erase(clientList.begin() + n);
+            n--;
         }
     }
 
@@ -351,13 +342,11 @@ void GameServer::handleNewClient(ClientInfo& info)
 
 void GameServer::handleBroadcastUDPSocket(float delta)
 {
-    if (selector.isReady(broadcast_listen_socket))
+    sf::IpAddress recvAddress;
+    unsigned short recvPort;
+    sf::Packet recvPacket;
+    if (broadcast_listen_socket.receive(recvPacket, recvAddress, recvPort) == sf::Socket::Status::Done)
     {
-        sf::IpAddress recvAddress;
-        unsigned short recvPort;
-        sf::Packet recvPacket;
-        broadcast_listen_socket.receive(recvPacket, recvAddress, recvPort);
-
         //We do not care about what we received. Reply that we live!
         sf::Packet sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
