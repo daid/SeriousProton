@@ -20,6 +20,7 @@ private:
     bool defaultRepeated;
     bool defaultSmooth;
     bool autoSprite;
+    bool disabled;  //Allow to disable to texture manager, which does not load anything. For headless runs.
     std::unordered_map<string, TextureData> textureMap;
 public:
     TextureManager();
@@ -28,6 +29,7 @@ public:
     void setDefaultRepeated(bool repeated) { defaultRepeated = repeated; }
     void setDefaultSmooth(bool smooth) { defaultSmooth = smooth; }
     void setAutoSprite(bool enabled) { autoSprite = enabled; }
+    void setDisabled(bool disable) { disabled = disable; }
     
     void setTexture(sf::Sprite& sprite, string name, unsigned int spriteIndex = 0);
     const sf::IntRect getSpriteRect(string name, unsigned int spriteIndex = 0);
