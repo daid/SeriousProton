@@ -35,6 +35,10 @@ Renderable::Renderable(RenderLayer* renderLayer)
         layer->renderableList.push_back(this);
 }
 
+Renderable::~Renderable()
+{
+}
+
 void Renderable::moveToRenderLayer(RenderLayer* new_render_layer)
 {
     if (layer)
