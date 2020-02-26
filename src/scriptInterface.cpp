@@ -263,7 +263,7 @@ static string luaToJSON(lua_State* L, int index)
             else
                 ret += ", ";
             /* uses 'key' (at index -2) and 'value' (at index -1) */
-            ret += "\"" + string(luaL_tolstring(L, lua_gettop(L) - 1)) + "\"";
+            ret += "\"" + string(luaL_tolstring(L, lua_gettop(L) - 1, nullptr)) + "\"";
             lua_pop(L, 1);
             ret += ": ";
             ret += luaToJSON(L, lua_gettop(L));
