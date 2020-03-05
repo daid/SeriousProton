@@ -36,6 +36,8 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
         destroy();
     }
     listenSocket.setBlocking(false);
+    new_socket = std::unique_ptr<TcpSocket>(new TcpSocket());
+    new_socket->setBlocking(false);
     if (broadcast_listen_socket.bind(listen_port) != sf::UdpSocket::Done)
     {
         LOG(ERROR) << "Failed to listen on UDP port: " << listen_port;
@@ -51,11 +53,9 @@ GameServer::~GameServer()
 
 void GameServer::destroy()
 {
-    for(ClientInfo& info : clientList)
-        delete info.socket;
     clientList.clear();
     objectMap.clear();
-    
+
     listenSocket.close();
     broadcast_listen_socket.unbind();
 
@@ -154,15 +154,16 @@ void GameServer::update(float gameDelta)
 
     handleBroadcastUDPSocket(delta);
 
-    ClientInfo info;
-    info.socket = new TcpSocket();
-    info.socket->setBlocking(false);
-    if (listenSocket.accept(*info.socket)==sf::Socket::Status::Done)
+    if (listenSocket.accept(*new_socket)==sf::Socket::Status::Done)
     {
+        ClientInfo info;
+        info.socket = std::move(new_socket);
+        new_socket = std::unique_ptr<TcpSocket>(new TcpSocket());
+        new_socket->setBlocking(false);
         info.client_id = nextclient_id;
         info.receive_state = CRS_Auth;
         nextclient_id++;
-        clientList.push_back(info);
+        clientList.push_back(std::move(info));
         {
             sf::Packet packet;
             packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
@@ -273,7 +274,6 @@ void GameServer::update(float gameDelta)
             if (clientList[n].socket)
             {
                 onDisconnectClient(clientList[n].client_id);
-                delete clientList[n].socket;
             }
             clientList.erase(clientList.begin() + n);
             n--;

@@ -21,7 +21,7 @@ class GameServer : public Updatable
     sf::Clock aliveClock;
     sf::UdpSocket broadcast_listen_socket;
     sf::TcpListener listenSocket;
-    sf::SocketSelector selector;
+    std::unique_ptr<TcpSocket> new_socket;
     string server_name;
     int listen_port;
     int version_number;
@@ -44,7 +44,7 @@ class GameServer : public Updatable
     };
     struct ClientInfo
     {
-        TcpSocket* socket;
+        std::unique_ptr<TcpSocket> socket;
         int32_t client_id;
         EClientReceiveState receive_state;
         int32_t command_object_id;
