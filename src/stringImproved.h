@@ -5,6 +5,7 @@
 #include <string>
 #include <limits>
 #include <vector>
+#include <map>
 #include <sstream>
 #include <iomanip>
 
@@ -193,7 +194,50 @@ public:
     /*
         Return a formatted version of S
     */
-    string format(...) const;
+    string format(const std::map<string, string>& mapping) const
+    {
+        string ret;
+
+        //Reserve the target String to the current length plus the length of all the parameters.
+        //Which should be a good rough estimate for the final UnicodeString length.
+        int itemslength = 0;
+        for(auto it : mapping)
+        {
+            itemslength += it.second.length();
+        }
+        ret.reserve(length() + itemslength);
+
+        //Run through the source String, find matching brackets.
+        for(unsigned int n=0; n<length(); n++)
+        {
+            char c = this->operator[](n);
+            if (c == '{')
+            {
+                unsigned int end = n;
+                while(end < length() && at(end) != '}')
+                {
+                    end++;
+                }
+                string key = substr(n + 1, end);
+                if (mapping.find(key) != mapping.end())
+                {
+                    ret += mapping.find(key)->second;
+                }
+
+                n = end;
+            }
+            else if (c == '\\')
+            {
+                n++;
+                ret.push_back(this->operator[](n));
+            }
+            else
+            {
+                ret.push_back(c);
+            }
+        }
+        return ret;
+    }
 
     /*
         Return True if all characters in S are alphanumeric
