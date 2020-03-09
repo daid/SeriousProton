@@ -163,13 +163,13 @@ void GameServer::update(float gameDelta)
         info.client_id = nextclient_id;
         info.receive_state = CRS_Auth;
         nextclient_id++;
-        clientList.push_back(std::move(info));
         {
             sf::Packet packet;
             packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
             info.socket->send(packet);
         }
         LOG(INFO) << "New connection: " << info.client_id << " waiting for authentication";
+        clientList.push_back(std::move(info));
     }
 
     for(unsigned int n=0; n<clientList.size(); n++)
@@ -232,9 +232,42 @@ void GameServer::update(float gameDelta)
                     packet >> command;
                     switch(command)
                     {
+                    case CMD_NEW_PROXY_CLIENT:
+                        {
+                            int32_t temp_id = 0;
+                            packet >> temp_id;
+                            handleNewProxy(clientList[n], temp_id);
+                        }
+                        break;
+                    case CMD_DEL_PROXY_CLIENT:
+                        {
+                            int32_t client_id = 0;
+                            packet >> client_id;
+                            for(auto id : clientList[n].proxy_ids)
+                            {
+                                if (id == client_id)
+                                {
+                                    onDisconnectClient(client_id);
+                                }
+                            }
+                            clientList[n].proxy_ids.erase(std::remove_if(clientList[n].proxy_ids.begin(), clientList[n].proxy_ids.end(), [client_id](int32_t id) {return id == client_id;}), clientList[n].proxy_ids.end());
+                        }
+                        break;
                     case CMD_CLIENT_COMMAND:
                         packet >> clientList[n].command_object_id;
+                        clientList[n].command_client_id = clientList[n].client_id;
                         clientList[n].receive_state = CRS_Command;
+                        break;
+                    case CMD_PROXY_CLIENT_COMMAND:
+                        {
+                            int32_t client_id = 0;
+                            packet >> clientList[n].command_object_id >> client_id;
+                            clientList[n].command_client_id = clientList[n].client_id;
+                            for(auto id : clientList[n].proxy_ids)
+                                if (id == client_id)
+                                    clientList[n].command_client_id = client_id;
+                            clientList[n].receive_state = CRS_Command;
+                        }
                         break;
                     case CMD_CLIENT_AUDIO_COMM:
                         {
@@ -264,7 +297,7 @@ void GameServer::update(float gameDelta)
                 break;
             case CRS_Command:
                 if (objectMap.find(clientList[n].command_object_id) != objectMap.end() && objectMap[clientList[n].command_object_id])
-                    objectMap[clientList[n].command_object_id]->onReceiveClientCommand(clientList[n].client_id, packet);
+                    objectMap[clientList[n].command_object_id]->onReceiveClientCommand(clientList[n].command_client_id, packet);
                 clientList[n].receive_state = CRS_Main;
                 break;
             }
@@ -339,6 +372,38 @@ void GameServer::handleNewClient(ClientInfo& info)
         }
     }
 }
+
+void GameServer::handleNewProxy(ClientInfo& info, int32_t temp_id)
+{
+    info.proxy_ids.push_back(nextclient_id);
+    {
+        sf::Packet packet;
+        packet << CMD_SET_PROXY_CLIENT_ID << temp_id << nextclient_id;
+        info.socket->send(packet);
+        nextclient_id++;
+    }
+    {
+        sf::Packet packet;
+        packet << CMD_SET_GAME_SPEED << lastGameSpeed;
+        info.socket->send(packet);
+    }
+
+    onNewClient(info.proxy_ids.back());
+
+    //On a new client, first create all the already existing objects. And update all the values.
+    for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
+    {
+        P<MultiplayerObject> obj = i->second;
+        if (obj && obj->replicated)
+        {
+            sf::Packet packet;
+            generateCreatePacketFor(obj, packet);
+            sendDataCounter += packet.getDataSize();
+            info.socket->send(packet);
+        }
+    }
+}
+
 
 void GameServer::handleBroadcastUDPSocket(float delta)
 {

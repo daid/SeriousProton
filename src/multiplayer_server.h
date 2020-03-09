@@ -46,10 +46,12 @@ class GameServer : public Updatable
     {
         std::unique_ptr<TcpSocket> socket;
         int32_t client_id;
+        int32_t command_client_id;
         EClientReceiveState receive_state;
         int32_t command_object_id;
         sf::Clock round_trip_time;
         int32_t ping;
+        std::vector<int32_t> proxy_ids;
     };
     int32_t nextclient_id;
     std::vector<ClientInfo> clientList;
@@ -89,6 +91,7 @@ private:
     void generateDeletePacketFor(int32_t id, sf::Packet& packet);
     
     void handleNewClient(ClientInfo& info);
+    void handleNewProxy(ClientInfo& info, int32_t temp_id);
     
     void runMasterServerUpdateThread();
     

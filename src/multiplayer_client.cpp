@@ -112,22 +112,25 @@ void GameClient::update(float delta)
                     int32_t id;
                     string name;
                     packet >> id >> name;
-                    for(MultiplayerClassListItem* i = multiplayerClassListStart; i; i = i->next)
+                    if (objectMap.find(id) == objectMap.end() || !objectMap[id])
                     {
-                        if (i->name == name)
+                        for(MultiplayerClassListItem* i = multiplayerClassListStart; i; i = i->next)
                         {
-                            LOG(INFO) << "Created " << name << " from server replication";
-                            MultiplayerObject* obj = i->func();
-                            obj->multiplayerObjectId = id;
-                            objectMap[id] = obj;
-
-                            int16_t idx;
-                            while(packet >> idx)
+                            if (i->name == name)
                             {
-                                if (idx >= 0 && idx < int16_t(obj->memberReplicationInfo.size()))
-                                    (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
-                                else
-                                    LOG(DEBUG) << "Odd index from server replication: " << idx;
+                                LOG(INFO) << "Created " << name << " from server replication";
+                                MultiplayerObject* obj = i->func();
+                                obj->multiplayerObjectId = id;
+                                objectMap[id] = obj;
+
+                                int16_t idx;
+                                while(packet >> idx)
+                                {
+                                    if (idx >= 0 && idx < int16_t(obj->memberReplicationInfo.size()))
+                                        (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
+                                    else
+                                        LOG(DEBUG) << "Odd index from server replication: " << idx;
+                                }
                             }
                         }
                     }
