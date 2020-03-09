@@ -9,6 +9,12 @@
 const string& tr(const string& input);
 const string& tr(const char* context, const string& input);
 
+//Mark a string for translation without actually translating it.
+// This can be used in case the actual translation needs to happen in a different part of the code
+// compared to the string location.
+const string& trMark(const string& input) { return input; }
+const string& trMark(const char* context, const string& input) { return input; }
+
 namespace i18n {
 
 //Load a translation file.
