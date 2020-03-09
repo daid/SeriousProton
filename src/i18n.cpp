@@ -12,12 +12,31 @@ struct MoHeader
     uint32_t offset_translated;
 };
 
-static std::unordered_map<string, string> translations;
+static i18n::Catalogue main_catalogue;
 
-//Translate a string with a loaded translation.
-// If no translation was loaded, return the origonal string unmodified.
-// There functions are not in the i18n namespace to prevent very long identifiers.
 const string& tr(const string& input)
+{
+    return main_catalogue.tr(input);
+}
+
+const string& tr(const char* context, const string& input)
+{
+    return main_catalogue.tr(context, input);
+}
+
+namespace i18n {
+
+bool load(const string& resource_name)
+{
+    return main_catalogue.load(resource_name);
+}
+
+void reset()
+{
+    main_catalogue.reset();
+}
+
+const string& Catalogue::tr(const string& input)
 {
     auto it = translations.find(input);
     if (it != translations.end())
@@ -25,14 +44,12 @@ const string& tr(const string& input)
     return input;
 }
 
-const string& tr(const char* context, const string& input)
+const string& Catalogue::tr(const char* context, const string& input)
 {
     return tr(input);
 }
 
-namespace i18n {
-
-bool load(const string& resource_name)
+bool Catalogue::load(const string& resource_name)
 {
     auto stream = getResourceStream(resource_name);
     if (!stream)
@@ -148,7 +165,7 @@ bool load(const string& resource_name)
     return false;
 }
 
-void reset()
+void Catalogue::reset()
 {
     translations.clear();
 }

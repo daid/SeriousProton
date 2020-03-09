@@ -2,6 +2,7 @@
 #define I18N_H
 
 #include <stringImproved.h>
+#include <unordered_map>
 
 //Translate a string with a loaded translation.
 // If no translation was loaded, return the origonal string unmodified.
@@ -12,8 +13,8 @@ const string& tr(const char* context, const string& input);
 //Mark a string for translation without actually translating it.
 // This can be used in case the actual translation needs to happen in a different part of the code
 // compared to the string location.
-const string& trMark(const string& input) { return input; }
-const string& trMark(const char* context, const string& input) { return input; }
+static inline const string& trMark(const string& input) { return input; }
+static inline const string& trMark(const char* context, const string& input) { return input; }
 
 namespace i18n {
 
@@ -23,6 +24,19 @@ namespace i18n {
 //  Returns true if loading was succesful.
 bool load(const string& resource_name);
 void reset();
+
+class Catalogue
+{
+public:
+    bool load(const string& resource_name);
+    void reset();
+
+    const string& tr(const string& input);
+    const string& tr(const char* context, const string& input);
+
+private:
+    std::unordered_map<string, string> translations;
+};
 
 }//!namespace i18n
 
