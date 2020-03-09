@@ -1,10 +1,16 @@
 #include "multiplayer_proxy.h"
 #include "multiplayer_internal.h"
+#include "engine.h"
+
 
 GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string password, int listenPort)
 : password(password)
 {
-    mainSocket.connect(hostname, hostPort);
+    LOG(INFO) << "Starting proxy server";
+    if (mainSocket.connect(hostname, hostPort) != sf::Socket::Status::Done)
+        LOG(INFO) << "Failed to connect to server";
+    else
+        LOG(INFO) << "Connected to server";
     mainSocket.setBlocking(false);
     listenSocket.listen(listenPort);
     listenSocket.setBlocking(false);
@@ -89,7 +95,9 @@ void GameServerProxy::update(float delta)
 
     if (socketStatus == sf::TcpSocket::Disconnected || lastReceiveTime.getElapsedTime().asSeconds() > noDataDisconnectTime)
     {
+        LOG(INFO) << "Disconnected proxy";
         mainSocket.disconnect();
+        engine->shutdown();
     }
 
     if (listenSocket.accept(*newSocket))
