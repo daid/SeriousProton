@@ -306,6 +306,8 @@ void GameServer::update(float gameDelta)
         {
             if (clientList[n].socket)
             {
+                for(auto id : clientList[n].proxy_ids)
+                    onDisconnectClient(id);
                 onDisconnectClient(clientList[n].client_id);
             }
             clientList.erase(clientList.begin() + n);
