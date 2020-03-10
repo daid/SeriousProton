@@ -1,6 +1,5 @@
 #include <i18n.h>
 #include <resources.h>
-#include <unordered_map>
 
 static constexpr uint32_t mo_file_magic = 0x950412de;
 static constexpr uint32_t mo_file_magic_swapped = 0xde120495;
@@ -19,7 +18,7 @@ const string& tr(const string& input)
     return main_catalogue.tr(input);
 }
 
-const string& tr(const char* context, const string& input)
+const string& tr(const string& context, const string& input)
 {
     return main_catalogue.tr(context, input);
 }
@@ -33,25 +32,31 @@ bool load(const string& resource_name)
 
 void reset()
 {
-    main_catalogue.reset();
+    main_catalogue = Catalogue();
 }
 
 const string& Catalogue::tr(const string& input)
 {
-    auto it = translations.find(input);
-    if (it != translations.end())
+    const auto it = entries.find(input);
+    if (it != entries.end())
         return it->second;
     return input;
 }
 
-const string& Catalogue::tr(const char* context, const string& input)
+const string& Catalogue::tr(const string& context, const string& input)
 {
-    return tr(input);
+    const auto cit = context_entries.find(context);
+    if (cit == context_entries.end())
+        return input;
+    const auto it = cit->second.find(input);
+    if (it == cit->second.end())
+        return input;
+    return it->second;
 }
 
 bool Catalogue::load(const string& resource_name)
 {
-    auto stream = getResourceStream(resource_name);
+    auto stream = io::ResourceProvider::get(resource_name);
     if (!stream)
         return false;
     uint32_t magic;
@@ -98,11 +103,14 @@ bool Catalogue::load(const string& resource_name)
             stream->seek(length_offset_translated[n*2+1]);
             stream->read(&translated[0], length_offset_translated[n*2]);
 
-            if (origonal.find("\x04") > -1)
-                origonal = origonal.substr(origonal.find("\x04") + 1);
-
             if (!origonal.empty())
-                translations[origonal] = translated;
+            {
+                int context_index = origonal.find("\x04");
+                if (context_index > -1)
+                    context_entries[origonal.substr(0, context_index)][origonal.substr(context_index + 1)] = translated;
+                else
+                    entries[origonal] = translated;
+            }
         }
         return true;
     }
@@ -111,6 +119,7 @@ bool Catalogue::load(const string& resource_name)
     {
         string origonal;
         string translated;
+        string context;
         string* target = &origonal;
 
         stream->seek(0);
@@ -123,10 +132,26 @@ bool Catalogue::load(const string& resource_name)
                 if (line.startswith("msgid \""))
                 {
                     if (!origonal.empty() && !translated.empty())
-                        translations[origonal] = translated;
+                    {
+                        if (!context.empty())
+                        {
+                            context_entries[context][origonal] = translated;
+                            context = "";
+                        }
+                        else
+                        {
+                            entries[origonal] = translated;
+                        }
+                    }
                     origonal = "";
                     target = &origonal;
                     line_contents = line.substr(7, -1);
+                }
+                if (line.startswith("msgctxt \""))
+                {
+                    context = "";
+                    target = &context;
+                    line_contents = line.substr(9, -1);
                 }
                 if (line.startswith("msgstr \""))
                 {
@@ -158,16 +183,16 @@ bool Catalogue::load(const string& resource_name)
             }
         }
         if (!origonal.empty() && !translated.empty())
-            translations[origonal] = translated;
+        {
+            if (!context.empty())
+                context_entries[context][origonal] = translated;
+            else
+                entries[origonal] = translated;
+        }
         return true;
     }
 
     return false;
-}
-
-void Catalogue::reset()
-{
-    translations.clear();
 }
 
 }//!namespace i18n

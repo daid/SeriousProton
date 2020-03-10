@@ -8,7 +8,7 @@
 // If no translation was loaded, return the origonal string unmodified.
 // There functions are not in the i18n namespace to prevent very long identifiers.
 const string& tr(const string& input);
-const string& tr(const char* context, const string& input);
+const string& tr(const string& context, const string& input);
 
 //Mark a string for translation without actually translating it.
 // This can be used in case the actual translation needs to happen in a different part of the code
@@ -29,13 +29,12 @@ class Catalogue
 {
 public:
     bool load(const string& resource_name);
-    void reset();
 
     const string& tr(const string& input);
-    const string& tr(const char* context, const string& input);
-
+    const string& tr(const string& context, const string& input);
 private:
-    std::unordered_map<string, string> translations;
+    std::unordered_map<string, string> entries;
+    std::unordered_map<string, std::unordered_map<string, string>> context_entries;
 };
 
 }//!namespace i18n
