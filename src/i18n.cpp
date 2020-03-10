@@ -56,7 +56,7 @@ const string& Catalogue::tr(const string& context, const string& input)
 
 bool Catalogue::load(const string& resource_name)
 {
-    auto stream = io::ResourceProvider::get(resource_name);
+    auto stream = getResourceStream(resource_name);
     if (!stream)
         return false;
     uint32_t magic;
