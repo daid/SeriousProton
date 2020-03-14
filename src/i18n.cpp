@@ -129,7 +129,7 @@ bool Catalogue::load(const string& resource_name)
             string line_contents;
             if (line.endswith("\""))
             {
-                if (line.startswith("msgid \""))
+                if (target == &translated && !line.startswith("\""))
                 {
                     if (!origonal.empty() && !translated.empty())
                     {
@@ -143,6 +143,9 @@ bool Catalogue::load(const string& resource_name)
                             entries[origonal] = translated;
                         }
                     }
+                }
+                if (line.startswith("msgid \""))
+                {
                     origonal = "";
                     target = &origonal;
                     line_contents = line.substr(7, -1);
