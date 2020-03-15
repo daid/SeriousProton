@@ -100,7 +100,7 @@ void GameServerProxy::update(float delta)
         engine->shutdown();
     }
 
-    if (listenSocket.accept(*newSocket))
+    if (listenSocket.accept(*newSocket) == sf::Socket::Status::Done)
     {
         ClientInfo info;
         info.socket = std::move(newSocket);
