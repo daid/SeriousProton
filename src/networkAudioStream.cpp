@@ -1,6 +1,7 @@
 #include "networkAudioStream.h"
 #include "logging.h"
 
+#include <array>
 #include <opus.h>
 
 NetworkAudioStream::NetworkAudioStream()
