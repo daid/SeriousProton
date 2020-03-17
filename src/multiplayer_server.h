@@ -3,9 +3,11 @@
 
 #include <stdint.h>
 #include <unordered_map>
+#include <unordered_set>
 #include "fixedSocket.h"
 #include "Updatable.h"
 #include "stringImproved.h"
+#include "networkAudioStream.h"
 
 static const int defaultServerPort = 35666;
 static const int multiplayerVerficationNumber = 0x2fab3f0f; //Used to verify that the server is actually a serious proton server
@@ -55,6 +57,8 @@ class GameServer : public Updatable
     };
     int32_t nextclient_id;
     std::vector<ClientInfo> clientList;
+    std::unordered_map<int32_t, std::unordered_set<int32_t>> voice_targets;
+    NetworkAudioStreamManager audio_stream_manager;
 
     int32_t nextObjectId;
     std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
@@ -80,7 +84,10 @@ public:
     void stopMasterServerRegistry();
     void setPassword(string password);
 
-    void gotAudioPacket(int32_t client_id, int32_t target_identifier, std::vector<int16_t>& audio_data);
+    void startAudio(int32_t client_id, int32_t target_identifier);
+    void gotAudioPacket(int32_t client_id, const unsigned char* packet, int packet_size);
+    void stopAudio(int32_t client_id);
+    void sendAudioPacketFrom(int32_t client_id, sf::Packet& packet);
 private:
     void registerObject(P<MultiplayerObject> obj);
     void broadcastServerCommandFromObject(int32_t id, sf::Packet& packet);
@@ -101,6 +108,7 @@ private:
 public:
     virtual void onNewClient(int32_t client_id) {}
     virtual void onDisconnectClient(int32_t client_id) {}
+    virtual std::unordered_set<int32_t> onVoiceChat(int32_t client_id, int32_t target_identifier);
 };
 
 #endif//MULTIPLAYER_SERVER_H

@@ -269,22 +269,25 @@ void GameServer::update(float gameDelta)
                             clientList[n].receive_state = CRS_Command;
                         }
                         break;
-                    case CMD_CLIENT_AUDIO_COMM:
+                    case CMD_AUDIO_COMM_START:
                         {
-                            int32_t target_identifier;
-                            uint32_t sample_count;
-                            std::vector<int16_t> samples;
+                            int32_t target_identifier = 0;
                             packet >> target_identifier;
-                            packet >> sample_count;
-                            samples.reserve(sample_count);
-                            for(unsigned int n=0; n<sample_count; n++)
-                            {
-                                int16_t sample;
-                                packet >> sample;
-                                samples.push_back(sample);
-                            }
-                            gotAudioPacket(n, target_identifier, samples);
+                            startAudio(clientList[n].client_id, target_identifier);
                         }
+                        break;
+                    case CMD_AUDIO_COMM_DATA:
+                        {
+                            const unsigned char* ptr = reinterpret_cast<const unsigned char*>(packet.getData());
+                            ptr += sizeof(command_t);
+                            gotAudioPacket(n, ptr, packet.getDataSize() - sizeof(command_t));
+                        }
+                        break;
+                    case CMD_AUDIO_COMM_STOP:
+                        {
+                            stopAudio(clientList[n].client_id);
+                        }
+                        break;
                     case CMD_ALIVE_RESP:
                         {
                             clientList[n].ping = clientList[n].round_trip_time.getElapsedTime().asMilliseconds();
@@ -553,6 +556,77 @@ void GameServer::runMasterServerUpdateThread()
     }
 }
 
-void GameServer::gotAudioPacket(int32_t client_id, int32_t target_identifier, std::vector<int16_t>& audio_data)
+void GameServer::startAudio(int32_t client_id, int32_t target_identifier)
 {
+    voice_targets[client_id] = onVoiceChat(client_id, target_identifier);
+    LOG(DEBUG) << "Audio start:" << client_id;
+    for(auto id : voice_targets[client_id])
+        LOG(DEBUG) << "Target:" << id;
+
+    sf::Packet audio_packet;
+    audio_packet << CMD_AUDIO_COMM_START << client_id;
+    sendAudioPacketFrom(client_id, audio_packet);
+
+    audio_stream_manager.start(client_id);
+}
+
+void GameServer::gotAudioPacket(int32_t client_id, const unsigned char* packet, int packet_size)
+{
+    LOG(DEBUG) << "Audio packet:" << client_id << ":" << packet_size;
+
+    sf::Packet audio_packet;
+    audio_packet << CMD_AUDIO_COMM_DATA << client_id;
+    audio_packet.append(packet, packet_size);
+    sendAudioPacketFrom(client_id, audio_packet);
+
+    audio_stream_manager.receivedPacketFromNetwork(client_id, packet, packet_size);
+}
+
+void GameServer::stopAudio(int32_t client_id)
+{
+    LOG(DEBUG) << "Audio stop:" << client_id;
+
+    sf::Packet audio_packet;
+    audio_packet << CMD_AUDIO_COMM_STOP << client_id;
+    voice_targets.erase(client_id);
+
+    audio_stream_manager.stop(client_id);
+}
+
+void GameServer::sendAudioPacketFrom(int32_t client_id, sf::Packet& packet)
+{
+    auto it = voice_targets.find(client_id);
+    if (it == voice_targets.end())
+        return;
+    auto& ids = it->second;
+
+    for(auto& client : clientList)
+    {
+        if (client.receive_state != CRS_Auth)
+        {
+            if (ids.find(client.client_id) != ids.end())
+            {
+                client.socket->send(packet);
+            }
+            //TODO: proxy clients
+        }
+    }
+}
+
+std::unordered_set<int32_t> GameServer::onVoiceChat(int32_t client_id, int32_t target_identifier)
+{
+    //Default, target all clients
+    std::unordered_set<int32_t> result;
+    if (client_id != 0)
+        result.insert(0);
+    for(auto& client : clientList)
+    {
+        if (client.receive_state != CRS_Auth)
+        {
+            if (client_id != client.client_id)
+                result.insert(client.client_id);
+            //TODO: Handle proxies
+        }
+    }
+    return result;
 }

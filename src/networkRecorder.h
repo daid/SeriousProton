@@ -9,29 +9,20 @@
 
 #include "Updatable.h"
 
+
+struct OpusEncoder;
 class NetworkAudioRecorder : private sf::SoundRecorder, public Updatable
 {
 private:
-    enum Mode
-    {
-        None,
-        VoiceActivation,
-        KeyActivation
-    };
-    Mode mode;
-    int32_t samplerate;
-    float trigger_level;
     sf::Keyboard::Key activation_key;
-    sf::Clock record_start_time;
     sf::Mutex sample_buffer_mutex;
     std::vector<sf::Int16> sample_buffer;
     int32_t target_identifier;
-    
+    OpusEncoder* encoder = nullptr;
 public:
     NetworkAudioRecorder();
     virtual ~NetworkAudioRecorder();
 
-    void setVoiceActivation(float trigger_level);
     void setKeyActivation(sf::Keyboard::Key key);
 
 protected:
@@ -39,6 +30,11 @@ protected:
 
 public:
     virtual void update(float delta) override;
+
+private:
+    void startSending();
+    bool sendAudioPacket();
+    void finishSending();
 };
 
 #endif //NETWORK_VOICE_RECORDER_H

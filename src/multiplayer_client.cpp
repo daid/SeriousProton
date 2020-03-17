@@ -75,11 +75,11 @@ void GameClient::update(float delta)
                     bool require_password;
                     packet >> server_version >> require_password;
 
-		    if (server_version != 0 && server_version != version_number)
-		    {
+                    if (server_version != 0 && server_version != version_number)
+                    {
                         LOG(INFO) << "Server version " << server_version << " does not match client version " << version_number;
-		    }
-                    
+                    }
+
                     if (!require_password)
                     {
                         reply.clear();
@@ -176,6 +176,30 @@ void GameClient::update(float delta)
                         P<MultiplayerObject> obj = objectMap[id];
                         obj->onReceiveServerCommand(packet);
                     }
+                }
+                break;
+            case CMD_AUDIO_COMM_START:
+                {
+                    int32_t id = 0;
+                    packet >> id;
+                    audio_stream_manager.start(id);
+                }
+                break;
+            case CMD_AUDIO_COMM_DATA:
+                {
+                    int32_t id = 0;
+                    packet >> id;
+                    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(packet.getData());
+                    ptr += sizeof(command_t) + sizeof(int32_t);
+                    int32_t size = packet.getDataSize() - sizeof(command_t) - sizeof(int32_t);
+                    audio_stream_manager.receivedPacketFromNetwork(id, ptr, size);
+                }
+                break;
+            case CMD_AUDIO_COMM_STOP:
+                {
+                    int32_t id = 0;
+                    packet >> id;
+                    audio_stream_manager.stop(id);
                 }
                 break;
             case CMD_ALIVE:
