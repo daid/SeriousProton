@@ -280,7 +280,7 @@ void GameServer::update(float gameDelta)
                         {
                             const unsigned char* ptr = reinterpret_cast<const unsigned char*>(packet.getData());
                             ptr += sizeof(command_t);
-                            gotAudioPacket(n, ptr, packet.getDataSize() - sizeof(command_t));
+                            gotAudioPacket(clientList[n].client_id, ptr, packet.getDataSize() - sizeof(command_t));
                         }
                         break;
                     case CMD_AUDIO_COMM_STOP:
@@ -559,38 +559,36 @@ void GameServer::runMasterServerUpdateThread()
 void GameServer::startAudio(int32_t client_id, int32_t target_identifier)
 {
     voice_targets[client_id] = onVoiceChat(client_id, target_identifier);
-    LOG(DEBUG) << "Audio start:" << client_id;
-    for(auto id : voice_targets[client_id])
-        LOG(DEBUG) << "Target:" << id;
 
     sf::Packet audio_packet;
     audio_packet << CMD_AUDIO_COMM_START << client_id;
     sendAudioPacketFrom(client_id, audio_packet);
 
-    audio_stream_manager.start(client_id);
+    if (client_id != 0)
+        audio_stream_manager.start(client_id);
 }
 
 void GameServer::gotAudioPacket(int32_t client_id, const unsigned char* packet, int packet_size)
 {
-    LOG(DEBUG) << "Audio packet:" << client_id << ":" << packet_size;
-
     sf::Packet audio_packet;
     audio_packet << CMD_AUDIO_COMM_DATA << client_id;
     audio_packet.append(packet, packet_size);
     sendAudioPacketFrom(client_id, audio_packet);
 
-    audio_stream_manager.receivedPacketFromNetwork(client_id, packet, packet_size);
+    if (client_id != 0)
+        audio_stream_manager.receivedPacketFromNetwork(client_id, packet, packet_size);
 }
 
 void GameServer::stopAudio(int32_t client_id)
 {
-    LOG(DEBUG) << "Audio stop:" << client_id;
-
     sf::Packet audio_packet;
     audio_packet << CMD_AUDIO_COMM_STOP << client_id;
+    sendAudioPacketFrom(client_id, audio_packet);
+
     voice_targets.erase(client_id);
 
-    audio_stream_manager.stop(client_id);
+    if (client_id != 0)
+        audio_stream_manager.stop(client_id);
 }
 
 void GameServer::sendAudioPacketFrom(int32_t client_id, sf::Packet& packet)
