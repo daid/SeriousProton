@@ -68,7 +68,19 @@ void GameServerProxy::update(float delta)
         case CMD_UPDATE_VALUE:
         case CMD_SET_GAME_SPEED:
         case CMD_SERVER_COMMAND:
+        case CMD_AUDIO_COMM_START:
+        case CMD_AUDIO_COMM_DATA:
+        case CMD_AUDIO_COMM_STOP:
             sendAll(packet);
+            break;
+        case CMD_PROXY_TO_CLIENTS:
+            {
+                int32_t id;
+                while(packet >> id)
+                {
+                    targetClients.insert(id);
+                }
+            }
             break;
         case CMD_SET_PROXY_CLIENT_ID:
             {
@@ -193,9 +205,21 @@ void GameServerProxy::update(float delta)
 
 void GameServerProxy::sendAll(sf::Packet& packet)
 {
-    for(auto& info : clientList)
+    if (targetClients.empty())
     {
-        if (info.validClient && info.socket)
-            info.socket->send(packet);
+        for(auto& info : clientList)
+        {
+            if (info.validClient && info.socket)
+                info.socket->send(packet);
+        }
+    }
+    else
+    {
+        for(auto& info : clientList)
+        {
+            if (info.validClient && info.socket && targetClients.find(info.clientId) != targetClients.end())
+                info.socket->send(packet);
+        }
+        targetClients.clear();
     }
 }

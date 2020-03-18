@@ -602,11 +602,24 @@ void GameServer::sendAudioPacketFrom(int32_t client_id, sf::Packet& packet)
     {
         if (client.receive_state != CRS_Auth)
         {
-            if (ids.find(client.client_id) != ids.end())
+            bool send = ids.find(client.client_id) != ids.end();
+            if (client.proxy_ids.size() > 0)
+            {
+                sf::Packet target_packet;
+                target_packet << CMD_PROXY_TO_CLIENTS;
+                for(auto id : client.proxy_ids)
+                {
+                    if (ids.find(id) != ids.end())
+                    {
+                        target_packet << id;
+                        send = true;
+                    }
+                }
+            }
+            if (send)
             {
                 client.socket->send(packet);
             }
-            //TODO: proxy clients
         }
     }
 }
@@ -623,7 +636,9 @@ std::unordered_set<int32_t> GameServer::onVoiceChat(int32_t client_id, int32_t t
         {
             if (client_id != client.client_id)
                 result.insert(client.client_id);
-            //TODO: Handle proxies
+            for(auto id : client.proxy_ids)
+                if (client_id != id)
+                    result.insert(id);
         }
     }
     return result;

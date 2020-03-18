@@ -26,6 +26,7 @@ class GameServerProxy : public Updatable
         EClientReceiveState receiveState = CRS_Auth;
     };
     std::vector<ClientInfo> clientList;
+    std::unordered_set<int32_t> targetClients;
 
     int32_t nextFakeClientId = 1;
     int32_t clientId = 0;
