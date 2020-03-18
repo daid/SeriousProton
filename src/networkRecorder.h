@@ -14,16 +14,21 @@ struct OpusEncoder;
 class NetworkAudioRecorder : private sf::SoundRecorder, public Updatable
 {
 private:
-    sf::Keyboard::Key activation_key;
+    struct KeyConfig
+    {
+        sf::Keyboard::Key key;
+        int target_identifier;
+    };
+    std::vector<KeyConfig> keys;
+    int active_key_index = -1;
     sf::Mutex sample_buffer_mutex;
     std::vector<sf::Int16> sample_buffer;
-    int32_t target_identifier;
     OpusEncoder* encoder = nullptr;
 public:
     NetworkAudioRecorder();
     virtual ~NetworkAudioRecorder();
 
-    void setKeyActivation(sf::Keyboard::Key key);
+    void addKeyActivation(sf::Keyboard::Key key, int target_identifier);
 
 protected:
     virtual bool onProcessSamples(const sf::Int16* samples, std::size_t sample_count) override;

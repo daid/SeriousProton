@@ -12,7 +12,6 @@
 
 NetworkAudioRecorder::NetworkAudioRecorder()
 {
-    target_identifier = 0;
     LOG(INFO) << "Using \"" << getDefaultDevice() << "\" for voice communication";
 }
 
@@ -26,9 +25,9 @@ NetworkAudioRecorder::~NetworkAudioRecorder()
     }
 }
 
-void NetworkAudioRecorder::setKeyActivation(sf::Keyboard::Key key)
+void NetworkAudioRecorder::addKeyActivation(sf::Keyboard::Key key, int target_identifier)
 {
-    activation_key = key;
+    keys.push_back({key, target_identifier});
 }
 
 
@@ -46,18 +45,26 @@ bool NetworkAudioRecorder::onProcessSamples(const sf::Int16* samples, std::size_
 
 void NetworkAudioRecorder::update(float delta)
 {
-    if (InputHandler::keyboardIsPressed(activation_key) && !encoder)
+    for(size_t idx=0; idx<keys.size(); idx++)
     {
-        start(48000);
-        startSending();
+        if (InputHandler::keyboardIsPressed(keys[idx].key) && active_key_index == -1)
+        {
+            active_key_index = idx;
+            start(48000);
+            startSending();
+        }
     }
     while(sendAudioPacket())
     {
     }
-    if (InputHandler::keyboardIsReleased(activation_key))
+    if (active_key_index != -1)
     {
-        stop();
-        finishSending();
+        if (InputHandler::keyboardIsReleased(keys[active_key_index].key))
+        {
+            stop();
+            finishSending();
+            active_key_index = -1;
+        }
     }
 }
 
@@ -73,12 +80,12 @@ void NetworkAudioRecorder::startSending()
     if (game_client)
     {
         sf::Packet audio_packet;
-        audio_packet << CMD_AUDIO_COMM_START << int32_t(target_identifier);
+        audio_packet << CMD_AUDIO_COMM_START << int32_t(keys[active_key_index].target_identifier);
         game_client->sendPacket(audio_packet);
     }
     else if (game_server)
     {
-        game_server->startAudio(0, target_identifier);
+        game_server->startAudio(0, keys[active_key_index].target_identifier);
     }
 }
 
