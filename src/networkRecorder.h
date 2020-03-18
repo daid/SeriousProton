@@ -37,6 +37,8 @@ public:
     virtual void update(float delta) override;
 
 private:
+    static constexpr int frame_size = 2880;
+
     void startSending();
     bool sendAudioPacket();
     void finishSending();

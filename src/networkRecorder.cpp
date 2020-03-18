@@ -13,6 +13,7 @@
 NetworkAudioRecorder::NetworkAudioRecorder()
 {
     LOG(INFO) << "Using \"" << getDefaultDevice() << "\" for voice communication";
+    setProcessingInterval(sf::milliseconds(10));
 }
 
 NetworkAudioRecorder::~NetworkAudioRecorder()
@@ -93,12 +94,12 @@ bool NetworkAudioRecorder::sendAudioPacket()
 {
     bool result = false;
     sample_buffer_mutex.lock();
-    if (sample_buffer.size() >= 2880)
+    if (sample_buffer.size() >= frame_size)
     {
         unsigned char packet_buffer[4096];
         int packet_size = 0;
         if (encoder)
-            packet_size = opus_encode(encoder, sample_buffer.data(), 2880, packet_buffer, sizeof(packet_buffer));
+            packet_size = opus_encode(encoder, sample_buffer.data(), frame_size, packet_buffer, sizeof(packet_buffer));
         if (game_client)
         {
             sf::Packet audio_packet;
@@ -111,7 +112,7 @@ bool NetworkAudioRecorder::sendAudioPacket()
         {
             game_server->gotAudioPacket(0, packet_buffer, packet_size);
         }
-        sample_buffer.erase(sample_buffer.begin(), sample_buffer.begin() + 2880);
+        sample_buffer.erase(sample_buffer.begin(), sample_buffer.begin() + frame_size);
         result = true;
     }
     sample_buffer_mutex.unlock();
@@ -124,7 +125,7 @@ void NetworkAudioRecorder::finishSending()
     {
     }
     sample_buffer_mutex.lock();
-    while(sample_buffer.size() < 2880)
+    while(sample_buffer.size() < frame_size)
         sample_buffer.push_back(0);
     sample_buffer_mutex.unlock();
     sendAudioPacket();
