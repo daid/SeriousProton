@@ -32,7 +32,7 @@ class GameServerProxy : public Updatable
     int32_t clientId = 0;
     string password;
     int32_t serverVersion = 0;
-    TcpSocket mainSocket;
+    std::unique_ptr<TcpSocket> mainSocket;
 public:
     GameServerProxy(sf::IpAddress hostname, int hostPort = defaultServerPort, string password = "", int listenPort = defaultServerPort);
     virtual ~GameServerProxy();

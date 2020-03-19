@@ -7,11 +7,12 @@ GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string pa
 : password(password)
 {
     LOG(INFO) << "Starting proxy server";
-    if (mainSocket.connect(hostname, hostPort) != sf::Socket::Status::Done)
+    mainSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
+    if (mainSocket->connect(hostname, hostPort) != sf::Socket::Status::Done)
         LOG(INFO) << "Failed to connect to server";
     else
         LOG(INFO) << "Connected to server";
-    mainSocket.setBlocking(false);
+    mainSocket->setBlocking(false);
     listenSocket.listen(listenPort);
     listenSocket.setBlocking(false);
 
@@ -32,84 +33,86 @@ void GameServerProxy::destroy()
 
 void GameServerProxy::update(float delta)
 {
-    mainSocket.update();
-    sf::Packet packet;
-    sf::TcpSocket::Status socketStatus;
-    while((socketStatus = mainSocket.receive(packet)) == sf::TcpSocket::Done)
+    if (mainSocket)
     {
-        lastReceiveTime.restart();
-        command_t command;
-        packet >> command;
-        switch(command)
+        mainSocket->update();
+        sf::Packet packet;
+        sf::TcpSocket::Status socketStatus;
+        while((socketStatus = mainSocket->receive(packet)) == sf::TcpSocket::Done)
         {
-        case CMD_REQUEST_AUTH:
+            lastReceiveTime.restart();
+            command_t command;
+            packet >> command;
+            switch(command)
             {
-                bool requirePassword;
-                packet >> serverVersion >> requirePassword;
+            case CMD_REQUEST_AUTH:
+                {
+                    bool requirePassword;
+                    packet >> serverVersion >> requirePassword;
 
-                sf::Packet reply;
-                reply << CMD_CLIENT_SEND_AUTH << int32_t(serverVersion) << string(password);
-                mainSocket.send(reply);
-            }
-            break;
-        case CMD_SET_CLIENT_ID:
-            packet >> clientId;
-            break;
-        case CMD_ALIVE:
-            {
-                sf::Packet reply;
-                reply << CMD_ALIVE_RESP;
-                mainSocket.send(reply);
-            }
-            sendAll(packet);
-            break;
-        case CMD_CREATE:
-        case CMD_DELETE:
-        case CMD_UPDATE_VALUE:
-        case CMD_SET_GAME_SPEED:
-        case CMD_SERVER_COMMAND:
-        case CMD_AUDIO_COMM_START:
-        case CMD_AUDIO_COMM_DATA:
-        case CMD_AUDIO_COMM_STOP:
-            sendAll(packet);
-            break;
-        case CMD_PROXY_TO_CLIENTS:
-            {
-                int32_t id;
-                while(packet >> id)
-                {
-                    targetClients.insert(id);
+                    sf::Packet reply;
+                    reply << CMD_CLIENT_SEND_AUTH << int32_t(serverVersion) << string(password);
+                    mainSocket->send(reply);
                 }
-            }
-            break;
-        case CMD_SET_PROXY_CLIENT_ID:
-            {
-                int32_t tempId, clientId;
-                packet >> tempId >> clientId;
-                for(auto& info : clientList)
+                break;
+            case CMD_SET_CLIENT_ID:
+                packet >> clientId;
+                break;
+            case CMD_ALIVE:
                 {
-                    if (!info.validClient && info.clientId == tempId)
+                    sf::Packet reply;
+                    reply << CMD_ALIVE_RESP;
+                    mainSocket->send(reply);
+                }
+                sendAll(packet);
+                break;
+            case CMD_CREATE:
+            case CMD_DELETE:
+            case CMD_UPDATE_VALUE:
+            case CMD_SET_GAME_SPEED:
+            case CMD_SERVER_COMMAND:
+            case CMD_AUDIO_COMM_START:
+            case CMD_AUDIO_COMM_DATA:
+            case CMD_AUDIO_COMM_STOP:
+                sendAll(packet);
+                break;
+            case CMD_PROXY_TO_CLIENTS:
+                {
+                    int32_t id;
+                    while(packet >> id)
                     {
-                        info.validClient = true;
-                        info.clientId = clientId;
-                        info.receiveState = CRS_Main;
+                        targetClients.insert(id);
+                    }
+                }
+                break;
+            case CMD_SET_PROXY_CLIENT_ID:
+                {
+                    int32_t tempId, clientId;
+                    packet >> tempId >> clientId;
+                    for(auto& info : clientList)
+                    {
+                        if (!info.validClient && info.clientId == tempId)
                         {
-                            sf::Packet packet;
-                            packet << CMD_SET_CLIENT_ID << info.clientId;
-                            info.socket->send(packet);
+                            info.validClient = true;
+                            info.clientId = clientId;
+                            info.receiveState = CRS_Main;
+                            {
+                                sf::Packet packet;
+                                packet << CMD_SET_CLIENT_ID << info.clientId;
+                                info.socket->send(packet);
+                            }
                         }
                     }
                 }
+                break;
             }
-            break;
         }
-    }
-
-    if (socketStatus == sf::TcpSocket::Disconnected || lastReceiveTime.getElapsedTime().asSeconds() > noDataDisconnectTime)
-    {
-        LOG(INFO) << "Disconnected proxy";
-        mainSocket.disconnect();
-        engine->shutdown();
+        if (socketStatus == sf::TcpSocket::Disconnected || lastReceiveTime.getElapsedTime().asSeconds() > noDataDisconnectTime)
+        {
+            LOG(INFO) << "Disconnected proxy";
+            mainSocket->disconnect();
+            engine->shutdown();
+        }
     }
 
     if (listenSocket.accept(*newSocket) == sf::Socket::Status::Done)
@@ -128,6 +131,8 @@ void GameServerProxy::update(float delta)
 
     for(unsigned int n=0; n<clientList.size(); n++)
     {
+        sf::Packet packet;
+        sf::TcpSocket::Status socketStatus;
         auto& info = clientList[n];
         info.socket->update();
         while(info.socket && (socketStatus = info.socket->receive(packet)) == sf::TcpSocket::Done)
@@ -144,11 +149,11 @@ void GameServerProxy::update(float delta)
                         int32_t clientVersion;
                         string clientPassword;
                         packet >> clientVersion >> clientPassword;
-                        if (clientVersion == serverVersion && clientPassword == password)
+                        if (mainSocket && clientVersion == serverVersion && clientPassword == password)
                         {
                             sf::Packet serverUpdate;
                             serverUpdate << CMD_NEW_PROXY_CLIENT << info.clientId;
-                            mainSocket.send(serverUpdate);
+                            mainSocket->send(serverUpdate);
                         }
                         else
                         {
@@ -182,8 +187,8 @@ void GameServerProxy::update(float delta)
                 {
                     sf::Packet mainPacket;
                     mainPacket << CMD_PROXY_CLIENT_COMMAND << info.commandObjectId << info.clientId;
-                    mainSocket.send(mainPacket);
-                    mainSocket.send(packet);
+                    mainSocket->send(mainPacket);
+                    mainSocket->send(packet);
                 }
                 info.receiveState = CRS_Main;
                 break;
@@ -195,7 +200,7 @@ void GameServerProxy::update(float delta)
             {
                 sf::Packet serverUpdate;
                 serverUpdate << CMD_DEL_PROXY_CLIENT << info.clientId;
-                mainSocket.send(serverUpdate);
+                mainSocket->send(serverUpdate);
             }
             clientList.erase(clientList.begin() + n);
             n--;
