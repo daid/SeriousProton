@@ -221,6 +221,8 @@ void GameServer::update(float gameDelta)
                         clientList[n].socket->disconnect();
                         clientList[n].socket = NULL;
                         break;
+                    case CMD_REQUEST_AUTH:
+                        break;
                     case CMD_CLIENT_SEND_AUTH:
                         {
                             int32_t client_version;
