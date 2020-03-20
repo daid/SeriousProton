@@ -35,6 +35,7 @@ class GameServerProxy : public Updatable
     std::unique_ptr<TcpSocket> mainSocket;
 public:
     GameServerProxy(sf::IpAddress hostname, int hostPort = defaultServerPort, string password = "", int listenPort = defaultServerPort);
+    GameServerProxy(string password = "", int listenPort = defaultServerPort);
     virtual ~GameServerProxy();
 
     virtual void destroy() override;

@@ -69,6 +69,8 @@ public:
     GameServer(string server_name, int versionNumber, int listenPort = defaultServerPort);
     virtual ~GameServer();
 
+    void connectToProxy(sf::IpAddress address, int port = defaultServerPort);
+
     virtual void destroy() override;
 
     P<MultiplayerObject> getObjectById(int32_t id);

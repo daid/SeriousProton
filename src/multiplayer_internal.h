@@ -16,6 +16,7 @@ static const command_t CMD_SET_PROXY_CLIENT_ID = 0x000b;
 static const command_t CMD_DEL_PROXY_CLIENT = 0x000c;
 static const command_t CMD_PROXY_CLIENT_COMMAND = 0x000d;
 static const command_t CMD_PROXY_TO_CLIENTS = 0x000e;
+static const command_t CMD_SERVER_CONNECT_TO_PROXY = 0x000f;
 static const command_t CMD_CLIENT_SEND_AUTH = 0x0010;
 static const command_t CMD_SERVER_COMMAND = 0x0011;
 static const command_t CMD_ALIVE_RESP = 0x0012;

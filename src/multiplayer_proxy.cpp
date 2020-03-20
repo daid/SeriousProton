@@ -22,6 +22,19 @@ GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string pa
     lastReceiveTime.restart();
 }
 
+GameServerProxy::GameServerProxy(string password, int listenPort)
+: password(password)
+{
+    LOG(INFO) << "Starting listening proxy server";
+    listenSocket.listen(listenPort);
+    listenSocket.setBlocking(false);
+
+    newSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
+    newSocket->setBlocking(false);
+
+    lastReceiveTime.restart();
+}
+
 GameServerProxy::~GameServerProxy()
 {
 }
@@ -144,6 +157,18 @@ void GameServerProxy::update(float delta)
             case CRS_Auth:
                 switch(command)
                 {
+                case CMD_SERVER_CONNECT_TO_PROXY:
+                    if (mainSocket)
+                    {
+                        info.socket->disconnect();
+                        info.socket = NULL;
+                    }
+                    else
+                    {
+                        mainSocket = std::move(info.socket);
+                        lastReceiveTime.restart();
+                    }
+                    break;
                 case CMD_CLIENT_SEND_AUTH:
                     {
                         int32_t clientVersion;

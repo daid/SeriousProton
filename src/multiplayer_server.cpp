@@ -51,6 +51,36 @@ GameServer::~GameServer()
     master_server_update_thread.wait();
 }
 
+void GameServer::connectToProxy(sf::IpAddress address, int port)
+{
+    auto socket = std::unique_ptr<TcpSocket>(new TcpSocket());
+    LOG(INFO) << "Connecting to proxy: " << address.toString();
+    if (socket->connect(address, port) != sf::Socket::Status::Done)
+    {
+        LOG(ERROR) << "Failed to connect to proxy";
+        return;
+    }
+
+    ClientInfo info;
+    info.socket = std::move(socket);
+    info.socket->setBlocking(false);
+    info.client_id = nextclient_id;
+    info.receive_state = CRS_Auth;
+    nextclient_id++;
+    {
+        sf::Packet packet;
+        packet << CMD_SERVER_CONNECT_TO_PROXY;
+        info.socket->send(packet);
+    }
+    {
+        sf::Packet packet;
+        packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
+        info.socket->send(packet);
+    }
+    LOG(INFO) << "New proxy connection: " << info.client_id << " waiting for authentication";
+    clientList.push_back(std::move(info));
+}
+
 void GameServer::destroy()
 {
     clientList.clear();
@@ -187,6 +217,10 @@ void GameServer::update(float gameDelta)
                     packet >> command;
                     switch(command)
                     {
+                    case CMD_SERVER_CONNECT_TO_PROXY:
+                        clientList[n].socket->disconnect();
+                        clientList[n].socket = NULL;
+                        break;
                     case CMD_CLIENT_SEND_AUTH:
                         {
                             int32_t client_version;
