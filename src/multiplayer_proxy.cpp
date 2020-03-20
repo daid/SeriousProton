@@ -176,6 +176,16 @@ void GameServerProxy::update(float delta)
                     packet >> info.commandObjectId;
                     info.receiveState = CRS_Command;
                     break;
+                case CMD_AUDIO_COMM_START:
+                case CMD_AUDIO_COMM_DATA:
+                case CMD_AUDIO_COMM_STOP:
+                    {
+                        int32_t client_id = 0;
+                        packet >> client_id;
+                        if (client_id == info.clientId)
+                            mainSocket->send(packet);
+                    }
+                    break;
                 case CMD_ALIVE_RESP:
                     break;
                 default:

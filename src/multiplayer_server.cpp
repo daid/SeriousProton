@@ -272,20 +272,54 @@ void GameServer::update(float gameDelta)
                     case CMD_AUDIO_COMM_START:
                         {
                             int32_t target_identifier = 0;
-                            packet >> target_identifier;
-                            startAudio(clientList[n].client_id, target_identifier);
+                            int32_t client_id = 0;
+                            packet >> client_id >> target_identifier;
+                            if (client_id == clientList[n].client_id)
+                            {
+                                startAudio(client_id, target_identifier);
+                            }
+                            else
+                            {
+                                for(auto id : clientList[n].proxy_ids)
+                                    if (id == client_id)
+                                        startAudio(client_id, target_identifier);
+                            }
                         }
                         break;
                     case CMD_AUDIO_COMM_DATA:
+                        if (packet.getDataSize() > sizeof(int32_t) + sizeof(command_t))
                         {
+                            int32_t client_id;
+                            packet >> client_id;
+
                             const unsigned char* ptr = reinterpret_cast<const unsigned char*>(packet.getData());
-                            ptr += sizeof(command_t);
-                            gotAudioPacket(clientList[n].client_id, ptr, packet.getDataSize() - sizeof(command_t));
+                            ptr += sizeof(int32_t) + sizeof(command_t);
+                            if (client_id == clientList[n].client_id)
+                            {
+                                gotAudioPacket(client_id, ptr, packet.getDataSize() - sizeof(int32_t) - sizeof(command_t));
+                            }
+                            else
+                            {
+                                for(auto id : clientList[n].proxy_ids)
+                                    if (id == client_id)
+                                        gotAudioPacket(client_id, ptr, packet.getDataSize() - sizeof(int32_t) - sizeof(command_t));
+                            }
                         }
                         break;
                     case CMD_AUDIO_COMM_STOP:
                         {
-                            stopAudio(clientList[n].client_id);
+                            int32_t client_id;
+                            packet >> client_id;
+                            if (client_id == clientList[n].client_id)
+                            {
+                                stopAudio(client_id);
+                            }
+                            else
+                            {
+                                for(auto id : clientList[n].proxy_ids)
+                                    if (id == client_id)
+                                        stopAudio(client_id);
+                            }
                         }
                         break;
                     case CMD_ALIVE_RESP:
