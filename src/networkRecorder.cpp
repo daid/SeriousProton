@@ -50,9 +50,16 @@ void NetworkAudioRecorder::update(float delta)
     {
         if (InputHandler::keyboardIsPressed(keys[idx].key) && active_key_index == -1)
         {
-            active_key_index = idx;
-            start(48000);
-            startSending();
+            if (active_key_index == -1)
+            {
+                samples_till_stop = -1;
+                active_key_index = idx;
+                start(48000);
+                startSending();
+            } else if (idx == size_t(active_key_index))
+            {
+                samples_till_stop = -1;
+            }
         }
     }
     while(sendAudioPacket())
@@ -62,10 +69,15 @@ void NetworkAudioRecorder::update(float delta)
     {
         if (InputHandler::keyboardIsReleased(keys[active_key_index].key))
         {
-            stop();
-            finishSending();
-            active_key_index = -1;
+            samples_till_stop = 48000 * 0.5;
         }
+    }
+    if (samples_till_stop == 0)
+    {
+        stop();
+        finishSending();
+        active_key_index = -1;
+        samples_till_stop = -1;
     }
 }
 
@@ -114,6 +126,11 @@ bool NetworkAudioRecorder::sendAudioPacket()
         }
         sample_buffer.erase(sample_buffer.begin(), sample_buffer.begin() + frame_size);
         result = true;
+
+        if (samples_till_stop > -1)
+        {
+            samples_till_stop = std::max(0, samples_till_stop - frame_size);
+        }
     }
     sample_buffer_mutex.unlock();
     return result;

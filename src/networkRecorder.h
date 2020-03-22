@@ -24,6 +24,7 @@ private:
     sf::Mutex sample_buffer_mutex;
     std::vector<sf::Int16> sample_buffer;
     OpusEncoder* encoder = nullptr;
+    int samples_till_stop = -1;
 public:
     NetworkAudioRecorder();
     virtual ~NetworkAudioRecorder();
