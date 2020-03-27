@@ -42,14 +42,20 @@ void PostProcessor::render(sf::RenderTarget& window)
         chain->render(window);
         return;
     }
-    if (renderTexture.getSize().x < 1)
+
+    sf::View view(window.getView());
+
+    // If the window or texture size is 0/impossible, or if the window size has
+    // changed, resize the viewport, render texture, and input/textureSizes.
+    if (size.x < 1 || renderTexture.getSize().x < 1 || size != window.getSize())
     {
+        size = window.getSize();
+
         //Setup a backBuffer to render the game on. Then we can render the backbuffer back to the main screen with full-screen shader effects
-        int w = window.getView().getViewport().width * window.getSize().x;
-        int h = window.getView().getViewport().height * window.getSize().y;
+        int w = view.getViewport().width * size.x;
+        int h = view.getViewport().height * size.y;
         int tw = powerOfTwo(w);
         int th = powerOfTwo(h);
-        sf::View view(window.getView());
         view.setViewport(sf::FloatRect(0, 1.0 - float(h) / float(th), float(w) / float(tw), float(h) / float(th)));
 
         renderTexture.create(tw, th, true);
@@ -57,7 +63,7 @@ void PostProcessor::render(sf::RenderTarget& window)
         renderTexture.setSmooth(true);
         renderTexture.setView(view);
 
-        shader.setUniform("inputSize", sf::Vector2f(window.getSize().x, window.getSize().y));
+        shader.setUniform("inputSize", sf::Vector2f(size.x, size.y));
         shader.setUniform("textureSize", sf::Vector2f(renderTexture.getSize().x, renderTexture.getSize().y));
     }
 
@@ -65,8 +71,9 @@ void PostProcessor::render(sf::RenderTarget& window)
     chain->render(renderTexture);
 
     renderTexture.display();
-    sf::Sprite backBufferSprite(renderTexture.getTexture(), sf::IntRect(0, renderTexture.getSize().y - window.getView().getViewport().height * window.getSize().y, window.getView().getViewport().width * window.getSize().x, window.getView().getViewport().height * window.getSize().y));
-    backBufferSprite.setScale(window.getView().getSize().x/float(renderTexture.getSize().x)/renderTexture.getView().getViewport().width, window.getView().getSize().y/float(renderTexture.getSize().y)/renderTexture.getView().getViewport().height);
+
+    sf::Sprite backBufferSprite(renderTexture.getTexture(), sf::IntRect(0, renderTexture.getSize().y - view.getViewport().height * size.y, view.getViewport().width * size.x, view.getViewport().height * size.y));
+    backBufferSprite.setScale(view.getSize().x / float(renderTexture.getSize().x) / renderTexture.getView().getViewport().width, view.getSize().y / float(renderTexture.getSize().y) / renderTexture.getView().getViewport().height);
 
     window.draw(backBufferSprite, &shader);
 }
