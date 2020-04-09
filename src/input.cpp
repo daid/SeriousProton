@@ -153,6 +153,9 @@ void InputHandler::handleEvent(sf::Event& event)
 
 void InputHandler::postEventsUpdate()
 {
+    input_event_handlers.update();
+    joystick_event_handlers.update();
+
     if (last_key_press.code != sf::Keyboard::Unknown)
     {
         InputHandler::fireKeyEvent(last_key_press, -1);
