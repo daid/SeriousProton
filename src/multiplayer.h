@@ -33,6 +33,14 @@ template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, 
 {
     return packet >> v.x >> v.y >> v.z;
 }
+template<typename T1, typename T2> static inline sf::Packet& operator << (sf::Packet& packet, const std::pair<T1, T2>& pair)
+{
+    return packet << pair.first << pair.second;
+}
+template<typename T1, typename T2> static inline sf::Packet& operator >> (sf::Packet& packet, std::pair<T1, T2>& pair)
+{
+    return packet >> pair.first >> pair.second;
+}
 
 static inline sf::Packet& operator << (sf::Packet& packet, const sf::Color& c) { return packet << c.r << c.g << c.b << c.a; } \
 static inline sf::Packet& operator >> (sf::Packet& packet, sf::Color& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
