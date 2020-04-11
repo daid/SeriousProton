@@ -1,7 +1,6 @@
 #include "PlayerController.h"
 
 PlayerController::PlayerController(int nr)
-: index(nr)
 {
     switch(nr)
     {

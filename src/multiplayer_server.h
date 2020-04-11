@@ -74,7 +74,7 @@ public:
     virtual void destroy() override;
 
     P<MultiplayerObject> getObjectById(int32_t id);
-    virtual void update(float delta);
+    virtual void update(float delta) override;
     inline float getSendDataRate() { return sendDataRate; }
     inline float getSendDataRatePerClient() { return sendDataRatePerClient; }
     inline float getUpdateTime() { return update_run_time; }

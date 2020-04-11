@@ -107,7 +107,7 @@ void Engine::runMainLoop()
 
             if (debugOutputClock.getElapsedTime().asSeconds() > 1.0)
             {
-                printf("Object count: %4d %4d %4d\n", DEBUG_PobjCount, updatableList.size(), entityList.size());
+                printf("Object count: %4d %4ld %4ld\n", DEBUG_PobjCount, updatableList.size(), entityList.size());
                 debugOutputClock.restart();
             }
 #endif
@@ -153,7 +153,7 @@ void Engine::runMainLoop()
 void Engine::handleEvent(sf::Event& event)
 {
     // Window closed: exit
-    if ((event.type == sf::Event::Closed))
+    if (event.type == sf::Event::Closed)
         running = false;
     if (event.type == sf::Event::GainedFocus)
         windowManager->windowHasFocus = true;

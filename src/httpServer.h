@@ -72,7 +72,6 @@ private:
 class HttpServer: public Updatable
 {
 private:
-    int portNr;
     sf::TcpListener listenSocket;
     sf::SocketSelector selector;
     std::vector<HttpServerConnection*> connections;

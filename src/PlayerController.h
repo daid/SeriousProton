@@ -5,7 +5,6 @@
 #include "windowManager.h"
 class PlayerController: public virtual PObject
 {
-    int index;
 public:
     static const int buttonCount = 6;
     sf::Keyboard::Key keyBind[4 + buttonCount];
