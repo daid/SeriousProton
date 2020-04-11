@@ -28,7 +28,6 @@ class GameServerProxy : public Updatable
     std::vector<ClientInfo> clientList;
     std::unordered_set<int32_t> targetClients;
 
-    int32_t nextFakeClientId = 1;
     int32_t clientId = 0;
     string password;
     int32_t serverVersion = 0;
@@ -40,7 +39,7 @@ public:
 
     virtual void destroy() override;
 
-    virtual void update(float delta);
+    virtual void update(float delta) override;
 private:
     void sendAll(sf::Packet& packet);
 };
