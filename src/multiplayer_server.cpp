@@ -549,20 +549,23 @@ void GameServer::keepAliveAll()
     sf::Packet packet;
     packet << CMD_ALIVE;
     sendDataCounterPerClient += packet.getDataSize();
-    for(unsigned int n=0; n<clientList.size(); n++)
+    for(auto& client : clientList)
     {
-        clientList[n].round_trip_time.restart();
-        clientList[n].socket->send(packet);
+        if (client.socket)
+        {
+            client.round_trip_time.restart();
+            client.socket->send(packet);
+        }
     }
 }
 
 void GameServer::sendAll(sf::Packet& packet)
 {
     sendDataCounterPerClient += packet.getDataSize();
-    for(unsigned int n=0; n<clientList.size(); n++)
+    for(auto& client : clientList)
     {
-        if (clientList[n].receive_state != CRS_Auth)
-            clientList[n].socket->send(packet);
+        if (client.receive_state != CRS_Auth && client.socket)
+            client.socket->send(packet);
     }
 }
 
@@ -670,7 +673,7 @@ void GameServer::sendAudioPacketFrom(int32_t client_id, sf::Packet& packet)
 
     for(auto& client : clientList)
     {
-        if (client.receive_state != CRS_Auth)
+        if (client.receive_state != CRS_Auth && client.socket)
         {
             bool send = ids.find(client.client_id) != ids.end();
             if (client.proxy_ids.size() > 0)
