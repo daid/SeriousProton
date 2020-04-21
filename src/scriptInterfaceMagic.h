@@ -229,6 +229,43 @@ template<typename T> struct convert<std::vector<T> >
             v.push_back(var);
         }
     }
+
+    static int returnType(lua_State* L, std::vector<T> vector)
+    {
+        lua_newtable(L);
+        int n = 1;
+        for(auto val : vector)
+        {
+            lua_pushnumber(L, n);
+            if (convert<T>::returnType(L, val))
+            {
+                lua_settable(L, -3);
+                n++;
+            }else{
+                lua_pop(L, 1);
+            }
+        }
+        return 1;
+    }
+};
+/* Convert parameters to std::map<string, ?> objects. */
+template<typename T> struct convert<std::map<string, T> >
+{
+    static int returnType(lua_State* L, std::map<string, T> map)
+    {
+        lua_newtable(L);
+        for(const auto& kv : map)
+        {
+            lua_pushstring(L, kv.first.c_str());
+            if (convert<T>::returnType(L, kv.second))
+            {
+                lua_settable(L, -3);
+            }else{
+                lua_pop(L, 1);
+            }
+        }
+        return 1;
+    }
 };
 
 template<class T, typename FuncProto> struct call
