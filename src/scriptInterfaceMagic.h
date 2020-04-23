@@ -165,20 +165,7 @@ template<class T> struct convert< PVector<T> >
 {
     static int returnType(lua_State* L, PVector<T> pvector)
     {
-        lua_newtable(L);
-        int n = 1;
-        foreach(T, t, pvector)
-        {
-            lua_pushnumber(L, n);
-            if (convert<P<T> >::returnType(L, t))
-            {
-                lua_settable(L, -3);
-                n++;
-            }else{
-                lua_pop(L, 1);
-            }
-        }
-        return 1;
+        return convert<std::vector<P<T>>>::returnType(L, pvector);
     }
 };
 
@@ -233,17 +220,22 @@ template<typename T> struct convert<std::vector<T> >
     static int returnType(lua_State* L, std::vector<T> vector)
     {
         lua_newtable(L);
+        int table_idx = lua_gettop(L);
         int n = 1;
         for(auto val : vector)
         {
-            lua_pushnumber(L, n);
-            if (convert<T>::returnType(L, val))
+            int nr_vals = convert<T>::returnType(L, val);
+            if (nr_vals > 1)
             {
-                lua_settable(L, -3);
-                n++;
-            }else{
-                lua_pop(L, 1);
+                LOG(WARNING) << "std::vector<" << typeid(val).name() << "> does not support types that return multiple values. Only the first one is used.";
+                lua_pop(L, nr_vals - 1);
             }
+            if (nr_vals == 0)
+            {
+                LOG(WARNING) << "No value added to the stack for std::vector<" << typeid(val).name() << ">. Adding a nil value.";
+                lua_pushnil(L);
+            }
+            lua_seti(L, table_idx, n++);
         }
         return 1;
     }
@@ -254,15 +246,21 @@ template<typename T> struct convert<std::map<string, T> >
     static int returnType(lua_State* L, std::map<string, T> map)
     {
         lua_newtable(L);
+        int table_idx = lua_gettop(L);
         for(const auto& kv : map)
         {
-            lua_pushstring(L, kv.first.c_str());
-            if (convert<T>::returnType(L, kv.second))
+            int nr_vals = convert<T>::returnType(L, kv.second);
+            if (nr_vals > 1)
             {
-                lua_settable(L, -3);
-            }else{
-                lua_pop(L, 1);
+                LOG(WARNING) << "std::map<string, " << typeid(map).name() << "> does not support types that return multiple values. Only the first one is used.";
+                lua_pop(L, nr_vals - 1);
             }
+            if (nr_vals == 0)
+            {
+                LOG(WARNING) << "No value added to the stack for std::map<string, " << typeid(map).name() << ">. Adding a nil value.";
+                lua_pushnil(L);
+            }
+            lua_setfield(L, table_idx, kv.first.c_str());
         }
         return 1;
     }
