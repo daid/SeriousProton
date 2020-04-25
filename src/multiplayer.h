@@ -49,6 +49,14 @@ template <typename T> struct multiplayerReplicationFunctions
 {
     static bool isChanged(void* data, void* prev_data_ptr)
     {
+        if ((data == nullptr) != (prev_data_ptr == nullptr)) {
+            return false;
+        }
+
+        if (data == nullptr) {
+            return true;
+        }
+
         T* ptr = (T*)data;
         T* prev_data = (T*)prev_data_ptr;
         if (*ptr != *prev_data)
@@ -137,7 +145,7 @@ class MultiplayerObject : public virtual PObject
         const char* name;
 #endif
         void* ptr;
-        int64_t prev_data;
+        void* prev_data;
         float update_delay;
         float update_timeout;
 
@@ -171,7 +179,7 @@ public:
         info.name = name;
 #endif
         info.ptr = member;
-        info.prev_data = -1;
+        info.prev_data = nullptr;
         info.update_delay = update_delay;
         info.update_timeout = 0.0;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChanged;
@@ -195,7 +203,7 @@ public:
         info.name = name;
 #endif
         info.ptr = member;
-        info.prev_data = (int64_t) new std::vector<T>;
+        info.prev_data = new std::vector<T>;
         info.update_delay = update_delay;
         info.update_timeout = 0.0;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChangedVector;
