@@ -145,7 +145,7 @@ class MultiplayerObject : public virtual PObject
         const char* name;
 #endif
         void* ptr;
-        void* prev_data;
+        uint64_t prev_data;
         float update_delay;
         float update_timeout;
 
@@ -179,7 +179,7 @@ public:
         info.name = name;
 #endif
         info.ptr = member;
-        info.prev_data = nullptr;
+        info.prev_data = reinterpret_cast<std::uint64_t>(nullptr);
         info.update_delay = update_delay;
         info.update_timeout = 0.0;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChanged;
@@ -203,7 +203,7 @@ public:
         info.name = name;
 #endif
         info.ptr = member;
-        info.prev_data = new std::vector<T>;
+        info.prev_data = reinterpret_cast<std::uint64_t>(new std::vector<T>);
         info.update_delay = update_delay;
         info.update_timeout = 0.0;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChangedVector;
