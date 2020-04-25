@@ -291,7 +291,8 @@ inline void DigitGen(const DiyFp& W, const DiyFp& Mp, uint64_t delta, char* buff
 	}
 
 	// kappa = 0
-	for (;;) {
+	assert(*len >= 0);
+	for (; static_cast<std::size_t>(*len) < sizeof(buffer);) {
 		p2 *= 10;
 		delta *= 10;
 		char d = static_cast<char>(p2 >> -one.e);
