@@ -49,14 +49,6 @@ template <typename T> struct multiplayerReplicationFunctions
 {
     static bool isChanged(void* data, void* prev_data_ptr)
     {
-        if ((data == nullptr) != (prev_data_ptr == nullptr)) {
-            return false;
-        }
-
-        if (data == nullptr) {
-            return true;
-        }
-
         T* ptr = (T*)data;
         T* prev_data = (T*)prev_data_ptr;
         if (*ptr != *prev_data)
