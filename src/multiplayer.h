@@ -171,7 +171,20 @@ public:
         info.name = name;
 #endif
         info.ptr = member;
-        info.prev_data = reinterpret_cast<std::uint64_t>(nullptr);
+        static_assert(
+                std::is_same<T, string>::value ||
+                (
+                        std::is_default_constructible<T>::value &&
+                        std::is_trivially_destructible<T>::value &&
+                        sizeof(T) <= 8
+                ),
+                "T must be a string or must be a default constructible, trivially destructible and with a size of at most 64bit"
+        );
+        if (std::is_same<T, string>::value) {
+                info.prev_data = 0;
+        } else {
+                new (&info.prev_data) T{};
+        }
         info.update_delay = update_delay;
         info.update_timeout = 0.0;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChanged;
