@@ -171,7 +171,7 @@ void MultiplayerObject::registerCollisionableReplication(float object_significan
 #ifdef DEBUG
     info.name = "Collisionable_data";
 #endif
-    info.prev_data = new CollisionableReplicationData();
+    info.prev_data = reinterpret_cast<std::uint64_t>(new CollisionableReplicationData());
     info.update_delay = 0.0;
     info.update_timeout = 0.0;
     info.isChangedFunction = &collisionable_isChanged;
