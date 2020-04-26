@@ -578,6 +578,7 @@ void GameServer::registerOnMasterServer(string master_server_url)
 void GameServer::stopMasterServerRegistry()
 {
     this->master_server_url = "";
+    master_server_update_thread.wait();
 }
 
 void GameServer::runMasterServerUpdateThread()
