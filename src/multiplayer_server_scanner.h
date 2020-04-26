@@ -8,7 +8,7 @@
 class ServerScanner : public Updatable
 {
     int server_port;
-    sf::UdpSocket socket;
+    std::unique_ptr<sf::UdpSocket> socket;
     sf::Clock broadcast_clock;
 
 public:
@@ -25,11 +25,11 @@ private:
     int version_number;
     constexpr static float BroadcastTimeout = 2.0f;
     constexpr static float ServerTimeout = 30.0f;
-    
+
     string master_server_url;
     sf::Mutex server_list_mutex;
-    sf::Thread master_server_scan_thread;
-    
+    std::unique_ptr<sf::Thread> master_server_scan_thread;
+
     std::function<void(sf::IpAddress, string)> newServerCallback;
     std::function<void(sf::IpAddress)> removedServerCallback;
 public:
