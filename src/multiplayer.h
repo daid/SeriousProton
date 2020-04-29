@@ -180,7 +180,7 @@ public:
                 ),
                 "T must be a string or must be a default constructible, trivially destructible and with a size of at most 64bit"
         );
-        info.prev_data = 0;
+        init_prev_data<T>(info);
         info.update_delay = update_delay;
         info.update_timeout = 0.0;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChanged;
@@ -247,6 +247,20 @@ public:
 private:
     friend class GameServer;
     friend class GameClient;
+
+    template <typename T>
+    static inline
+    typename std::enable_if<!std::is_same<T, string>::value>::type
+    init_prev_data(MemberReplicationInfo& info) {
+        new (&info.prev_data) T{};
+    }
+
+    template <typename T>
+    static inline
+    typename std::enable_if<std::is_same<T, string>::value>::type
+    init_prev_data(MemberReplicationInfo& info) {
+        info.prev_data = 0;
+    }
 };
 
 typedef MultiplayerObject* (*CreateMultiplayerObjectFunction)();
