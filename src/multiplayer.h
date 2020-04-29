@@ -180,11 +180,7 @@ public:
                 ),
                 "T must be a string or must be a default constructible, trivially destructible and with a size of at most 64bit"
         );
-        if (std::is_same<T, string>::value) {
-                info.prev_data = 0;
-        } else {
-                new (&info.prev_data) T{};
-        }
+        info.prev_data = 0;
         info.update_delay = update_delay;
         info.update_timeout = 0.0;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChanged;
