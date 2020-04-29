@@ -11,6 +11,7 @@
 #include "stringImproved.h"
 #include "lua/lua.hpp"
 #include <SFML/Graphics/Color.hpp>
+#include <typeinfo>
 
 class ScriptClassInfo;
 
