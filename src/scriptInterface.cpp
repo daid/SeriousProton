@@ -637,6 +637,7 @@ template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, Scr
         lua_pushlightuserdata(L, &callback_object);
         lua_pushnil(L);
         lua_settable(L, LUA_REGISTRYINDEX);
+        idx++;
         return;
     }
     //Check if the parameter is a function.
