@@ -57,8 +57,8 @@ void PostProcessor::render(sf::RenderTarget& window)
         renderTexture.setSmooth(true);
         renderTexture.setView(view);
 
-        shader.setParameter("inputSize", sf::Vector2f(window.getSize().x, window.getSize().y));
-        shader.setParameter("textureSize", sf::Vector2f(renderTexture.getSize().x, renderTexture.getSize().y));
+        shader.setUniform("inputSize", sf::Vector2f(window.getSize().x, window.getSize().y));
+        shader.setUniform("textureSize", sf::Vector2f(renderTexture.getSize().x, renderTexture.getSize().y));
     }
 
     renderTexture.clear(sf::Color(20, 20, 20));
@@ -74,5 +74,5 @@ void PostProcessor::render(sf::RenderTarget& window)
 void PostProcessor::setUniform(string name, float value)
 {
     if (sf::Shader::isAvailable() && global_post_processor_enabled)
-        shader.setParameter(name, value);
+        shader.setUniform(name, value);
 }
