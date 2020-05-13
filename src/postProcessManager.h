@@ -12,6 +12,7 @@ class PostProcessor : public RenderChain
 private:
     sf::Shader shader;
     sf::RenderTexture renderTexture;
+    sf::Vector2u size;
     
     RenderChain* chain;
     

@@ -2,7 +2,6 @@
 #define INPUT_H
 
 #include "windowManager.h"
-#include "stringImproved.h"
 #include "Updatable.h"
 
 class InputEventHandler: public virtual PObject
@@ -16,6 +15,18 @@ protected:
 private:
 };
 
+class JoystickEventHandler: public virtual PObject
+{
+public:
+    JoystickEventHandler();
+    virtual ~JoystickEventHandler();
+    
+    virtual void handleJoystickAxis(unsigned int joystick, sf::Joystick::Axis axis, float position) = 0;
+    virtual void handleJoystickButton(unsigned int joystick, unsigned int button, bool state) = 0;
+protected:
+private:
+};
+
 class InputHandler
 {
 public:
@@ -23,6 +34,7 @@ public:
     static sf::Transform mouse_transform;
 
     static PVector<InputEventHandler> input_event_handlers;
+    static PVector<JoystickEventHandler> joystick_event_handlers;
 
     static bool keyboardIsDown(sf::Keyboard::Key key) { return keyboard_button_down[key]; }
     static bool keyboardIsPressed(sf::Keyboard::Key key) { return keyboard_button_pressed[key]; }
@@ -35,9 +47,12 @@ public:
     static bool mouseIsReleased(sf::Mouse::Button button) { return !mouse_button_pressed[button] && mouse_button_released[button]; }
     static float getMouseWheelDelta() { return mouse_wheel_delta; }
     
-    static sf::Vector2f getJoysticXYPos() { return joystick_pos_xy; }
-    static float        getJoysticZPos()  { return joystick_pos_z; }
-    static float        getJoysticRPos()  { return joystick_pos_r; }
+    static sf::Vector2f getJoysticXYPos() { return sf::Vector2f(joystick_axis_pos[0][sf::Joystick::X], joystick_axis_pos[0][sf::Joystick::Y]); }
+    static float        getJoysticZPos()  { return joystick_axis_pos[0][sf::Joystick::Z]; }
+    static float        getJoysticRPos()  { return joystick_axis_pos[0][sf::Joystick::R]; }
+
+    static float getJoysticAxisPos(unsigned int joystickId, sf::Joystick::Axis axis){ return joystick_axis_pos[joystickId][axis];}
+    static bool getJoysticButtonState(unsigned int joystickId, unsigned int button){ return joystick_button_down[joystickId][button];}
 
 private:
     static P<WindowManager> windowManager;
@@ -53,15 +68,11 @@ private:
     static bool mouse_button_pressed[sf::Mouse::ButtonCount];
     static bool mouse_button_released[sf::Mouse::ButtonCount];
     
-    static sf::Vector2f joystick_pos_xy;
-    static float joystick_pos_z;
-    static float joystick_pos_r;
-    static float joystick_xy_delta;
-    static float joystick_axis_pos[sf::Joystick::AxisCount];
-
-    constexpr static float joystick_xy_hysteresis = 10;
-    constexpr static float joystick_z_hysteresis = 3;
-    constexpr static float joystick_r_hysteresis = 10;
+    static float joystick_axis_pos[sf::Joystick::Count][sf::Joystick::AxisCount];
+    static float joystick_axis_changed[sf::Joystick::Count][sf::Joystick::AxisCount];
+    static bool joystick_button_down[sf::Joystick::Count][sf::Joystick::ButtonCount];
+    static bool joystick_button_changed[sf::Joystick::Count][sf::Joystick::ButtonCount];
+    constexpr static float joystick_axis_snap_to_0_range = 5;
 
     static void initialize();
     static void preEventsUpdate();

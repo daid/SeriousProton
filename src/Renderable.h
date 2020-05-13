@@ -37,7 +37,7 @@ class Renderable: public virtual PObject
     public:
         Renderable();
         Renderable(RenderLayer* renderLayer);
-        virtual ~Renderable() {}
+        virtual ~Renderable();
         virtual void render(sf::RenderTarget& window) = 0;
         
         void moveToRenderLayer(RenderLayer* renderLayer);

@@ -49,9 +49,9 @@ MultiplayerObject::~MultiplayerObject()
 template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr)
 {
     string* ptr = (string*)data;
-    int64_t* hash_ptr = (int64_t*)prev_data_ptr;
+    uintptr_t* hash_ptr = (uintptr_t*)prev_data_ptr;
 
-    int64_t hash = 5381;
+    uintptr_t hash = 5381;
     hash = ((hash << 5) + hash) + ptr->length();
     for(unsigned int n=0; n<ptr->length(); n++)
         hash = (hash * 33) + (*ptr)[n];
@@ -171,7 +171,7 @@ void MultiplayerObject::registerCollisionableReplication(float object_significan
 #ifdef DEBUG
     info.name = "Collisionable_data";
 #endif
-    info.prev_data = (int64_t)new CollisionableReplicationData();
+    info.prev_data = reinterpret_cast<std::uint64_t>(new CollisionableReplicationData());
     info.update_delay = 0.0;
     info.update_timeout = 0.0;
     info.isChangedFunction = &collisionable_isChanged;

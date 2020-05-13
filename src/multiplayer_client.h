@@ -5,6 +5,7 @@
 #include "fixedSocket.h"
 #include "Updatable.h"
 #include "multiplayer_server.h"
+#include "networkAudioStream.h"
 
 class GameClient;
 class MultiplayerObject;
@@ -34,7 +35,8 @@ private:
     int32_t client_id;
     Status status;
     sf::Clock last_receive_time;
-    
+    NetworkAudioStreamManager audio_stream_manager;
+
     sf::Thread connect_thread;
 public:
     GameClient(int version_number, sf::IpAddress server, int port_nr = defaultServerPort);

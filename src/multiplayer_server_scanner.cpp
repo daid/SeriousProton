@@ -1,19 +1,27 @@
 #include "multiplayer_server_scanner.h"
 
+
 ServerScanner::ServerScanner(int version_number, int server_port)
-: server_port(server_port), version_number(version_number), master_server_scan_thread(&ServerScanner::masterServerScanThread, this)
+: server_port(server_port), version_number(version_number)
 {
 }
 
 ServerScanner::~ServerScanner()
 {
     destroy();
-    master_server_scan_thread.wait();
+    if (master_server_scan_thread)
+        master_server_scan_thread->wait();
 }
 
 void ServerScanner::scanMasterServer(string url)
 {
-    socket.unbind();
+    if (master_server_scan_thread)
+        return;
+    LOG(INFO) << "Switching to master server scanning";
+    if (socket)
+    {
+        socket = nullptr;
+    }
 
     server_list_mutex.lock();
     for(unsigned int n=0; n<server_list.size(); n++)
@@ -24,15 +32,24 @@ void ServerScanner::scanMasterServer(string url)
         n--;
     }
     server_list_mutex.unlock();
-    
+
     master_server_url = url;
-    master_server_scan_thread.launch();
+    master_server_scan_thread = std::unique_ptr<sf::Thread>(new sf::Thread(&ServerScanner::masterServerScanThread, this));
+    master_server_scan_thread->launch();
 }
 
 void ServerScanner::scanLocalNetwork()
 {
-    socket.unbind();
+    if (socket)
+        return;
+
+    LOG(INFO) << "Switching to local server scanning";
     master_server_url = "";
+    if (master_server_scan_thread)
+    {
+        master_server_scan_thread->wait();
+        master_server_scan_thread = nullptr;
+    }
 
     server_list_mutex.lock();
     for(unsigned int n=0; n<server_list.size(); n++)
@@ -43,12 +60,13 @@ void ServerScanner::scanLocalNetwork()
         n--;
     }
     server_list_mutex.unlock();
-    
+
+    socket = std::unique_ptr<sf::UdpSocket>(new sf::UdpSocket());
     int port_nr = server_port + 1;
-    while(socket.bind(port_nr) != sf::UdpSocket::Done)
+    while(socket->bind(port_nr) != sf::UdpSocket::Done)
         port_nr++;
-    
-    socket.setBlocking(false);
+
+    socket->setBlocking(false);
     broadcast_clock.restart();
 }
 
@@ -67,20 +85,20 @@ void ServerScanner::update(float gameDelta)
     }
     server_list_mutex.unlock();
 
-    if (socket.getLocalPort() != 0)
+    if (socket)
     {
         if (broadcast_clock.getElapsedTime().asSeconds() > BroadcastTimeout)
         {
             sf::Packet sendPacket;
             sendPacket << multiplayerVerficationNumber << "ServerQuery" << int32_t(version_number);
-            UDPbroadcastPacket(socket, sendPacket, server_port);
+            UDPbroadcastPacket(*socket, sendPacket, server_port);
             broadcast_clock.restart();
         }
 
         sf::IpAddress recv_address;
         unsigned short recv_port;
         sf::Packet recv_packet;
-        while(socket.receive(recv_packet, recv_address, recv_port) == sf::UdpSocket::Done)
+        while(socket->receive(recv_packet, recv_address, recv_port) == sf::UdpSocket::Done)
         {
             int32_t verification, version_nr;
             string name;
@@ -139,22 +157,34 @@ void ServerScanner::masterServerScanThread()
 {
     if (!master_server_url.startswith("http://"))
     {
-        LOG(ERROR) << "Master server URL does not start with \"http://\"";
+        LOG(ERROR) << "Master server URL " << master_server_url << " does not start with \"http://\"";
         return;
     }
     string hostname = master_server_url.substr(7);
     int path_start = hostname.find("/");
     if (path_start < 0)
     {
-        LOG(ERROR) << "Master server URL has no uri after hostname";
+        LOG(ERROR) << "Master server URL " << master_server_url << " does not have a URI after the hostname";
         return;
     }
+
+    int port = 80;
+    int port_start = hostname.find(":");
     string uri = hostname.substr(path_start + 1);
-    hostname = hostname.substr(0, path_start);
-    
-    LOG(INFO) << "Reading servers from master server";
-    
-    sf::Http http(hostname);
+    if (port_start >= 0)
+    {
+        LOG(INFO) << "Port detected.";
+        // If a port is attached to the hostname, parse it out.
+        // No validation is performed.
+        port = hostname.substr(port_start + 1, path_start).toInt();
+        hostname = hostname.substr(0, port_start);
+    }else{
+        hostname = hostname.substr(0, path_start);
+    }
+
+    LOG(INFO) << "Reading servers from master server " << master_server_url;
+
+    sf::Http http(hostname, port);
     while(!isDestroyed() && master_server_url != "")
     {
         sf::Http::Request request(uri, sf::Http::Request::Get);
@@ -162,7 +192,7 @@ void ServerScanner::masterServerScanThread()
         
         if (response.getStatus() != sf::Http::Response::Ok)
         {
-            LOG(WARNING) << "Failed to query master server (" << response.getStatus() << ")";
+            LOG(WARNING) << "Failed to query master server " << master_server_url << " (status " << response.getStatus() << ")";
         }
         for(string line : string(response.getBody()).split("\n"))
         {

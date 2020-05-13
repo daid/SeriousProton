@@ -9,6 +9,7 @@ TextureManager::TextureManager()
     defaultRepeated = false;
     defaultSmooth = false;
     autoSprite = true;
+    disabled = false;
 }
 
 TextureManager::~TextureManager()
@@ -34,6 +35,8 @@ void TextureManager::setTexture(sf::Sprite& sprite, string name, unsigned int sp
 
 sf::Texture* TextureManager::getTexture(string name, sf::Vector2i subDiv)
 {
+    if (disabled)
+        return nullptr;
     TextureData& data = textureMap[name];
     if (data.texture.getSize().x < 1)
         loadTexture(name, subDiv);

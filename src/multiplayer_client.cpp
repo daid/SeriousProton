@@ -52,6 +52,7 @@ void GameClient::update(float delta)
         objectMap.erase(delList[n]);
 
     socket.update();
+    sf::Packet reply;
     sf::Packet packet;
     sf::TcpSocket::Status socket_status;
     while((socket_status = socket.receive(packet)) == sf::TcpSocket::Done)
@@ -73,10 +74,15 @@ void GameClient::update(float delta)
                     int32_t server_version;
                     bool require_password;
                     packet >> server_version >> require_password;
-                    
+
+                    if (server_version != 0 && server_version != version_number)
+                    {
+                        LOG(INFO) << "Server version " << server_version << " does not match client version " << version_number;
+                    }
+
                     if (!require_password)
                     {
-                        sf::Packet reply;
+                        reply.clear();
                         reply << CMD_CLIENT_SEND_AUTH << int32_t(version_number) << string("");
                         socket.send(reply);
                     }else{
@@ -89,7 +95,10 @@ void GameClient::update(float delta)
                 status = Connected;
                 break;
             case CMD_ALIVE:
-                //Alive packet, just to keep the connection alive.
+                // send response to calculate ping
+                reply.clear();
+                reply << CMD_ALIVE_RESP;
+                socket.send(reply);
                 break;
             default:
                 LOG(ERROR) << "Unknown command from server: " << command;
@@ -103,22 +112,25 @@ void GameClient::update(float delta)
                     int32_t id;
                     string name;
                     packet >> id >> name;
-                    for(MultiplayerClassListItem* i = multiplayerClassListStart; i; i = i->next)
+                    if (objectMap.find(id) == objectMap.end() || !objectMap[id])
                     {
-                        if (i->name == name)
+                        for(MultiplayerClassListItem* i = multiplayerClassListStart; i; i = i->next)
                         {
-                            LOG(INFO) << "Created " << name << " from server replication";
-                            MultiplayerObject* obj = i->func();
-                            obj->multiplayerObjectId = id;
-                            objectMap[id] = obj;
-
-                            int16_t idx;
-                            while(packet >> idx)
+                            if (i->name == name)
                             {
-                                if (idx >= 0 && idx < int16_t(obj->memberReplicationInfo.size()))
-                                    (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
-                                else
-                                    LOG(DEBUG) << "Odd index from server replication: " << idx;
+                                LOG(INFO) << "Created " << name << " from server replication";
+                                MultiplayerObject* obj = i->func();
+                                obj->multiplayerObjectId = id;
+                                objectMap[id] = obj;
+
+                                int16_t idx;
+                                while(packet >> idx)
+                                {
+                                    if (idx >= 0 && idx < int16_t(obj->memberReplicationInfo.size()))
+                                        (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
+                                    else
+                                        LOG(DEBUG) << "Odd index from server replication: " << idx;
+                                }
                             }
                         }
                     }
@@ -166,8 +178,35 @@ void GameClient::update(float delta)
                     }
                 }
                 break;
+            case CMD_AUDIO_COMM_START:
+                {
+                    int32_t id = 0;
+                    packet >> id;
+                    audio_stream_manager.start(id);
+                }
+                break;
+            case CMD_AUDIO_COMM_DATA:
+                {
+                    int32_t id = 0;
+                    packet >> id;
+                    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(packet.getData());
+                    ptr += sizeof(command_t) + sizeof(int32_t);
+                    int32_t size = packet.getDataSize() - sizeof(command_t) - sizeof(int32_t);
+                    audio_stream_manager.receivedPacketFromNetwork(id, ptr, size);
+                }
+                break;
+            case CMD_AUDIO_COMM_STOP:
+                {
+                    int32_t id = 0;
+                    packet >> id;
+                    audio_stream_manager.stop(id);
+                }
+                break;
             case CMD_ALIVE:
-                //Alive packet, just to keep the connection alive.
+                // send response to calculate ping
+                reply.clear();
+                reply << CMD_ALIVE_RESP;
+                socket.send(reply);
                 break;
             default:
                 LOG(ERROR) << "Unknown command from server: " << command;

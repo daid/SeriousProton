@@ -4,23 +4,41 @@
 #include <SFML/Audio.hpp>
 #include <SFML/Network.hpp>
 #include <iostream>
+#include <unordered_map>
 
+
+struct OpusDecoder;
 class NetworkAudioStream: public sf::SoundStream
 {
-    public:
-        NetworkAudioStream();
+public:
+    NetworkAudioStream();
 
-        void receivedSamplesFromNetwork(const std::vector<sf::Int16>& samples);
-    protected:
-        // Inherited functions
-        virtual bool onGetData(sf::SoundStream::Chunk& data);
-        virtual void onSeek(sf::Time timeOffset);
+    void receivedPacketFromNetwork(const unsigned char* packet, int packet_size);
+    void finalize();
+    bool isFinished();
+protected:
+    // Inherited functions
+    virtual bool onGetData(sf::SoundStream::Chunk& data);
+    virtual void onSeek(sf::Time timeOffset);
 
-        //Members
-        unsigned int sample_rate;
-        sf::Mutex              samples_lock;
-        std::vector<sf::Int16> samples;
-        std::vector<sf::Int16> playing_samples;
+    //Members
+    unsigned int sample_rate;
+    sf::Mutex              samples_lock;
+    std::vector<sf::Int16> samples;
+    std::vector<sf::Int16> playing_samples;
+
+    OpusDecoder* decoder = nullptr;
+};
+
+class NetworkAudioStreamManager
+{
+public:
+    void start(int32_t id);
+    void receivedPacketFromNetwork(int32_t id, const unsigned char* packet, int packet_size);
+    void stop(int32_t id);
+
+private:
+    std::unordered_map<int32_t, std::unique_ptr<NetworkAudioStream>> streams;
 };
 
 #endif //NETWORK_AUDIOSTREAM_H

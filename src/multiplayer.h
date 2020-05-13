@@ -33,6 +33,14 @@ template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, 
 {
     return packet >> v.x >> v.y >> v.z;
 }
+template<typename T1, typename T2> static inline sf::Packet& operator << (sf::Packet& packet, const std::pair<T1, T2>& pair)
+{
+    return packet << pair.first << pair.second;
+}
+template<typename T1, typename T2> static inline sf::Packet& operator >> (sf::Packet& packet, std::pair<T1, T2>& pair)
+{
+    return packet >> pair.first >> pair.second;
+}
 
 static inline sf::Packet& operator << (sf::Packet& packet, const sf::Color& c) { return packet << c.r << c.g << c.b << c.a; } \
 static inline sf::Packet& operator >> (sf::Packet& packet, sf::Color& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
@@ -129,7 +137,7 @@ class MultiplayerObject : public virtual PObject
         const char* name;
 #endif
         void* ptr;
-        int64_t prev_data;
+        uint64_t prev_data;
         float update_delay;
         float update_timeout;
 
@@ -163,7 +171,16 @@ public:
         info.name = name;
 #endif
         info.ptr = member;
-        info.prev_data = -1;
+        static_assert(
+                std::is_same<T, string>::value ||
+                (
+                        std::is_default_constructible<T>::value &&
+                        std::is_trivially_destructible<T>::value &&
+                        sizeof(T) <= 8
+                ),
+                "T must be a string or must be a default constructible, trivially destructible and with a size of at most 64bit"
+        );
+        init_prev_data<T>(info);
         info.update_delay = update_delay;
         info.update_timeout = 0.0;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChanged;
@@ -187,7 +204,7 @@ public:
         info.name = name;
 #endif
         info.ptr = member;
-        info.prev_data = (int64_t) new std::vector<T>;
+        info.prev_data = reinterpret_cast<std::uint64_t>(new std::vector<T>);
         info.update_delay = update_delay;
         info.update_timeout = 0.0;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChangedVector;
@@ -230,6 +247,20 @@ public:
 private:
     friend class GameServer;
     friend class GameClient;
+
+    template <typename T>
+    static inline
+    typename std::enable_if<!std::is_same<T, string>::value>::type
+    init_prev_data(MemberReplicationInfo& info) {
+        new (&info.prev_data) T{};
+    }
+
+    template <typename T>
+    static inline
+    typename std::enable_if<std::is_same<T, string>::value>::type
+    init_prev_data(MemberReplicationInfo& info) {
+        info.prev_data = 0;
+    }
 };
 
 typedef MultiplayerObject* (*CreateMultiplayerObjectFunction)();

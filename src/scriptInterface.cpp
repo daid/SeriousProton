@@ -263,7 +263,8 @@ static string luaToJSON(lua_State* L, int index)
             else
                 ret += ", ";
             /* uses 'key' (at index -2) and 'value' (at index -1) */
-            ret += luaToJSON(L, lua_gettop(L) - 1);
+            ret += "\"" + string(luaL_tolstring(L, lua_gettop(L) - 1, nullptr)) + "\"";
+            lua_pop(L, 1);
             ret += ": ";
             ret += luaToJSON(L, lua_gettop(L));
             /* removes 'value'; keeps 'key' for next iteration */
@@ -636,6 +637,7 @@ template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, Scr
         lua_pushlightuserdata(L, &callback_object);
         lua_pushnil(L);
         lua_settable(L, LUA_REGISTRYINDEX);
+        idx++;
         return;
     }
     //Check if the parameter is a function.

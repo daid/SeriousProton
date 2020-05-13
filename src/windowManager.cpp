@@ -24,6 +24,11 @@ WindowManager::~WindowManager()
 
 void WindowManager::render()
 {
+    if (InputHandler::keyboardIsPressed(sf::Keyboard::Return) && (sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt) || sf::Keyboard::isKeyPressed(sf::Keyboard::RAlt)))
+    {
+        setFullscreen(!isFullscreen());
+    }
+
     // Clear the window
     window.clear(sf::Color(20, 20, 20));
 
