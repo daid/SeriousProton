@@ -1,6 +1,7 @@
 #ifndef MULTIPLAYER_PROXY_H
 #define MULTIPLAYER_PROXY_H
 
+#include <memory>
 #include "multiplayer_server.h"
 
 class GameServerProxy : public Updatable
