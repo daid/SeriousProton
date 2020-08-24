@@ -149,6 +149,13 @@ void InputHandler::handleEvent(sf::Event& event)
         joystick_button_down[event.joystickMove.joystickId][event.joystickButton.button] = false;
         joystick_button_changed[event.joystickMove.joystickId][event.joystickButton.button] = true;
     }
+    else if (event.type == sf::Event::LostFocus)
+    {
+        for(unsigned int n=0; n<sf::Keyboard::KeyCount; n++)
+        {
+            keyboard_button_down[n] = false;
+        }
+    }
 }
 
 void InputHandler::postEventsUpdate()
