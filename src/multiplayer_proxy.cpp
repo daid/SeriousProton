@@ -3,8 +3,8 @@
 #include "engine.h"
 
 
-GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string password, int listenPort)
-: password(password)
+GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string password, int listenPort, string proxyName)
+: password(password), proxyName(proxyName)
 {
     LOG(INFO) << "Starting proxy server";
     mainSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
@@ -19,11 +19,21 @@ GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string pa
     newSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
     newSocket->setBlocking(false);
 
+    boardcastServerDelay = 0.0;
+    if (proxyName != "")
+    {
+        if (broadcast_listen_socket.bind(listenPort) != sf::UdpSocket::Done)
+        {
+            LOG(ERROR) << "Failed to listen on UDP port: " << listenPort;
+        }
+        broadcast_listen_socket.setBlocking(false);
+    }
+
     lastReceiveTime.restart();
 }
 
-GameServerProxy::GameServerProxy(string password, int listenPort)
-: password(password)
+GameServerProxy::GameServerProxy(string password, int listenPort, string proxyName)
+: password(password), proxyName(proxyName)
 {
     LOG(INFO) << "Starting listening proxy server";
     listenSocket.listen(listenPort);
@@ -31,6 +41,16 @@ GameServerProxy::GameServerProxy(string password, int listenPort)
 
     newSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
     newSocket->setBlocking(false);
+
+    boardcastServerDelay = 0.0;
+    if (proxyName != "")
+    {
+        if (broadcast_listen_socket.bind(listenPort) != sf::UdpSocket::Done)
+        {
+            LOG(ERROR) << "Failed to listen on UDP port: " << listenPort;
+        }
+        broadcast_listen_socket.setBlocking(false);
+    }
 
     lastReceiveTime.restart();
 }
@@ -42,6 +62,8 @@ GameServerProxy::~GameServerProxy()
 void GameServerProxy::destroy()
 {
     clientList.clear();
+
+    broadcast_listen_socket.unbind();
 }
 
 void GameServerProxy::update(float delta)
@@ -126,6 +148,11 @@ void GameServerProxy::update(float delta)
             mainSocket->disconnect();
             engine->shutdown();
         }
+    }
+
+    if (proxyName != "")
+    {
+        handleBroadcastUDPSocket(delta);
     }
 
     if (listenSocket.accept(*newSocket) == sf::Socket::Status::Done)
@@ -261,5 +288,29 @@ void GameServerProxy::sendAll(sf::Packet& packet)
                 info.socket->send(packet);
         }
         targetClients.clear();
+    }
+}
+
+void GameServerProxy::handleBroadcastUDPSocket(float delta)
+{
+    sf::IpAddress recvAddress;
+    unsigned short recvPort;
+    sf::Packet recvPacket;
+    if (broadcast_listen_socket.receive(recvPacket, recvAddress, recvPort) == sf::Socket::Status::Done)
+    {
+        //We do not care about what we received. Reply that we live!
+        sf::Packet sendPacket;
+        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(serverVersion) << proxyName;
+        broadcast_listen_socket.send(sendPacket, recvAddress, recvPort);
+    }
+    if (boardcastServerDelay > 0.0)
+    {
+        boardcastServerDelay -= delta;
+    }else{
+        boardcastServerDelay = 5.0;
+
+        sf::Packet sendPacket;
+        sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(serverVersion) << proxyName;
+        UDPbroadcastPacket(broadcast_listen_socket, sendPacket, broadcast_listen_socket.getLocalPort() + 1);
     }
 }
