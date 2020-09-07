@@ -61,4 +61,9 @@ void Logging::setLogLevel(ELogLevel level)
 void Logging::setLogFile(string filename)
 {
     log_stream = fopen(filename.c_str(), "wt");
+    #ifdef __WIN32__
+    // win32 doesn't support line buffering. #1042
+    // Instead, don't buffer logging at all on Windows.
+    setvbuf(log_stream, NULL, _IONBF, 0);
+    #endif//__WIN32__
 }
