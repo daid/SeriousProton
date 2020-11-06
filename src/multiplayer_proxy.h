@@ -9,6 +9,7 @@ class GameServerProxy : public Updatable
     sf::Clock lastReceiveTime;
     constexpr static float noDataDisconnectTime = 20.0f;
 
+    sf::UdpSocket broadcast_listen_socket;
     sf::TcpListener listenSocket;
     std::unique_ptr<TcpSocket> newSocket;
 
@@ -32,10 +33,12 @@ class GameServerProxy : public Updatable
     int32_t clientId = 0;
     string password;
     int32_t serverVersion = 0;
+    string proxyName;
+    float boardcastServerDelay;
     std::unique_ptr<TcpSocket> mainSocket;
 public:
-    GameServerProxy(sf::IpAddress hostname, int hostPort = defaultServerPort, string password = "", int listenPort = defaultServerPort);
-    GameServerProxy(string password = "", int listenPort = defaultServerPort);
+    GameServerProxy(sf::IpAddress hostname, int hostPort = defaultServerPort, string password = "", int listenPort = defaultServerPort, string proxyName="");
+    GameServerProxy(string password = "", int listenPort = defaultServerPort, string proxyName="");
     virtual ~GameServerProxy();
 
     virtual void destroy() override;
@@ -43,6 +46,8 @@ public:
     virtual void update(float delta) override;
 private:
     void sendAll(sf::Packet& packet);
+
+    void handleBroadcastUDPSocket(float delta);
 };
 
 #endif//MULTIPLAYER_PROXY_H
