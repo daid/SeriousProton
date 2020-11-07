@@ -6,6 +6,10 @@
 #include "postProcessManager.h"
 #include "input.h"
 
+#ifdef __WIN32__
+#include <windows.h>
+#endif
+
 WindowManager::WindowManager(int virtualWidth, int virtualHeight, bool fullscreen, RenderChain* renderChain, int fsaa)
 : virtualSize(virtualWidth, virtualHeight), renderChain(renderChain), fullscreen(fullscreen), fsaa(fsaa)
 {
@@ -16,14 +20,15 @@ WindowManager::WindowManager(int virtualWidth, int virtualHeight, bool fullscree
 
 #ifdef __WIN32__
     //On Vista or newer windows, let the OS know we are DPI aware, so we won't have odd scaling issues.
-    void* user_dll = SDL_LoadObject("USER32.DLL");
+    HINSTANCE user_dll = LoadLibrary("USER32.DLL");
     if (user_dll)
     {
         BOOL(WINAPI *SetProcessDPIAware)(void);
-        SetProcessDPIAware = reinterpret_cast<BOOL(WINAPI *)(void)>(SDL_LoadFunction(user_dll, "SetProcessDPIAware"));
+        SetProcessDPIAware = reinterpret_cast<BOOL(WINAPI *)(void)>(GetProcAddress(user_dll, "SetProcessDPIAware"));
         if (SetProcessDPIAware)
             SetProcessDPIAware();
     }
+    FreeLibrary(user_dll);
 #endif
 
     create();
