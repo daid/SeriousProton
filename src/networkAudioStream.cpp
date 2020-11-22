@@ -81,5 +81,7 @@ void NetworkAudioStreamManager::receivedPacketFromNetwork(int32_t id, const unsi
 void NetworkAudioStreamManager::stop(int32_t id)
 {
     auto it = streams.find(id);
+    if (it == streams.end())
+        return;
     it->second->finalize();
 }
