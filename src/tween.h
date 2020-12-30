@@ -9,10 +9,7 @@ Tweening functions. Allows for none-linear effects and stuff.
 template<typename T> class Tween
 {
 protected:
-    static inline T tweenApply(float f, const T& value0, const T& value1)
-    {
-        return value0 + (value1 - value0) * f;
-    }
+    static T tweenApply(float f, const T& value0, const T& value1);
 public:
     static inline T linear(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
@@ -42,6 +39,12 @@ public:
         return tweenApply(-(t * t * t + 1), value0, value1);
     }
 };
+
+template<typename T>
+T Tween<T>::tweenApply(float f, const T& value0, const T& value1)
+{
+    return value0 + (value1 - value0) * f;
+}
 
 template<> sf::Color Tween<sf::Color>::tweenApply(float f, const sf::Color& value0, const sf::Color& value1);
 

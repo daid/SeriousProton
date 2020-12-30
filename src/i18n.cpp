@@ -1,6 +1,11 @@
 #include <i18n.h>
 #include <resources.h>
 
+#if defined(_MSC_VER)
+#include <cstdlib>
+#define __builtin_bswap32 _byteswap_ulong
+#endif
+
 static constexpr uint32_t mo_file_magic = 0x950412de;
 static constexpr uint32_t mo_file_magic_swapped = 0xde120495;
 struct MoHeader
