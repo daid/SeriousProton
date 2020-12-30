@@ -1,13 +1,14 @@
 #ifndef STRING_IMPROVED_H
 #define STRING_IMPROVED_H
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <string>
 #include <limits>
 #include <vector>
 #include <map>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 
 /*
     The improved string class. while this class is not always the most efficient in terms of execution speed.

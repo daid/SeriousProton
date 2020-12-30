@@ -45,18 +45,24 @@ string getScriptClassClassNameFromObject(P<PObject> object);
 /* By default convert parameters to numbers types. Should work for int and float types */
 template<typename T> struct convert
 {
-    static void param(lua_State* L, int& idx, T& t)
-    {
-        //If you get a compile error here, then the function you are trying to register has an parameter that is not handled by the specialized converters, nor
-        // by the default number conversion.
-        t = luaL_checknumber(L, idx++);
-    }
-    static int returnType(lua_State* L, T t)
-    {
-        lua_pushnumber(L, t);
-        return 1;
-    }
+    static void param(lua_State* L, int& idx, T& t);
+    static int returnType(lua_State* L, T t);
 };
+
+template<typename T>
+void convert<T>::param(lua_State* L, int& idx, T& t)
+{
+    //If you get a compile error here, then the function you are trying to register has an parameter that is not handled by the specialized converters, nor
+    // by the default number conversion.
+    t = luaL_checknumber(L, idx++);
+}
+
+template<typename T>
+int convert<T>::returnType(lua_State* L, T t)
+{
+    lua_pushnumber(L, t);
+    return 1;
+}
 //Specialized template for the bool return type, so we return a lua boolean.
 template<> int convert<bool>::returnType(lua_State* L, bool b);
 //Specialized template for the long return type, so we return a lua 64-bit integer.

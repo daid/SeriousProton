@@ -4,8 +4,11 @@
 #include <SFML/System.hpp>
 #include <SFML/Graphics/Rect.hpp>
 #include "stringImproved.h"
-
+#if defined(_MSC_VER)
+#define LOG(LEVEL) Logging(LOGLEVEL_ ## LEVEL, __FILE__, __LINE__, __FUNCTION__)
+#else
 #define LOG(LEVEL) Logging(LOGLEVEL_ ## LEVEL, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#endif
 
 enum ELogLevel
 {

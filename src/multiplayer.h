@@ -47,17 +47,7 @@ static inline sf::Packet& operator >> (sf::Packet& packet, sf::Color& c) { packe
 
 template <typename T> struct multiplayerReplicationFunctions
 {
-    static bool isChanged(void* data, void* prev_data_ptr)
-    {
-        T* ptr = (T*)data;
-        T* prev_data = (T*)prev_data_ptr;
-        if (*ptr != *prev_data)
-        {
-            *prev_data = *ptr;
-            return true;
-        }
-        return false;
-    }
+    static bool isChanged(void* data, void* prev_data_ptr);
     static void sendData(void* data, sf::Packet& packet)
     {
         T* ptr = (T*)data;
@@ -119,6 +109,20 @@ template <typename T> struct multiplayerReplicationFunctions
         delete prev_data;
     }
 };
+
+template <typename T>
+bool multiplayerReplicationFunctions<T>::isChanged(void* data, void* prev_data_ptr)
+{
+    T* ptr = (T*)data;
+    T* prev_data = (T*)prev_data_ptr;
+    if (*ptr != *prev_data)
+    {
+        *prev_data = *ptr;
+        return true;
+    }
+    return false;
+}
+
 template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr);
 
 //In between class that handles all the nasty synchronization of objects between server and client.

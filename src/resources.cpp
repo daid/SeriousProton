@@ -1,7 +1,13 @@
-#include <SFML/System.hpp>
-#include <dirent.h>
-#include <stdio.h>
 #include "resources.h"
+
+#include <SFML/System.hpp>
+#ifdef _MSC_VER
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <dirent.h>
+#endif
+#include <cstdio>
 
 PVector<ResourceProvider> resourceProviders;
 
@@ -102,6 +108,31 @@ std::vector<string> DirectoryResourceProvider::findResources(string searchPatter
 
 void DirectoryResourceProvider::findResources(std::vector<string>& found_files, const string path, const string searchPattern)
 {
+#ifdef _WIN32
+    WIN32_FIND_DATAA data;
+    string search_root(basepath + path);
+    assert(search_root.endswith("/"));
+    HANDLE handle = FindFirstFileA((search_root + "*").c_str(), &data);
+    if (handle == INVALID_HANDLE_VALUE)
+        return;
+    do
+    {
+        if (data.cFileName[0] == '.')
+            continue;
+        string name = path + string(data.cFileName);
+        if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            findResources(found_files, name + "/", searchPattern);
+        }
+        else
+        {
+            if (searchMatch(name, searchPattern))
+                found_files.push_back(name);
+        }
+    } while (FindNextFileA(handle, &data));
+
+    FindClose(handle);
+#else
     DIR* dir = opendir((basepath + path).c_str());
     if (!dir)
         return;
@@ -117,6 +148,7 @@ void DirectoryResourceProvider::findResources(std::vector<string>& found_files, 
         findResources(found_files, path + string(entry->d_name) + "/", searchPattern);
     }
     closedir(dir);
+#endif
 }
 
 P<ResourceStream> getResourceStream(string filename)
