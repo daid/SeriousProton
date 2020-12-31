@@ -23,12 +23,12 @@ add_library(opus STATIC
     celt/quant_bands.c
     celt/rate.c
     celt/vq.c
-     $<$<C_COMPILER_ID:MSVC>:celt/x86/celt_lpc_sse4_1.c>
-     $<$<C_COMPILER_ID:MSVC>:celt/x86/pitch_sse.c>
-     $<$<C_COMPILER_ID:MSVC>:celt/x86/pitch_sse2.c>
-     $<$<C_COMPILER_ID:MSVC>:celt/x86/pitch_sse4_1.c>
-     $<$<C_COMPILER_ID:MSVC>:celt/x86/vq_sse2.c>
-     $<$<C_COMPILER_ID:MSVC>:celt/x86/x86_celt_map.c>
+    $<$<C_COMPILER_ID:MSVC>:celt/x86/celt_lpc_sse4_1.c>
+    $<$<C_COMPILER_ID:MSVC>:celt/x86/pitch_sse.c>
+    $<$<C_COMPILER_ID:MSVC>:celt/x86/pitch_sse2.c>
+    $<$<C_COMPILER_ID:MSVC>:celt/x86/pitch_sse4_1.c>
+    $<$<C_COMPILER_ID:MSVC>:celt/x86/vq_sse2.c>
+    $<$<C_COMPILER_ID:MSVC>:celt/x86/x86_celt_map.c>
     $<$<C_COMPILER_ID:MSVC>:celt/x86/x86cpu.c>
     silk/A2NLSF.c
     silk/CNG.c
@@ -167,7 +167,7 @@ add_library(opus STATIC
     silk/tables_pitch_lag.c
     silk/tables_pulses_per_block.c
     $<$<C_COMPILER_ID:MSVC>:silk/x86/NSQ_del_dec_sse4_1.c>
-    s$<$<C_COMPILER_ID:MSVC>:ilk/x86/NSQ_sse4_1.c>
+    $<$<C_COMPILER_ID:MSVC>:silk/x86/NSQ_sse4_1.c>
     $<$<C_COMPILER_ID:MSVC>:silk/x86/VAD_sse4_1.c>
     $<$<C_COMPILER_ID:MSVC>:silk/x86/VQ_WMat_EC_sse4_1.c>
     $<$<C_COMPILER_ID:MSVC>:silk/x86/x86_silk_map.c>
