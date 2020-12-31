@@ -3,7 +3,17 @@
 
 #if defined(_MSC_VER)
 #include <cstdlib>
-#define __builtin_bswap32 _byteswap_ulong
+static inline uint32_t bswap32(uint32_t value)
+{
+    return _byteswap_ulong(value);
+}
+#elif defined(__GNUC__)
+static inline uint32_t bswap32(uint32_t value)
+{
+    return __builtin_bswap32(value);
+}
+#else
+#error "Unknown compiler - need a byteswap function!"
 #endif
 
 static constexpr uint32_t mo_file_magic = 0x950412de;
@@ -75,10 +85,10 @@ bool Catalogue::load(const string& resource_name)
             return false;
         if (swap)
         {
-            header.version = __builtin_bswap32(header.version);
-            header.count = __builtin_bswap32(header.count);
-            header.offset_origonal = __builtin_bswap32(header.offset_origonal);
-            header.offset_translated = __builtin_bswap32(header.offset_translated);
+            header.version = bswap32(header.version);
+            header.count = bswap32(header.count);
+            header.offset_origonal = bswap32(header.offset_origonal);
+            header.offset_translated = bswap32(header.offset_translated);
         }
         std::vector<uint32_t> length_offset_origonal;
         std::vector<uint32_t> length_offset_translated;
@@ -93,9 +103,9 @@ bool Catalogue::load(const string& resource_name)
         if (swap)
         {
             for(auto& n : length_offset_origonal)
-                n = __builtin_bswap32(n);
+                n = bswap32(n);
             for(auto& n : length_offset_translated)
-                n = __builtin_bswap32(n);
+                n = bswap32(n);
         }
         for(size_t n=0; n<header.count; n++)
         {
