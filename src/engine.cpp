@@ -11,10 +11,10 @@ PObject* DEBUG_PobjListStart;
 #endif
 
 #ifdef ENABLE_CRASH_LOGGER
-#ifdef __WIN32__
+#ifdef _WIN32
 //Exception handler for mingw, from https://github.com/jrfonseca/drmingw
 #include <exchndl.h>
-#endif//__WIN32__
+#endif//_WIN32
 #endif//ENABLE_CRASH_LOGGER
 
 Engine* engine;
@@ -23,9 +23,9 @@ Engine::Engine()
 {
     engine = this;
 #ifdef ENABLE_CRASH_LOGGER
-#ifdef __WIN32__
+#ifdef _WIN32
     ExcHndlInit();
-#endif//__WIN32__
+#endif//_WIN32
 #endif//ENABLE_CRASH_LOGGER
     initRandom();
     windowManager = nullptr;

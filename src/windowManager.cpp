@@ -6,7 +6,7 @@
 #include "postProcessManager.h"
 #include "input.h"
 
-#ifdef __WIN32__
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
@@ -18,7 +18,7 @@ WindowManager::WindowManager(int virtualWidth, int virtualHeight, bool fullscree
     min_aspect_ratio = float(virtualWidth) / float(virtualHeight);
     allow_virtual_resize = false;
 
-#ifdef __WIN32__
+#ifdef _WIN32
     //On Vista or newer windows, let the OS know we are DPI aware, so we won't have odd scaling issues.
     HINSTANCE user_dll = LoadLibrary("USER32.DLL");
     if (user_dll)

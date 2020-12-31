@@ -1,6 +1,6 @@
 #include "engine.h"
 
-#ifdef __WIN32__
+#ifdef _WIN32
 #include <windows.h>
 #endif
 #ifdef __linux__
@@ -9,7 +9,7 @@
 
 string Clipboard::readClipboard()
 {
-#ifdef __WIN32__
+#ifdef _WIN32
     P<WindowManager> windowManager = engine->getObject("windowManager");
     if (!OpenClipboard(windowManager->window.getSystemHandle()))
     {
@@ -28,7 +28,7 @@ string Clipboard::readClipboard()
     GlobalUnlock(handle);
     CloseClipboard();
     return ret;
-#endif//__WIN32__
+#endif//_WIN32
 #ifdef __linux__
     FILE* pipe = popen("/usr/bin/xclip -o -selection clipboard", "r");
     if (!pipe)
@@ -52,7 +52,7 @@ string Clipboard::readClipboard()
 
 void Clipboard::setClipboard(string value)
 {
-#ifdef __WIN32__
+#ifdef _WIN32
     P<WindowManager> windowManager = engine->getObject("windowManager");
     if (!OpenClipboard(windowManager->window.getSystemHandle()))
     {
@@ -78,7 +78,7 @@ void Clipboard::setClipboard(string value)
     SetClipboardData(CF_TEXT, string_handle);
 
     CloseClipboard();
-#endif//__WIN32__
+#endif//_WIN32
 #ifdef __linux__
     FILE* pipe = popen("/usr/bin/xclip -i -selection clipboard -silent", "we");
     if (!pipe)
