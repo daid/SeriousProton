@@ -111,7 +111,10 @@ void DirectoryResourceProvider::findResources(std::vector<string>& found_files, 
 #ifdef _WIN32
     WIN32_FIND_DATAA data;
     string search_root(basepath + path);
-    assert(search_root.endswith("/"));
+    if (!search_root.endswith("/"))
+    {
+        search_root += "/";
+    }
     HANDLE handle = FindFirstFileA((search_root + "*").c_str(), &data);
     if (handle == INVALID_HANDLE_VALUE)
         return;
