@@ -60,6 +60,11 @@ else()
 endif()
 
 add_library(seriousproton STATIC ${source_files})
+target_compile_definitions(seriousproton
+	PUBLIC
+		SFML_NO_DEPRECATED_WARNINGS # SFML 2.5 gives deprication warnings on a few functions we use. But we maintain 2.3 compatibility, so ignore those warnings.
+		$<$<BOOL:${WIN32}>:NOMINMAX>
+)
 
 #--------------------------------Dependencies----------------------------------
 include(ExternalProject)

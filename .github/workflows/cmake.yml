@@ -1,0 +1,70 @@
+name: CMake
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  unix:
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.  You can convert this to a matrix build if you need
+    # cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    name: ${{ matrix.os }} - ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        build_type: [Debug, RelWithDebInfo, Release]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup (apt)
+      if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      run: |
+        sudo apt update -qq
+        sudo apt install git build-essential cmake ninja-build zip unzip libsfml-dev
+    - name: Setup (brew)
+      if: ${{ startsWith(matrix.os, 'macos') }}
+      run: brew install cmake sfml ninja
+    - name: Setup (windows)
+      if: ${{ startsWith(matrix.os, 'windows') }}
+      run: |
+        $sfml_link = “https://www.sfml-dev.org/files/SFML-2.5.1-windows-vc15-32-bit.zip”
+        $sfml_zip = “$env:GITHUB_WORKSPACE/sfml-dev.zip”
+        (new-object System.Net.WebClient).DownloadFile($sfml_link, $sfml_zip)
+        Expand-Archive -LiteralPath $sfml_zip -DestinationPath "$env:GITHUB_WORKSPACE/externals"
+
+    
+    
+    - name: Create Build Environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory ${{runner.workspace}}/build
+    
+    - name: Configure CMake (windows)
+      if: ${{ startsWith(matrix.os, 'windows') }}
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      working-directory: ${{runner.workspace}}/build
+      # Note the current convention is to use the -S and -B options here to specify source 
+      # and build directories, but this is only available with CMake 3.13 and higher.  
+      # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
+      run: cmake $env:GITHUB_WORKSPACE -G "Visual Studio 16 2019" -A Win32 -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DSFML_ROOT="$env:GITHUB_WORKSPACE/externals/SFML-2.5.1"
+    - name: Configure CMake (unix-like)
+      if: ${{ !startsWith(matrix.os, 'windows') }}
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      # Note the current convention is to use the -S and -B options here to specify source 
+      # and build directories, but this is only available with CMake 3.13 and higher.  
+      # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
+      run: cmake $GITHUB_WORKSPACE -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      # Execute the build.  You can specify a specific target with "--target <NAME>"
+      run: cmake --build . --config ${{ matrix.build_type }}
