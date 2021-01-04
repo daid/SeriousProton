@@ -59,28 +59,16 @@ private:
     int pushArgs(lua_State* L, ARG arg, ARGS... args)
     {
         int headItemsPushedToStack = pushArgs(L, arg);
-        if (headItemsPushedToStack > 0) 
-        {
-            int tailItemsPushedToStack = pushArgs(L, args...);
-            if (tailItemsPushedToStack >= 0) 
-            {
-                return headItemsPushedToStack + tailItemsPushedToStack;
-            } else {
-                // roll back items pushed to lua stack, because an error occured
-                lua_pop(L, headItemsPushedToStack);
-                return -1;
-            }
-        } else {
-            return -1;
-        }
+        int tailItemsPushedToStack = pushArgs(L, args...);
+        return headItemsPushedToStack + tailItemsPushedToStack;
     }
     template<typename T>
     int pushArgs(lua_State* L, T thing)
     {
         if (!convert<T>::returnType(L, thing))
         {
-            LOG(ERROR) << "Failed to find class for object";
-            return -1;
+            // nothing was pushed on the stack. Push nil explicitly to maintain argument positions
+            lua_pushnil(L);
         }
         return 1;
     }
