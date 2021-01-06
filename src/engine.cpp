@@ -163,10 +163,25 @@ void Engine::handleEvent(sf::Event& event)
     if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L))
     {
         int n = 0;
-        printf("---------------------\n");
+        printf("------------------------\n");
+        std::unordered_map<string,int> totals;
         for(PObject* obj = DEBUG_PobjListStart; obj; obj = obj->DEBUG_PobjListNext)
+        {
             printf("%c%4d: %4d: %s\n", obj->isDestroyed() ? '>' : ' ', n++, obj->getRefCount(), typeid(*obj).name());
-        printf("---------------------\n");
+            if (!obj->isDestroyed())
+            {
+                totals[typeid(*obj).name()]=totals[typeid(*obj).name()]+1;
+            }
+        }
+        printf("--non-destroyed totals--\n");
+        int grand_total=0;
+        for (auto entry : totals)
+        {
+            printf("%4d %s\n", entry.second, entry.first.c_str());
+            grand_total+=entry.second;
+        }
+        printf("%4d %s\n",grand_total,"All PObjects");
+        printf("------------------------\n");
     }
 #endif
     InputHandler::handleEvent(event);
