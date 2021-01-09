@@ -189,4 +189,4 @@ add_library(opus STATIC
 target_include_directories(opus PUBLIC include)
 target_include_directories(opus PRIVATE config celt silk silk/float .)
 target_compile_definitions(opus PRIVATE HAVE_CONFIG_H)
-target_compile_options(opus PRIVATE -O3)
+target_compile_options(opus PRIVATE $<$<NOT:${MSVC}>:-O3> $<$<BOOL:${MSVC}>:/MP>)
