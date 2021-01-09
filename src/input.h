@@ -11,6 +11,7 @@ public:
     virtual ~InputEventHandler();
     
     virtual void handleKeyPress(sf::Event::KeyEvent key, int unicode) = 0;
+    virtual void handleTextEntered(sf::Event::TextEvent text, int unicode) = 0;
 protected:
 private:
 };
@@ -80,6 +81,7 @@ private:
     static void handleEvent(sf::Event& event);
     
     static void fireKeyEvent(sf::Event::KeyEvent key, int unicode);
+    static void fireTextEvent(sf::Event::TextEvent text, int unicode);
     static sf::Vector2f realWindowPosToVirtual(sf::Vector2i position);
     static sf::Vector2i virtualWindowPosToReal(sf::Vector2f position);
 

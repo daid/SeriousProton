@@ -111,6 +111,11 @@ void InputHandler::handleEvent(sf::Event& event)
             fireKeyEvent(last_key_press, event.text.unicode);
             last_key_press.code = sf::Keyboard::Unknown;
         }
+        else
+        {
+            // No relevant code for a KeyEvent, so pass the TextEvent instead.
+            fireTextEvent(event.text, event.text.unicode);
+        }
     }
     else if (event.type == sf::Event::MouseWheelMoved)
         mouse_wheel_delta += event.mouseWheel.delta;
@@ -236,6 +241,14 @@ void InputHandler::fireKeyEvent(sf::Event::KeyEvent key, int unicode)
     foreach(InputEventHandler, e, input_event_handlers)
     {
         e->handleKeyPress(key, unicode);
+    }
+}
+
+void InputHandler::fireTextEvent(sf::Event::TextEvent text, int unicode)
+{
+    for(auto e : input_event_handlers)
+    {
+        e->handleTextEntered(text, unicode);
     }
 }
 
