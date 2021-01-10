@@ -292,7 +292,12 @@ inline void DigitGen(const DiyFp& W, const DiyFp& Mp, uint64_t delta, char* buff
 
 	// kappa = 0
 	assert(*len >= 0);
+#ifdef __clang__
+  // Buffer bounds check in PR #48 breaks output in Clang. See issue #54.
+  for (;;) {
+#else
 	for (; static_cast<std::size_t>(*len) < sizeof(buffer);) {
+#endif
 		p2 *= 10;
 		delta *= 10;
 		char d = static_cast<char>(p2 >> -one.e);
