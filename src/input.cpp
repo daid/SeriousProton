@@ -106,14 +106,28 @@ void InputHandler::handleEvent(sf::Event& event)
 	}
     else if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
     {
-        if (event.text.unicode == 45)
+#ifdef __APPLE__
+        // SFML leaves valid keys unmapped on some macOS keyboard locales.
+        // Since we're passing all TextEntered events to fireKeyEvent anyway,
+        // we can work around this by always mapping the appropriate SFML Key
+        // based on returned UTF-32 value, instead of relying on SFML to map
+        // the hardware virtualCode/usageCode correctly.
+        //
+        // See SFML/SFML#7, SFML/SFML#450, SFML/SFML#974, SFML/SFML#1013
+        // Details in SFML/Window/OSX/HIDInputManager.mm
+        if (last_key_press.code == sf::Keyboard::Unknown)
         {
-            // If a key has a Unicode value but SFML won't
-            // give it the right code, fire it manually.
-            // "-" on macOS returns unicode 45. SFML/SFML#7
-            last_key_press.code = sf::Keyboard::Hyphen;
+            switch (event.text.unicode)
+            {
+                case 39:
+                    // Quote on CH-FR macOS keyboards is unmapped in SFML.
+                    last_key_press.code = sf::Keyboard::Quote;
+                case 45:
+                    // Hyphen on US, UK macOS keyboards is unmapped in SFML.
+                    last_key_press.code = sf::Keyboard::Hyphen;
+            }
         }
-
+#endif
         if (last_key_press.code != sf::Keyboard::Unknown)
         {
             fireKeyEvent(last_key_press, event.text.unicode);
