@@ -106,10 +106,22 @@ void InputHandler::handleEvent(sf::Event& event)
 	}
     else if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
     {
+        if (event.text.unicode == 45)
+        {
+            // If a key has a Unicode value but SFML won't
+            // give it the right code, fire it manually.
+            // "-" on macOS returns unicode 45. SFML/SFML#7
+            last_key_press.code = sf::Keyboard::Hyphen;
+        }
+
         if (last_key_press.code != sf::Keyboard::Unknown)
         {
             fireKeyEvent(last_key_press, event.text.unicode);
             last_key_press.code = sf::Keyboard::Unknown;
+        }
+        else
+        {
+            LOG(DEBUG) << "Key passed valid UTF-32 value, but SFML has no keycode for it: " << event.text.unicode;
         }
     }
     else if (event.type == sf::Event::MouseWheelMoved)
