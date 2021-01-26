@@ -29,11 +29,16 @@ string Clipboard::readClipboard()
     CloseClipboard();
     return ret;
 #endif//_WIN32
+#if defined(__linux__) || defined(__APPLE__)
 #ifdef __linux__
     FILE* pipe = popen("/usr/bin/xclip -o -selection clipboard", "r");
+#endif
+#ifdef __APPLE__
+    FILE* pipe = popen("/usr/bin/pbpaste", "r");
+#endif
     if (!pipe)
     {
-        LOG(WARNING) << "Failed to execute /usr/bin/xclip for clipboard access";
+        LOG(WARNING) << "Failed to execute command for clipboard access";
         return "";
     }
     char buffer[1024];
@@ -45,8 +50,7 @@ string Clipboard::readClipboard()
     }
     pclose(pipe);
     return result;
-#endif
-
+#endif//__linux__ || __APPLE__
     return "";
 }
 
@@ -79,14 +83,19 @@ void Clipboard::setClipboard(string value)
 
     CloseClipboard();
 #endif//_WIN32
+#if defined(__linux__) || defined(__APPLE__)
 #ifdef __linux__
     FILE* pipe = popen("/usr/bin/xclip -i -selection clipboard -silent", "we");
+#endif
+#ifdef __APPLE__
+    FILE* pipe = popen("/usr/bin/pbcopy", "w");
+#endif
     if (!pipe)
     {
-        LOG(WARNING) << "Failed to execute /usr/bin/xclip for clipboard access";
+        LOG(WARNING) << "Failed to execute command for clipboard access";
         return;
     }
     fwrite(value.c_str(), value.size(), 1, pipe);
     pclose(pipe);
-#endif
+#endif//__linux__ || __APPLE__
 }
