@@ -90,10 +90,12 @@ void Clipboard::setClipboard(string value)
 #if defined(__linux__) || defined(__APPLE__)
 #ifdef __APPLE__
     const char* cmd = "/usr/bin/pbcopy > /dev/null 2>&1";
+    const char* mode = "w";
 #else
     const char* cmd = "/usr/bin/xclip -i -selection clipboard -silent";
+    const char* mode = "we";
 #endif
-    FILE* pipe = popen(cmd, "w");
+    FILE* pipe = popen(cmd, mode);
 
     if (!pipe)
     {
