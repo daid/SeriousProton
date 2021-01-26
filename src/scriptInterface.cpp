@@ -80,14 +80,15 @@ void ScriptObject::createLuaState()
             luaL_requiref(L, lib->name, lib->func, 1);
             lua_pop(L, 1);  /* remove lib */
         }
-        
-        for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
-            item->register_function(L);
     }
 
     //Setup a new table as the first upvalue. This will be used as "global" environment for the script. And thus will prevent global namespace polution.
     lua_newtable(L);  /* environment for loaded function */
-    
+
+    //Register all global functions for our game.
+    for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
+        item->register_function(L);
+
     lua_newtable(L);  /* meta table for the environment, with an __index pointing to the general global table so we can access every global function */
     lua_pushstring(L, "__index");
     lua_pushglobaltable(L);

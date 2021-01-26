@@ -766,8 +766,10 @@ public:
     addCallback<T> (L, table, # C , &T::C)
 #define REGISTER_SCRIPT_FUNCTION(F) \
     static void registerFunctionFunction ## F (lua_State* L) { \
-        lua_register(L, # F , &F); \
-    }\
+        lua_pushvalue(L, -1); \
+        lua_pushcclosure(L, &F, 1); \
+        lua_setglobal(L, # F ); \
+    } \
     ScriptClassInfo scriptClassInfo ## F ( # F , "" , registerFunctionFunction ## F , NULL );
 
 #endif//SCRIPT_INTERFACE_MAGIC_H
