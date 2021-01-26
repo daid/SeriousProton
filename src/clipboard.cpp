@@ -30,24 +30,28 @@ string Clipboard::readClipboard()
     return ret;
 #endif//_WIN32
 #if defined(__linux__) || defined(__APPLE__)
-#ifdef __linux__
-    FILE* pipe = popen("/usr/bin/xclip -o -selection clipboard", "r");
-#endif
 #ifdef __APPLE__
-    FILE* pipe = popen("/usr/bin/pbpaste", "r");
+    const char* cmd = "/usr/bin/pbpaste 2>&1";
+#else
+    const char* cmd = "/usr/bin/xclip -o -selection clipboard";
 #endif
+    FILE* pipe = popen(cmd, "r");
+
     if (!pipe)
     {
-        LOG(WARNING) << "Failed to execute command for clipboard access";
+        LOG(WARNING) << "Failed to execute " << cmd << " for clipboard access";
         return "";
     }
+
     char buffer[1024];
     std::string result = "";
+
     while (!feof(pipe))
     {
         if (fgets(buffer, 1024, pipe) != NULL)
             result += buffer;
     }
+
     pclose(pipe);
     return result;
 #endif//__linux__ || __APPLE__
@@ -84,17 +88,19 @@ void Clipboard::setClipboard(string value)
     CloseClipboard();
 #endif//_WIN32
 #if defined(__linux__) || defined(__APPLE__)
-#ifdef __linux__
-    FILE* pipe = popen("/usr/bin/xclip -i -selection clipboard -silent", "we");
-#endif
 #ifdef __APPLE__
-    FILE* pipe = popen("/usr/bin/pbcopy", "w");
+    const char* cmd = "/usr/bin/pbcopy > /dev/null 2>&1";
+#else
+    const char* cmd = "/usr/bin/xclip -i -selection clipboard -silent";
 #endif
+    FILE* pipe = popen(cmd, "w");
+
     if (!pipe)
     {
-        LOG(WARNING) << "Failed to execute command for clipboard access";
+        LOG(WARNING) << "Failed to execute " << cmd << " for clipboard access";
         return;
     }
+
     fwrite(value.c_str(), value.size(), 1, pipe);
     pclose(pipe);
 #endif//__linux__ || __APPLE__
