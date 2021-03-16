@@ -30,7 +30,7 @@ public:
 	/// @return false to terminate the query.
 	virtual bool ReportFixture(b2Fixture* fixture)
 	{
-        P<Collisionable> ptr = (Collisionable*)fixture->GetBody()->GetUserData();
+        P<Collisionable> ptr = reinterpret_cast<Collisionable*>(fixture->GetBody()->GetUserData().pointer);
         if (ptr)
             list.push_back(ptr);
         return true;
@@ -75,8 +75,8 @@ void CollisionManager::handleCollisions(float delta)
     {
         if (contact->IsTouching() && contact->IsEnabled())
         {
-            Collisionable* A = (Collisionable*)contact->GetFixtureA()->GetBody()->GetUserData();
-            Collisionable* B = (Collisionable*)contact->GetFixtureB()->GetBody()->GetUserData();
+            Collisionable* A = reinterpret_cast<Collisionable*>(contact->GetFixtureA()->GetBody()->GetUserData().pointer);
+            Collisionable* B = reinterpret_cast<Collisionable*>(contact->GetFixtureB()->GetBody()->GetUserData().pointer);
             if (!A->isDestroyed() && !B->isDestroyed())
             {
                 float collision_force = 0.0f;
@@ -229,7 +229,7 @@ void Collisionable::setCollisionChain(const std::vector<sf::Vector2f>& points, b
     }
     else
     {
-        shape.CreateChain(b_points.data(), b_points.size());
+        shape.CreateChain(b_points.data(), b_points.size(), b2Vec2_zero, b2Vec2_zero);
     }
 
     createBody(&shape);
@@ -280,7 +280,7 @@ void Collisionable::createBody(b2Shape* shape)
     }else{
         b2BodyDef bodyDef;
         bodyDef.type = static_physics ? b2_kinematicBody : b2_dynamicBody;
-        bodyDef.userData = this;
+        bodyDef.userData.pointer = reinterpret_cast<uintptr_t>(this);
         bodyDef.allowSleep = false;
         body = CollisionManager::world->CreateBody(&bodyDef);
     }
@@ -386,8 +386,8 @@ std::vector<sf::Vector2f> Collisionable::getCollisionShape()
     case b2Shape::e_polygon:
         {
             b2PolygonShape* cs = static_cast<b2PolygonShape*>(s);
-            for(int n=0; n<cs->GetVertexCount(); n++)
-                ret.push_back(b2v(cs->GetVertex(n)));
+            for(int n=0; n<cs->m_count; n++)
+                ret.push_back(b2v(cs->m_vertices[n]));
         }
         break;
     default:
