@@ -25,10 +25,7 @@ public:
     string(const char* str) : std::string(str) {}
     string(const char* str, int length) : std::string(str, length) {}
 
-    string(const char c) : std::string()
-    {
-        push_back(c);
-    }
+    string(const char c) : std::string(1, c) {}
 
     string(const int nr) : std::string()
     {
@@ -67,7 +64,7 @@ public:
     {
         int start = pos;
         int end = endpos;
-        int len = length();
+        int len = static_cast<int>(length());
         if (start < 0)
             start = len + start;
         if (end < 0)
@@ -110,7 +107,7 @@ public:
     {
         if (width < int(length()))
             return *this;
-        int right = width - length();
+        int right = width - int(length());
         int left = right / 2;
         right -= left;
         return string(fillchar) * left + *this + string(fillchar) * right;
@@ -128,7 +125,7 @@ public:
         int count = 0;
         for(unsigned int n=0; n<=length() - sub.length(); n++)
         {
-            if (substr(n, n + sub.length()) == sub)
+            if (substr(n, n + int(sub.length())) == sub)
                 count++;
         }
         return count;
@@ -143,7 +140,7 @@ public:
     {
         if (suffix.length() == 0)
             return true;
-        return substr(-suffix.length()) == suffix;
+        return substr(-int(suffix.length())) == suffix;
     }
 
     /*
@@ -186,7 +183,7 @@ public:
             return -1;
         for(unsigned int n=start; n<=length() - sub.length(); n++)
         {
-            if(substr(n, n+sub.length()) == sub)
+            if(substr(n, n+int(sub.length())) == sub)
                 return n;
         }
         return -1;
@@ -201,8 +198,8 @@ public:
 
         //Reserve the target String to the current length plus the length of all the parameters.
         //Which should be a good rough estimate for the final UnicodeString length.
-        int itemslength = 0;
-        for(auto it : mapping)
+        size_t itemslength = 0;
+        for(const auto& it : mapping)
         {
             itemslength += it.second.length();
         }
@@ -342,7 +339,7 @@ public:
             }
             if (::isalpha((*this)[n]))
             {
-                if (::isupper((*this)[n]) != needUpper)
+                if (bool(::isupper((*this)[n])) != needUpper)
                     return false;
                 needUpper = false;
             }else{
@@ -396,7 +393,7 @@ public:
     {
         if (int(length()) >= width)
             return *this;
-        return *this + string(fillchar) * (width - length());
+        return *this + string(fillchar) * (width - int(length()));
     }
 
     /*
@@ -449,7 +446,7 @@ public:
             if (start < 0)
                 break;
             result += substr(end, start) + _new;
-            end = start + old.length();
+            end = start + int(old.length());
         }
         result += substr(end);
         return result;
@@ -464,9 +461,9 @@ public:
     {
         if (sub.length() + start > length())
             return -1;
-        for(unsigned int n=length() - sub.length(); int(n)>=start; n--)
+        for(int n=int(length()) - int(sub.length()); n>=start; n--)
         {
-            if(substr(n, n+sub.length()) == sub)
+            if(substr(n, n+int(sub.length())) == sub)
                 return n;
         }
         return -1;
@@ -480,7 +477,7 @@ public:
     {
         if (int(length()) >= width)
             return *this;
-        return string(fillchar) * (width - length()) + *this;
+        return string(fillchar) * (width - int(length())) + *this;
     }
 
     /*
@@ -505,7 +502,7 @@ public:
     */
     string rstrip(const string &chars=_WHITESPACE) const
     {
-        int end=length()-1;
+        int end=int(length())-1;
         while(chars.find(substr(end, end+1)) > -1)
             end--;
         return substr(0, end+1);
@@ -544,7 +541,7 @@ public:
                 return res;
             }
             res.push_back(substr(start, offset));
-            start = offset + sep.length();
+            start = offset + int(sep.length());
             if (maxsplit > 0)
                 maxsplit--;
         }
@@ -567,7 +564,7 @@ public:
     */
     bool startswith(const string &prefix) const
     {
-        return substr(0, prefix.length()) == prefix;
+        return substr(0, int(prefix.length())) == prefix;
     }
 
     /*
@@ -646,14 +643,14 @@ public:
         if (int(length()) > width)
             return *this;
         if ((*this)[0] == '-' || (*this)[0] == '+')
-            return substr(0, 1) + string("0") * (width - length()) + substr(1);
-        return string("0") * (width - length()) + *this;
+            return substr(0, 1) + string("0") * (width - int(length())) + substr(1);
+        return string("0") * (width - int(length())) + *this;
     }
 
 
     /* Convert this string to a number */
-    float toFloat() { return atof(c_str()); }
-    int toInt(int bits_per_digit=10) { return strtol(c_str(), nullptr, bits_per_digit); }
+    float toFloat() const { return strtof(c_str(), nullptr); }
+    int toInt(int bits_per_digit=10) const { return strtol(c_str(), nullptr, bits_per_digit); }
 };
 #undef _WHITESPACE
 
