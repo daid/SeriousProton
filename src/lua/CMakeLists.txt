@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 2.8.12)
-project(Box2D)
+cmake_minimum_required(VERSION 3.7)
+project(lua LANGUAGES C)
 
 #---------------------------------File lists-----------------------------------
 set(source_files_relative
@@ -38,14 +38,14 @@ foreach(source_file_relative ${source_files_relative})
 	list(APPEND source_files ${CMAKE_CURRENT_SOURCE_DIR}/${source_file_relative})
 endforeach()
 
-include_directories(
-	${CMAKE_CURRENT_BINARY_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/.. #Because the header files are requested starting from "lua/..."
-)
+
 
 #----------------------------------Compiling-----------------------------------
 add_library(lua STATIC ${source_files})
+
+target_include_directories(lua
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>)
 
 #--------------------------------Installation----------------------------------
 install(
