@@ -89,7 +89,7 @@ if(NOT ${SFML_FOUND})
     add_dependencies(seriousproton SFML)
 endif()
 
-target_include_directories(seriousproton PUBLIC ${SFML_INCLUDE_DIR})
+target_include_directories(seriousproton PUBLIC $<BUILD_INTERFACE:${SFML_INCLUDE_DIR}>)
 target_link_libraries(seriousproton PUBLIC box2d lua glew ${SFML_LIBRARIES})
 
 #--------------------------------Installation----------------------------------
