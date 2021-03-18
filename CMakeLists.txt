@@ -70,7 +70,6 @@ target_compile_definitions(seriousproton
 include(ExternalProject)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/Box2D)
-add_dependencies(seriousproton box2d)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/lua)
 add_dependencies(seriousproton lua)
@@ -97,7 +96,7 @@ if(NOT ${SFML_FOUND})
 	add_dependencies(seriousproton SFML)
 endif()
 include_directories(${SFML_INCLUDE_DIR})
-target_link_libraries(seriousproton ${SFML_LIBRARIES})
+target_link_libraries(seriousproton box2d ${SFML_LIBRARIES})
 
 #--------------------------------Installation----------------------------------
 install(

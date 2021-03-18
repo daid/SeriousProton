@@ -1,84 +1,65 @@
-cmake_minimum_required(VERSION 2.8.12)
-project(Box2D)
+cmake_minimum_required(VERSION 3.7)
 
-#---------------------------------File lists-----------------------------------
-set(source_files_relative
-	Collision/b2BroadPhase.cpp
-	Collision/b2CollideEdge.cpp
-	Collision/b2CollideCircle.cpp
-	Collision/b2CollidePolygon.cpp
-	Collision/b2Collision.cpp
-	Collision/b2Distance.cpp
-	Collision/b2DynamicTree.cpp
-	Collision/b2TimeOfImpact.cpp
-	Collision/Shapes/b2ChainShape.cpp
-	Collision/Shapes/b2CircleShape.cpp
-	Collision/Shapes/b2EdgeShape.cpp
-	Collision/Shapes/b2PolygonShape.cpp
+# https://cmake.org/cmake/help/latest/command/project.html
+project(box2d VERSION 2.4.1)
 
-	Common/b2BlockAllocator.cpp
-	Common/b2Draw.cpp
-	Common/b2Math.cpp
-	Common/b2Settings.cpp
-	Common/b2StackAllocator.cpp
-	Common/b2Timer.cpp
+# set(CMAKE_CONFIGURATION_TYPES "Debug;RelWithDebInfo" CACHE STRING "" FORCE)
 
-	Dynamics/b2Body.cpp
-	Dynamics/b2ContactManager.cpp
-	Dynamics/b2Fixture.cpp
-	Dynamics/b2Island.cpp
-	Dynamics/b2World.cpp
-	Dynamics/b2WorldCallbacks.cpp
-	Dynamics/Contacts/b2ChainAndCircleContact.cpp
-	Dynamics/Contacts/b2ChainAndPolygonContact.cpp
-	Dynamics/Contacts/b2CircleContact.cpp
-	Dynamics/Contacts/b2Contact.cpp
-	Dynamics/Contacts/b2ContactSolver.cpp
-	Dynamics/Contacts/b2EdgeAndCircleContact.cpp
-	Dynamics/Contacts/b2EdgeAndPolygonContact.cpp
-	Dynamics/Contacts/b2PolygonAndCircleContact.cpp
-	Dynamics/Contacts/b2PolygonContact.cpp
-	Dynamics/Joints/b2DistanceJoint.cpp
-	Dynamics/Joints/b2FrictionJoint.cpp
-	Dynamics/Joints/b2GearJoint.cpp
-	Dynamics/Joints/b2Joint.cpp
-	Dynamics/Joints/b2MotorJoint.cpp
-	Dynamics/Joints/b2MouseJoint.cpp
-	Dynamics/Joints/b2PrismaticJoint.cpp
-	Dynamics/Joints/b2PulleyJoint.cpp
-	Dynamics/Joints/b2RevoluteJoint.cpp
-	Dynamics/Joints/b2RopeJoint.cpp
-	Dynamics/Joints/b2WeldJoint.cpp
-	Dynamics/Joints/b2WheelJoint.cpp
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
-	Rope/b2Rope.cpp
-)
-set(source_files "")
-foreach(source_file_relative ${source_files_relative})
-	list(APPEND source_files ${CMAKE_CURRENT_SOURCE_DIR}/${source_file_relative})
-endforeach()
+option(BOX2D_BUILD_UNIT_TESTS "Build the Box2D unit tests" OFF)
+option(BOX2D_BUILD_TESTBED "Build the Box2D testbed" OFF)
+option(BOX2D_BUILD_DOCS "Build the Box2D documentation" OFF)
+option(BOX2D_USER_SETTINGS "Override Box2D settings with b2UserSettings.h" OFF)
 
-include_directories(
-	${CMAKE_CURRENT_BINARY_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/.. #Because the header files are requested starting from "Box2D/..."
-)
+option(BUILD_SHARED_LIBS "Build Box2D as a shared library" OFF)
 
-#----------------------------------Compiling-----------------------------------
-add_library(box2d STATIC ${source_files})
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
-#--------------------------------Installation----------------------------------
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+
+include(GNUInstallDirs)
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+if (BOX2D_USER_SETTINGS)
+	add_compile_definitions(B2_USER_SETTINGS)
+endif()
+
+add_subdirectory(src)
+
+if (BOX2D_BUILD_DOCS)
+    set(DOXYGEN_SKIP_DOT TRUE)
+    find_package(Doxygen)
+endif()
+
+if (DOXYGEN_FOUND AND BOX2D_BUILD_DOCS)
+    add_subdirectory(docs)
+endif()
+
+if (BOX2D_BUILD_UNIT_TESTS)
+	add_subdirectory(unit-test)
+endif()
+
+if (BOX2D_BUILD_TESTBED)
+	add_subdirectory(extern/glad)
+	add_subdirectory(extern/glfw)
+	add_subdirectory(extern/imgui)
+	add_subdirectory(extern/sajson)
+	add_subdirectory(testbed)
+
+	# default startup project for Visual Studio
+	if (MSVC)
+		set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT testbed)
+		set_property(TARGET testbed PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/testbed")
+	endif()
+endif()
+
 install(
-	TARGETS box2d
-	EXPORT box2d
-	DESTINATION lib
-)
-install(
-	DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	DESTINATION include
-	FILES_MATCHING PATTERN "*.h"
-)
-install(
-	EXPORT box2d
-	DESTINATION share/box2d
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/box2d"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
