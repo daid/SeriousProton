@@ -1,3 +1,6 @@
+cmake_minimum_required(VERSION 3.7)
+project(opus LANGUAGES C)
+
 add_library(opus STATIC
 #    celt/arm/arm_celt_map.c
 #    celt/arm/armcpu.c
