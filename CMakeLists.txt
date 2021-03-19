@@ -1,12 +1,92 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.7 FATAL_ERROR)
 project(SeriousProton LANGUAGES CXX)
+
+# Setup
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 set(CMAKE_MODULE_PATH
     ${CMAKE_SOURCE_DIR}/cmake/
     ${CMAKE_MODULE_PATH}
 )
 
+# User-settings
+option(ENABLE_CRASH_LOGGER "Enable the Dr. MinGW crash logging facilities" OFF)
+
+if(MINGW)
+	set(DRMINGW_ROOT DRMINGW_ROOT-NOTFOUND CACHE PATH "Path to Dr. MinGW")
+endif()
+# Preflight checks.
+
+
+message(STATUS "Crash Logger is " ${ENABLE_CRASH_LOGGER})
+
+if(ENABLE_CRASH_LOGGER)
+    if(NOT DRMINGW_ROOT)
+        message("Downloading Dr. MinGW")
+        set(DRMINGW_ROOT "${CMAKE_CURRENT_BINARY_DIR}/drmingw" CACHE PATH "Path to Dr. MinGW" FORCE)
+        
+
+        if(NOT EXISTS "${DRMINGW_ROOT}/include/exchndl.h")
+            set(DRMINGW_ZIP "${DRMINGW_ROOT}/drmingw.7z")
+            set(DRMINGW_ARCH "64")
+            if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+                set(DISCORD_ARCH "32")
+            endif()
+            file(DOWNLOAD "https://github.com/jrfonseca/drmingw/releases/download/0.9.3/drmingw-0.9.3-win${DRMINGW_ARCH}.7z" "${DRMINGW_ZIP}" TIMEOUT 60 TLS_VERIFY ON)
+            execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf "${DRMINGW_ZIP}" WORKING_DIRECTORY "${DRMINGW_ROOT}")
+        endif()
+    endif()
+
+    add_library(drmingw SHARED IMPORTED)
+    set_target_properties(drmingw PROPERTIES
+        IMPORTED_LOCATION "${DRMINGW_ROOT}/bin/exchndl.dll"
+        IMPORTED_IMPLIB "${DRMINGW_ROOT}/lib/libexchndl.a"
+        INTERFACE_INCLUDE_DIRECTORIES "${DRMINGW_ROOT}/include/"
+    )
+endif()
+
+#--------------------------------Dependencies----------------------------------
+find_package(SFML 2.4 COMPONENTS system audio network window graphics)
+if(NOT ${SFML_FOUND})
+    message(STATUS "Couldn't find SFML. Building it from scratch.")
+    
+    set(SFML_ROOT "${CMAKE_CURRENT_BINARY_DIR}/SFML-prefix")
+
+    include(ExternalProject)
+
+    ExternalProject_Add(SFML
+        GIT_REPOSITORY https://github.com/SFML/SFML.git
+        GIT_TAG 2.5.1 #Always build with this tag, so we're sure it is stable.
+        GIT_SHALLOW 1 # Don't get the entire history
+        CMAKE_ARGS -DBUILD_SHARED_LIBS=$<BOOL:${WIN32}> -DCMAKE_INSTALL_PREFIX=${SFML_ROOT}
+    )
+
+    set(SFML_INCLUDE_DIR "${SFML_ROOT}/include") #Otherwise this is filled by FindSFML.cmake.
+
+    set(_SFML_LIB_PREFIX STATIC)
+    set(_SFML_LIB_SUFFIX STATIC)
+
+    if(WIN32)
+        set(_SFML_LIB_PREFIX SHARED)
+        set(_SFML_LIB_SUFFIX LINK)
+    endif()
+
+    set(SFML_LIBRARIES
+        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-audio${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-graphics${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-network${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-system${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-window${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+    )
+endif()
+
+add_subdirectory(src/Box2D)
+add_subdirectory(src/lua)
+add_subdirectory(src/GL)
+
 #---------------------------------File lists-----------------------------------
-set(source_files_relative #All SeriousProton's objects to compile
+set(source_files #All SeriousProton's objects to compile
     src/clipboard.cpp
     src/collisionable.cpp
     src/engine.cpp
@@ -14,14 +94,17 @@ set(source_files_relative #All SeriousProton's objects to compile
     src/fixedSocket.cpp
     src/gameEntity.cpp
     src/httpServer.cpp
+    src/i18n.cpp
     src/input.cpp
     src/logging.cpp
     src/multiplayer.cpp
     src/multiplayer_client.cpp
+    src/multiplayer_proxy.cpp
     src/multiplayer_server.cpp
     src/multiplayer_server_scanner.cpp
     src/networkAudioStream.cpp
     src/networkRecorder.cpp
+    src/P.cpp
     src/PlayerController.cpp
     src/postProcessManager.cpp
     src/random.cpp
@@ -37,60 +120,56 @@ set(source_files_relative #All SeriousProton's objects to compile
     src/Updatable.cpp
     src/windowManager.cpp
 )
-set(source_files "")
-foreach(source_file_relative ${source_files_relative})
-    list(APPEND source_files ${CMAKE_SOURCE_DIR}/${source_file_relative})
-endforeach()
-
-set(seriousproton_include_dir ${CMAKE_SOURCE_DIR}/src/)
 
 #----------------------------------Compiling-----------------------------------
-set(CMAKE_CXX_STANDARD 11)
+
+
+# Set our optimization flags.
+set(OPTIMIZER_FLAGS)
+if(CMAKE_COMPILER_IS_GNUCC)
+    # On gcc, we want some general optimalizations that improve speed a lot.
+    set(OPTIMIZER_FLAGS ${OPTIMIZER_FLAGS} -O3 -flto -funsafe-math-optimizations)
+
+    # If we are compiling for a rasberry pi, we want to aggressively optimize for the CPU we are running on.
+    # Note that this check only works if we are compiling directly on the pi, as it is a dirty way of checkif if we are on the pi.
+    if(EXISTS /opt/vc/include/bcm_host.h OR COMPILE_FOR_PI)
+        set(OPTIMIZER_FLAGS ${OPTIMIZER_FLAGS} -mcpu=native -mfpu=neon-vfpv4 -mfloat-abi=hard)
+    endif()
+endif()
 
 add_library(seriousproton STATIC ${source_files})
 
+if(NOT ${SFML_FOUND})
+    add_dependencies(seriousproton SFML)
+endif()
+
 target_include_directories(seriousproton
-    PUBLIC    
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/libopus/include>
+    PUBLIC
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src;${CMAKE_CURRENT_SOURCE_DIR}/src/libopus/include;${SFML_INCLUDE_DIR}>"
+        "$<BUILD_INTERFACE:$<$<AND:$<BOOL:${WIN32}>,$<BOOL:${ENABLE_CRASH_LOGGER}>,$<BOOL:${MINGW}>>:${DRMINGW_ROOT}/include/>>"
 )
 target_compile_definitions(seriousproton
     PUBLIC
         SFML_NO_DEPRECATED_WARNINGS # SFML 2.5 gives deprication warnings on a few functions we use. But we maintain 2.3 compatibility, so ignore those warnings.
-        $<$<BOOL:${WIN32}>:NOMINMAX>
+        $<$<BOOL:${MSVC}>:NOMINMAX>
+        $<$<CONFIG:Debug>:DEBUG>
+        $<$<BOOL:${ENABLE_CRASH_LOGGER}:ENABLE_CRASH_LOGGER>
 )
 
-#--------------------------------Dependencies----------------------------------
-include(ExternalProject)
+target_compile_options(seriousproton
+    PUBLIC
+        "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:RelWithDebInfo>>:-g1>"
+	    "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
+	    "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Werror=return-type>"
+	    "$<$<BOOL:${MSVC}>:/MP;/permissive->"
+)
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/Box2D)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/lua)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/GL)
-
-find_package(SFML 2.3 COMPONENTS system audio network window graphics)
-if(NOT ${SFML_FOUND})
-    message(STATUS "Couldn't find SFML. Building it from scratch. Installing to ${CMAKE_INSTALL_PREFIX}")
-    ExternalProject_Add(SFML
-        GIT_REPOSITORY https://github.com/SFML/SFML.git
-        GIT_TAG 2.4.2 #Always build with this tag, so we're sure it is stable.
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DBUILD_SHARED_LIBS=OFF
-    )
-    set(SFML_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include) #Otherwise this is filled by FindSFML.cmake.
-    set(SFML_LIBRARIES
-        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-audio${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-graphics${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-network${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-system${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}sfml-window${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
-    add_dependencies(seriousproton SFML)
-endif()
-
-target_include_directories(seriousproton PUBLIC $<BUILD_INTERFACE:${SFML_INCLUDE_DIR}>)
-target_link_libraries(seriousproton PUBLIC box2d lua glew ${SFML_LIBRARIES})
+target_link_libraries(seriousproton
+    PUBLIC 
+        box2d lua glew ${SFML_LIBRARIES}
+        "$<$<BOOL:${WIN32}>:wsock32>"
+        "$<$<BOOL:${DRMINGW_ROOT}>:drmingw>"
+)
 
 #--------------------------------Installation----------------------------------
 install(
@@ -103,6 +182,7 @@ install(
     DIRECTORY ${seriousproton_include_dir}
     DESTINATION include/seriousproton
     FILES_MATCHING PATTERN "*.h"
+    
 )
 install(
     DIRECTORY ${seriousproton_include_dir}
@@ -113,3 +193,45 @@ install(
     EXPORT seriousproton
     DESTINATION share/seriousproton
 )
+
+if(WIN32)
+    install(
+        FILES
+            "${SFML_ROOT}/bin/OpenAL32.dll"
+            "${SFML_ROOT}/bin/sfml-audio-2.dll"
+            "${SFML_ROOT}/bin/sfml-graphics-2.dll"
+            "${SFML_ROOT}/bin/sfml-network-2.dll"
+            "${SFML_ROOT}/bin/sfml-system-2.dll"
+            "${SFML_ROOT}/bin/sfml-window-2.dll"
+        DESTINATION .
+        COMPONENT runtime
+    )
+
+    if (MINGW)
+        execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libstdc++-6.dll OUTPUT_VARIABLE MINGW_STDCPP_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
+	    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libgcc_s_sjlj-1.dll OUTPUT_VARIABLE MINGW_LIBGCC_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
+	    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libwinpthread-1.dll OUTPUT_VARIABLE MINGW_PTHREAD_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
+	    
+        install(
+            FILES
+                ${MINGW_STDCPP_DLL}
+                ${MINGW_LIBGCC_DLL}
+                ${MINGW_PTHREAD_DLL}
+            DESTINATION .
+            COMPONENT runtime
+        )
+
+        if(ENABLE_CRASH_LOGGER)
+            install(
+                FILES
+                    ${DRMINGW_ROOT}/bin/dbghelp.dll
+                    ${DRMINGW_ROOT}/bin/exchndl.dll
+                    ${DRMINGW_ROOT}/bin/mgwhelp.dll
+                    ${DRMINGW_ROOT}/bin/symsrv.dll
+                    ${DRMINGW_ROOT}/bin/symsrv.yes
+                DESTINATION .
+                COMPONENT runtime
+            )
+        endif()
+    endif()
+endif()
