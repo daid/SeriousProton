@@ -12,7 +12,7 @@ set(CMAKE_MODULE_PATH
 
 # User-settings
 if(WIN32)
-    option(ENABLE_CRASH_LOGGER "Enable the Dr. MinGW crash logging facilities" ON)
+    option(ENABLE_CRASH_LOGGER "Enable the Dr. MinGW crash logging facilities" OFF)
     set(DRMINGW_ROOT DRMINGW_ROOT-NOTFOUND CACHE PATH "Path to Dr. MinGW")
 endif()
 
