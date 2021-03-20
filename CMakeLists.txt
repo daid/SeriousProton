@@ -11,39 +11,34 @@ set(CMAKE_MODULE_PATH
 )
 
 # User-settings
-option(ENABLE_CRASH_LOGGER "Enable the Dr. MinGW crash logging facilities" OFF)
-
-if(MINGW)
-	set(DRMINGW_ROOT DRMINGW_ROOT-NOTFOUND CACHE PATH "Path to Dr. MinGW")
+if(WIN32)
+    option(ENABLE_CRASH_LOGGER "Enable the Dr. MinGW crash logging facilities" ON)
+    set(DRMINGW_ROOT DRMINGW_ROOT-NOTFOUND CACHE PATH "Path to Dr. MinGW")
 endif()
+
 # Preflight checks.
-
-
 message(STATUS "Crash Logger is " ${ENABLE_CRASH_LOGGER})
 
 if(ENABLE_CRASH_LOGGER)
     if(NOT DRMINGW_ROOT)
         message("Downloading Dr. MinGW")
-        set(DRMINGW_ROOT "${CMAKE_CURRENT_BINARY_DIR}/drmingw" CACHE PATH "Path to Dr. MinGW" FORCE)
-        
 
-        if(NOT EXISTS "${DRMINGW_ROOT}/include/exchndl.h")
-            set(DRMINGW_ZIP "${DRMINGW_ROOT}/drmingw.7z")
-            set(DRMINGW_ARCH "64")
-            if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-                set(DISCORD_ARCH "32")
-            endif()
-            file(DOWNLOAD "https://github.com/jrfonseca/drmingw/releases/download/0.9.3/drmingw-0.9.3-win${DRMINGW_ARCH}.7z" "${DRMINGW_ZIP}" TIMEOUT 60 TLS_VERIFY ON)
-            execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf "${DRMINGW_ZIP}" WORKING_DIRECTORY "${DRMINGW_ROOT}")
+        set(DRMINGW_ARCH "64")
+        if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+            set(DISCORD_ARCH "32")
+        endif()
+
+        set(DRMINGW_VERSION "0.9.3")
+        set(DRMINGW_BASENAME "drmingw-${DRMINGW_VERSION}-win${DRMINGW_ARCH}")
+        set(DRMINGW_ROOT "${CMAKE_CURRENT_BINARY_DIR}/${DRMINGW_BASENAME}" CACHE PATH "Path to Dr. MinGW" FORCE)
+
+        if(NOT EXISTS "${DRMINGW_ROOT}/bin/exchndl.dll")
+            set(DRMINGW_ZIP "${CMAKE_CURRENT_BINARY_DIR}/${DRMINGW_BASENAME}.7z")
+            
+            file(DOWNLOAD "https://github.com/jrfonseca/drmingw/releases/download/${DRMINGW_VERSION}/${DRMINGW_BASENAME}.7z" "${DRMINGW_ZIP}" TIMEOUT 60 TLS_VERIFY ON)
+            execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf "${DRMINGW_ZIP}" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
         endif()
     endif()
-
-    add_library(drmingw SHARED IMPORTED)
-    set_target_properties(drmingw PROPERTIES
-        IMPORTED_LOCATION "${DRMINGW_ROOT}/bin/exchndl.dll"
-        IMPORTED_IMPLIB "${DRMINGW_ROOT}/lib/libexchndl.a"
-        INTERFACE_INCLUDE_DIRECTORIES "${DRMINGW_ROOT}/include/"
-    )
 endif()
 
 #--------------------------------Dependencies----------------------------------
@@ -146,29 +141,27 @@ endif()
 target_include_directories(seriousproton
     PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src;${CMAKE_CURRENT_SOURCE_DIR}/src/libopus/include;${SFML_INCLUDE_DIR}>"
-        "$<BUILD_INTERFACE:$<$<AND:$<BOOL:${WIN32}>,$<BOOL:${ENABLE_CRASH_LOGGER}>,$<BOOL:${MINGW}>>:${DRMINGW_ROOT}/include/>>"
 )
+
 target_compile_definitions(seriousproton
     PUBLIC
         SFML_NO_DEPRECATED_WARNINGS # SFML 2.5 gives deprication warnings on a few functions we use. But we maintain 2.3 compatibility, so ignore those warnings.
         $<$<BOOL:${MSVC}>:NOMINMAX>
         $<$<CONFIG:Debug>:DEBUG>
-        $<$<BOOL:${ENABLE_CRASH_LOGGER}:ENABLE_CRASH_LOGGER>
 )
 
 target_compile_options(seriousproton
     PUBLIC
         "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:RelWithDebInfo>>:-g1>"
-	    "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
-	    "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Werror=return-type>"
-	    "$<$<BOOL:${MSVC}>:/MP;/permissive->"
+        "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
+        "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Werror=return-type>"
+        "$<$<BOOL:${MSVC}>:/MP;/permissive->"
 )
 
 target_link_libraries(seriousproton
     PUBLIC 
         box2d lua glew ${SFML_LIBRARIES}
         "$<$<BOOL:${WIN32}>:wsock32>"
-        "$<$<BOOL:${DRMINGW_ROOT}>:drmingw>"
 )
 
 #--------------------------------Installation----------------------------------
@@ -209,9 +202,9 @@ if(WIN32)
 
     if (MINGW)
         execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libstdc++-6.dll OUTPUT_VARIABLE MINGW_STDCPP_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
-	    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libgcc_s_sjlj-1.dll OUTPUT_VARIABLE MINGW_LIBGCC_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
-	    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libwinpthread-1.dll OUTPUT_VARIABLE MINGW_PTHREAD_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
-	    
+        execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libgcc_s_sjlj-1.dll OUTPUT_VARIABLE MINGW_LIBGCC_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
+        execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libwinpthread-1.dll OUTPUT_VARIABLE MINGW_PTHREAD_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
+        
         install(
             FILES
                 ${MINGW_STDCPP_DLL}
@@ -220,18 +213,18 @@ if(WIN32)
             DESTINATION .
             COMPONENT runtime
         )
+    endif()
 
-        if(ENABLE_CRASH_LOGGER)
-            install(
-                FILES
-                    ${DRMINGW_ROOT}/bin/dbghelp.dll
-                    ${DRMINGW_ROOT}/bin/exchndl.dll
-                    ${DRMINGW_ROOT}/bin/mgwhelp.dll
-                    ${DRMINGW_ROOT}/bin/symsrv.dll
-                    ${DRMINGW_ROOT}/bin/symsrv.yes
-                DESTINATION .
-                COMPONENT runtime
-            )
-        endif()
+    if(ENABLE_CRASH_LOGGER)
+        install(
+            FILES
+            ${DRMINGW_ROOT}/bin/dbghelp.dll
+            ${DRMINGW_ROOT}/bin/exchndl.dll
+            ${DRMINGW_ROOT}/bin/mgwhelp.dll
+            ${DRMINGW_ROOT}/bin/symsrv.dll
+            ${DRMINGW_ROOT}/bin/symsrv.yes
+            DESTINATION .
+            COMPONENT runtime
+        )
     endif()
 endif()
