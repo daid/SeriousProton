@@ -28,7 +28,9 @@ if(ENABLE_CRASH_LOGGER)
             set(DISCORD_ARCH "32")
         endif()
 
-        set(DRMINGW_VERSION "0.9.3")
+        # 0.9.x seems to give a hard time to people on Win7.
+        # Sticking with 0.8 for that reason.
+        set(DRMINGW_VERSION "0.8.2")
         set(DRMINGW_BASENAME "drmingw-${DRMINGW_VERSION}-win${DRMINGW_ARCH}")
         set(DRMINGW_ROOT "${CMAKE_CURRENT_BINARY_DIR}/${DRMINGW_BASENAME}" CACHE PATH "Path to Dr. MinGW" FORCE)
 
