@@ -12,6 +12,7 @@
 #include "lua/lua.hpp"
 #include <SFML/Graphics/Color.hpp>
 #include <typeinfo>
+#include <optional>
 
 class ScriptClassInfo;
 
@@ -71,6 +72,21 @@ template<> int convert<long>::returnType(lua_State* L, long b);
 template<> int convert<int>::returnType(lua_State* L, int b);
 //Specialized template for the string return type, so we return a lua string.
 template<> int convert<string>::returnType(lua_State* L, string s);
+
+//Have optional parameters, provided they are last arguments of script function
+template<typename T>
+struct convert<std::optional<T>> //the >> power of c++17
+{
+    static void param(lua_State* L, int& idx, std::optional<T>& opt_t)
+    {
+        if (lua_gettop(L) >= idx) //If there are still arguments unwinded
+        {
+            T res;
+            convert<T>::param(L,idx,res);
+            opt_t = res;
+        }
+    }
+};
 
 /* Convert parameters to PObject pointers */
 template<class T> struct convert<T*>
