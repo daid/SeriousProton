@@ -1,9 +1,5 @@
-cmake_minimum_required(VERSION 3.7 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(SeriousProton LANGUAGES CXX)
-
-# Setup
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_MODULE_PATH
     ${CMAKE_SOURCE_DIR}/cmake/
@@ -11,6 +7,8 @@ set(CMAKE_MODULE_PATH
 )
 
 # User-settings
+option(SERIOUSPROTON_WITH_JSON "Use json library." OFF)
+
 if(WIN32)
     option(ENABLE_CRASH_LOGGER "Enable the Dr. MinGW crash logging facilities" OFF)
     set(DRMINGW_ROOT DRMINGW_ROOT-NOTFOUND CACHE PATH "Path to Dr. MinGW")
@@ -81,6 +79,11 @@ endif()
 add_subdirectory(src/Box2D)
 add_subdirectory(src/lua)
 add_subdirectory(src/GL)
+add_subdirectory(src/libopus)
+
+if(SERIOUSPROTON_WITH_JSON)
+    add_subdirectory(src/json11)
+endif()
 
 #---------------------------------File lists-----------------------------------
 set(source_files #All SeriousProton's objects to compile
@@ -135,6 +138,7 @@ if(CMAKE_COMPILER_IS_GNUCC)
 endif()
 
 add_library(seriousproton STATIC ${source_files})
+target_compile_features(seriousproton PUBLIC cxx_std_17)
 
 if(NOT ${SFML_FOUND})
     add_dependencies(seriousproton SFML)
@@ -142,7 +146,7 @@ endif()
 
 target_include_directories(seriousproton
     PUBLIC
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src;${CMAKE_CURRENT_SOURCE_DIR}/src/libopus/include;${SFML_INCLUDE_DIR}>"
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src;${SFML_INCLUDE_DIR}>"
 )
 
 target_compile_definitions(seriousproton
@@ -150,6 +154,8 @@ target_compile_definitions(seriousproton
         SFML_NO_DEPRECATED_WARNINGS # SFML 2.5 gives deprication warnings on a few functions we use. But we maintain 2.3 compatibility, so ignore those warnings.
         $<$<BOOL:${MSVC}>:NOMINMAX>
         $<$<CONFIG:Debug>:DEBUG>
+        # Windows: Backwards compatibility with Win7 SP1: https://docs.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt
+        $<$<BOOL:${WIN32}>:WINVER=0x0601;_WIN32_WINNT=0x0601>
 )
 
 target_compile_options(seriousproton
@@ -164,6 +170,9 @@ target_link_libraries(seriousproton
     PUBLIC 
         box2d lua glew ${SFML_LIBRARIES}
         "$<$<BOOL:${WIN32}>:wsock32>"
+    PRIVATE $<BUILD_INTERFACE:opus>
+    INTERFACE
+        $<BUILD_INTERFACE:$<$<BOOL:${SERIOUSPROTON_WITH_JSON}>:json11>>
 )
 
 #--------------------------------Installation----------------------------------
