@@ -91,7 +91,7 @@ public:
     // Returns a value-less optional when the executed function is no longer available, on nil, or an error occurred.
     // else it will return a set optional with the return value from lua.
     template<typename Return, typename... Args>
-    std::optional<Return> call(Args&&... args)
+    std::optional<Return> call_(Args&&... args)
     {
         lua_State* L = ScriptObject::L;
 
@@ -202,7 +202,7 @@ public:
     template<typename... Args>
     bool call(Args&&... args)
     {
-        return call<bool>(std::forward<Args>(args)...).value_or(false);
+        return call_<bool>(std::forward<Args>(args)...).value_or(false);
     }
     
     //Unset this script callback reference.
