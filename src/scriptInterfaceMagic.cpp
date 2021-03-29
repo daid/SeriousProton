@@ -17,7 +17,7 @@ static string getObjectClassNameRecursive(P<PObject> object, ScriptClassInfo* in
     return "";
 }
 
-string getScriptClassClassNameFromObject(P<PObject> object)
+string getScriptClassClassNameFromObject(const P<PObject>& object)
 {
     static bool child_relations_set = false;
     if (!child_relations_set)
@@ -56,21 +56,9 @@ template<> int convert<bool>::returnType(lua_State* L, bool b)
     return 1;
 }
 
-template<> int convert<long>::returnType(lua_State* L, long i)
+template<> int convert<string>::returnType(lua_State* L, const string& s)
 {
-    lua_pushinteger(L, i);
-    return 1;
-}
-
-template<> int convert<int>::returnType(lua_State* L, int i)
-{
-    lua_pushinteger(L, i);
-    return 1;
-}
-
-template<> int convert<string>::returnType(lua_State* L, string s)
-{
-    lua_pushstring(L, s.c_str());
+    lua_pushlstring(L, s.c_str(), s.length());
     return 1;
 }
 
