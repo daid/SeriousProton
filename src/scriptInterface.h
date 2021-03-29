@@ -93,6 +93,10 @@ public:
     template<typename Return, typename... Args>
     std::optional<Return> call_(Args&&... args)
     {
+        static_assert(std::is_arithmetic_v<Return>
+            || std::is_enum_v<Return>
+            || std::is_convertible_v<std::string, Return>, "return type must be a bool, a number, an enum or a string (std::string or SP's).");
+
         lua_State* L = ScriptObject::L;
 
         //Get the simple table from the registry. If it's not available, then this callback was never set to anything.
@@ -148,48 +152,46 @@ public:
 
         //Stack is: [table] [call result]
         std::optional<Return> result;
-        if constexpr (std::is_convertible_v<std::string, Return>)
+        if (!lua_isnoneornil(L, -1))
         {
-            if (lua_isstring(L, -1))
+            if constexpr (std::is_convertible_v<std::string, Return>)
             {
-                result.emplace(lua_tostring(L, -1));
-                
+                if (lua_isstring(L, -1))
+                {
+                    result.emplace(lua_tostring(L, -1));
+                }
+                else
+                {
+                    LOG(ERROR) << "Unexpected return type (string wanted)";
+                }
             }
-            else
+            else if constexpr (std::is_same_v<bool, Return>)
             {
-                LOG(ERROR) << "Unexpected return type (string wanted)";
+                // No check - it's falsy / truthy values.
+                result.emplace(static_cast<bool>(lua_toboolean(L, -1)));
             }
-        }
-        else if constexpr (std::is_same_v<bool, Return>)
-        {
-            // No check - it's falsy / truthy values.
-            result.emplace(static_cast<bool>(lua_toboolean(L, -1)));
-        }
-        else if constexpr (std::is_integral_v<Return> || std::is_enum_v<Return>)
-        {
-            if (lua_isinteger(L, -1))
+            else if constexpr (std::is_integral_v<Return> || std::is_enum_v<Return>)
             {
-                result.emplace(static_cast<Return>(lua_tointeger(L, -1)));
+                if (lua_isinteger(L, -1))
+                {
+                    result.emplace(static_cast<Return>(lua_tointeger(L, -1)));
+                }
+                else
+                {
+                    LOG(ERROR) << "Unexpected return type (integer wanted)";
+                }
             }
-            else
+            else if constexpr (std::is_floating_point_v<Return>)
             {
-                LOG(ERROR) << "Unexpected return type (integer wanted)";
+                if (lua_isnumber(L, -1))
+                {
+                    result.emplace(static_cast<Return>(lua_tonumber(L, -1)));
+                }
+                else
+                {
+                    LOG(ERROR) << "Unexpected return type (floating point wanted)";
+                }
             }
-        }
-        else if constexpr (std::is_floating_point_v<Return>)
-        {
-            if (lua_isnumber(L, -1))
-            {
-                result.emplace(static_cast<Return>(lua_tonumber(L, -1)));
-            }
-            else
-            {
-                LOG(ERROR) << "Unexpected return type (floating point wanted)";
-            }
-        }
-        else
-        {
-            static_assert(false, "Unsupported type. Only strings (std::string or SP's 'string'), numbers, booleans and enums are supported.");
         }
 
         lua_pop(L, 2);
