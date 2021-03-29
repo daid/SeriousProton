@@ -87,37 +87,39 @@ public:
     //Returns true if this callback is set and the scriptobject that set it is still valid.
     bool isSet();
 
-    //Call this script function.
-    //Returns false when the executed function is no longer available, or returns nil or false.
-    // else it will return true.
-    template<typename... Args> bool call(Args... args)
+    // Call this script function.
+    // Returns a value-less optional when the executed function is no longer available, on nil, or an error occurred.
+    // else it will return a set optional with the return value from lua.
+    template<typename Return, typename... Args>
+    std::optional<Return> call(Args&&... args)
     {
         lua_State* L = ScriptObject::L;
-        
+
         //Get the simple table from the registry. If it's not available, then this callback was never set to anything.
         lua_pushlightuserdata(L, this);
         lua_gettable(L, LUA_REGISTRYINDEX);
         if (!lua_istable(L, -1))
         {
             lua_pop(L, 1);
-            return false;
+            return {};
         }
         //Stack is: [table]
-        
+
         //Push the key "script_pointer" to retrieve the pointer to this script object.
         lua_pushstring(L, "script_pointer");
         lua_rawget(L, -2);
         if (lua_isnil(L, -1))
         {
             //Callback function didn't have an script environment attached to it, so we cannot check if that script still exists.
-        }else{
+        }
+        else {
             //Stack is: [table] [pointer to script object]
             //Check if the script pointer is still available as key in the registry. If not, this reference is no longer valid and needs to be removed.
             lua_gettable(L, LUA_REGISTRYINDEX);
             if (!lua_istable(L, -1))
             {
                 lua_pop(L, 2);
-                return false;
+                return {};
             }
         }
         //Remove the script pointer table from the stack, we only needed to check if it exists.
@@ -128,11 +130,11 @@ public:
         lua_pushstring(L, "function");
         lua_rawget(L, -2);
 
-        int i = pushArgs(L, args...);
+        int i = pushArgs(L, std::forward<Args>(args)...);
         if (i < 0) // error condition
         {
             lua_pop(L, 2);
-            return false;
+            return {};
         }
 
         //Stack is: [table] [lua function]
@@ -141,16 +143,66 @@ public:
         {
             LOG(ERROR) << "Callback function error: " << lua_tostring(L, -1);
             lua_pop(L, 2);
-            return false;
+            return {};
         }
+
         //Stack is: [table] [call result]
-        if (lua_toboolean(L, -1))
+        std::optional<Return> result;
+        if constexpr (std::is_convertible_v<std::string, Return>)
         {
-            lua_pop(L, 2);
-            return true;
+            if (lua_isstring(L, -1))
+            {
+                result.emplace(lua_tostring(L, -1));
+                
+            }
+            else
+            {
+                LOG(ERROR) << "Unexpected return type (string wanted)";
+            }
         }
+        else if constexpr (std::is_same_v<bool, Return>)
+        {
+            // No check - it's falsy / truthy values.
+            result.emplace(static_cast<bool>(lua_toboolean(L, -1)));
+        }
+        else if constexpr (std::is_integral_v<Return> || std::is_enum_v<Return>)
+        {
+            if (lua_isinteger(L, -1))
+            {
+                result.emplace(static_cast<Return>(lua_tointeger(L, -1)));
+            }
+            else
+            {
+                LOG(ERROR) << "Unexpected return type (integer wanted)";
+            }
+        }
+        else if constexpr (std::is_floating_point_v<Return>)
+        {
+            if (lua_isnumber(L, -1))
+            {
+                result.emplace(static_cast<Return>(lua_tonumber(L, -1)));
+            }
+            else
+            {
+                LOG(ERROR) << "Unexpected return type (floating point wanted)";
+            }
+        }
+        else
+        {
+            static_assert(false, "Unsupported type. Only strings (std::string or SP's 'string'), numbers, booleans and enums are supported.");
+        }
+
         lua_pop(L, 2);
-        return false;
+        return result;
+    }
+
+    //Call this script function.
+    //Returns false when the executed function is no longer available, or returns nil or false.
+    // else it will return true.
+    template<typename... Args>
+    bool call(Args&&... args)
+    {
+        return call<bool>(std::forward<Args>(args)...).value_or(false);
     }
     
     //Unset this script callback reference.
