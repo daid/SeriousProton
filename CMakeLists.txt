@@ -23,7 +23,7 @@ if(ENABLE_CRASH_LOGGER)
 
         set(DRMINGW_ARCH "64")
         if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-            set(DISCORD_ARCH "32")
+            set(DRMINGW_ARCH "32")
         endif()
 
         # 0.9.x seems to give a hard time to people on Win7.
