@@ -1,8 +1,10 @@
 #ifndef I18N_H
 #define I18N_H
 
-#include <stringImproved.h>
+#include "stringImproved.h"
 #include <unordered_map>
+#include <memory>
+
 
 //Translate a string with a loaded translation.
 // If no translation was loaded, return the origonal string unmodified.
@@ -28,13 +30,24 @@ void reset();
 class Catalogue
 {
 public:
-    bool load(const string& resource_name);
+    static bool load(const string& resource_name);
+    static void reset();
+    static const Catalogue* get();
 
-    const string& tr(const string& input);
-    const string& tr(const string& context, const string& input);
+    const string& tr(const string& input) const;
+    const string& tr(const string& context, const string& input) const;
+
+    ~Catalogue();
+
 private:
+    Catalogue();
+    
+
+    bool load_resource(const string& resource);
     std::unordered_map<string, string> entries;
     std::unordered_map<string, std::unordered_map<string, string>> context_entries;
+
+    static std::unique_ptr<Catalogue> instance;
 };
 
 }//!namespace i18n
