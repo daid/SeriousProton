@@ -2,13 +2,9 @@ cmake_minimum_required(VERSION 3.7)
 project(glew LANGUAGES C)
 
 #---------------------------------File lists-----------------------------------
-set(source_files_relative
+set(source_files
     glew.c
 )
-set(source_files "")
-foreach(source_file_relative ${source_files_relative})
-    list(APPEND source_files ${CMAKE_CURRENT_SOURCE_DIR}/${source_file_relative})
-endforeach()
 
 #----------------------------------Compiling-----------------------------------
 add_library(glew STATIC ${source_files})
