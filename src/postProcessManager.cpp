@@ -34,11 +34,10 @@ void PostProcessor::render(sf::RenderTarget& window)
     //Hack the rectangle for this element so it sits perfectly on pixel boundaries.
     sf::Vector2u pixel_size{ window.getSize() };
 
-    // If the view or texture size is 0/impossible, or if the view size has
+    // If the window or texture size is 0/impossible, or if the window size has
     // changed, resize the viewport, render texture, and input/textureSizes.
     if (size.x < 1 || renderTexture.getSize().x < 1 || size != pixel_size)
     {
-        //Set the view so it covers this elements normal rect. So we can draw exactly the same on this texture as no the normal screen.
         size = pixel_size;
 
         //Setup a backBuffer to render the game on. Then we can render the backbuffer back to the main screen with full-screen shader effects
