@@ -79,11 +79,11 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
     foreach(Collisionable, sig, collisionable_significant)
     {
         float dist = sf::length(sig->getPosition() - position);
-        float s = 0.0;
+        float s = 0.f;
         if (dist < sig->multiplayer_replication_object_significant_range)
-            s = 1.0;
-        else if (dist < sig->multiplayer_replication_object_significant_range * 2.0)
-            s = 1.0 - ((dist - sig->multiplayer_replication_object_significant_range) / sig->multiplayer_replication_object_significant_range);
+            s = 1.f;
+        else if (dist < sig->multiplayer_replication_object_significant_range * 2.f)
+            s = 1.f - ((dist - sig->multiplayer_replication_object_significant_range) / sig->multiplayer_replication_object_significant_range);
         
         if (s > significance)
         {
@@ -105,10 +105,10 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
         float position_score = (delta_position / significant_range) * 100.f + delta_rotation * 10.f;
         float velocity_score = (delta_velocity / significant_range) * 100.f + delta_angular_velocity * 10.f;
         
-        float time_between_updates = (1.0 - (position_score + velocity_score) * significance);
-        if (time_between_updates < 0.05)
-            time_between_updates = 0.05;
-        if (time_after_update > 0.5 || time_after_update > time_between_updates)
+        float time_between_updates = (1.f - (position_score + velocity_score) * significance);
+        if (time_between_updates < 0.05f)
+            time_between_updates = 0.05f;
+        if (time_after_update > 0.5f || time_after_update > time_between_updates)
         {
             rep_data->last_update_time.restart();
             rep_data->position = position;

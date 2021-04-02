@@ -19,7 +19,7 @@ ResourceProvider::ResourceProvider()
 bool ResourceProvider::searchMatch(const string name, const string searchPattern)
 {
     std::vector<string> parts = searchPattern.split("*");
-    int pos = 0;
+    size_t pos = 0;
     if (parts[0].length() > 0)
     {
         if (name.find(parts[0]) != 0)
@@ -27,12 +27,12 @@ bool ResourceProvider::searchMatch(const string name, const string searchPattern
     }
     for(unsigned int n=1; n<parts.size(); n++)
     {
-        int offset = name.find(parts[n], pos);
+        int offset = name.find(parts[n], static_cast<int32_t>(pos));
         if (offset < 0)
             return false;
         pos = offset + parts[n].length();
     }
-    return pos == int(name.length());
+    return pos == name.length();
 }
 
 string ResourceStream::readLine()

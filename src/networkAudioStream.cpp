@@ -40,7 +40,7 @@ void NetworkAudioStream::onSeek(sf::Time timeOffset)
 void NetworkAudioStream::receivedPacketFromNetwork(const unsigned char* packet, int packet_size)
 {
     std::array<int16_t, 2880> samples_buffer;
-    int sample_count = opus_decode(decoder, packet, packet_size, samples_buffer.data(), samples_buffer.size(), 0);
+    int sample_count = opus_decode(decoder, packet, packet_size, samples_buffer.data(), static_cast<int32_t>(samples_buffer.size()), 0);
     if (sample_count > 0)
     {
         sf::Lock lock(samples_lock);

@@ -102,7 +102,7 @@ string HttpServerConnection::UriDecode(const string & sSrc)
    // (0-9, A-F) are reserved for future extension"
 
    const unsigned char * pSrc = (const unsigned char *)sSrc.c_str();
-   const int SRC_LEN = sSrc.length();
+   const auto SRC_LEN = sSrc.length();
    const unsigned char * const SRC_END = pSrc + SRC_LEN;
    // last decodable '%'
    const unsigned char * const SRC_LAST_DEC = SRC_END - 2;
@@ -197,8 +197,9 @@ void HttpServerConnection::parseUri(const string & sSrc)
             {
                 if (param.endswith('='))
                 {
-                    request.parameters[param.substr(0, param.length()-1)] = "";
-                    LOG(DEBUG) << "HTTP Parameter: " << param.substr(0, param.length()-1);
+                    auto key = param.substr(0, static_cast<int32_t>(param.length() - 1));
+                    request.parameters[key] = "";
+                    LOG(DEBUG) << "HTTP Parameter: " << key;
                 }
                 else
                 {
@@ -310,7 +311,7 @@ void HttpServerConnection::sendData(const char* data, size_t data_length)
         sendHeaders();
     if (data_length < 1)
         return;
-    string chunk_len_string = string::hex(data_length) + "\r\n";
+    string chunk_len_string = string::hex(static_cast<int32_t>(data_length)) + "\r\n";
     socket.send(chunk_len_string.c_str(), chunk_len_string.size());
     socket.send(data, data_length);
     socket.send("\r\n", 2);

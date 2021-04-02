@@ -49,7 +49,7 @@ sf::Socket::Status TcpSocket::send(sf::Packet& packet)
 
 void TcpSocket::private_send(sf::Packet& packet)
 {    
-    int size = packet.getDataSize();
+    auto size = packet.getDataSize();
     const void* data = packet.getData();
     
     sf::Uint32 packetSize = htonl(static_cast<sf::Uint32>(size));
@@ -58,18 +58,18 @@ void TcpSocket::private_send(sf::Packet& packet)
         sent = 0;
     if (sent < static_cast<int>(sizeof(packetSize)))
     {
-        backlog_data_block_size = sizeof(packetSize) - sent + size;
+        backlog_data_block_size = static_cast<int32_t>(sizeof(packetSize) - sent + size);
         backlog_data_block = new uint8_t[backlog_data_block_size];
         memcpy(backlog_data_block, reinterpret_cast<const char*>(&packetSize) + sent, sizeof(packetSize) - sent);
         memcpy(backlog_data_block + sizeof(packetSize) - sent, data, size);
         return;
     }
-    sent = ::send(getHandle(), reinterpret_cast<const char*>(data), size, SOCKET_FLAGS);
+    sent = ::send(getHandle(), reinterpret_cast<const char*>(data), static_cast<int32_t>(size), SOCKET_FLAGS);
     if (sent < 0)   //Note: No disconnect caught here. It will be caught in the receive call.
         sent = 0;
     if (sent < size)
     {
-        backlog_data_block_size = size - sent;
+        backlog_data_block_size = static_cast<int32_t>(size - sent);
         backlog_data_block = new uint8_t[backlog_data_block_size];
         memcpy(backlog_data_block, reinterpret_cast<const char*>(data) + sent, backlog_data_block_size);
         return;

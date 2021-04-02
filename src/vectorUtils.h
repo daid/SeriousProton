@@ -68,14 +68,14 @@ namespace sf
     template <typename T>
     Vector2<T> vector2FromAngle(const T& angle)
     {
-        T a = angle / 180.0 * M_PI;
+        auto a = static_cast<T>(angle / 180.f * M_PI);
         return Vector2<T>(cosf(a), sinf(a));
     }
 
     template <typename T>
     T vector2ToAngle(const Vector2<T>& v)
     {
-        return atan2(v.y, v.x) / M_PI * 180;
+        return atan2(v.y, v.x) / static_cast<T>(M_PI) * 180;
     }
 
     /* Return the difference between angle_a and angle_b within a range of -180 and 180 degrees */
@@ -91,7 +91,7 @@ namespace sf
     template <typename T>
     Vector2<T> rotateVector(const Vector2<T>& v, const T& angle)
     {
-        T a = angle / 180.0f * M_PI;
+        auto a = static_cast<T>(angle / 180.f * M_PI);
         return Vector2<T>(cosf(a), sinf(a)) * v.x + Vector2<T>(-sinf(a), cosf(a)) * v.y;
     }
 

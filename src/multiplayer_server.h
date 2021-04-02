@@ -29,8 +29,8 @@ class GameServer : public Updatable
     int version_number;
     string server_password;
     
-    int sendDataCounter;
-    int sendDataCounterPerClient;
+    size_t sendDataCounter;
+    size_t sendDataCounterPerClient;
     float sendDataRate;
     float sendDataRatePerClient;
     float update_run_time;

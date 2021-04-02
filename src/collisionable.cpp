@@ -168,7 +168,7 @@ void Collisionable::setCollisionRadius(float radius)
 void Collisionable::setCollisionBox(sf::Vector2f box_size, sf::Vector2f box_origin)
 {
     b2PolygonShape shape;
-    shape.SetAsBox(box_size.x / 2.0 / BOX2D_SCALE, box_size.y / 2.0 / BOX2D_SCALE, v2b(box_origin), 0);
+    shape.SetAsBox(box_size.x / 2.f / BOX2D_SCALE, box_size.y / 2.f / BOX2D_SCALE, v2b(box_origin), 0);
 
     createBody(&shape);
 }
@@ -177,22 +177,22 @@ void Collisionable::setCollisionShape(const std::vector<sf::Vector2f>& shapeList
 {
     for(unsigned int offset=1; offset<shapeList.size(); offset+=b2_maxPolygonVertices-2)
     {
-        unsigned int len = b2_maxPolygonVertices;
+        int32 len = b2_maxPolygonVertices;
         if (len > shapeList.size() - offset + 1)
-            len = shapeList.size() - offset + 1;
+            len = static_cast<int32>(shapeList.size() - offset + 1);
         if (len < 3)
             break;
 
         b2Vec2 points[b2_maxPolygonVertices];
         points[0] = v2b(shapeList[0]);
-        for(unsigned int n=0; n<len-1; n++)
+        for(auto n=0; n<len-1; n++)
             points[n+1] = v2b(shapeList[n+offset]);
 
         b2PolygonShape shape;
         bool valid = shape.Set(points, len);
         if (!valid)
         {
-            shape.SetAsBox(1.0/BOX2D_SCALE, 1.0/BOX2D_SCALE, points[0], 0);
+            shape.SetAsBox(1.f/BOX2D_SCALE, 1.f/BOX2D_SCALE, points[0], 0);
             LOG(ERROR) << "Failed to set valid collision shape: " << shapeList.size();
             for(unsigned int n=0; n<shapeList.size(); n++)
             {
@@ -225,11 +225,11 @@ void Collisionable::setCollisionChain(const std::vector<sf::Vector2f>& points, b
     }
     if (loop)
     {
-        shape.CreateLoop(b_points.data(), b_points.size());
+        shape.CreateLoop(b_points.data(), static_cast<int32>(b_points.size()));
     }
     else
     {
-        shape.CreateChain(b_points.data(), b_points.size());
+        shape.CreateChain(b_points.data(), static_cast<int32>(b_points.size()));
     }
 
     createBody(&shape);
@@ -319,13 +319,13 @@ sf::Vector2f Collisionable::getPosition()
 void Collisionable::setRotation(float angle)
 {
     if (body == NULL) return;
-    body->SetTransform(body->GetPosition(), angle / 180.0 * M_PI);
+    body->SetTransform(body->GetPosition(), angle / 180.f * static_cast<float>(M_PI));
 }
 
 float Collisionable::getRotation()
 {
     if (body == NULL) return 0;
-    return body->GetAngle() / M_PI * 180.0;
+    return body->GetAngle() / static_cast<float>(M_PI) * 180.f;
 }
 
 void Collisionable::setVelocity(sf::Vector2f velocity)
@@ -342,12 +342,12 @@ sf::Vector2f Collisionable::getVelocity()
 void Collisionable::setAngularVelocity(float velocity)
 {
     if (body == NULL) return;
-    body->SetAngularVelocity(velocity / 180.0 * M_PI);
+    body->SetAngularVelocity(velocity / 180.f * static_cast<float>(M_PI));
 }
 float Collisionable::getAngularVelocity()
 {
     if (body == NULL) return 0;
-    return body->GetAngularVelocity() / M_PI * 180.0;
+    return body->GetAngularVelocity() / static_cast<float>(M_PI) * 180.f;
 }
 
 void Collisionable::applyImpulse(sf::Vector2f position, sf::Vector2f impulse)
@@ -380,7 +380,7 @@ std::vector<sf::Vector2f> Collisionable::getCollisionShape()
             b2CircleShape* cs = static_cast<b2CircleShape*>(s);
             float radius = cs->m_radius * BOX2D_SCALE;
             for(int n=0; n<32; n++)
-                ret.push_back(sf::Vector2f(sin(float(n)/32.0*M_PI*2) * radius, cos(float(n)/32.0*M_PI*2) * radius));
+                ret.push_back(sf::Vector2f(sin(float(n)/32.f*static_cast<float>(M_PI)*2) * radius, cos(float(n)/32.f*static_cast<float>(M_PI)*2) * radius));
         }
         break;
     case b2Shape::e_polygon:

@@ -332,13 +332,13 @@ void GameServer::update(float gameDelta)
                             ptr += sizeof(int32_t) + sizeof(command_t);
                             if (client_id == clientList[n].client_id)
                             {
-                                gotAudioPacket(client_id, ptr, packet.getDataSize() - sizeof(int32_t) - sizeof(command_t));
+                                gotAudioPacket(client_id, ptr, static_cast<int32_t>(packet.getDataSize() - sizeof(int32_t) - sizeof(command_t)));
                             }
                             else
                             {
                                 for(auto id : clientList[n].proxy_ids)
                                     if (id == client_id)
-                                        gotAudioPacket(client_id, ptr, packet.getDataSize() - sizeof(int32_t) - sizeof(command_t));
+                                        gotAudioPacket(client_id, ptr, static_cast<int32_t>(packet.getDataSize() - sizeof(int32_t) - sizeof(command_t)));
                             }
                         }
                         break;
@@ -396,9 +396,9 @@ void GameServer::update(float gameDelta)
     }
 
     float dataPerSecond = float(sendDataCounter) / delta;
-    sendDataRate = sendDataRate * (1.0 - delta) + dataPerSecond * delta;
+    sendDataRate = sendDataRate * (1.f - delta) + dataPerSecond * delta;
     dataPerSecond = float(sendDataCounterPerClient) / delta;
-    sendDataRatePerClient = sendDataRatePerClient * (1.0 - delta) + dataPerSecond * delta;
+    sendDataRatePerClient = sendDataRatePerClient * (1.f - delta) + dataPerSecond * delta;
 
 #if MULTIPLAYER_COLLECT_DATA_STATS
     if (multiplayer_stats_dump.getElapsedTime().asSeconds() > 1.0)

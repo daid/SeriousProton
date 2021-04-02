@@ -55,7 +55,7 @@ void convert<T>::param(lua_State* L, int& idx, T& t)
 {
     //If you get a compile error here, then the function you are trying to register has an parameter that is not handled by the specialized converters, nor
     // by the default number conversion.
-    t = luaL_checknumber(L, idx++);
+    t = static_cast<T>(luaL_checknumber(L, idx++));
 }
 
 template<typename T>
@@ -205,8 +205,8 @@ template<typename T> struct convert<sf::Vector2<T> >
 {
     static void param(lua_State* L, int& idx, sf::Vector2<T>& v)
     {
-        v.x = luaL_checknumber(L, idx++);
-        v.y = luaL_checknumber(L, idx++);
+        v.x = static_cast<T>(luaL_checknumber(L, idx++));
+        v.y = static_cast<T>(luaL_checknumber(L, idx++));
     }
     
     static int returnType(lua_State* L, sf::Vector2<T> t)
@@ -221,9 +221,9 @@ template<typename T> struct convert<sf::Vector3<T> >
 {
     static void param(lua_State* L, int& idx, sf::Vector3<T>& v)
     {
-        v.x = luaL_checknumber(L, idx++);
-        v.y = luaL_checknumber(L, idx++);
-        v.z = luaL_checknumber(L, idx++);
+        v.x = static_cast<T>(luaL_checknumber(L, idx++));
+        v.y = static_cast<T>(luaL_checknumber(L, idx++));
+        v.z = static_cast<T>(luaL_checknumber(L, idx++));
     }
 };
 

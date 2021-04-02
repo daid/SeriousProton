@@ -836,7 +836,7 @@ static int num2straux (char *buff, lua_Number x) {
   else if (x == 0) {  /* can be -0... */
     sprintf(buff, LUA_NUMBER_FMT, x);
     strcat(buff, "x0p+0");  /* reuses '0/-0' from 'sprintf'... */
-    return strlen(buff);
+    return (int)strlen(buff);
   }
   else {
     int e;

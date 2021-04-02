@@ -40,7 +40,7 @@ inline const Logging& operator<<(const Logging& log, const unsigned int i) { ret
 inline const Logging& operator<<(const Logging& log, const long i) { return log << string(int(i)).c_str(); }
 inline const Logging& operator<<(const Logging& log, const unsigned long i) { return log << string(int(i)).c_str(); }
 inline const Logging& operator<<(const Logging& log, const float f) { return log << string(f).c_str(); }
-inline const Logging& operator<<(const Logging& log, const double f) { return log << string(f, 2).c_str(); }
+inline const Logging& operator<<(const Logging& log, const double f) { return log << string(static_cast<float>(f), 2).c_str(); }
 inline const Logging& operator<<(const Logging& log, const unsigned long long i) { return log << string(int(i)).c_str(); }
 template<typename T> inline const Logging& operator<<(const Logging& log, const sf::Vector2<T> v) { return log << v.x << "," << v.y; }
 template<typename T> inline const Logging& operator<<(const Logging& log, const sf::Rect<T> v) { return log << v.left << "," << v.top << ":" << v.width << "x" << v.height; }

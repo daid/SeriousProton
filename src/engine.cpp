@@ -94,10 +94,10 @@ void Engine::runMainLoop()
         {
             float delta = frameTimeClock.getElapsedTime().asSeconds();
             frameTimeClock.restart();
-            if (delta > 0.5)
-                delta = 0.5;
-            if (delta < 0.001)
-                delta = 0.001;
+            if (delta > 0.5f)
+                delta = 0.5f;
+            if (delta < 0.001f)
+                delta = 0.001f;
             delta *= gameSpeed;
 
             entityList.update();
@@ -108,7 +108,7 @@ void Engine::runMainLoop()
             ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();
             
-            sf::sleep(sf::seconds(1.0/60.0 - delta));
+            sf::sleep(sf::seconds(1.f/60.f - delta));
             //if (elapsedTime > 2.0)
             //    break;
         }
@@ -140,10 +140,10 @@ void Engine::runMainLoop()
 #endif
 
             float delta = frameTimeClock.restart().asSeconds();
-            if (delta > 0.5)
-                delta = 0.5;
-            if (delta < 0.001)
-                delta = 0.001;
+            if (delta > 0.5f)
+                delta = 0.5f;
+            if (delta < 0.001f)
+                delta = 0.001f;
             delta *= gameSpeed;
 #ifdef DEBUG
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tab))
