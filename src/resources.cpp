@@ -57,8 +57,15 @@ class FileResourceStream : public ResourceStream
 public:
     FileResourceStream(string filename)
     {
-        if(!std::filesystem::is_regular_file(filename.c_str()))
+        std::error_code ec;
+        if(!std::filesystem::is_regular_file(filename.c_str()), ec)
+        {
+            if(ec)
+            {
+                LOG(ERROR) << "OS error on file check : " << ec.message();
+            }
             open_success = false;
+        }
         else
             open_success = stream.open(filename);
     }
