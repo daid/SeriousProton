@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.7)
 project(Box2D LANGUAGES CXX)
 
 #---------------------------------File lists-----------------------------------
-set(source_files_relative
+set(source_files
     Collision/b2BroadPhase.cpp
     Collision/b2CollideEdge.cpp
     Collision/b2CollideCircle.cpp
@@ -53,10 +53,6 @@ set(source_files_relative
 
     Rope/b2Rope.cpp
 )
-set(source_files "")
-foreach(source_file_relative ${source_files_relative})
-    list(APPEND source_files ${CMAKE_CURRENT_SOURCE_DIR}/${source_file_relative})
-endforeach()
 
 #----------------------------------Compiling-----------------------------------
 add_library(box2d STATIC ${source_files})

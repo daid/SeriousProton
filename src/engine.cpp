@@ -10,23 +10,43 @@ int DEBUG_PobjCount;
 PObject* DEBUG_PobjListStart;
 #endif
 
-#ifdef ENABLE_CRASH_LOGGER
-#ifdef _WIN32
-//Exception handler for mingw, from https://github.com/jrfonseca/drmingw
-#include <exchndl.h>
-#endif//_WIN32
-#endif//ENABLE_CRASH_LOGGER
+#ifdef WIN32
+#include <windows.h>
+
+namespace
+{
+    HINSTANCE exchndl = nullptr;
+}
+#endif
 
 Engine* engine;
 
 Engine::Engine()
 {
     engine = this;
-#ifdef ENABLE_CRASH_LOGGER
-#ifdef _WIN32
-    ExcHndlInit();
-#endif//_WIN32
-#endif//ENABLE_CRASH_LOGGER
+
+#ifdef WIN32
+    // Setup crash reporter (Dr. MinGW) if available.
+    exchndl = LoadLibrary(TEXT("exchndl.dll"));
+
+    if (exchndl)
+    {
+        auto pfnExcHndlInit = GetProcAddress(exchndl, "ExcHndlInit");
+
+        if (pfnExcHndlInit)
+        {
+            pfnExcHndlInit();
+            LOG(INFO) << "Crash Reporter ON";
+        }
+        else
+        {
+            LOG(WARNING) << "Failed to initialize Crash Reporter";
+            FreeLibrary(exchndl);
+            exchndl = nullptr;
+        }
+    } 
+#endif // WIN32
+
     initRandom();
     windowManager = nullptr;
     CollisionManager::initialize();
@@ -34,7 +54,6 @@ Engine::Engine()
     gameSpeed = 1.0;
     running = true;
     elapsedTime = 0.0;
-    
     soundManager = new SoundManager();
 }
 Engine::~Engine()
@@ -43,6 +62,14 @@ Engine::~Engine()
         windowManager->close();
     delete soundManager;
     soundManager = nullptr;
+
+#ifdef WIN32
+    if (exchndl)
+    {
+        FreeLibrary(exchndl);
+        exchndl = nullptr;
+    }
+#endif // WIN32
 }
 
 void Engine::registerObject(string name, P<PObject> obj)

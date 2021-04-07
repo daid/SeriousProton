@@ -8,6 +8,7 @@
 #include <dirent.h>
 #endif
 #include <cstdio>
+#include <filesystem>
 
 PVector<ResourceProvider> resourceProviders;
 
@@ -56,7 +57,17 @@ class FileResourceStream : public ResourceStream
 public:
     FileResourceStream(string filename)
     {
-        open_success = stream.open(filename);
+        std::error_code ec;
+        if(!std::filesystem::is_regular_file(filename.c_str()), ec)
+        {
+            if(ec)
+            {
+                LOG(ERROR) << "OS error on file check : " << ec.message();
+            }
+            open_success = false;
+        }
+        else
+            open_success = stream.open(filename);
     }
     virtual ~FileResourceStream()
     {

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.7)
 project(lua LANGUAGES C)
 
 #---------------------------------File lists-----------------------------------
-set(source_files_relative
+set(source_files
 	lapi.c
 	lauxlib.c
 	lbaselib.c
@@ -33,12 +33,6 @@ set(source_files_relative
 	lvm.c
 	lzio.c
 )
-set(source_files "")
-foreach(source_file_relative ${source_files_relative})
-	list(APPEND source_files ${CMAKE_CURRENT_SOURCE_DIR}/${source_file_relative})
-endforeach()
-
-
 
 #----------------------------------Compiling-----------------------------------
 add_library(lua STATIC ${source_files})

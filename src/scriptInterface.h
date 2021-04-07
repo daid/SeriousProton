@@ -56,16 +56,16 @@ class ScriptSimpleCallback
 private:
 
     template<typename ARG, typename... ARGS>
-    int pushArgs(lua_State* L, ARG arg, ARGS... args)
+    int pushArgs(lua_State* L, ARG&& arg, ARGS&&... args)
     {
-        int headItemsPushedToStack = pushArgs(L, arg);
-        int tailItemsPushedToStack = pushArgs(L, args...);
+        int headItemsPushedToStack = pushArgs(L, std::forward<ARG>(arg));
+        int tailItemsPushedToStack = pushArgs(L, std::forward<ARGS>(args)...);
         return headItemsPushedToStack + tailItemsPushedToStack;
     }
     template<typename T>
-    int pushArgs(lua_State* L, T thing)
+    int pushArgs(lua_State* L, T&& thing)
     {
-        if (!convert<T>::returnType(L, thing))
+        if (!convert<T>::returnType(L, std::forward<T>(thing)))
         {
             // nothing was pushed on the stack. Push nil explicitly to maintain argument positions
             lua_pushnil(L);
@@ -116,7 +116,8 @@ public:
         {
             //Callback function didn't have an script environment attached to it, so we cannot check if that script still exists.
         }
-        else {
+        else
+        {
             //Stack is: [table] [pointer to script object]
             //Check if the script pointer is still available as key in the registry. If not, this reference is no longer valid and needs to be removed.
             lua_gettable(L, LUA_REGISTRYINDEX);

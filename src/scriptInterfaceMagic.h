@@ -41,37 +41,58 @@ public:
     }
 };
 
-string getScriptClassClassNameFromObject(P<PObject> object);
+string getScriptClassClassNameFromObject(const P<PObject>& object);
 
-/* By default convert parameters to numbers types. Should work for int and float types */
-template<typename T> struct convert
+template<typename T>
+struct convert
 {
-    static void param(lua_State* L, int& idx, T& t);
-    static int returnType(lua_State* L, T t);
+    // Pick the return *type* based on input:
+    // If it's a number-ish format, use it as is.
+    // Otherwise use a const reference.
+    using return_t = std::conditional_t<
+        std::is_arithmetic_v<T> || std::is_enum_v<T>, T,
+        std::add_lvalue_reference_t<
+            std::add_const_t<T>
+        >
+    >;
+    /* all parameters are by reference. */
+    static void param(lua_State* L, int& idx, std::add_lvalue_reference_t<T> t);
+    static int returnType(lua_State* L, return_t t);
 };
 
 template<typename T>
-void convert<T>::param(lua_State* L, int& idx, T& t)
+void convert<T>::param(lua_State* L, int& idx, std::add_lvalue_reference_t<T> t)
 {
     //If you get a compile error here, then the function you are trying to register has an parameter that is not handled by the specialized converters, nor
     // by the default number conversion.
-    t = luaL_checknumber(L, idx++);
+    if constexpr (std::is_integral_v<T>)
+        t = static_cast<T>(luaL_checkinteger(L, idx++));
+    else
+        t = static_cast<T>(luaL_checknumber(L, idx++));
 }
 
 template<typename T>
-int convert<T>::returnType(lua_State* L, T t)
+int convert<T>::returnType(lua_State* L, return_t t)
 {
-    lua_pushnumber(L, t);
-    return 1;
+    if constexpr (!std::is_reference_v<return_t>)
+    {
+        if constexpr (std::is_integral_v<T>)
+            lua_pushinteger(L, t);
+        else
+            lua_pushnumber(L, t);
+        return 1;
+    }
+    else
+    {
+        // We got a reference - just delegate to the non-reference implementation.
+        return convert<std::remove_reference_t<T>>::returnType(L, t);
+    }
+    
 }
 //Specialized template for the bool return type, so we return a lua boolean.
 template<> int convert<bool>::returnType(lua_State* L, bool b);
-//Specialized template for the long return type, so we return a lua 64-bit integer.
-template<> int convert<long>::returnType(lua_State* L, long b);
-//Specialized template for the int return type, so we return a lua 32-bit integer.
-template<> int convert<int>::returnType(lua_State* L, int b);
 //Specialized template for the string return type, so we return a lua string.
-template<> int convert<string>::returnType(lua_State* L, string s);
+template<> int convert<string>::returnType(lua_State* L, const string& s);
 
 //Have optional parameters, provided they are last arguments of script function
 template<typename T>
@@ -89,7 +110,8 @@ struct convert<std::optional<T>> //the >> power of c++17
 };
 
 /* Convert parameters to PObject pointers */
-template<class T> struct convert<T*>
+template<class T>
+struct convert<T*>
 {
     static void param(lua_State* L, int& idx, T*& ptr)
     {
@@ -118,7 +140,8 @@ template<class T> struct convert<T*>
     }
 };
 
-template<class T> struct convert< P<T> >
+template<class T>
+struct convert<P<T>>
 //TODO: Possible addition, make sure T is a subclass of PObject
 {
     static void param(lua_State* L, int& idx, P<T>& ptr)
@@ -145,7 +168,7 @@ template<class T> struct convert< P<T> >
         //printf("ObjParam: %p\n", ptr);
     }
     
-    static int returnType(lua_State* L, P<T> object)
+    static int returnType(lua_State* L, const P<T>& object)
     {
         PObject* ptr = *object;
         if (!ptr)
@@ -161,7 +184,7 @@ template<class T> struct convert< P<T> >
         }
         lua_pop(L, 1);
 
-        string class_name = getScriptClassClassNameFromObject(object);
+        string class_name = getScriptClassClassNameFromObject(ptr);
         if (class_name != "")
         {
             lua_newtable(L);
@@ -172,7 +195,7 @@ template<class T> struct convert< P<T> >
             lua_pushstring(L, "__ptr");
             P<PObject>** p = static_cast< P<PObject>** >(lua_newuserdata(L, sizeof(P<PObject>*)));
             *p = new P<PObject>();
-            (**p) = object;
+            (**p) = ptr;
             lua_settable(L, -3);
 
             lua_pushlightuserdata(L, ptr);
@@ -184,9 +207,10 @@ template<class T> struct convert< P<T> >
         return 0;
     }
 };
-template<class T> struct convert< PVector<T> >
+template<class T>
+struct convert<PVector<T>>
 {
-    static int returnType(lua_State* L, PVector<T> pvector)
+    static int returnType(lua_State* L, const PVector<T>& pvector)
     {
         return convert<std::vector<P<T>>>::returnType(L, pvector);
     }
@@ -201,51 +225,52 @@ template<> void convert<bool>::param(lua_State* L, int& idx, bool& b);
 template<> void convert<sf::Color>::param(lua_State* L, int& idx, sf::Color& color);
 
 /* Convert parameters to sf::Vector2 objects. */
-template<typename T> struct convert<sf::Vector2<T> >
+template<typename T>
+struct convert<sf::Vector2<T>>
 {
     static void param(lua_State* L, int& idx, sf::Vector2<T>& v)
     {
-        v.x = luaL_checknumber(L, idx++);
-        v.y = luaL_checknumber(L, idx++);
+        convert<T>::param(L, idx, v.x);
+        convert<T>::param(L, idx, v.y);
     }
     
-    static int returnType(lua_State* L, sf::Vector2<T> t)
+    static int returnType(lua_State* L, const sf::Vector2<T>& t)
     {
-        lua_pushnumber(L, t.x);
-        lua_pushnumber(L, t.y);
-        return 2;
+        auto result = convert<T>::returnType(L, t.x);
+        result += convert<T>::returnType(L, t.y);
+        return result;
     }
 };
 /* Convert parameters to sf::Vector3 objects. */
-template<typename T> struct convert<sf::Vector3<T> >
+template<typename T>
+struct convert<sf::Vector3<T>>
 {
     static void param(lua_State* L, int& idx, sf::Vector3<T>& v)
     {
-        v.x = luaL_checknumber(L, idx++);
-        v.y = luaL_checknumber(L, idx++);
-        v.z = luaL_checknumber(L, idx++);
+        convert<T>::param(L, idx, v.x);
+        convert<T>::param(L, idx, v.y);
+        convert<T>::param(L, idx, v.z);
     }
 };
 
 /* Convert parameters to std::vector<?> objects. */
-template<typename T> struct convert<std::vector<T> >
+template<typename T>
+struct convert<std::vector<T>>
 {
     static void param(lua_State* L, int& idx, std::vector<T>& v)
     {
-        while(idx <= lua_gettop(L))
+        while (idx <= lua_gettop(L))
         {
-            T var;
-            convert<T>::param(L, idx, var);
-            v.push_back(var);
+            convert<T>::param(L, idx, v.emplace_back());
         }
     }
 
-    static int returnType(lua_State* L, std::vector<T> vector)
+    static int returnType(lua_State* L, const std::vector<T>& vector)
     {
         lua_newtable(L);
         int table_idx = lua_gettop(L);
         int n = 1;
-        for(auto val : vector)
+        for(const auto& val : vector)
         {
             int nr_vals = convert<T>::returnType(L, val);
             if (nr_vals > 1)
@@ -264,9 +289,10 @@ template<typename T> struct convert<std::vector<T> >
     }
 };
 /* Convert parameters to std::map<string, ?> objects. */
-template<typename T> struct convert<std::map<string, T> >
+template<typename T>
+struct convert<std::map<string, T>>
 {
-    static int returnType(lua_State* L, std::map<string, T> map)
+    static int returnType(lua_State* L, const std::map<string, T>& map)
     {
         lua_newtable(L);
         int table_idx = lua_gettop(L);
@@ -291,44 +317,6 @@ template<typename T> struct convert<std::map<string, T> >
 
 template<class T, typename FuncProto> struct call
 {
-};
-
-template<class T> struct call<T, void(T::*)() >
-{
-    typedef void(T::*FuncProto)();
-    
-    static int function(lua_State* L)
-    {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        T* obj = NULL;
-        int idx = 1;
-        convert<T*>::param(L, idx, obj);
-        if (obj)
-            (obj->*func)();
-        lua_pushvalue(L, 1);
-        return 1;
-    }
-};
-
-template<class T, class R> struct call<T, R(T::*)() >
-{
-    typedef R(T::*FuncProto)();
-    
-    static int function(lua_State* L)
-    {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        T* obj = NULL;
-        int idx = 1;
-        convert<T*>::param(L, idx, obj);
-        if (obj)
-        {
-            R r = (obj->*func)();
-            return convert<R>::returnType(L, r);
-        }
-        return 0;
-    }
 };
 
 class ScriptCallback;
@@ -402,199 +390,95 @@ template<class T> struct call<T, ScriptCallback T::* >
     }
 };
 
-template<class T, typename P1> struct call<T, void(T::*)(P1) >
+namespace call_details
 {
-    typedef void(T::*FuncProto)(P1 p1);
-    
-    static int function(lua_State* L)
+    template<typename T>
+    struct defaultReturn
     {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        T* obj = NULL;
-        P1 p1;
-        int idx = 1;
-        convert<T*>::param(L, idx, obj);
-        convert<P1>::param(L, idx, p1);
-        if (obj)
-            (obj->*func)(p1);
-        lua_pushvalue(L, 1);
-        return 1;
-    }
-};
+        static int value(lua_State*)
+        {
+            return 0;
+        }
+    };
 
-template<class T, typename R, typename P1> struct call<T, R(T::*)(P1) >
-{
-    typedef R(T::*FuncProto)(P1 p1);
-    
-    static int function(lua_State* L)
+    template<>
+    struct defaultReturn<void>
     {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        P1 p1;
-        T* obj = NULL;
+        static int value(lua_State* L)
+        {
+            lua_pushvalue(L, 1);
+            return 1;
+        }
+    };
+    // Iterate over the tuple, and calls convert<> on each of its item.
+    template<typename Tuple, std::size_t... Is>
+    void convertParametersImpl(lua_State* L, int& idx, Tuple& params, std::index_sequence<Is...>)
+    {
+        ((convert<std::tuple_element_t<Is, Tuple>>::param(L, idx, std::get<Is>(params))), ...);
+    }
+
+    // Helper function to run conversion on a tuple.
+    template<typename... Args>
+    void convertParameters(lua_State* L, int& idx, std::tuple<Args...>& params)
+    {
+        convertParametersImpl(L, idx, params, std::index_sequence_for<Args...>{});
+    }
+
+    // Execute a function by unpacking a tuple into the function's parameters.
+    template<typename T, typename Function, typename Tuple, std::size_t... Is>
+    auto executeFunctionImpl(T* obj, Function&& func, Tuple& params, std::index_sequence<Is...>)
+    {
+        return (obj->*func)(std::get<Is>(params)...);
+    }
+
+    // Helper function to execute a function passing a list of arguments into a tuple.
+    template<typename T, typename Function, typename... Args>
+    auto executeFunction(T* obj, Function&& func, std::tuple<Args...>& params)
+    {
+        return executeFunctionImpl(obj, std::forward<Function>(func), params, std::index_sequence_for<Args...>{});
+    }
+
+    template<typename T, typename Function, typename R, typename... Args>
+    auto callFunction(lua_State* L)
+    {
+        Function* func_ptr = reinterpret_cast<Function*>(lua_touserdata(L, lua_upvalueindex(1)));
+        Function func = *func_ptr;
+        std::tuple<std::remove_const_t<std::remove_reference_t<Args>>...> params;
+        T* obj = nullptr;
         int idx = 1;
+
         convert<T*>::param(L, idx, obj);
-        convert<P1>::param(L, idx, p1);
+        convertParameters(L, idx, params);
         if (obj)
         {
-            R r = (obj->*func)(p1);
-            return convert<R>::returnType(L, r);
+            if constexpr (!std::is_void_v<R>)
+                return convert<R>::returnType(L, executeFunction(obj, func, params));
+            else
+                executeFunction(obj, func, params);
         }
-        return 0;
-    }
-};
 
-template<class T, typename P1, typename P2> struct call<T, void(T::*)(P1, P2) >
+        return defaultReturn<R>::value(L);
+    }
+}
+
+
+template<class T, typename R, typename... Args> struct call<T, R(T::*)(Args...) >
 {
-    typedef void(T::*FuncProto)(P1 p1, P2 p2);
+    using FuncProto = R(T::*)(Args...);
     
     static int function(lua_State* L)
     {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        P1 p1;
-        P2 p2;
-        T* obj = NULL;
-        int idx = 1;
-        convert<T*>::param(L, idx, obj);
-        convert<P1>::param(L, idx, p1);
-        convert<P2>::param(L, idx, p2);
-        if (obj)
-            (obj->*func)(p1, p2);
-        lua_pushvalue(L, 1);
-        return 1;
+        return call_details::callFunction<T, FuncProto, R, Args...>(L);
     }
 };
 
-template<class T, typename R, typename P1, typename P2> struct call<T, R(T::*)(P1, P2) >
+template<class T, typename R, typename... Args> struct call<T, R(T::*)(Args...) const>
 {
-    typedef R(T::*FuncProto)(P1 p1, P2 p2);
-    
-    static int function(lua_State* L)
-    {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        P1 p1;
-        P2 p2;
-        T* obj = NULL;
-        int idx = 1;
-        convert<T*>::param(L, idx, obj);
-        convert<P1>::param(L, idx, p1);
-        convert<P2>::param(L, idx, p2);
-        if (obj)
-        {
-            R r = (obj->*func)(p1, p2);
-            return convert<R>::returnType(L, r);
-        }
-        return 0;
-    }
-};
+    using FuncProto = R(T::*)(Args...) const;
 
-template<class T, typename P1, typename P2, typename P3> struct call<T, void(T::*)(P1, P2, P3) >
-{
-    typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3);
-    
     static int function(lua_State* L)
     {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        P1 p1;
-        P2 p2;
-        P3 p3;
-        T* obj = NULL;
-        int idx = 1;
-        convert<T*>::param(L, idx, obj);
-        convert<P1>::param(L, idx, p1);
-        convert<P2>::param(L, idx, p2);
-        convert<P3>::param(L, idx, p3);
-        if (obj)
-            (obj->*func)(p1, p2, p3);
-        lua_pushvalue(L, 1);
-        return 1;
-    }
-};
-
-template<class T, typename P1, typename P2, typename P3, typename P4> struct call<T, void(T::*)(P1, P2, P3, P4) >
-{
-    typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3, P4 p4);
-    
-    static int function(lua_State* L)
-    {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        P1 p1;
-        P2 p2;
-        P3 p3;
-        P4 p4;
-        T* obj = NULL;
-        int idx = 1;
-        convert<T*>::param(L, idx, obj);
-        convert<P1>::param(L, idx, p1);
-        convert<P2>::param(L, idx, p2);
-        convert<P3>::param(L, idx, p3);
-        convert<P4>::param(L, idx, p4);
-        if (obj)
-            (obj->*func)(p1, p2, p3, p4);
-        lua_pushvalue(L, 1);
-        return 1;
-    }
-};
-
-template<class T, typename P1, typename P2, typename P3, typename P4, typename P5> struct call<T, void(T::*)(P1, P2, P3, P4, P5) >
-{
-    typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5);
-    
-    static int function(lua_State* L)
-    {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        P1 p1;
-        P2 p2;
-        P3 p3;
-        P4 p4;
-        P5 p5;
-        T* obj = NULL;
-        int idx = 1;
-        convert<T*>::param(L, idx, obj);
-        convert<P1>::param(L, idx, p1);
-        convert<P2>::param(L, idx, p2);
-        convert<P3>::param(L, idx, p3);
-        convert<P4>::param(L, idx, p4);
-        convert<P5>::param(L, idx, p5);
-        if (obj)
-            (obj->*func)(p1, p2, p3, p4, p5);
-        lua_pushvalue(L, 1);
-        return 1;
-    }
-};
-
-template<class T, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6> struct call<T, void(T::*)(P1, P2, P3, P4, P5, P6) >
-{
-    typedef void(T::*FuncProto)(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6);
-    
-    static int function(lua_State* L)
-    {
-        FuncProto* func_ptr = reinterpret_cast<FuncProto*>(lua_touserdata(L, lua_upvalueindex (1)));
-        FuncProto func = *func_ptr;
-        P1 p1;
-        P2 p2;
-        P3 p3;
-        P4 p4;
-        P5 p5;
-        P6 p6;
-        T* obj = NULL;
-        int idx = 1;
-        convert<T*>::param(L, idx, obj);
-        convert<P1>::param(L, idx, p1);
-        convert<P2>::param(L, idx, p2);
-        convert<P3>::param(L, idx, p3);
-        convert<P4>::param(L, idx, p4);
-        convert<P5>::param(L, idx, p5);
-        convert<P6>::param(L, idx, p6);
-        if (obj)
-            (obj->*func)(p1, p2, p3, p4, p5, p6);
-        lua_pushvalue(L, 1);
-        return 1;
+        return call_details::callFunction<T, FuncProto, R, Args...>(L);
     }
 };
 
@@ -687,25 +571,25 @@ public:
         }
         
         lua_pushstring(L, "__gc");
-		lua_pushcfunction(L, gc_collect);
-		lua_settable(L, metatable);
+        lua_pushcfunction(L, gc_collect);
+        lua_settable(L, metatable);
 
         lua_pushstring(L, "__index");
-		lua_newtable(L);
-		int functionTable = lua_gettop(L);
-		registerFunctions(L, functionTable);
+        lua_newtable(L);
+        int functionTable = lua_gettop(L);
+        registerFunctions(L, functionTable);
 
         lua_pushstring(L, "isValid");
-		lua_pushcclosure(L, isValid, 0);
-		lua_settable(L, functionTable);
+        lua_pushcclosure(L, isValid, 0);
+        lua_settable(L, functionTable);
 
         lua_pushstring(L, "typeName");
-		lua_pushstring(L, objectTypeName);
-		lua_settable(L, functionTable);
+        lua_pushstring(L, objectTypeName);
+        lua_settable(L, functionTable);
 
         lua_pushstring(L, "destroy");
-		lua_pushcclosure(L, destroy, 0);
-		lua_settable(L, functionTable);
+        lua_pushcclosure(L, destroy, 0);
+        lua_settable(L, functionTable);
 
         if (objectBaseTypeName != NULL)
         {
@@ -718,9 +602,9 @@ public:
             lua_setmetatable(L, functionTable);//Set the metatable of the __index table to the base class
         }
 
-		lua_settable(L, metatable);//Set the __index value in the metatable
-		
-		lua_pop(L, 1);
+        lua_settable(L, metatable);//Set the __index value in the metatable
+        
+        lua_pop(L, 1);
     }
     
     static void registerFunctions(lua_State* L, int table);
@@ -736,8 +620,8 @@ public:
         /// * A wrong class given with it (you should give the base class of the function, not a sub class)
         /// * No call handler for the parameter/return type.
         lua_CFunction fptr = &call<TT, FuncProto>::function;
-		lua_pushcclosure(L, fptr, 1);
-		lua_settable(L, table);
+        lua_pushcclosure(L, fptr, 1);
+        lua_settable(L, table);
     }
 
     template<class TT, class FuncProto>
@@ -751,8 +635,8 @@ public:
         /// * A wrong class given with it (you should give the base class of the function, not a sub class)
         /// * No call handler for the parameter/return type.
         lua_CFunction fptr = &call<TT, FuncProto>::setcallbackFunction;
-		lua_pushcclosure(L, fptr, 1);
-		lua_settable(L, table);
+        lua_pushcclosure(L, fptr, 1);
+        lua_settable(L, table);
     }
 };
 

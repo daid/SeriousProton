@@ -3,18 +3,6 @@
 
 bool PostProcessor::global_post_processor_enabled = true;
 
-static int powerOfTwo(int v)
-{
-    v--;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v++;
-    return v;
-}
-
 PostProcessor::PostProcessor(string name, RenderChain* chain)
 : chain(chain)
 {
@@ -41,41 +29,44 @@ void PostProcessor::render(sf::RenderTarget& window)
     {
         chain->render(window);
         return;
-    }
+    } 
 
-    sf::View view(window.getView());
+    //Hack the rectangle for this element so it sits perfectly on pixel boundaries.
+    sf::Vector2u pixel_size{ window.getSize() };
 
     // If the window or texture size is 0/impossible, or if the window size has
     // changed, resize the viewport, render texture, and input/textureSizes.
-    if (size.x < 1 || renderTexture.getSize().x < 1 || size != window.getSize())
+    if (size.x < 1 || renderTexture.getSize().x < 1 || size != pixel_size)
     {
-        size = window.getSize();
+        size = pixel_size;
 
         //Setup a backBuffer to render the game on. Then we can render the backbuffer back to the main screen with full-screen shader effects
-        int w = view.getViewport().width * size.x;
-        int h = view.getViewport().height * size.y;
-        int tw = powerOfTwo(w);
-        int th = powerOfTwo(h);
-        view.setViewport(sf::FloatRect(0, 1.0 - float(h) / float(th), float(w) / float(tw), float(h) / float(th)));
+        renderTexture.create(size.x, size.y, true);
 
-        renderTexture.create(tw, th, true);
         renderTexture.setRepeated(true);
         renderTexture.setSmooth(true);
-        renderTexture.setView(view);
 
-        shader.setUniform("inputSize", sf::Vector2f(size.x, size.y));
-        shader.setUniform("textureSize", sf::Vector2f(renderTexture.getSize().x, renderTexture.getSize().y));
+        shader.setUniform("inputSize", sf::Vector2f{ size });
+        shader.setUniform("textureSize", sf::Vector2f{ renderTexture.getSize() });
     }
 
+    // The view can evolve independently from the window size - update every frame.
+    renderTexture.setView(window.getView());
     renderTexture.clear(sf::Color(20, 20, 20));
+   
     chain->render(renderTexture);
 
     renderTexture.display();
 
-    sf::Sprite backBufferSprite(renderTexture.getTexture(), sf::IntRect(0, renderTexture.getSize().y - view.getViewport().height * size.y, view.getViewport().width * size.x, view.getViewport().height * size.y));
-    backBufferSprite.setScale(view.getSize().x / float(renderTexture.getSize().x) / renderTexture.getView().getViewport().width, view.getSize().y / float(renderTexture.getSize().y) / renderTexture.getView().getViewport().height);
-
+    // The RT is a fullscreen texture.
+    // Setup the view to cover the entire RT.
+    window.setView(sf::View({ 0.f, 0.f, static_cast<float>(renderTexture.getSize().x), static_cast<float>(renderTexture.getSize().y) }));
+    
+    sf::Sprite backBufferSprite(renderTexture.getTexture());
     window.draw(backBufferSprite, &shader);
+
+    // Restore view
+    window.setView(renderTexture.getView());
 }
 
 void PostProcessor::setUniform(string name, float value)
