@@ -56,16 +56,16 @@ class ScriptSimpleCallback
 private:
 
     template<typename ARG, typename... ARGS>
-    int pushArgs(lua_State* L, ARG arg, ARGS... args)
+    int pushArgs(lua_State* L, ARG&& arg, ARGS&&... args)
     {
-        int headItemsPushedToStack = pushArgs(L, arg);
-        int tailItemsPushedToStack = pushArgs(L, args...);
+        int headItemsPushedToStack = pushArgs(L, std::forward<ARG>(arg));
+        int tailItemsPushedToStack = pushArgs(L, std::forward<ARGS>(args)...);
         return headItemsPushedToStack + tailItemsPushedToStack;
     }
     template<typename T>
-    int pushArgs(lua_State* L, T thing)
+    int pushArgs(lua_State* L, T&& thing)
     {
-        if (!convert<T>::returnType(L, thing))
+        if (!convert<T>::returnType(L, std::forward<T>(thing)))
         {
             // nothing was pushed on the stack. Push nil explicitly to maintain argument positions
             lua_pushnil(L);
@@ -90,7 +90,7 @@ public:
     //Call this script function.
     //Returns false when the executed function is no longer available, or returns nil or false.
     // else it will return true.
-    template<typename... Args> bool call(Args... args)
+    template<typename... Args> bool call(Args&&... args)
     {
         lua_State* L = ScriptObject::L;
         
@@ -128,7 +128,7 @@ public:
         lua_pushstring(L, "function");
         lua_rawget(L, -2);
 
-        int i = pushArgs(L, args...);
+        int i = pushArgs(L, std::forward<Args>(args)...);
         if (i < 0) // error condition
         {
             lua_pop(L, 2);
