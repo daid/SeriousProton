@@ -46,11 +46,11 @@ public:
         _destroyed_flag = true;
     }
     
-    int getRefCount()
+    int getRefCount() const
     { 
         return refCount;
     }
-    bool isDestroyed()
+    bool isDestroyed() const
     {
         return _destroyed_flag;
     }
@@ -124,7 +124,17 @@ public:
         return ptr != NULL;
     }
 
+    explicit operator bool() const
+    {
+        return ptr != nullptr && !ptr->isDestroyed();
+    }
+
     template<class T2> operator P<T2>()
+    {
+        return dynamic_cast<T2*>(**this);
+    }
+
+    template<class T2> operator P<T2>() const
     {
         return dynamic_cast<T2*>(**this);
     }
@@ -158,7 +168,7 @@ protected:
 template<class T>
 class PVector: public std::vector<P<T> > {
 public:
-    bool has(P<T> obj)
+    bool has(const P<T>& obj)
     {
         for(unsigned int n=0; n<std::vector<P<T> >::size(); n++)
             if ((*this)[n] == obj)
@@ -166,7 +176,7 @@ public:
         return false;
     }
 
-    void remove(P<T> obj)
+    void remove(const P<T>& obj)
     {
         for(unsigned int n=0; n<std::vector<P<T> >::size(); n++)
         {
