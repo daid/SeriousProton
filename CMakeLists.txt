@@ -190,13 +190,20 @@ target_link_libraries(seriousproton_deps
     INTERFACE 
         box2d lua glew ${SFML_LIBRARIES}
         "$<$<BOOL:${WIN32}>:wsock32>"
-        # Necessary for some older compilers.
-        $<BUILD_INTERFACE:$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.1>>:stdc++fs>>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
         "$<BUILD_INTERFACE:opus;$<$<BOOL:${SERIOUSPROTON_WITH_JSON}>:json11>>"
 )
 
+if(NOT ANDROID)
+    # Necessary for some older compilers (except on android, where the fs api isn't used)
+    if(CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
+        target_link_libraries(seriousproton_deps INTERFACE $<BUILD_INTERFACE:stdc++fs>)
+    endif()
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)
+        target_link_libraries(seriousproton_deps INTERFACE $<BUILD_INTERFACE:c++fs>)
+    endif()
+endif()
 
 ## Object list
 add_library(seriousproton_objects OBJECT ${source_files})
