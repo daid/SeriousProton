@@ -59,7 +59,7 @@ public:
     {
 #ifndef ANDROID
         std::error_code ec;
-        if(!std::filesystem::is_regular_file(filename.c_str()), ec)
+        if(!std::filesystem::is_regular_file(filename.c_str(), ec))
         {
             if(ec)
             {
