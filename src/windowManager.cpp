@@ -108,8 +108,8 @@ void WindowManager::create()
 
         while(windowWidth >= int(desktop.width) || windowHeight >= int(desktop.height) - 100)
         {
-            windowWidth = static_cast<int>(std::floorf(windowWidth * 0.9f));
-            windowHeight = static_cast<int>(std::floorf(windowHeight * 0.9f));
+            windowWidth = static_cast<int>(std::floor(windowWidth * 0.9f));
+            windowHeight = static_cast<int>(std::floor(windowHeight * 0.9f));
         }
     }
 
