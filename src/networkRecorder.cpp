@@ -37,14 +37,14 @@ bool NetworkAudioRecorder::onProcessSamples(const sf::Int16* samples, std::size_
 {
     //Add samples to the sample buffer. The update function (which is run from the main thread) will handle sending of the actual audio packet.
     sample_buffer_mutex.lock();
-    unsigned int old_size = sample_buffer.size();
+    auto old_size = sample_buffer.size();
     sample_buffer.resize(old_size + sample_count);
     memcpy(&sample_buffer[old_size], samples, sizeof(sf::Int16) * sample_count);
     sample_buffer_mutex.unlock();
     return true;
 }
 
-void NetworkAudioRecorder::update(float delta)
+void NetworkAudioRecorder::update(float /*delta*/)
 {
     for(size_t idx=0; idx<keys.size(); idx++)
     {
@@ -53,7 +53,7 @@ void NetworkAudioRecorder::update(float delta)
             if (active_key_index == -1)
             {
                 samples_till_stop = -1;
-                active_key_index = idx;
+                active_key_index = static_cast<int>(idx);
                 start(48000);
                 startSending();
             } else if (idx == size_t(active_key_index))
@@ -69,7 +69,7 @@ void NetworkAudioRecorder::update(float delta)
     {
         if (InputHandler::keyboardIsReleased(keys[active_key_index].key))
         {
-            samples_till_stop = 48000 * 0.5;
+            samples_till_stop = 48000 / 2;
         }
     }
     if (samples_till_stop == 0)
