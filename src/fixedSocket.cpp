@@ -49,7 +49,7 @@ sf::Socket::Status TcpSocket::send(sf::Packet& packet)
 
 void TcpSocket::private_send(sf::Packet& packet)
 {    
-    int size = packet.getDataSize();
+    auto size = static_cast<int>(packet.getDataSize());
     const void* data = packet.getData();
     
     sf::Uint32 packetSize = htonl(static_cast<sf::Uint32>(size));
@@ -126,7 +126,7 @@ void UDPbroadcastPacket(sf::UdpSocket& socket, sf::Packet packet, int port_nr)
             for(unsigned int n=0; n<pIPAddrTable->dwNumEntries; n++)
             {
                 sf::IpAddress ip(ntohl((pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask));
-                socket.send(packet, ip, port_nr);
+                socket.send(packet, ip, static_cast<uint16_t>(port_nr));
             }
         }
         free(pIPAddrTable);
@@ -152,7 +152,7 @@ void UDPbroadcastPacket(sf::UdpSocket& socket, const void* data, std::size_t siz
             for(unsigned int n=0; n<pIPAddrTable->dwNumEntries; n++)
             {
                 sf::IpAddress ip(ntohl((pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask));
-                socket.send(data, size, ip, port_nr);
+                socket.send(data, size, ip, static_cast<uint16_t>(port_nr));
             }
         }
         free(pIPAddrTable);
