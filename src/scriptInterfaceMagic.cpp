@@ -92,16 +92,16 @@ template<> void convert<sf::Color>::param(lua_State* L, int& idx, sf::Color& col
     
     if (str.startswith("#") && str.length() == 7)
     {
-        color.r = str.substr(1, 2).toInt(16);
-        color.g = str.substr(3, 2).toInt(16);
-        color.b = str.substr(5, 2).toInt(16);
+        color.r = static_cast<uint8_t>(str.substr(1, 2).toInt(16));
+        color.g = static_cast<uint8_t>(str.substr(3, 2).toInt(16));
+        color.b = static_cast<uint8_t>(str.substr(5, 2).toInt(16));
     }
     
     std::vector<string> parts = str.split(",");
     if (parts.size() == 3)
     {
-        color.r = parts[0].toInt();
-        color.g = parts[1].toInt();
-        color.b = parts[2].toInt();
+        color.r = static_cast<uint8_t>(parts[0].toInt());
+        color.g = static_cast<uint8_t>(parts[1].toInt());
+        color.b = static_cast<uint8_t>(parts[2].toInt());
     }
 }
