@@ -30,7 +30,7 @@ P<MultiplayerObject> GameClient::getObjectById(int32_t id)
     return NULL;
 }
 
-void GameClient::update(float delta)
+void GameClient::update(float /*delta*/)
 {
     if (status == ReadyToConnect)
     {
@@ -191,7 +191,7 @@ void GameClient::update(float delta)
                     packet >> id;
                     const unsigned char* ptr = reinterpret_cast<const unsigned char*>(packet.getData());
                     ptr += sizeof(command_t) + sizeof(int32_t);
-                    int32_t size = packet.getDataSize() - sizeof(command_t) - sizeof(int32_t);
+                    int32_t size = static_cast<int>(packet.getDataSize()) - sizeof(command_t) - sizeof(int32_t);
                     audio_stream_manager.receivedPacketFromNetwork(id, ptr, size);
                 }
                 break;
@@ -242,7 +242,7 @@ void GameClient::sendPassword(string password)
 
 void GameClient::runConnect()
 {
-    if (socket.connect(server, port_nr, sf::seconds(5)) == sf::TcpSocket::Done)
+    if (socket.connect(server, static_cast<uint16_t>(port_nr), sf::seconds(5)) == sf::TcpSocket::Done)
     {
         LOG(INFO) << "GameClient: Connected, waiting for authentication";
         status = Authenticating;
