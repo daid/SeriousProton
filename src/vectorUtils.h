@@ -6,7 +6,7 @@
 #include <SFML/Graphics/Color.hpp>
 /** math.h no longer defines M_PI in C++11. For... reasons? */
 #ifndef M_PI
-#define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846f
 #endif
 
 /**
