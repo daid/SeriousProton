@@ -46,7 +46,7 @@ void SoundManager::playMusicSet(std::vector<string> filenames)
 {
     music_set = filenames;
     if (music_set.size() > 0)
-        startMusic(getResourceStream(music_set[irandom(0, music_set.size() - 1)]), false);
+        startMusic(getResourceStream(music_set[irandom(0, static_cast<int>(music_set.size()) - 1)]), false);
     else
         stopMusic();
 }
@@ -148,7 +148,7 @@ int SoundManager::playSound(string name, float pitch, float volume, bool loop)
 
     // Return the sound's index in activeSoundList[].
     // Returns -1 if the list was full of playing sounds.
-    return playSoundData(data, pitch, volume * (master_sound_volume / 100.0), loop);
+    return playSoundData(data, pitch, volume * (master_sound_volume / 100.f), loop);
 }
 
 void SoundManager::setListenerPosition(sf::Vector2f position, float angle)
@@ -185,7 +185,7 @@ int SoundManager::playSound(string name, sf::Vector2f position, float min_distan
             sound.setAttenuation(attenuation);
             sound.setPosition(position.x, 0, position.y);
             sound.setPitch(pitch);
-            sound.setVolume(volume * (master_sound_volume / 100.0));
+            sound.setVolume(volume * (master_sound_volume / 100.f));
             sound.setLoop(loop);
             sound.play();
             return int(n);
@@ -239,10 +239,10 @@ void SoundManager::playTextToSpeech(string text)
     if (status == sf::Http::Response::Ok)
     {
         string wave = response.getBody();
-        sf::SoundBuffer* data = new sf::SoundBuffer();
+        sf::SoundBuffer* soundbuffer = new sf::SoundBuffer();
         data->loadFromMemory(wave.data(), wave.size());
-        soundMap[name] = data;
-        playSoundData(data, 1.0, 100.0, false);
+        soundMap[name] = soundbuffer;
+        playSoundData(soundbuffer, 1.f, 100.f, false);
     }
     else
     {
@@ -331,7 +331,7 @@ void SoundManager::updateTick()
             {
                 if (music_channel.music.getPlayingOffset() > music_channel.music.getDuration() - sf::seconds(fade_music_time))
                 {
-                    startMusic(getResourceStream(music_set[irandom(0, music_set.size() - 1)]), false);
+                    startMusic(getResourceStream(music_set[irandom(0, static_cast<int>(music_set.size()) - 1)]), false);
                 }
             }
         }
@@ -346,9 +346,9 @@ void SoundManager::updateChannel(MusicChannel& channel, float delta)
         break;
     case FadeIn:
         channel.fade_delay -= delta;
-        if (channel.fade_delay > 0.0)
+        if (channel.fade_delay > 0.f)
         {
-            channel.music.setVolume(music_volume * (1.0 - (channel.fade_delay / fade_music_time)));
+            channel.music.setVolume(music_volume * (1.f - (channel.fade_delay / fade_music_time)));
         }else{
             channel.music.setVolume(music_volume);
             channel.mode = None;
@@ -356,7 +356,7 @@ void SoundManager::updateChannel(MusicChannel& channel, float delta)
         break;
     case FadeOut:
         channel.fade_delay -= delta;
-        if (channel.fade_delay > 0.0)
+        if (channel.fade_delay > 0.f)
         {
             channel.music.setVolume(music_volume * (channel.fade_delay / fade_music_time));
         }else{
