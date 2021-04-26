@@ -6,8 +6,8 @@
 
 static int random(lua_State* L)
 {
-    float rMin = luaL_checknumber(L, 1);
-    float rMax = luaL_checknumber(L, 2);
+    float rMin = static_cast<float>(luaL_checknumber(L, 1));
+    float rMax = static_cast<float>(luaL_checknumber(L, 2));
     rMin = std::min(rMin, rMax);
     lua_pushnumber(L, random(rMin, rMax));
     return 1;
@@ -18,8 +18,8 @@ REGISTER_SCRIPT_FUNCTION(random);
 
 static int irandom(lua_State* L)
 {
-    int rMin = luaL_checkinteger(L, 1);
-    int rMax = luaL_checkinteger(L, 2);
+    int rMin = static_cast<int>(luaL_checkinteger(L, 1));
+    int rMax = static_cast<int>(luaL_checkinteger(L, 2));
     rMin = std::min(rMin, rMax);
     lua_pushinteger(L, irandom(rMin, rMax));
     return 1;
@@ -249,7 +249,7 @@ static string luaToJSON(lua_State* L, int index)
     if (lua_isboolean(L, index))
         return lua_toboolean(L, index) ? "true" : "false";
     if (lua_isnumber(L, index))
-        return string(lua_tonumber(L, index), 3);
+        return string(static_cast<float>(lua_tonumber(L, index)), 3);
     if (lua_isstring(L, index))
         return "\"" + string(lua_tostring(L, index)) + "\"";
     if (lua_istable(L, index))
@@ -340,7 +340,7 @@ bool ScriptObject::callFunction(string name)
     return true;
 }
 
-static void runCyclesHook(lua_State *L, lua_Debug *ar)
+static void runCyclesHook(lua_State *L, lua_Debug */*ar*/)
 {
     lua_pushstring(L, "Max execution limit reached. Aborting.");
     lua_error(L);
