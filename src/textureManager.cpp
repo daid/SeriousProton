@@ -29,7 +29,7 @@ void TextureManager::setTexture(sf::Sprite& sprite, const string& name, unsigned
         sprite.setOrigin(float(data.sprites[spriteIndex].width) / 2, float(data.sprites[spriteIndex].height) / 2);
     }else{
         sprite.setTexture(data.texture, true);
-        sprite.setOrigin(data.texture.getSize().x / 2, data.texture.getSize().y / 2);
+        sprite.setOrigin(data.texture.getSize().x / 2.f, data.texture.getSize().y / 2.f);
     }
 }
 
