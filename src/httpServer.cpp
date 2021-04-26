@@ -6,7 +6,7 @@
 
 HttpServer::HttpServer(int portNr)
 {
-    listenSocket.listen(portNr);
+    listenSocket.listen(static_cast<uint16_t>(portNr));
     selector.add(listenSocket);
 }
 
@@ -19,7 +19,7 @@ HttpServer::~HttpServer()
         delete handlers[n];
 }
 
-void HttpServer::update(float delta)
+void HttpServer::update(float /*delta*/)
 {
     if (selector.wait(sf::microseconds(1)))
     {
@@ -102,7 +102,7 @@ string HttpServerConnection::UriDecode(const string & sSrc)
    // (0-9, A-F) are reserved for future extension"
 
    const unsigned char * pSrc = (const unsigned char *)sSrc.c_str();
-   const int SRC_LEN = sSrc.length();
+   const size_t SRC_LEN = sSrc.length();
    const unsigned char * const SRC_END = pSrc + SRC_LEN;
    // last decodable '%'
    const unsigned char * const SRC_LAST_DEC = SRC_END - 2;
@@ -187,7 +187,7 @@ void HttpServerConnection::parseUri(const string & sSrc)
         for (unsigned int n=0; n<parameters.size(); n++)
         {
             string param = parameters[n];
-            std::size_t found = param.find('=');
+            found = param.find('=');
             if (found==std::string::npos)
             {
                 request.parameters[param] = "";
@@ -197,8 +197,10 @@ void HttpServerConnection::parseUri(const string & sSrc)
             {
                 if (param.endswith('='))
                 {
-                    request.parameters[param.substr(0, param.length()-1)] = "";
-                    LOG(DEBUG) << "HTTP Parameter: " << param.substr(0, param.length()-1);
+                    auto param_end = static_cast<int>(param.length()) - 1;
+                    auto param_key = param.substr(0, param_end);
+                    request.parameters[param_key] = "";
+                    LOG(DEBUG) << "HTTP Parameter: " << param_key;
                 }
                 else
                 {
@@ -310,7 +312,7 @@ void HttpServerConnection::sendData(const char* data, size_t data_length)
         sendHeaders();
     if (data_length < 1)
         return;
-    string chunk_len_string = string::hex(data_length) + "\r\n";
+    string chunk_len_string = string::hex(static_cast<int>(data_length)) + "\r\n";
     socket.send(chunk_len_string.c_str(), chunk_len_string.size());
     socket.send(data, data_length);
     socket.send("\r\n", 2);
