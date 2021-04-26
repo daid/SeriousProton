@@ -6,6 +6,8 @@
 #include "postProcessManager.h"
 #include "input.h"
 
+#include <cmath>
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -13,7 +15,7 @@
 WindowManager::WindowManager(int virtualWidth, int virtualHeight, bool fullscreen, RenderChain* renderChain, int fsaa)
 : virtualSize(virtualWidth, virtualHeight), renderChain(renderChain), fullscreen(fullscreen), fsaa(fsaa)
 {
-    srand(time(NULL));
+    srand(static_cast<int32_t>(time(nullptr)));
     windowHasFocus = true;
     min_aspect_ratio = float(virtualWidth) / float(virtualHeight);
     allow_virtual_resize = false;
@@ -106,8 +108,8 @@ void WindowManager::create()
 
         while(windowWidth >= int(desktop.width) || windowHeight >= int(desktop.height) - 100)
         {
-            windowWidth *= 0.9;
-            windowHeight *= 0.9;
+            windowWidth = static_cast<int>(std::floor(windowWidth * 0.9f));
+            windowHeight = static_cast<int>(std::floor(windowHeight * 0.9f));
         }
     }
 
@@ -130,19 +132,19 @@ void WindowManager::setupView()
     if (window_size.x / window_size.y > min_aspect_ratio)
     {
         if (allow_virtual_resize)
-            virtualSize.x = virtualSize.y * (window_size.x / window_size.y);
+            virtualSize.x = static_cast<int32_t>(virtualSize.y * (window_size.x / window_size.y));
 
         float aspect = window_size.y * float(virtualSize.x) / float(virtualSize.y) / window_size.x;
         float offset = 0;//0.5 - 0.5 * aspect;
-        sf::View view(sf::Vector2f(virtualSize.x/2,virtualSize.y/2), sf::Vector2f(virtualSize.x, virtualSize.y));
+        sf::View view(sf::Vector2f(virtualSize.x / 2.f, virtualSize.y / 2.f), sf::Vector2f{virtualSize});
         view.setViewport(sf::FloatRect(offset, 0, aspect, 1));
         window.setView(view);
     }else{
-        virtualSize.x = virtualSize.y * min_aspect_ratio;
+        virtualSize.x = static_cast<int32_t>(virtualSize.y * min_aspect_ratio);
 
         float aspect = window_size.x / window_size.y * float(virtualSize.y) / float(virtualSize.x);
-        float offset = 0.5 - 0.5 * aspect;
-        sf::View view(sf::Vector2f(virtualSize.x/2,virtualSize.y/2), sf::Vector2f(virtualSize.x, virtualSize.y));
+        float offset = 0.5f - 0.5f * aspect;
+        sf::View view(sf::Vector2f(virtualSize.x / 2.f, virtualSize.y / 2.f), sf::Vector2f{ virtualSize });
         view.setViewport(sf::FloatRect(0, offset, 1, aspect));
         window.setView(view);
     }
