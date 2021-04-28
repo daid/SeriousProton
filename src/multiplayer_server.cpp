@@ -30,7 +30,7 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     nextObjectId = 1;
     nextclient_id = 1;
 
-    if (listenSocket.listen(listen_port) != sf::TcpListener::Done)
+    if (listenSocket.listen(static_cast<uint16_t>(listen_port)) != sf::TcpListener::Done)
     {
         LOG(ERROR) << "Failed to listen on TCP port: " << listen_port;
         destroy();
@@ -38,7 +38,7 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     listenSocket.setBlocking(false);
     new_socket = std::unique_ptr<TcpSocket>(new TcpSocket());
     new_socket->setBlocking(false);
-    if (broadcast_listen_socket.bind(listen_port) != sf::UdpSocket::Done)
+    if (broadcast_listen_socket.bind(static_cast<uint16_t>(listen_port)) != sf::UdpSocket::Done)
     {
         LOG(ERROR) << "Failed to listen on UDP port: " << listen_port;
     }
@@ -55,7 +55,7 @@ void GameServer::connectToProxy(sf::IpAddress address, int port)
 {
     auto socket = std::unique_ptr<TcpSocket>(new TcpSocket());
     LOG(INFO) << "Connecting to proxy: " << address.toString();
-    if (socket->connect(address, port) != sf::Socket::Status::Done)
+    if (socket->connect(address, static_cast<uint16_t>(port)) != sf::Socket::Status::Done)
     {
         LOG(ERROR) << "Failed to connect to proxy";
         return;
@@ -99,7 +99,7 @@ P<MultiplayerObject> GameServer::getObjectById(int32_t id)
     return NULL;
 }
 
-void GameServer::update(float gameDelta)
+void GameServer::update(float /*gameDelta*/)
 {
     sf::Clock update_run_time_clock;    //Clock used to measure how much time this update cycle is costing us.
     
@@ -206,7 +206,7 @@ void GameServer::update(float gameDelta)
     {
         clientList[n].socket->update();
         sf::Packet packet;
-        sf::TcpSocket::Status status;
+        sf::TcpSocket::Status status{ sf::TcpSocket::Error };
         while(clientList[n].socket && (status = clientList[n].socket->receive(packet)) == sf::TcpSocket::Done)
         {
             switch(clientList[n].receive_state)
@@ -237,9 +237,9 @@ void GameServer::update(float gameDelta)
                                     handleNewClient(clientList[n]);
                                 }else{
                                     //Wrong password, send a new auth request so the client knows the password was not accepted.
-                                    sf::Packet packet;
-                                    packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
-                                    clientList[n].socket->send(packet);
+                                    sf::Packet auth_request_packet;
+                                    auth_request_packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
+                                    clientList[n].socket->send(auth_request_packet);
                                 }
                             }else{
                                 LOG(ERROR) << n << ":Client version mismatch: " << version_number << " != " << client_version;
@@ -332,13 +332,13 @@ void GameServer::update(float gameDelta)
                             ptr += sizeof(int32_t) + sizeof(command_t);
                             if (client_id == clientList[n].client_id)
                             {
-                                gotAudioPacket(client_id, ptr, packet.getDataSize() - sizeof(int32_t) - sizeof(command_t));
+                                gotAudioPacket(client_id, ptr, static_cast<int>(packet.getDataSize()) - sizeof(int32_t) - sizeof(command_t));
                             }
                             else
                             {
                                 for(auto id : clientList[n].proxy_ids)
                                     if (id == client_id)
-                                        gotAudioPacket(client_id, ptr, packet.getDataSize() - sizeof(int32_t) - sizeof(command_t));
+                                        gotAudioPacket(client_id, ptr, static_cast<int>(packet.getDataSize()) - sizeof(int32_t) - sizeof(command_t));
                             }
                         }
                         break;
@@ -396,9 +396,9 @@ void GameServer::update(float gameDelta)
     }
 
     float dataPerSecond = float(sendDataCounter) / delta;
-    sendDataRate = sendDataRate * (1.0 - delta) + dataPerSecond * delta;
+    sendDataRate = sendDataRate * (1.f - delta) + dataPerSecond * delta;
     dataPerSecond = float(sendDataCounterPerClient) / delta;
-    sendDataRatePerClient = sendDataRatePerClient * (1.0 - delta) + dataPerSecond * delta;
+    sendDataRatePerClient = sendDataRatePerClient * (1.f - delta) + dataPerSecond * delta;
 
 #if MULTIPLAYER_COLLECT_DATA_STATS
     if (multiplayer_stats_dump.getElapsedTime().asSeconds() > 1.0)
@@ -569,9 +569,9 @@ void GameServer::sendAll(sf::Packet& packet)
     }
 }
 
-void GameServer::registerOnMasterServer(string master_server_url)
+void GameServer::registerOnMasterServer(string master_url)
 {
-    this->master_server_url = master_server_url;
+    this->master_server_url = master_url;
     master_server_update_thread.launch();
 }
 
@@ -610,7 +610,7 @@ void GameServer::runMasterServerUpdateThread()
     
     LOG(INFO) << "Registering at master server " << master_server_url;
     
-    sf::Http http(hostname, port);
+    sf::Http http(hostname, static_cast<uint16_t>(port));
     while(!isDestroyed() && master_server_url != "")
     {
         sf::Http::Request request(uri, sf::Http::Request::Post);
@@ -698,7 +698,7 @@ void GameServer::sendAudioPacketFrom(int32_t client_id, sf::Packet& packet)
     }
 }
 
-std::unordered_set<int32_t> GameServer::onVoiceChat(int32_t client_id, int32_t target_identifier)
+std::unordered_set<int32_t> GameServer::onVoiceChat(int32_t client_id, int32_t /*target_identifier*/)
 {
     //Default, target all clients
     std::unordered_set<int32_t> result;
