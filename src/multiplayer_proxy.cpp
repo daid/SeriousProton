@@ -8,12 +8,12 @@ GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string pa
 {
     LOG(INFO) << "Starting proxy server";
     mainSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
-    if (mainSocket->connect(hostname, hostPort) != sf::Socket::Status::Done)
+    if (mainSocket->connect(hostname, static_cast<uint16_t>(hostPort)) != sf::Socket::Status::Done)
         LOG(INFO) << "Failed to connect to server";
     else
         LOG(INFO) << "Connected to server";
     mainSocket->setBlocking(false);
-    listenSocket.listen(listenPort);
+    listenSocket.listen(static_cast<uint16_t>(listenPort));
     listenSocket.setBlocking(false);
 
     newSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
@@ -22,7 +22,7 @@ GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string pa
     boardcastServerDelay = 0.0;
     if (proxyName != "")
     {
-        if (broadcast_listen_socket.bind(listenPort) != sf::UdpSocket::Done)
+        if (broadcast_listen_socket.bind(static_cast<uint16_t>(listenPort)) != sf::UdpSocket::Done)
         {
             LOG(ERROR) << "Failed to listen on UDP port: " << listenPort;
         }
@@ -36,7 +36,7 @@ GameServerProxy::GameServerProxy(string password, int listenPort, string proxyNa
 : password(password), proxyName(proxyName)
 {
     LOG(INFO) << "Starting listening proxy server";
-    listenSocket.listen(listenPort);
+    listenSocket.listen(static_cast<uint16_t>(listenPort));
     listenSocket.setBlocking(false);
 
     newSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
@@ -45,7 +45,7 @@ GameServerProxy::GameServerProxy(string password, int listenPort, string proxyNa
     boardcastServerDelay = 0.0;
     if (proxyName != "")
     {
-        if (broadcast_listen_socket.bind(listenPort) != sf::UdpSocket::Done)
+        if (broadcast_listen_socket.bind(static_cast<uint16_t>(listenPort)) != sf::UdpSocket::Done)
         {
             LOG(ERROR) << "Failed to listen on UDP port: " << listenPort;
         }
@@ -122,19 +122,19 @@ void GameServerProxy::update(float delta)
                 break;
             case CMD_SET_PROXY_CLIENT_ID:
                 {
-                    int32_t tempId, clientId;
-                    packet >> tempId >> clientId;
+                    int32_t tempId, proxied_clientId;
+                    packet >> tempId >> proxied_clientId;
                     for(auto& info : clientList)
                     {
                         if (!info.validClient && info.clientId == tempId)
                         {
                             info.validClient = true;
-                            info.clientId = clientId;
+                            info.clientId = proxied_clientId;
                             info.receiveState = CRS_Main;
                             {
-                                sf::Packet packet;
-                                packet << CMD_SET_CLIENT_ID << info.clientId;
-                                info.socket->send(packet);
+                                sf::Packet proxied_packet;
+                                proxied_packet << CMD_SET_CLIENT_ID << info.clientId;
+                                info.socket->send(proxied_packet);
                             }
                         }
                     }
@@ -172,7 +172,7 @@ void GameServerProxy::update(float delta)
     for(unsigned int n=0; n<clientList.size(); n++)
     {
         sf::Packet packet;
-        sf::TcpSocket::Status socketStatus;
+        sf::TcpSocket::Status socketStatus{ sf::TcpSocket::Error };
         auto& info = clientList[n];
         info.socket->update();
         while(info.socket && (socketStatus = info.socket->receive(packet)) == sf::TcpSocket::Done)

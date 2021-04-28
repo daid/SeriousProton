@@ -54,7 +54,11 @@ if(NOT ${SFML_FOUND})
         GIT_REPOSITORY https://github.com/SFML/SFML.git
         GIT_TAG 2.5.1 #Always build with this tag, so we're sure it is stable.
         GIT_SHALLOW 1 # Don't get the entire history
-        CMAKE_ARGS -DBUILD_SHARED_LIBS=$<BOOL:${WIN32}> -DCMAKE_INSTALL_PREFIX=${SFML_ROOT}
+        CMAKE_ARGS
+            -DBUILD_SHARED_LIBS:BOOL=$<BOOL:${WIN32}>
+            -DCMAKE_INSTALL_PREFIX:PATH=${SFML_ROOT}
+            -DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_MAKE_PROGRAM}
+            -DCMAKE_CXX_COMPILER:FILEPATH=${CMAKE_CXX_COMPILER}
     )
 
     set(SFML_INCLUDE_DIR "${SFML_ROOT}/include") #Otherwise this is filled by FindSFML.cmake.
@@ -68,11 +72,12 @@ if(NOT ${SFML_FOUND})
     endif()
 
     set(SFML_LIBRARIES
-        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-audio${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
-        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-graphics${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
-        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-network${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
-        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-system${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
-        "${SFML_ROOT}/lib/${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-window${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+        "-L${SFML_ROOT}/lib"
+        "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-audio${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+        "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-graphics${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+        "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-network${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+        "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-system${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
+        "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-window${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
     )
 endif()
 
@@ -137,20 +142,35 @@ if(CMAKE_COMPILER_IS_GNUCC)
     endif()
 endif()
 
-add_library(seriousproton STATIC ${source_files})
-target_compile_features(seriousproton PUBLIC cxx_std_17)
+# Targets setup
+# =============
+#
+# * seriousproton - this is the consumer library, the one you use in a target_link_libraries() call as a consumer.
+#
+# * seriousproton_objects: SP source files.
+#   MinGW has... troubles when LTO is enabled and linking a static library: https://stackoverflow.com/q/27372667
+#   To work around that, sources are exposed to the consumer (through the interface library) and built in 'their' space.
+#
+# * seriousproton_deps: SP dependencies / setup (include dirs, linked libraries etc)
+#
+# Both seriousproton_objects and seriousproton 'link' against seriousproton_deps:
+# This allows compile flags/settings to be forwarded to consumer, as well as proper configuration to compile individual SP objects.
 
-if(NOT ${SFML_FOUND})
-    add_dependencies(seriousproton SFML)
-endif()
+## Common settings / dependencies (c++ standards, headers, dependencies etc)
+add_library(seriousproton_deps INTERFACE)
 
-target_include_directories(seriousproton
-    PUBLIC
+target_include_directories(seriousproton_deps
+    INTERFACE
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src;${SFML_INCLUDE_DIR}>"
 )
+target_compile_features(seriousproton_deps INTERFACE cxx_std_17)
 
-target_compile_definitions(seriousproton
-    PUBLIC
+if(NOT ${SFML_FOUND})
+    add_dependencies(seriousproton_deps SFML)
+endif()
+
+target_compile_definitions(seriousproton_deps
+    INTERFACE
         SFML_NO_DEPRECATED_WARNINGS # SFML 2.5 gives deprication warnings on a few functions we use. But we maintain 2.3 compatibility, so ignore those warnings.
         $<$<BOOL:${MSVC}>:NOMINMAX>
         $<$<CONFIG:Debug>:DEBUG>
@@ -158,22 +178,45 @@ target_compile_definitions(seriousproton
         $<$<BOOL:${WIN32}>:WINVER=0x0601;_WIN32_WINNT=0x0601>
 )
 
-target_compile_options(seriousproton
-    PUBLIC
+target_compile_options(seriousproton_deps
+    INTERFACE
         "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:RelWithDebInfo>>:-g1>"
-        "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
+        "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
         "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Werror=return-type>"
         "$<$<BOOL:${MSVC}>:/MP;/permissive->"
 )
 
-target_link_libraries(seriousproton
-    PUBLIC 
+target_link_libraries(seriousproton_deps
+    INTERFACE 
         box2d lua glew ${SFML_LIBRARIES}
         "$<$<BOOL:${WIN32}>:wsock32>"
-    PRIVATE $<BUILD_INTERFACE:opus>
-    INTERFACE
-        $<BUILD_INTERFACE:$<$<BOOL:${SERIOUSPROTON_WITH_JSON}>:json11>>
+        # LTO flag must be on the linker's list as well.
+        "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
+        "$<BUILD_INTERFACE:opus;$<$<BOOL:${SERIOUSPROTON_WITH_JSON}>:json11>>"
 )
+
+if(NOT ANDROID)
+    # Necessary for some older compilers (except on android, where the fs api isn't used)
+    if(CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
+        target_link_libraries(seriousproton_deps INTERFACE $<BUILD_INTERFACE:stdc++fs>)
+    endif()
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)
+        target_link_libraries(seriousproton_deps INTERFACE $<BUILD_INTERFACE:c++fs>)
+    endif()
+endif()
+
+## Object list
+add_library(seriousproton_objects OBJECT ${source_files})
+target_link_libraries(seriousproton_objects PUBLIC $<BUILD_INTERFACE:seriousproton_deps>)
+
+## Public libraries that 'consumers' link against.
+add_library(seriousproton INTERFACE)
+
+# Expose sources to consumer (necessary for LTO on some compilers, mingw)
+set_target_properties(seriousproton PROPERTIES INTERFACE_SOURCES $<TARGET_OBJECTS:seriousproton_objects>)
+
+# Forward SP settings to consumer.
+target_link_libraries(seriousproton INTERFACE $<BUILD_INTERFACE:seriousproton_deps>)
 
 #--------------------------------Installation----------------------------------
 install(
@@ -212,18 +255,29 @@ if(WIN32)
     )
 
     if (MINGW)
-        execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libstdc++-6.dll OUTPUT_VARIABLE MINGW_STDCPP_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
-        execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libgcc_s_sjlj-1.dll OUTPUT_VARIABLE MINGW_LIBGCC_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
-        execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libwinpthread-1.dll OUTPUT_VARIABLE MINGW_PTHREAD_DLL OUTPUT_STRIP_TRAILING_WHITESPACE)
+        macro(get_mingw_dll dll location)
+            execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=${dll} OUTPUT_VARIABLE ${location} OUTPUT_STRIP_TRAILING_WHITESPACE)
+        endmacro()
         
+        # In the wild, MinGW come in different flavor
+        # (Nuwen is fully statically linked, exception handlers varies sjlj / seh / dw2, threading model can be posix or windows, ...)
+        # Grab anything possible, the correct ones will stick for the given installation.
+        get_mingw_dll(libstdc++-6.dll MINGW_STDCPP_DLL)
+        get_mingw_dll(libgcc_s_sjlj-1.dll MINGW_LIBGCCSJLJ_DLL)
+        get_mingw_dll(libgcc_s_seh-1.dll MINGW_LIBGCCSEH_DLL)
+        get_mingw_dll(libgcc_s_dw2-1.dll MINGW_LIBGCCDW2_DLL)
+        get_mingw_dll(libwinpthread-1.dll MINGW_PTHREAD_DLL)
+
         install(
             FILES
                 ${MINGW_STDCPP_DLL}
-                ${MINGW_LIBGCC_DLL}
+                ${MINGW_LIBGCCSJLJ_DLL}
+                ${MINGW_LIBGCCSEH_DLL}
+                ${MINGW_LIBGCCDW2_DLL}
                 ${MINGW_PTHREAD_DLL}
             DESTINATION .
             COMPONENT runtime
-        )
+        OPTIONAL)
     endif()
 
     if(ENABLE_CRASH_LOGGER)

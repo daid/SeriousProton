@@ -14,7 +14,7 @@ void initRandom()
 
 float random(float fmin, float fmax)
 {
-    return std::uniform_real_distribution<>(fmin, fmax)(random_engine);
+    return std::uniform_real_distribution<float>(fmin, fmax)(random_engine);
 }
 
 int irandom(int imin, int imax)

@@ -31,13 +31,13 @@ public:
     void setAutoSprite(bool enabled) { autoSprite = enabled; }
     void setDisabled(bool disable) { disabled = disable; }
     
-    void setTexture(sf::Sprite& sprite, string name, unsigned int spriteIndex = 0);
-    const sf::IntRect getSpriteRect(string name, unsigned int spriteIndex = 0);
-    void setSpriteRect(string name, unsigned int spriteIndex, const sf::IntRect rect);
+    void setTexture(sf::Sprite& sprite, const string& name, unsigned int spriteIndex = 0);
+    const sf::IntRect getSpriteRect(const string& name, unsigned int spriteIndex = 0);
+    void setSpriteRect(const string& name, unsigned int spriteIndex, const sf::IntRect rect);
 
-    sf::Texture* getTexture(string name, sf::Vector2i subDiv = sf::Vector2i(0, 0));
+    sf::Texture* getTexture(const string& name, sf::Vector2i subDiv = sf::Vector2i(0, 0));
 private:
-    void loadTexture(string name, sf::Vector2i subDiv);
+    void loadTexture(const string& name, sf::Vector2i subDiv);
 };
 
 #endif//TEXTURE_MANAGER_H

@@ -14,7 +14,7 @@ FILE* Logging::log_stream = nullptr;
 #define print_func(...) fprintf(Logging::log_stream, __VA_ARGS__)
 #endif
 
-Logging::Logging(ELogLevel level, string file, int line, string function_name)
+Logging::Logging(ELogLevel level, string file, int /*line*/, string function_name)
 {
     do_logging = level >= global_level;
     

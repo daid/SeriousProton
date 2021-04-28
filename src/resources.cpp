@@ -31,9 +31,9 @@ bool ResourceProvider::searchMatch(const string name, const string searchPattern
         int offset = name.find(parts[n], pos);
         if (offset < 0)
             return false;
-        pos = offset + parts[n].length();
+        pos = offset + static_cast<int>(parts[n].length());
     }
-    return pos == int(name.length());
+    return pos == static_cast<int>(name.length());
 }
 
 string ResourceStream::readLine()
@@ -57,8 +57,9 @@ class FileResourceStream : public ResourceStream
 public:
     FileResourceStream(string filename)
     {
+#ifndef ANDROID
         std::error_code ec;
-        if(!std::filesystem::is_regular_file(filename.c_str()), ec)
+        if(!std::filesystem::is_regular_file(filename.c_str(), ec))
         {
             if(ec)
             {
@@ -68,6 +69,10 @@ public:
         }
         else
             open_success = stream.open(filename);
+#else
+        //Android reads from the assets bundle, so we cannot check if the file exists and is a regular file
+        open_success = stream.open(filename);
+#endif
     }
     virtual ~FileResourceStream()
     {
