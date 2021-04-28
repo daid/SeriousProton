@@ -73,17 +73,17 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
     float rotation = c->getRotation();
     float angular_velocity = c->getAngularVelocity();
     float time_after_update = rep_data->last_update_time.getElapsedTime().asSeconds();
-    float significance = 0.0;
-    float significant_range = 1.0;
+    float significance = 0.f;
+    float significant_range = 1.f;
 
     foreach(Collisionable, sig, collisionable_significant)
     {
         float dist = sf::length(sig->getPosition() - position);
-        float s = 0.0;
+        float s = 0.f;
         if (dist < sig->multiplayer_replication_object_significant_range)
-            s = 1.0;
-        else if (dist < sig->multiplayer_replication_object_significant_range * 2.0)
-            s = 1.0 - ((dist - sig->multiplayer_replication_object_significant_range) / sig->multiplayer_replication_object_significant_range);
+            s = 1.f;
+        else if (dist < sig->multiplayer_replication_object_significant_range * 2.f)
+            s = 1.f - ((dist - sig->multiplayer_replication_object_significant_range) / sig->multiplayer_replication_object_significant_range);
         
         if (s > significance)
         {
@@ -97,7 +97,7 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
     float delta_rotation = fabs(rep_data->rotation - rotation);
     float delta_angular_velocity = fabs(rep_data->angularVelocity - angular_velocity);
     
-    if (delta_position == 0.0 && delta_velocity == 0.0 && delta_rotation == 0.0 && delta_angular_velocity == 0.0)
+    if (delta_position == 0.f && delta_velocity == 0.f && delta_rotation == 0.f && delta_angular_velocity == 0.f)
     {
         //If we haven't moved then the client needs no update
         rep_data->last_update_time.restart();
@@ -105,10 +105,10 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
         float position_score = (delta_position / significant_range) * 100.f + delta_rotation * 10.f;
         float velocity_score = (delta_velocity / significant_range) * 100.f + delta_angular_velocity * 10.f;
         
-        float time_between_updates = (1.0 - (position_score + velocity_score) * significance);
-        if (time_between_updates < 0.05)
-            time_between_updates = 0.05;
-        if (time_after_update > 0.5 || time_after_update > time_between_updates)
+        float time_between_updates = (1.f - (position_score + velocity_score) * significance);
+        if (time_between_updates < 0.05f)
+            time_between_updates = 0.05f;
+        if (time_after_update > 0.5f || time_after_update > time_between_updates)
         {
             rep_data->last_update_time.restart();
             rep_data->position = position;
@@ -172,8 +172,8 @@ void MultiplayerObject::registerCollisionableReplication(float object_significan
     info.name = "Collisionable_data";
 #endif
     info.prev_data = reinterpret_cast<std::uint64_t>(new CollisionableReplicationData());
-    info.update_delay = 0.0;
-    info.update_timeout = 0.0;
+    info.update_delay = 0.f;
+    info.update_timeout = 0.f;
     info.isChangedFunction = &collisionable_isChanged;
     info.sendFunction = &collisionable_sendFunction;
     info.receiveFunction = &collisionable_receiveFunction;
