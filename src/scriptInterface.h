@@ -91,11 +91,12 @@ public:
     // Returns a value-less optional when the executed function is no longer available, on nil, or an error occurred.
     // else it will return a set optional with the return value from lua.
     template<typename Return, typename... Args>
-    std::optional<Return> call_(Args&&... args)
+    std::conditional_t<std::is_void_v<Return>, void, std::optional<Return>> call(Args&&... args)
     {
-        static_assert(std::is_arithmetic_v<Return>
+        static_assert(std::is_void_v<Return>
+            || std::is_arithmetic_v<Return>
             || std::is_enum_v<Return>
-            || std::is_convertible_v<std::string, Return>, "return type must be a bool, a number, an enum or a string (std::string or SP's).");
+            || std::is_convertible_v<std::string, Return>, "return type must be: void, bool, a number, an enum or a string (std::string or SP's).");
 
         lua_State* L = ScriptObject::L;
 
@@ -105,7 +106,10 @@ public:
         if (!lua_istable(L, -1))
         {
             lua_pop(L, 1);
-            return {};
+            if constexpr (std::is_void_v<Return>)
+                return;
+            else
+                return {};
         }
         //Stack is: [table]
 
@@ -124,7 +128,11 @@ public:
             if (!lua_istable(L, -1))
             {
                 lua_pop(L, 2);
-                return {};
+                
+                if constexpr (std::is_void_v<Return>)
+                    return;
+                else
+                    return {};
             }
         }
         //Remove the script pointer table from the stack, we only needed to check if it exists.
@@ -139,7 +147,10 @@ public:
         if (i < 0) // error condition
         {
             lua_pop(L, 2);
-            return {};
+            if constexpr (std::is_void_v<Return>)
+                return;
+            else
+                return {};
         }
 
         //Stack is: [table] [lua function]
@@ -148,66 +159,72 @@ public:
         {
             LOG(ERROR) << "Callback function error: " << lua_tostring(L, -1);
             lua_pop(L, 2);
-            return {};
+            if constexpr (std::is_void_v<Return>)
+                return;
+            else
+                return {};
         }
 
         //Stack is: [table] [call result]
-        std::optional<Return> result;
-        if (!lua_isnoneornil(L, -1))
+        if constexpr (std::is_void_v<Return>)
         {
-            if constexpr (std::is_convertible_v<std::string, Return>)
+            if (!lua_isnoneornil(L, -1))
             {
-                if (lua_isstring(L, -1))
-                {
-                    result.emplace(lua_tostring(L, -1));
-                }
-                else
-                {
-                    LOG(ERROR) << "Unexpected return type (string wanted)";
-                }
+                LOG(DEBUG) << "return value discarded.";
             }
-            else if constexpr (std::is_same_v<bool, Return>)
-            {
-                // No check - it's falsy / truthy values.
-                result.emplace(static_cast<bool>(lua_toboolean(L, -1)));
-            }
-            else if constexpr (std::is_integral_v<Return> || std::is_enum_v<Return>)
-            {
-                if (lua_isinteger(L, -1))
-                {
-                    result.emplace(static_cast<Return>(lua_tointeger(L, -1)));
-                }
-                else
-                {
-                    LOG(ERROR) << "Unexpected return type (integer wanted)";
-                }
-            }
-            else if constexpr (std::is_floating_point_v<Return>)
-            {
-                if (lua_isnumber(L, -1))
-                {
-                    result.emplace(static_cast<Return>(lua_tonumber(L, -1)));
-                }
-                else
-                {
-                    LOG(ERROR) << "Unexpected return type (floating point wanted)";
-                }
-            }
+            lua_pop(L, 2);
+            return;
         }
+        else
+        {
+            std::optional<Return> result;
+            if (!lua_isnoneornil(L, -1))
+            {
+                if constexpr (std::is_convertible_v<std::string, Return>)
+                {
+                    if (lua_isstring(L, -1))
+                    {
+                        result.emplace(lua_tostring(L, -1));
+                    }
+                    else
+                    {
+                        LOG(ERROR) << "Unexpected return type (string wanted)";
+                    }
+                }
+                else if constexpr (std::is_same_v<bool, Return>)
+                {
+                    // No check - it's falsy / truthy values.
+                    result.emplace(static_cast<bool>(lua_toboolean(L, -1)));
+                }
+                else if constexpr (std::is_integral_v<Return> || std::is_enum_v<Return>)
+                {
+                    if (lua_isinteger(L, -1))
+                    {
+                        result.emplace(static_cast<Return>(lua_tointeger(L, -1)));
+                    }
+                    else
+                    {
+                        LOG(ERROR) << "Unexpected return type (integer wanted)";
+                    }
+                }
+                else if constexpr (std::is_floating_point_v<Return>)
+                {
+                    if (lua_isnumber(L, -1))
+                    {
+                        result.emplace(static_cast<Return>(lua_tonumber(L, -1)));
+                    }
+                    else
+                    {
+                        LOG(ERROR) << "Unexpected return type (floating point wanted)";
+                    }
+                }
+            }
 
-        lua_pop(L, 2);
-        return result;
+            lua_pop(L, 2);
+            return result;
+        }
     }
 
-    //Call this script function.
-    //Returns false when the executed function is no longer available, or returns nil or false.
-    // else it will return true.
-    template<typename... Args>
-    bool call(Args&&... args)
-    {
-        return call_<bool>(std::forward<Args>(args)...).value_or(false);
-    }
-    
     //Unset this script callback reference.
     void clear();
     
