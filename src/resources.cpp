@@ -67,10 +67,8 @@ public:
         std::error_code ec;
         if(!std::filesystem::is_regular_file(filename.c_str(), ec))
         {
-            if(ec)
-            {
-                LOG(ERROR) << "OS error on file check : " << ec.message();
-            }
+            //Error code "no such file or directory" thrown really often, so no trace here
+            //not to spam the log
             open_success = false;
         }
         else
