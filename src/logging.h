@@ -1,5 +1,6 @@
 #ifndef LOGGING_H
 #define LOGGING_H
+#include <string_view>
 
 #include <SFML/System.hpp>
 #include <SFML/Graphics/Rect.hpp>
@@ -24,11 +25,11 @@ class Logging : sf::NonCopyable
     static FILE* log_stream;
     bool do_logging;
 public:
-    Logging(ELogLevel level, string file, int line, string function_name);
+    Logging(ELogLevel level, std::string_view file, int line, std::string_view function_name);
     ~Logging();
     
     static void setLogLevel(ELogLevel level);
-    static void setLogFile(string filename);
+    static void setLogFile(std::string_view filename);
     
     friend const Logging& operator<<(const Logging& log, const char* str);
 };
