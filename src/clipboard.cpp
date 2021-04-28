@@ -55,7 +55,6 @@ string Clipboard::readClipboard()
     pclose(pipe);
     return result;
 #endif//__linux__ || __APPLE__
-    return "";
 }
 
 void Clipboard::setClipboard(string value)

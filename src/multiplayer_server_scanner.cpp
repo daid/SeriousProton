@@ -63,14 +63,14 @@ void ServerScanner::scanLocalNetwork()
 
     socket = std::unique_ptr<sf::UdpSocket>(new sf::UdpSocket());
     int port_nr = server_port + 1;
-    while(socket->bind(port_nr) != sf::UdpSocket::Done)
+    while(socket->bind(static_cast<uint16_t>(port_nr)) != sf::UdpSocket::Done)
         port_nr++;
 
     socket->setBlocking(false);
     broadcast_clock.restart();
 }
 
-void ServerScanner::update(float gameDelta)
+void ServerScanner::update(float /*gameDelta*/)
 {
     server_list_mutex.lock();
     for(unsigned int n=0; n<server_list.size(); n++)
@@ -138,10 +138,10 @@ void ServerScanner::updateServerEntry(sf::IpAddress address, int port, string na
         newServerCallback(address, name);
 }
 
-void ServerScanner::addCallbacks(std::function<void(sf::IpAddress, string)> newServerCallback, std::function<void(sf::IpAddress)> removedServerCallback)
+void ServerScanner::addCallbacks(std::function<void(sf::IpAddress, string)> newServerCallbackIn, std::function<void(sf::IpAddress)> removedServerCallbackIn)
 {
-    this->newServerCallback = newServerCallback;
-    this->removedServerCallback = removedServerCallback;
+    this->newServerCallback = newServerCallbackIn;
+    this->removedServerCallback = removedServerCallbackIn;
 }
 
 std::vector<ServerScanner::ServerInfo> ServerScanner::getServerList()
@@ -184,7 +184,7 @@ void ServerScanner::masterServerScanThread()
 
     LOG(INFO) << "Reading servers from master server " << master_server_url;
 
-    sf::Http http(hostname, port);
+    sf::Http http(hostname, static_cast<uint16_t>(port));
     while(!isDestroyed() && master_server_url != "")
     {
         sf::Http::Request request(uri, sf::Http::Request::Get);
@@ -200,13 +200,13 @@ void ServerScanner::masterServerScanThread()
             if (parts.size() == 4)
             {
                 sf::IpAddress address(parts[0]);
-                int port = parts[1].toInt();
+                int part_port = parts[1].toInt();
                 int version = parts[2].toInt();
                 string name = parts[3];
                 
                 if (version == version_number || version == 0 || version_number == 0)
                 {
-                    updateServerEntry(address, port, name);
+                    updateServerEntry(address, part_port, name);
                 }
             }
         }

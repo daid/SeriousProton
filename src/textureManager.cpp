@@ -16,7 +16,7 @@ TextureManager::~TextureManager()
 {
 }
 
-void TextureManager::setTexture(sf::Sprite& sprite, string name, unsigned int spriteIndex)
+void TextureManager::setTexture(sf::Sprite& sprite, const string& name, unsigned int spriteIndex)
 {
     TextureData& data = textureMap[name];
     if (data.texture.getSize().x < 1)
@@ -29,11 +29,11 @@ void TextureManager::setTexture(sf::Sprite& sprite, string name, unsigned int sp
         sprite.setOrigin(float(data.sprites[spriteIndex].width) / 2, float(data.sprites[spriteIndex].height) / 2);
     }else{
         sprite.setTexture(data.texture, true);
-        sprite.setOrigin(data.texture.getSize().x / 2, data.texture.getSize().y / 2);
+        sprite.setOrigin(data.texture.getSize().x / 2.f, data.texture.getSize().y / 2.f);
     }
 }
 
-sf::Texture* TextureManager::getTexture(string name, sf::Vector2i subDiv)
+sf::Texture* TextureManager::getTexture(const string& name, sf::Vector2i subDiv)
 {
     if (disabled)
         return nullptr;
@@ -43,7 +43,7 @@ sf::Texture* TextureManager::getTexture(string name, sf::Vector2i subDiv)
     return &data.texture;
 }
 
-const sf::IntRect TextureManager::getSpriteRect(string name, unsigned int spriteIndex)
+const sf::IntRect TextureManager::getSpriteRect(const string& name, unsigned int spriteIndex)
 {
     TextureData& data = textureMap[name];
     if (data.texture.getSize().x < 1)
@@ -55,7 +55,7 @@ const sf::IntRect TextureManager::getSpriteRect(string name, unsigned int sprite
     return sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(data.texture.getSize()));
 }
 
-void TextureManager::setSpriteRect(string name, unsigned int spriteIndex, const sf::IntRect rect)
+void TextureManager::setSpriteRect(const string& name, unsigned int spriteIndex, const sf::IntRect rect)
 {
     TextureData& data = textureMap[name];
     if (data.texture.getSize().x < 1)
@@ -67,7 +67,7 @@ void TextureManager::setSpriteRect(string name, unsigned int spriteIndex, const 
         data.sprites.push_back(rect);
 }
 
-void TextureManager::loadTexture(string name, sf::Vector2i subDiv)
+void TextureManager::loadTexture(const string& name, sf::Vector2i subDiv)
 {
     TextureData& data = textureMap[name];
     
