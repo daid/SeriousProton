@@ -9,7 +9,7 @@ ELogLevel Logging::global_level = LOGLEVEL_ERROR;
 FILE* Logging::log_stream = nullptr;
 
 #ifdef __ANDROID__
-#define print_func(...) __android_log_print(ANDROID_LOG_INFO, "SeriousProton", __VA_ARGS__)
+#define print_func(str) __android_log_write(ANDROID_LOG_INFO, "SeriousProton", str)
 #else
 #define print_func(str) fputs(str, Logging::log_stream)
 #endif
