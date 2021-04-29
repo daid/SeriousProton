@@ -107,8 +107,8 @@ public:
 
 
 DirectoryResourceProvider::DirectoryResourceProvider(string basepath)
-: basepath(basepath)
 {
+  this->basepath = basepath.endswith("/") ? basepath.substr(0,basepath.size()-1) : basepath;
 }
 
 P<ResourceStream> DirectoryResourceProvider::getResourceStream(string filename)
@@ -147,7 +147,6 @@ std::vector<string> DirectoryResourceProvider::findResources(string searchPatter
         AAssetDir* dir = AAssetManager_openDir(asset_manager, (forced_path).c_str());
         if (dir)
         {
-            AAssetDir_rewind(dir);
             const char* filename;
             while ((filename = AAssetDir_getNextFileName(dir)) != nullptr)
             {
