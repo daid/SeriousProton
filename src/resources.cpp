@@ -108,7 +108,7 @@ public:
 
 DirectoryResourceProvider::DirectoryResourceProvider(string basepath)
 {
-  this->basepath = basepath.endswith("/") ? basepath.substr(0,basepath.size()-1) : basepath;
+    this->basepath = basepath.rstrip("\\/");
 }
 
 P<ResourceStream> DirectoryResourceProvider::getResourceStream(string filename)
