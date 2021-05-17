@@ -126,6 +126,10 @@ set(source_files #All SeriousProton's objects to compile
     src/windowManager.cpp
 )
 
+if(NOT ANDROID)
+    list(APPEND source_files src/dynamicLibrary.cpp)
+endif()
+
 #----------------------------------Compiling-----------------------------------
 
 
@@ -192,7 +196,7 @@ target_link_libraries(seriousproton_deps
         "$<$<BOOL:${WIN32}>:wsock32>"
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
-        "$<BUILD_INTERFACE:opus;$<$<BOOL:${SERIOUSPROTON_WITH_JSON}>:json11>>"
+        "$<BUILD_INTERFACE:opus;$<$<BOOL:${SERIOUSPROTON_WITH_JSON}>:json11>;$<$<NOT:$<BOOL:${ANDROID}>>:${CMAKE_DL_LIBS}>>"
 )
 
 if(NOT ANDROID)
