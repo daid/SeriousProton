@@ -25,6 +25,16 @@ public:
         Connected,
         Disconnected
     };
+
+    enum class DisconnectReason : uint8_t
+    {
+        None = 0,
+        VersionMismatch,
+        BadCredentials,
+        TimedOut,
+        ClosedByServer, // Normal termination.
+        Unknown
+    };
 private:
     int version_number;
     sf::IpAddress server;
@@ -38,6 +48,7 @@ private:
     NetworkAudioStreamManager audio_stream_manager;
 
     sf::Thread connect_thread;
+    DisconnectReason disconnect_reason{ DisconnectReason::Unknown };
 public:
     GameClient(int version_number, sf::IpAddress server, int port_nr = defaultServerPort);
     virtual ~GameClient();
@@ -47,6 +58,7 @@ public:
 
     int32_t getClientId() { return client_id; }
     Status getStatus() { return status; }
+    DisconnectReason getDisconnectReason() const { return disconnect_reason; }
 
     void sendPacket(sf::Packet& packet);
 
