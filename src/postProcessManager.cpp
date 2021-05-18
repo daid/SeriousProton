@@ -1,25 +1,32 @@
 #include "logging.h"
 #include "postProcessManager.h"
+#include "resources.h"
 
 bool PostProcessor::global_post_processor_enabled = true;
 
 PostProcessor::PostProcessor(string name, RenderChain* chain)
-: chain(chain)
+: chain(chain), enabled{false}
 {
     if (sf::Shader::isAvailable())
     {
-        if (shader.loadFromFile("resources/" + name + ".frag", sf::Shader::Fragment))
+        if (auto shader_frag = getResourceStream(name + ".frag"); shader_frag)
         {
-            LOG(INFO) << "Loaded shader: " << name;
-            enabled = true;
-        }else{
-            LOG(WARNING) << "Failed to load shader:" << name;
-            enabled = false;
+            if (shader.loadFromStream(**shader_frag, sf::Shader::Fragment))
+            {
+                LOG(INFO) << "Loaded shader: " << name;
+                enabled = true;
+            }
+            else {
+                LOG(WARNING) << "Failed to load shader:" << name;
+            }
+        }
+        else
+        {
+            LOG(WARNING) << "Failed to open shader stream for " << name;
         }
     }else{
         LOG(WARNING) << "Did not load load shader: " << name;
         LOG(WARNING) << "Because of no shader support in video card driver.";
-        enabled = false;
     }
 }
 
