@@ -222,7 +222,8 @@ void GameClient::update(float /*delta*/)
     auto timed_out = last_receive_time.getElapsedTime().asSeconds() > no_data_disconnect_time;
     if (socket_status == sf::TcpSocket::Disconnected || timed_out)
     {
-        disconnect_reason = timed_out ? DisconnectReason::TimedOut : DisconnectReason::ClosedByServer;
+        if (disconnect_reason == DisconnectReason::None)
+            disconnect_reason = timed_out ? DisconnectReason::TimedOut : DisconnectReason::ClosedByServer;
         socket.disconnect();
         status = Disconnected;
     }
