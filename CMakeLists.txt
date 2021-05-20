@@ -211,7 +211,14 @@ endif()
 
 ## Object list
 add_library(seriousproton_objects OBJECT ${source_files})
-target_link_libraries(seriousproton_objects PUBLIC $<BUILD_INTERFACE:seriousproton_deps>)
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
+    # target_link_libraries() support for object libraries only exists since 3.12.
+    target_link_libraries(seriousproton_objects PUBLIC $<BUILD_INTERFACE:seriousproton_deps>)
+else()
+    # This is mainly for compatibility with Ubuntu 18.04, which still uses CMake 3.10.
+    set_target_properties(seriousproton_objects PROPERTIES LINK_LIBRARIES $<BUILD_INTERFACE:seriousproton_deps>)
+endif()
 
 ## Public libraries that 'consumers' link against.
 add_library(seriousproton INTERFACE)
