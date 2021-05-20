@@ -45,7 +45,7 @@ private:
         HEADERS
     } status;
 
-    constexpr static size_t recvBufferSize = 2048;
+    constexpr static size_t recvBufferSize = 16384;
     char recvBuffer[recvBufferSize];
     size_t recvBufferCount;
     const static signed char HEX2DEC[256];
