@@ -3,7 +3,8 @@
 
 #include <SFML/Network.hpp>
 #include <SFML/Graphics/Color.hpp>
-#include <stdint.h>
+#include <cstdint>
+#include <bitset>
 #include "Updatable.h"
 #include "stringImproved.h"
 
@@ -125,55 +126,64 @@ bool multiplayerReplicationFunctions<T>::isChanged(void* data, void* prev_data_p
 
 template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr);
 
-class MultiplayerStaticReplicationBase : sf::NonCopyable
+namespace replication
 {
-public:
-    MultiplayerObject* owner{nullptr};
-    uint16_t replication_id{0};
+    class ControlBlock;
 
-    bool updated{false};
-    MultiplayerStaticReplicationBase* next{nullptr};
-
-    virtual void send(sf::Packet& packet) = 0;
-    virtual void receive(sf::Packet& packet) = 0;
-
-protected:
-    void markChanged();
-};
-template<typename T> class MultiplayerStaticReplication : public MultiplayerStaticReplicationBase
-{
-public:
-    MultiplayerStaticReplication(const T& initial_value)
-    : value(initial_value)
-    {}
-
-    operator T() const
+    /*! a replicated item - base class that may be anything. */
+    class Item
     {
-        return value;
-    }
+    public:
+        /*! Allow fine-grained access control to parts of the internal.
+        * 
+        * Used to grant access to some classes, while still being to guarantee class invariants.
+        */
+        class Key final {
+            friend class ControlBlock;
+            constexpr Key() = default;
+        };
 
-    MultiplayerStaticReplication<T>& operator=(T&& new_value)
+        explicit Item(ControlBlock& controller);
+
+        virtual void send(const ControlBlock&, sf::Packet&) = 0;
+        virtual void receive(const ControlBlock&, sf::Packet&) = 0;
+
+        // 
+        ControlBlock& getController(Key) const;
+
+        uint16_t getId(Key) const;
+        void setId(Key, uint16_t id);
+    protected:
+        ControlBlock& getController() const;
+    private:
+        ControlBlock& controller;
+        uint16_t replication_id{};
+    };
+
+    class ControlBlock
     {
-        if (value != new_value)
-        {
-            value = new_value;
-            markChanged();
-        }
-        return *this;
-    }
+    public:
+        class Key final {
+            friend class ReplicatedBase;
+            constexpr Key() = default;
+        };
 
-    void send(sf::Packet& packet) override
-    {
-        packet << value;
-    }
+        void add(Item& item);
+        bool isDirty(const Item& item) const;
+        void setDirty(const Item& item);
+        size_t send(sf::Packet&, bool everything);
+        bool handles(uint16_t net_id) const;
+        void receive(uint16_t net_id, sf::Packet&);
+    private:
+        static constexpr uint16_t controlled_flag{ 0x8000 };
 
-    void receive(sf::Packet& packet) override
-    {
-        packet >> value;
-    }
-
-    T value;
-};
+        bool isDirty(size_t) const;
+        void setDirty(size_t);
+        void resetDirty();
+        std::vector<size_t> dirty;
+        std::vector<Item*> items;
+    };
+} // ns replication
 
 //In between class that handles all the nasty synchronization of objects between server and client.
 //I'm assuming that it should be a pure virtual class though.
@@ -201,8 +211,7 @@ class MultiplayerObject : public virtual PObject
         void(*cleanupFunction)(void* prev_data_ptr);
     };
     std::vector<MemberReplicationInfo> memberReplicationInfo;
-    std::vector<MultiplayerStaticReplicationBase*> staticMemberReplicationInfo;
-    MultiplayerStaticReplicationBase* staticMemberSendList{nullptr};
+    std::unique_ptr<replication::ControlBlock> replicationControl;
 public:
     MultiplayerObject(string multiplayerClassIdentifier);
     virtual ~MultiplayerObject();
@@ -269,13 +278,6 @@ public:
         info.cleanupFunction = &multiplayerReplicationFunctions<T>::cleanupVector;
         memberReplicationInfo.push_back(info);
     }
-    
-    template<typename T> void registerMemberReplication_(F_PARAM MultiplayerStaticReplication<T>* member)
-    {
-        member->owner = this;
-        member->replication_id = staticMemberReplicationInfo.size() | 0x8000;
-        staticMemberReplicationInfo.push_back(member);
-    }
 
     void registerMemberReplication_(F_PARAM sf::Vector3f* member, float update_delay = 0.0)
     {
@@ -307,6 +309,7 @@ public:
 
     virtual void onReceiveClientCommand(int32_t client_id, sf::Packet& packet) {} //Got data from a client, handle it.
     virtual void onReceiveServerCommand(sf::Packet& packet) {} //Got data from a server, handle it.
+    replication::ControlBlock& getReplicationController() const { return *replicationControl; }
 private:
     friend class GameServer;
     friend class GameClient;
@@ -326,6 +329,105 @@ private:
         info.prev_data = 0;
     }
 };
+
+namespace replication
+{
+    template<typename T>
+    class Field : public Item
+    {
+    public:
+        template<typename... Args>
+        Field(MultiplayerObject* parent, Args&&... params)
+            : Item{ parent->getReplicationController() }
+            , value(std::forward<Args>(params)...)
+        {}
+
+        const T& get() const { return value; }
+        operator const T& () const { return get(); }
+
+        Field& operator =(const Field& other)
+        {
+            return *this = other.get();
+        }
+
+        // RMW ops.
+        template<typename U>
+        Field& operator=(const U& new_value)
+        {
+            if (value != new_value)
+            {
+                value = new_value;
+                getController().setDirty(*this);
+            }
+            return *this;
+        }
+
+        template<typename U>
+        Field& operator-=(U&& update)
+        {
+            auto previous = value;
+            value -= std::forward<U>(update);
+            if (previous != value)
+                getController().setDirty(*this);
+
+            return *this;
+        }
+
+        template<typename U>
+        Field& operator+=(U&& update)
+        {
+            auto previous = value;
+            value += std::forward<U>(update);
+            if (previous != value)
+                getController().setDirty(*this);
+
+            return *this;
+        }
+
+        template<typename U>
+        Field& operator*=(U&& update)
+        {
+            auto previous = value;
+            value *= std::forward<U>(update);
+            if (previous != value)
+                getController().setDirty(*this);
+
+            return *this;
+        }
+
+        template<typename U>
+        Field& operator/=(U&& update)
+        {
+            auto previous = value;
+            value /= std::forward<U>(update);
+            if (previous != value)
+                getController().setDirty(*this);
+
+            return *this;
+        }
+
+        void send(const ControlBlock&, sf::Packet& packet) override
+        {
+            packet << get();
+        }
+
+        void receive(const ControlBlock&, sf::Packet& packet) override
+        {
+            packet >> *this;
+        }
+    private:
+        T value;
+    };
+
+    template<typename T>
+    sf::Packet& operator >> (sf::Packet& packet, Field<T>& field)
+    {
+        T value{};
+        packet >> value;
+        field = value;
+        return packet;
+    }
+} // ns replication
 
 typedef MultiplayerObject* (*CreateMultiplayerObjectFunction)();
 

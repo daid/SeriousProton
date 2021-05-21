@@ -164,15 +164,8 @@ void GameServer::update(float /*gameDelta*/)
                     }
                 }
             }
-            while(obj->staticMemberSendList)
-            {
-                packet << obj->staticMemberSendList->replication_id;
-                obj->staticMemberSendList->send(packet);
-                //TODO: Multiplayer stats
-                obj->staticMemberSendList->updated = false;
-                obj->staticMemberSendList = obj->staticMemberSendList->next;
-                cnt ++;
-            }
+
+            cnt += obj->replicationControl->send(packet, false);
             if (cnt > 0)
             {
                 sendAll(packet);
@@ -538,11 +531,8 @@ void GameServer::generateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& p
         packet << int16_t(n);
         (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
     }
-    for(unsigned int n=0; n<obj->staticMemberReplicationInfo.size(); n++)
-    {
-        packet << int16_t(n | 0x8000);
-        obj->staticMemberReplicationInfo[n]->send(packet);
-    }
+
+    obj->replicationControl->send(packet, true);
 }
 
 void GameServer::generateDeletePacketFor(int32_t id, sf::Packet& packet)
