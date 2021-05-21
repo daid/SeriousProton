@@ -125,6 +125,56 @@ bool multiplayerReplicationFunctions<T>::isChanged(void* data, void* prev_data_p
 
 template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr);
 
+class MultiplayerStaticReplicationBase : sf::NonCopyable
+{
+public:
+    MultiplayerObject* owner{nullptr};
+    uint16_t replication_id{0};
+
+    bool updated{false};
+    MultiplayerStaticReplicationBase* next{nullptr};
+
+    virtual void send(sf::Packet& packet) = 0;
+    virtual void receive(sf::Packet& packet) = 0;
+
+protected:
+    void markChanged();
+};
+template<typename T> class MultiplayerStaticReplication : public MultiplayerStaticReplicationBase
+{
+public:
+    MultiplayerStaticReplication(const T& initial_value)
+    : value(initial_value)
+    {}
+
+    operator T() const
+    {
+        return value;
+    }
+
+    MultiplayerStaticReplication<T>& operator=(T&& new_value)
+    {
+        if (value != new_value)
+        {
+            value = new_value;
+            markChanged();
+        }
+        return *this;
+    }
+
+    void send(sf::Packet& packet) override
+    {
+        packet << value;
+    }
+
+    void receive(sf::Packet& packet) override
+    {
+        packet >> value;
+    }
+
+    T value;
+};
+
 //In between class that handles all the nasty synchronization of objects between server and client.
 //I'm assuming that it should be a pure virtual class though.
 class MultiplayerObject : public virtual PObject
@@ -151,6 +201,8 @@ class MultiplayerObject : public virtual PObject
         void(*cleanupFunction)(void* prev_data_ptr);
     };
     std::vector<MemberReplicationInfo> memberReplicationInfo;
+    std::vector<MultiplayerStaticReplicationBase*> staticMemberReplicationInfo;
+    MultiplayerStaticReplicationBase* staticMemberSendList{nullptr};
 public:
     MultiplayerObject(string multiplayerClassIdentifier);
     virtual ~MultiplayerObject();
@@ -217,6 +269,13 @@ public:
         info.cleanupFunction = &multiplayerReplicationFunctions<T>::cleanupVector;
         memberReplicationInfo.push_back(info);
     }
+    
+    template<typename T> void registerMemberReplication_(F_PARAM MultiplayerStaticReplication<T>* member)
+    {
+        member->owner = this;
+        member->replication_id = staticMemberReplicationInfo.size() | 0x8000;
+        staticMemberReplicationInfo.push_back(member);
+    }
 
     void registerMemberReplication_(F_PARAM sf::Vector3f* member, float update_delay = 0.0)
     {
@@ -251,6 +310,7 @@ public:
 private:
     friend class GameServer;
     friend class GameClient;
+    friend class MultiplayerStaticReplicationBase;
 
     template <typename T>
     static inline
