@@ -143,7 +143,8 @@ namespace replication
             constexpr Key() = default;
         };
 
-        explicit Item(ControlBlock& controller);
+        explicit Item(ControlBlock& controller, float min_delay);
+        virtual ~Item();
 
         virtual void send(const ControlBlock&, sf::Packet&) = 0;
         virtual void receive(const ControlBlock&, sf::Packet&) = 0;
@@ -154,7 +155,7 @@ namespace replication
         uint16_t getId(Key) const;
         void setId(Key, uint16_t id);
     protected:
-        ControlBlock& getController() const;
+        void setDirty();
     private:
         ControlBlock& controller;
         uint16_t replication_id{};
@@ -168,10 +169,10 @@ namespace replication
             constexpr Key() = default;
         };
 
-        void add(Item& item);
+        void add(Item& item, float min_delay = 0.f);
         bool isDirty(const Item& item) const;
         void setDirty(const Item& item);
-        size_t send(sf::Packet&, bool everything);
+        size_t send(sf::Packet&, bool everything, float delta = 0.f);
         bool handles(uint16_t net_id) const;
         void receive(uint16_t net_id, sf::Packet&);
     private:
@@ -181,6 +182,8 @@ namespace replication
         void setDirty(size_t);
         void resetDirty();
         std::vector<size_t> dirty;
+        std::vector<float> time_since_last_update;
+        std::vector<float> min_update_interval;
         std::vector<Item*> items;
     };
 } // ns replication
@@ -336,13 +339,20 @@ namespace replication
     class Field : public Item
     {
     public:
+        class MutableKey final
+        {
+            friend sf::Packet& operator >> (sf::Packet& packet, Field& field);
+            constexpr MutableKey() = default;
+        };
+
         template<typename... Args>
-        Field(MultiplayerObject* parent, Args&&... params)
-            : Item{ parent->getReplicationController() }
+        Field(MultiplayerObject* parent, float min_delay, Args&&... params)
+            : Item{ parent->getReplicationController(), min_delay }
             , value(std::forward<Args>(params)...)
         {}
 
         const T& get() const { return value; }
+        T& get(MutableKey) { setDirty(); return value; }
         operator const T& () const { return get(); }
 
         Field& operator =(const Field& other)
@@ -357,7 +367,7 @@ namespace replication
             if (value != new_value)
             {
                 value = new_value;
-                getController().setDirty(*this);
+                setDirty();
             }
             return *this;
         }
@@ -368,7 +378,7 @@ namespace replication
             auto previous = value;
             value -= std::forward<U>(update);
             if (previous != value)
-                getController().setDirty(*this);
+                setDirty();
 
             return *this;
         }
@@ -379,7 +389,7 @@ namespace replication
             auto previous = value;
             value += std::forward<U>(update);
             if (previous != value)
-                getController().setDirty(*this);
+                setDirty();
 
             return *this;
         }
@@ -390,7 +400,7 @@ namespace replication
             auto previous = value;
             value *= std::forward<U>(update);
             if (previous != value)
-                getController().setDirty(*this);
+                setDirty();
 
             return *this;
         }
@@ -401,7 +411,7 @@ namespace replication
             auto previous = value;
             value /= std::forward<U>(update);
             if (previous != value)
-                getController().setDirty(*this);
+                setDirty();
 
             return *this;
         }
@@ -413,21 +423,75 @@ namespace replication
 
         void receive(const ControlBlock&, sf::Packet& packet) override
         {
-            packet >> *this;
+            packet >> value;
         }
     private:
         T value;
     };
 
+    template<>
+    class Field<string> final : Item
+    {
+    public:
+        Field(MultiplayerObject* parent, float min_interval)
+            :Item{ parent->getReplicationController(), min_interval }
+        {}
+
+        void send(const ControlBlock&, sf::Packet& packet) final
+        {
+            packet << get();
+        }
+
+        void receive(const ControlBlock&, sf::Packet& packet) final
+        {
+            packet >> value;
+        }
+        
+        const string& get() const { return value; }
+        operator const string& () const { return get(); }
+
+        template<typename U>
+        Field& operator=(U&& other)
+        {
+            value = std::forward<U>(other);
+            setDirty();
+            return *this;
+        }
+    private:
+        string value;
+    };
+
     template<typename T>
     sf::Packet& operator >> (sf::Packet& packet, Field<T>& field)
     {
-        T value{};
-        packet >> value;
-        field = value;
+        packet >> field.get({});
         return packet;
     }
 } // ns replication
+
+template<typename U, typename T>
+bool operator ==(U&& lhs, const replication::Field<T>& rhs)
+{
+    return std::forward<U>(lhs) == rhs.get();
+}
+
+template<typename U, typename T>
+bool operator ==(const replication::Field<T>& lhs, U&& rhs)
+{
+    return std::forward<U>(rhs) == rhs;
+}
+
+template<typename U, typename T>
+bool operator !=(U&& lhs, const replication::Field<T>& rhs)
+{
+    return std::forward<U>(lhs) != rhs.get();
+}
+
+template<typename U, typename T>
+bool operator !=(const replication::Field<T>& lhs, U&& rhs)
+{
+    return std::forward<U>(rhs) != rhs;
+}
 
 typedef MultiplayerObject* (*CreateMultiplayerObjectFunction)();
 

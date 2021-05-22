@@ -165,7 +165,7 @@ void GameServer::update(float /*gameDelta*/)
                 }
             }
 
-            cnt += obj->replicationControl->send(packet, false);
+            cnt += obj->replicationControl->send(packet, false, delta);
             if (cnt > 0)
             {
                 sendAll(packet);

@@ -6,11 +6,13 @@
 
 namespace replication
 {
-    Item::Item(ControlBlock& control)
+    Item::Item(ControlBlock& control, float min_delay)
     : controller{ control }
     {
-        controller.add(*this);
+        controller.add(*this, min_delay);
     }
+
+    Item::~Item() = default;
 
     void Item::setId(Key, uint16_t id)
     {
@@ -19,7 +21,7 @@ namespace replication
 
     ControlBlock& Item::getController(Key) const
     {
-        return getController();
+        return controller;
     }
 
     uint16_t Item::getId(Key) const
@@ -27,16 +29,17 @@ namespace replication
         return replication_id;
     }
 
-    ControlBlock& Item::getController() const
+    void Item::setDirty()
     {
-        return controller;
+        controller.setDirty(*this);
     }
 
-    void ControlBlock::add(Item& item)
+    void ControlBlock::add(Item& item, float min_delay)
     {
         item.setId({}, items.size());
         items.emplace_back(&item);
-
+        min_update_interval.emplace_back(min_delay);
+        time_since_last_update.emplace_back(0.f);
         if (dirty.size() * sizeof(size_t) < items.size())
             dirty.resize((items.size() + sizeof(size_t) - 1) / sizeof(size_t));
     }
@@ -53,34 +56,46 @@ namespace replication
         setDirty(item.getId({}));
     }
 
-    size_t ControlBlock::send(sf::Packet& packet, bool everything)
+    size_t ControlBlock::send(sf::Packet& packet, bool everything, float delta /* = 0.f */)
     {
         size_t sent{};
+
+        // Update all deltas.
+        for (auto& value : time_since_last_update)
+            value += delta;
 
         if (!everything)
         {
             for (auto dirty_batch = 0; dirty_batch < dirty.size(); ++dirty_batch)
             {
-                if (dirty[dirty_batch]) // skip over entire batches with no change.
+                auto batch = dirty[dirty_batch];
+                if (batch) // skip over entire batches with no change.
                 {
                     for (auto i = 0; i < sizeof(size_t); ++i)
                     {
+                        auto bit = (size_t{ 1 } << i);
                         auto index = dirty_batch * sizeof(size_t) + i;
-                        if (isDirty(index))
+                        if ((batch & bit) != 0 && time_since_last_update[index] > min_update_interval[index])
                         {
-                            packet << int16_t(items[index]->getId({}) | controlled_flag);
-                            items[index]->send(*this, packet);
+                            auto item = items[index];
+                            packet << int16_t(item->getId({}) | controlled_flag);
+                            item->send(*this, packet);
+                            time_since_last_update[index] = 0.f;
                             sent += 1;
+                            batch &= ~bit;
                         }
+                    }
+
+                    if (batch != dirty[dirty_batch])
+                    {
+                        dirty[dirty_batch] = batch;
                     }
                 }
             }
-
-            resetDirty();
         }
         else
         {
-            for (auto* item : items)
+            for (auto& item : items)
             {
                 packet << int16_t(item->getId({}) | controlled_flag);
                 item->send(*this, packet);
