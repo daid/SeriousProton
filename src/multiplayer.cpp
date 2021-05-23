@@ -6,10 +6,10 @@
 
 namespace replication
 {
-    Item::Item(ControlBlock& control, float min_delay)
+    Item::Item(ControlBlock& control, const Settings& settings)
     : controller{ control }
     {
-        controller.add(*this, min_delay);
+        controller.add(*this, settings);
     }
 
     Item::~Item() = default;
@@ -34,25 +34,30 @@ namespace replication
         controller.setDirty(*this);
     }
 
-    void ControlBlock::add(Item& item, float min_delay)
+    void ControlBlock::add(Item& item, const Item::Settings& settings)
     {
-        item.setId({}, items.size());
+        assert(items.size() < static_cast<size_t>(~controlled_flag));
+        item.setId({}, static_cast<uint16_t>(items.size()));
         items.emplace_back(&item);
-        min_update_interval.emplace_back(min_delay);
+        min_update_interval.emplace_back(settings.min_delay);
         time_since_last_update.emplace_back(0.f);
         if (dirty.size() * sizeof(size_t) < items.size())
             dirty.resize((items.size() + sizeof(size_t) - 1) / sizeof(size_t));
+
+#ifdef DEBUG
+            names.emplace_back(settings.name);
+#endif
     }
 
     bool ControlBlock::isDirty(const Item& item) const
     {
-        assert(item.getControlBlock({}) == this);
+        assert(&item.getController({}) == this);
         return isDirty(item.getId({}));
     }
 
     void ControlBlock::setDirty(const Item& item)
     {
-        assert(item.getControlBlock({}) == this);
+        assert(&item.getController({}) == this);
         setDirty(item.getId({}));
     }
 
@@ -125,7 +130,7 @@ namespace replication
 
     void ControlBlock::setDirty(size_t id)
     {
-        dirty[id / sizeof(size_t)] |= (1 << (id % sizeof(size_t)));
+        dirty[id / sizeof(size_t)] |= (size_t{ 1 } << (id % sizeof(size_t)));
     }
 
     void ControlBlock::resetDirty()

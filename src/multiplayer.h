@@ -4,7 +4,6 @@
 #include <SFML/Network.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <cstdint>
-#include <bitset>
 #include "Updatable.h"
 #include "stringImproved.h"
 
@@ -134,6 +133,13 @@ namespace replication
     class Item
     {
     public:
+        struct Settings
+        {
+            float min_delay{};
+#ifdef DEBUG
+            string name{};
+#endif
+        };
         /*! Allow fine-grained access control to parts of the internal.
         * 
         * Used to grant access to some classes, while still being to guarantee class invariants.
@@ -143,7 +149,7 @@ namespace replication
             constexpr Key() = default;
         };
 
-        explicit Item(ControlBlock& controller, float min_delay);
+        explicit Item(ControlBlock& controller, const Settings& settings);
         virtual ~Item();
 
         virtual void send(const ControlBlock&, sf::Packet&) = 0;
@@ -159,6 +165,7 @@ namespace replication
     private:
         ControlBlock& controller;
         uint16_t replication_id{};
+        // There's padding here, might be useful.
     };
 
     class ControlBlock
@@ -169,7 +176,7 @@ namespace replication
             constexpr Key() = default;
         };
 
-        void add(Item& item, float min_delay = 0.f);
+        void add(Item& item, const Item::Settings& settings);
         bool isDirty(const Item& item) const;
         void setDirty(const Item& item);
         size_t send(sf::Packet&, bool everything, float delta = 0.f);
@@ -185,6 +192,9 @@ namespace replication
         std::vector<float> time_since_last_update;
         std::vector<float> min_update_interval;
         std::vector<Item*> items;
+#ifdef DEBUG
+        std::vector<string> names;
+#endif
     };
 } // ns replication
 
@@ -336,18 +346,24 @@ private:
 namespace replication
 {
     template<typename T>
+    class Field;
+
+    template<typename T>
+    sf::Packet& operator >> (sf::Packet& packet, Field<T>& field);
+
+    template<typename T>
     class Field : public Item
     {
     public:
         class MutableKey final
         {
-            friend sf::Packet& operator >> (sf::Packet& packet, Field& field);
+            friend sf::Packet& operator >> <>(sf::Packet& packet, Field& field);
             constexpr MutableKey() = default;
         };
 
         template<typename... Args>
-        Field(MultiplayerObject* parent, float min_delay, Args&&... params)
-            : Item{ parent->getReplicationController(), min_delay }
+        Field(MultiplayerObject* parent, const Item::Settings& settings, Args&&... params)
+            : Item{ parent->getReplicationController(), settings }
             , value(std::forward<Args>(params)...)
         {}
 
@@ -433,8 +449,8 @@ namespace replication
     class Field<string> final : Item
     {
     public:
-        Field(MultiplayerObject* parent, float min_interval)
-            :Item{ parent->getReplicationController(), min_interval }
+        Field(MultiplayerObject* parent, const Item::Settings& settings)
+            :Item{ parent->getReplicationController(), settings }
         {}
 
         void send(const ControlBlock&, sf::Packet& packet) final
