@@ -48,7 +48,15 @@ void PostProcessor::render(sf::RenderTarget& window)
         size = pixel_size;
 
         //Setup a backBuffer to render the game on. Then we can render the backbuffer back to the main screen with full-screen shader effects
-        renderTexture.create(size.x, size.y, true);
+        sf::ContextSettings settings{ 24, 8 }; // 24/8 depth/stencil.
+        if (!renderTexture.create(size.x, size.y, settings))
+        {
+            // If we fail to create the RT, just disable the post processor and fallback to the backbuffer.
+            LOG(WARNING) << "Failed to setup the render texture for post processing effects. They will be disabled.";
+            global_post_processor_enabled = false;
+            chain->render(window);
+            return;
+        }
 
         renderTexture.setRepeated(true);
         renderTexture.setSmooth(true);
