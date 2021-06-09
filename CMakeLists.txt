@@ -51,7 +51,7 @@ if(NOT ${SFML_FOUND})
     include(ExternalProject)
 
     ExternalProject_Add(SFML
-        GIT_REPOSITORY https://github.com/SFML/SFML.git
+        GIT_REPOSITORY git@github.com:SFML/SFML.git
         GIT_TAG 2.5.1 #Always build with this tag, so we're sure it is stable.
         GIT_SHALLOW 1 # Don't get the entire history
         CMAKE_ARGS
@@ -124,6 +124,12 @@ set(source_files #All SeriousProton's objects to compile
     src/tween.cpp
     src/Updatable.cpp
     src/windowManager.cpp
+    src/io/network/address.cpp
+    src/io/network/selector.cpp
+    src/io/network/socketBase.cpp
+    src/io/network/tcpListener.cpp
+    src/io/network/tcpSocket.cpp
+    src/io/network/udpSocket.cpp
 )
 
 if(NOT ANDROID)
@@ -193,7 +199,7 @@ target_compile_options(seriousproton_deps
 target_link_libraries(seriousproton_deps
     INTERFACE 
         box2d lua glew ${SFML_LIBRARIES}
-        "$<$<BOOL:${WIN32}>:wsock32>"
+        $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
         "$<BUILD_INTERFACE:opus;$<$<BOOL:${SERIOUSPROTON_WITH_JSON}>:json11>;$<$<NOT:$<BOOL:${ANDROID}>>:${CMAKE_DL_LIBS}>>"
