@@ -277,6 +277,32 @@ public:
     {
         return buffer.size() - read_index;
     }
+
+    DataBuffer& operator <<(bool data) { write(data); return *this; }
+    DataBuffer& operator <<(int8_t data) { write(data); return *this; }
+    DataBuffer& operator <<(uint8_t data) { write(data); return *this; }
+    DataBuffer& operator <<(int16_t data) { write(data); return *this; }
+    DataBuffer& operator <<(uint16_t data) { write(data); return *this; }
+    DataBuffer& operator <<(int32_t data) { write(data); return *this; }
+    DataBuffer& operator <<(uint32_t data) { write(data); return *this; }
+    DataBuffer& operator <<(int64_t data) { write(data); return *this; }
+    DataBuffer& operator <<(uint64_t data) { write(data); return *this; }
+    DataBuffer& operator <<(float data) { write(data); return *this; }
+    DataBuffer& operator <<(double data) { write(data); return *this; }
+    DataBuffer& operator <<(const string& data) { write(data); return *this; }
+
+    DataBuffer& operator >>(bool& data) { read(data); return *this; }
+    DataBuffer& operator >>(int8_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(uint8_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(int16_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(uint16_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(int32_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(uint32_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(int64_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(uint64_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(float& data) { read(data); return *this; }
+    DataBuffer& operator >>(double& data) { read(data); return *this; }
+    DataBuffer& operator >>(string& data) { read(data); return *this; }
 private:
     std::vector<uint8_t> buffer;
     size_t read_index;
@@ -284,6 +310,7 @@ private:
 
 }//namespace io
 }//namespace sp
+
 
 #undef IF_LITTLE_ENDIAN
 

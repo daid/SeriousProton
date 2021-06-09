@@ -9,9 +9,9 @@ class GameServerProxy : public Updatable
     sf::Clock lastReceiveTime;
     constexpr static float noDataDisconnectTime = 20.0f;
 
-    sf::UdpSocket broadcast_listen_socket;
-    sf::TcpListener listenSocket;
-    std::unique_ptr<TcpSocket> newSocket;
+    sp::io::network::UdpSocket broadcast_listen_socket;
+    sp::io::network::TcpListener listenSocket;
+    std::unique_ptr<sp::io::network::TcpSocket> newSocket;
 
     enum EClientReceiveState
     {
@@ -21,7 +21,7 @@ class GameServerProxy : public Updatable
     };
     struct ClientInfo
     {
-        std::unique_ptr<TcpSocket> socket;
+        std::unique_ptr<sp::io::network::TcpSocket> socket;
         int32_t clientId = 0;
         int32_t commandObjectId = 0;
         bool validClient = false;
@@ -35,9 +35,9 @@ class GameServerProxy : public Updatable
     int32_t serverVersion = 0;
     string proxyName;
     float boardcastServerDelay;
-    std::unique_ptr<TcpSocket> mainSocket;
+    std::unique_ptr<sp::io::network::TcpSocket> mainSocket;
 public:
-    GameServerProxy(sf::IpAddress hostname, int hostPort = defaultServerPort, string password = "", int listenPort = defaultServerPort, string proxyName="");
+    GameServerProxy(sp::io::network::Address hostname, int hostPort = defaultServerPort, string password = "", int listenPort = defaultServerPort, string proxyName="");
     GameServerProxy(string password = "", int listenPort = defaultServerPort, string proxyName="");
     virtual ~GameServerProxy();
 
@@ -45,7 +45,7 @@ public:
 
     virtual void update(float delta) override;
 private:
-    void sendAll(sf::Packet& packet);
+    void sendAll(sp::io::DataBuffer& packet);
 
     void handleBroadcastUDPSocket(float delta);
 };

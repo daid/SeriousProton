@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include <unordered_map>
 #include <unordered_set>
-#include "fixedSocket.h"
+#include "io/network/udpSocket.h"
+#include "io/network/tcpSocket.h"
+#include "io/network/tcpListener.h"
 #include "Updatable.h"
 #include "stringImproved.h"
 #include "networkAudioStream.h"
@@ -21,9 +23,9 @@ class GameServer : public Updatable
 {
     sf::Clock updateTimeClock;
     sf::Clock aliveClock;
-    sf::UdpSocket broadcast_listen_socket;
-    sf::TcpListener listenSocket;
-    std::unique_ptr<TcpSocket> new_socket;
+    sp::io::network::UdpSocket broadcast_listen_socket;
+    sp::io::network::TcpListener listenSocket;
+    std::unique_ptr<sp::io::network::TcpSocket> new_socket;
     string server_name;
     int listen_port;
     int version_number;
@@ -46,7 +48,7 @@ class GameServer : public Updatable
     };
     struct ClientInfo
     {
-        std::unique_ptr<TcpSocket> socket;
+        std::unique_ptr<sp::io::network::TcpSocket> socket;
         int32_t client_id;
         int32_t command_client_id;
         EClientReceiveState receive_state;
@@ -69,7 +71,7 @@ public:
     GameServer(string server_name, int versionNumber, int listenPort = defaultServerPort);
     virtual ~GameServer();
 
-    void connectToProxy(sf::IpAddress address, int port = defaultServerPort);
+    void connectToProxy(sp::io::network::Address address, int port = defaultServerPort);
 
     virtual void destroy() override;
 
@@ -89,15 +91,15 @@ public:
     void startAudio(int32_t client_id, int32_t target_identifier);
     void gotAudioPacket(int32_t client_id, const unsigned char* packet, int packet_size);
     void stopAudio(int32_t client_id);
-    void sendAudioPacketFrom(int32_t client_id, sf::Packet& packet);
+    void sendAudioPacketFrom(int32_t client_id, sp::io::DataBuffer& packet);
 private:
     void registerObject(P<MultiplayerObject> obj);
-    void broadcastServerCommandFromObject(int32_t id, sf::Packet& packet);
+    void broadcastServerCommandFromObject(int32_t id, sp::io::DataBuffer& packet);
     void keepAliveAll();
-    void sendAll(sf::Packet& packet);
+    void sendAll(sp::io::DataBuffer& packet);
 
-    void generateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& packet);
-    void generateDeletePacketFor(int32_t id, sf::Packet& packet);
+    void generateCreatePacketFor(P<MultiplayerObject> obj, sp::io::DataBuffer& packet);
+    void generateDeletePacketFor(int32_t id, sp::io::DataBuffer& packet);
     
     void handleNewClient(ClientInfo& info);
     void handleNewProxy(ClientInfo& info, int32_t temp_id);

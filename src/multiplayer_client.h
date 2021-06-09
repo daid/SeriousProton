@@ -2,7 +2,7 @@
 #define MULTIPLAYER_CLIENT_H
 
 #include <stdint.h>
-#include "fixedSocket.h"
+#include "io/network/tcpSocket.h"
 #include "Updatable.h"
 #include "multiplayer_server.h"
 #include "networkAudioStream.h"
@@ -37,10 +37,10 @@ public:
     };
 private:
     int version_number;
-    sf::IpAddress server;
+    sp::io::network::Address server;
     int port_nr;
 
-    TcpSocket socket;
+    sp::io::network::TcpSocket socket;
     std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
     int32_t client_id;
     Status status;
@@ -50,7 +50,7 @@ private:
     sf::Thread connect_thread;
     DisconnectReason disconnect_reason{ DisconnectReason::Unknown };
 public:
-    GameClient(int version_number, sf::IpAddress server, int port_nr = defaultServerPort);
+    GameClient(int version_number, sp::io::network::Address server, int port_nr = defaultServerPort);
     virtual ~GameClient();
 
     P<MultiplayerObject> getObjectById(int32_t id);
@@ -60,7 +60,7 @@ public:
     Status getStatus() { return status; }
     DisconnectReason getDisconnectReason() const { return disconnect_reason; }
 
-    void sendPacket(sf::Packet& packet);
+    void sendPacket(sp::io::DataBuffer& packet);
 
     void sendPassword(string password);
 private:

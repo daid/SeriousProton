@@ -60,6 +60,19 @@ std::vector<string> Address::getHumanReadable() const
     return result;
 }
 
+bool Address::operator==(const Address& other) const
+{
+    if (addr_info.size() != other.addr_info.size())
+        return false;
+    //TODO:SOCKET, this assumes the addr_info is always in the same order.
+    for(auto my_it=addr_info.begin(), other_it=other.addr_info.begin(); my_it != addr_info.end(); my_it++, other_it++)
+    {
+        if (my_it->addr != other_it->addr)
+            return false;
+    }
+    return true;
+}
+
 Address Address::getLocalAddress()
 {
     initSocketLib();

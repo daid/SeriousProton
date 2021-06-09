@@ -19,6 +19,8 @@ public:
 
     std::vector<string> getHumanReadable() const;
 
+    bool operator==(const Address& other) const;
+
     static Address getLocalAddress();
 private:
     static void initSocketLib();

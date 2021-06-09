@@ -8,13 +8,13 @@
 class ServerScanner : public Updatable
 {
     int server_port;
-    std::unique_ptr<sf::UdpSocket> socket;
+    std::unique_ptr<sp::io::network::UdpSocket> socket;
     sf::Clock broadcast_clock;
 
 public:
     struct ServerInfo
     {
-        sf::IpAddress address;
+        sp::io::network::Address address;
         int port;
         string name;
 
@@ -30,15 +30,15 @@ private:
     sf::Mutex server_list_mutex;
     std::unique_ptr<sf::Thread> master_server_scan_thread;
 
-    std::function<void(sf::IpAddress, string)> newServerCallback;
-    std::function<void(sf::IpAddress)> removedServerCallback;
+    std::function<void(sp::io::network::Address, string)> newServerCallback;
+    std::function<void(sp::io::network::Address)> removedServerCallback;
 public:
 
     ServerScanner(int version_number, int server_port = defaultServerPort);
     virtual ~ServerScanner();
 
     virtual void update(float delta);
-    void addCallbacks(std::function<void(sf::IpAddress, string)> newServerCallback, std::function<void(sf::IpAddress)> removedServerCallback);
+    void addCallbacks(std::function<void(sp::io::network::Address, string)> newServerCallback, std::function<void(sp::io::network::Address)> removedServerCallback);
     
     void scanLocalNetwork();
     void scanMasterServer(string url);
@@ -48,7 +48,7 @@ public:
 private:
     void masterServerScanThread();
     
-    void updateServerEntry(sf::IpAddress address, int port, string name);
+    void updateServerEntry(sp::io::network::Address address, int port, string name);
 };
 
 #endif//MULTIPLAYER_SERVER_SCANER_H

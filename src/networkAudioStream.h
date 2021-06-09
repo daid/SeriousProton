@@ -2,7 +2,6 @@
 #define NETWORK_AUDIOSTREAM_H
 
 #include <SFML/Audio.hpp>
-#include <SFML/Network.hpp>
 #include <memory>
 #include <iostream>
 #include <unordered_map>

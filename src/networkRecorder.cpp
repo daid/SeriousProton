@@ -92,7 +92,7 @@ void NetworkAudioRecorder::startSending()
 
     if (game_client)
     {
-        sf::Packet audio_packet;
+        sp::io::DataBuffer audio_packet;
         audio_packet << CMD_AUDIO_COMM_START << game_client->getClientId() << int32_t(keys[active_key_index].target_identifier);
         game_client->sendPacket(audio_packet);
     }
@@ -114,9 +114,9 @@ bool NetworkAudioRecorder::sendAudioPacket()
             packet_size = opus_encode(encoder, sample_buffer.data(), frame_size, packet_buffer, sizeof(packet_buffer));
         if (game_client)
         {
-            sf::Packet audio_packet;
+            sp::io::DataBuffer audio_packet;
             audio_packet << CMD_AUDIO_COMM_DATA << game_client->getClientId();
-            audio_packet.append(packet_buffer, packet_size);
+            audio_packet.appendRaw(packet_buffer, packet_size);
 
             game_client->sendPacket(audio_packet);
         }
@@ -151,7 +151,7 @@ void NetworkAudioRecorder::finishSending()
 
     if (game_client)
     {
-        sf::Packet audio_packet;
+        sp::io::DataBuffer audio_packet;
         audio_packet << CMD_AUDIO_COMM_STOP << game_client->getClientId();
         game_client->sendPacket(audio_packet);
     }

@@ -3,12 +3,12 @@
 #include "engine.h"
 
 
-GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string password, int listenPort, string proxyName)
+GameServerProxy::GameServerProxy(sp::io::network::Address hostname, int hostPort, string password, int listenPort, string proxyName)
 : password(password), proxyName(proxyName)
 {
     LOG(INFO) << "Starting proxy server";
-    mainSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
-    if (mainSocket->connect(hostname, static_cast<uint16_t>(hostPort)) != sf::Socket::Status::Done)
+    mainSocket = std::make_unique<sp::io::network::TcpSocket>();
+    if (!mainSocket->connect(hostname, static_cast<uint16_t>(hostPort)))
         LOG(INFO) << "Failed to connect to server";
     else
         LOG(INFO) << "Connected to server";
@@ -16,13 +16,13 @@ GameServerProxy::GameServerProxy(sf::IpAddress hostname, int hostPort, string pa
     listenSocket.listen(static_cast<uint16_t>(listenPort));
     listenSocket.setBlocking(false);
 
-    newSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
+    newSocket = std::make_unique<sp::io::network::TcpSocket>();
     newSocket->setBlocking(false);
 
     boardcastServerDelay = 0.0;
     if (proxyName != "")
     {
-        if (broadcast_listen_socket.bind(static_cast<uint16_t>(listenPort)) != sf::UdpSocket::Done)
+        if (!broadcast_listen_socket.bind(static_cast<uint16_t>(listenPort)))
         {
             LOG(ERROR) << "Failed to listen on UDP port: " << listenPort;
         }
@@ -39,13 +39,13 @@ GameServerProxy::GameServerProxy(string password, int listenPort, string proxyNa
     listenSocket.listen(static_cast<uint16_t>(listenPort));
     listenSocket.setBlocking(false);
 
-    newSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
+    newSocket = std::make_unique<sp::io::network::TcpSocket>();
     newSocket->setBlocking(false);
 
     boardcastServerDelay = 0.0;
     if (proxyName != "")
     {
-        if (broadcast_listen_socket.bind(static_cast<uint16_t>(listenPort)) != sf::UdpSocket::Done)
+        if (!broadcast_listen_socket.bind(static_cast<uint16_t>(listenPort)))
         {
             LOG(ERROR) << "Failed to listen on UDP port: " << listenPort;
         }
@@ -63,17 +63,15 @@ void GameServerProxy::destroy()
 {
     clientList.clear();
 
-    broadcast_listen_socket.unbind();
+    broadcast_listen_socket.close();
 }
 
 void GameServerProxy::update(float delta)
 {
     if (mainSocket)
     {
-        mainSocket->update();
-        sf::Packet packet;
-        sf::TcpSocket::Status socketStatus;
-        while((socketStatus = mainSocket->receive(packet)) == sf::TcpSocket::Done)
+        sp::io::DataBuffer packet;
+        while(mainSocket->receive(packet))
         {
             lastReceiveTime.restart();
             command_t command;
@@ -85,7 +83,7 @@ void GameServerProxy::update(float delta)
                     bool requirePassword;
                     packet >> serverVersion >> requirePassword;
 
-                    sf::Packet reply;
+                    sp::io::DataBuffer reply;
                     reply << CMD_CLIENT_SEND_AUTH << int32_t(serverVersion) << string(password);
                     mainSocket->send(reply);
                 }
@@ -95,7 +93,7 @@ void GameServerProxy::update(float delta)
                 break;
             case CMD_ALIVE:
                 {
-                    sf::Packet reply;
+                    sp::io::DataBuffer reply;
                     reply << CMD_ALIVE_RESP;
                     mainSocket->send(reply);
                 }
@@ -113,9 +111,10 @@ void GameServerProxy::update(float delta)
                 break;
             case CMD_PROXY_TO_CLIENTS:
                 {
-                    int32_t id;
-                    while(packet >> id)
+                    while(packet.available())
                     {
+                        int32_t id;
+                        packet >> id;
                         targetClients.insert(id);
                     }
                 }
@@ -132,7 +131,7 @@ void GameServerProxy::update(float delta)
                             info.clientId = proxied_clientId;
                             info.receiveState = CRS_Main;
                             {
-                                sf::Packet proxied_packet;
+                                sp::io::DataBuffer proxied_packet;
                                 proxied_packet << CMD_SET_CLIENT_ID << info.clientId;
                                 info.socket->send(proxied_packet);
                             }
@@ -142,10 +141,10 @@ void GameServerProxy::update(float delta)
                 break;
             }
         }
-        if (socketStatus == sf::TcpSocket::Disconnected || lastReceiveTime.getElapsedTime().asSeconds() > noDataDisconnectTime)
+        if (!mainSocket->isConnected() || lastReceiveTime.getElapsedTime().asSeconds() > noDataDisconnectTime)
         {
             LOG(INFO) << "Disconnected proxy";
-            mainSocket->disconnect();
+            mainSocket->close();
             engine->shutdown();
         }
     }
@@ -155,14 +154,14 @@ void GameServerProxy::update(float delta)
         handleBroadcastUDPSocket(delta);
     }
 
-    if (listenSocket.accept(*newSocket) == sf::Socket::Status::Done)
+    if (listenSocket.accept(*newSocket))
     {
         ClientInfo info;
         info.socket = std::move(newSocket);
-        newSocket = std::unique_ptr<TcpSocket>(new TcpSocket());
+        newSocket = std::make_unique<sp::io::network::TcpSocket>();
         newSocket->setBlocking(false);
         {
-            sf::Packet packet;
+            sp::io::DataBuffer packet;
             packet << CMD_REQUEST_AUTH << int32_t(serverVersion) << bool(password != "");
             info.socket->send(packet);
         }
@@ -171,11 +170,9 @@ void GameServerProxy::update(float delta)
 
     for(unsigned int n=0; n<clientList.size(); n++)
     {
-        sf::Packet packet;
-        sf::TcpSocket::Status socketStatus{ sf::TcpSocket::Error };
+        sp::io::DataBuffer packet;
         auto& info = clientList[n];
-        info.socket->update();
-        while(info.socket && (socketStatus = info.socket->receive(packet)) == sf::TcpSocket::Done)
+        while(info.socket && info.socket->receive(packet))
         {
             command_t command;
             packet >> command;
@@ -187,7 +184,7 @@ void GameServerProxy::update(float delta)
                 case CMD_SERVER_CONNECT_TO_PROXY:
                     if (mainSocket)
                     {
-                        info.socket->disconnect();
+                        info.socket->close();
                         info.socket = NULL;
                     }
                     else
@@ -203,13 +200,13 @@ void GameServerProxy::update(float delta)
                         packet >> clientVersion >> clientPassword;
                         if (mainSocket && clientVersion == serverVersion && clientPassword == password)
                         {
-                            sf::Packet serverUpdate;
+                            sp::io::DataBuffer serverUpdate;
                             serverUpdate << CMD_NEW_PROXY_CLIENT << info.clientId;
                             mainSocket->send(serverUpdate);
                         }
                         else
                         {
-                           info.socket->disconnect();
+                           info.socket->close();
                            info.socket = NULL;
                         }
                     }
@@ -247,7 +244,7 @@ void GameServerProxy::update(float delta)
                 break;
             case CRS_Command:
                 {
-                    sf::Packet mainPacket;
+                    sp::io::DataBuffer mainPacket;
                     mainPacket << CMD_PROXY_CLIENT_COMMAND << info.commandObjectId << info.clientId;
                     mainSocket->send(mainPacket);
                     mainSocket->send(packet);
@@ -256,11 +253,11 @@ void GameServerProxy::update(float delta)
                 break;
             }
         }
-        if (socketStatus == sf::TcpSocket::Disconnected || info.socket == NULL)
+        if (info.socket == NULL || !info.socket->isConnected())
         {
             if (info.validClient)
             {
-                sf::Packet serverUpdate;
+                sp::io::DataBuffer serverUpdate;
                 serverUpdate << CMD_DEL_PROXY_CLIENT << info.clientId;
                 mainSocket->send(serverUpdate);
             }
@@ -270,7 +267,7 @@ void GameServerProxy::update(float delta)
     }
 }
 
-void GameServerProxy::sendAll(sf::Packet& packet)
+void GameServerProxy::sendAll(sp::io::DataBuffer& packet)
 {
     if (targetClients.empty())
     {
@@ -293,13 +290,13 @@ void GameServerProxy::sendAll(sf::Packet& packet)
 
 void GameServerProxy::handleBroadcastUDPSocket(float delta)
 {
-    sf::IpAddress recvAddress;
-    unsigned short recvPort;
-    sf::Packet recvPacket;
-    if (broadcast_listen_socket.receive(recvPacket, recvAddress, recvPort) == sf::Socket::Status::Done)
+    sp::io::network::Address recvAddress;
+    int recvPort;
+    sp::io::DataBuffer recvPacket;
+    if (broadcast_listen_socket.receive(recvPacket, recvAddress, recvPort))
     {
         //We do not care about what we received. Reply that we live!
-        sf::Packet sendPacket;
+        sp::io::DataBuffer sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(serverVersion) << proxyName;
         broadcast_listen_socket.send(sendPacket, recvAddress, recvPort);
     }
@@ -309,8 +306,9 @@ void GameServerProxy::handleBroadcastUDPSocket(float delta)
     }else{
         boardcastServerDelay = 5.0;
 
-        sf::Packet sendPacket;
+        sp::io::DataBuffer sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(serverVersion) << proxyName;
-        UDPbroadcastPacket(broadcast_listen_socket, sendPacket, broadcast_listen_socket.getLocalPort() + 1);
+        //TODO:SOCKET
+        //UDPbroadcastPacket(broadcast_listen_socket, sendPacket, broadcast_listen_socket.getLocalPort() + 1);
     }
 }
