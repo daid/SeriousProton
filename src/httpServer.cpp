@@ -183,7 +183,11 @@ void HttpServerConnection::parseUri(const string & sSrc)
         std::vector<string> parts = uri.split("?", 1);
         request.path = parts[0];
 
-        std::vector<string> parameters = parts[1].split("&");
+        std::vector<string> parameters;
+        if (parts.size()>1)
+        {
+            parameters = parts[1].split("&");
+        }
         for (unsigned int n=0; n<parameters.size(); n++)
         {
             string param = parameters[n];
