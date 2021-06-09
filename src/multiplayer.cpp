@@ -121,7 +121,7 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
     return false;
 }
 
-static void collisionable_sendFunction(void* data, sf::Packet& packet)
+static void collisionable_sendFunction(void* data, sp::io::DataBuffer& packet)
 {
     Collisionable* c = (Collisionable*)data;
 
@@ -133,7 +133,7 @@ static void collisionable_sendFunction(void* data, sf::Packet& packet)
     packet << position << velocity << rotation << angularVelocity;
 }
 
-static void collisionable_receiveFunction(void* data, sf::Packet& packet)
+static void collisionable_receiveFunction(void* data, sp::io::DataBuffer& packet)
 {
     Collisionable* c = (Collisionable*)data;
 
@@ -181,21 +181,21 @@ void MultiplayerObject::registerCollisionableReplication(float object_significan
     memberReplicationInfo.push_back(info);
 }
 
-void MultiplayerObject::sendClientCommand(sf::Packet& packet)
+void MultiplayerObject::sendClientCommand(sp::io::DataBuffer& packet)
 {
     if (game_server)
     {
         onReceiveClientCommand(0, packet);
     }else if (game_client)
     {
-        sf::Packet p;
+        sp::io::DataBuffer p;
         p << CMD_CLIENT_COMMAND << multiplayerObjectId;
         game_client->sendPacket(p);
         game_client->sendPacket(packet);
     }
 }
 
-void MultiplayerObject::broadcastServerCommand(sf::Packet& packet)
+void MultiplayerObject::broadcastServerCommand(sp::io::DataBuffer& packet)
 {
     if (game_server)
     {

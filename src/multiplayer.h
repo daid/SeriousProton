@@ -1,7 +1,7 @@
 #ifndef MULTIPLAYER_H
 #define MULTIPLAYER_H
 
-#include <SFML/Network.hpp>
+#include <io/dataBuffer.h>
 #include <SFML/Graphics/Color.hpp>
 #include <stdint.h>
 #include "Updatable.h"
@@ -11,49 +11,49 @@ class MultiplayerObject;
 
 
 #define REGISTER_MULTIPLAYER_ENUM(type) \
-    static inline sf::Packet& operator << (sf::Packet& packet, const type& e) { return packet << int8_t(e); } \
-    static inline sf::Packet& operator >> (sf::Packet& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
+    static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const type& e) { return packet << int8_t(e); } \
+    static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
 
 
 #define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
 
-template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector2<T>& v)
+template<typename T> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sf::Vector2<T>& v)
 {
     return packet << v.x << v.y;
 }
-template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector2<T>& v)
+template<typename T> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sf::Vector2<T>& v)
 {
     return packet >> v.x >> v.y;
 }
-template<typename T> static inline sf::Packet& operator << (sf::Packet& packet, const sf::Vector3<T>& v)
+template<typename T> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sf::Vector3<T>& v)
 {
     return packet << v.x << v.y << v.z;
 }
-template<typename T> static inline sf::Packet& operator >> (sf::Packet& packet, sf::Vector3<T>& v)
+template<typename T> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sf::Vector3<T>& v)
 {
     return packet >> v.x >> v.y >> v.z;
 }
-template<typename T1, typename T2> static inline sf::Packet& operator << (sf::Packet& packet, const std::pair<T1, T2>& pair)
+template<typename T1, typename T2> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const std::pair<T1, T2>& pair)
 {
     return packet << pair.first << pair.second;
 }
-template<typename T1, typename T2> static inline sf::Packet& operator >> (sf::Packet& packet, std::pair<T1, T2>& pair)
+template<typename T1, typename T2> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, std::pair<T1, T2>& pair)
 {
     return packet >> pair.first >> pair.second;
 }
 
-static inline sf::Packet& operator << (sf::Packet& packet, const sf::Color& c) { return packet << c.r << c.g << c.b << c.a; } \
-static inline sf::Packet& operator >> (sf::Packet& packet, sf::Color& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
+static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sf::Color& c) { return packet << c.r << c.g << c.b << c.a; } \
+static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sf::Color& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
 
 template <typename T> struct multiplayerReplicationFunctions
 {
     static bool isChanged(void* data, void* prev_data_ptr);
-    static void sendData(void* data, sf::Packet& packet)
+    static void sendData(void* data, sp::io::DataBuffer& packet)
     {
         T* ptr = (T*)data;
         packet << *ptr;
     }
-    static void receiveData(void* data, sf::Packet& packet)
+    static void receiveData(void* data, sp::io::DataBuffer& packet)
     {
         T* ptr = (T*)data;
         packet >> *ptr;
@@ -86,7 +86,7 @@ template <typename T> struct multiplayerReplicationFunctions
         }
         return false;
     }
-    static void sendDataVector(void* data, sf::Packet& packet)
+    static void sendDataVector(void* data, sp::io::DataBuffer& packet)
     {
         std::vector<T>* ptr = (std::vector<T>*)data;
         uint16_t count = ptr->size();
@@ -94,7 +94,7 @@ template <typename T> struct multiplayerReplicationFunctions
         for(unsigned int n=0; n<count; n++)
             packet << (*ptr)[n];
     }
-    static void receiveDataVector(void* data, sf::Packet& packet)
+    static void receiveDataVector(void* data, sp::io::DataBuffer& packet)
     {
         std::vector<T>* ptr = (std::vector<T>*)data;
         uint16_t count;
@@ -146,8 +146,8 @@ class MultiplayerObject : public virtual PObject
         float update_timeout;
 
         bool(*isChangedFunction)(void* data, void* prev_data_ptr);
-        void(*sendFunction)(void* data, sf::Packet& packet);
-        void(*receiveFunction)(void* data, sf::Packet& packet);
+        void(*sendFunction)(void* data, sp::io::DataBuffer& packet);
+        void(*receiveFunction)(void* data, sp::io::DataBuffer& packet);
         void(*cleanupFunction)(void* prev_data_ptr);
     };
     std::vector<MemberReplicationInfo> memberReplicationInfo;
@@ -243,11 +243,11 @@ public:
 
     int32_t getMultiplayerId() { return multiplayerObjectId; }
     const string& getMultiplayerClassIdentifier() { return multiplayerClassIdentifier; }
-    void sendClientCommand(sf::Packet& packet);//Send a command from the client to the server.
-    void broadcastServerCommand(sf::Packet& packet);//Send a command from the server to all clients.
+    void sendClientCommand(sp::io::DataBuffer& packet);//Send a command from the client to the server.
+    void broadcastServerCommand(sp::io::DataBuffer& packet);//Send a command from the server to all clients.
 
-    virtual void onReceiveClientCommand(int32_t client_id, sf::Packet& packet) {} //Got data from a client, handle it.
-    virtual void onReceiveServerCommand(sf::Packet& packet) {} //Got data from a server, handle it.
+    virtual void onReceiveClientCommand(int32_t client_id, sp::io::DataBuffer& packet) {} //Got data from a client, handle it.
+    virtual void onReceiveServerCommand(sp::io::DataBuffer& packet) {} //Got data from a server, handle it.
 private:
     friend class GameServer;
     friend class GameClient;

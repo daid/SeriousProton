@@ -1,5 +1,5 @@
 #include "multiplayer_server_scanner.h"
-
+#include <SFML/Network/Http.hpp>
 
 ServerScanner::ServerScanner(int version_number, int server_port)
 : server_port(server_port), version_number(version_number)
@@ -61,9 +61,9 @@ void ServerScanner::scanLocalNetwork()
     }
     server_list_mutex.unlock();
 
-    socket = std::unique_ptr<sf::UdpSocket>(new sf::UdpSocket());
+    socket = std::make_unique<sp::io::network::UdpSocket>();
     int port_nr = server_port + 1;
-    while(socket->bind(static_cast<uint16_t>(port_nr)) != sf::UdpSocket::Done)
+    while(!socket->bind(static_cast<uint16_t>(port_nr)))
         port_nr++;
 
     socket->setBlocking(false);
@@ -89,16 +89,16 @@ void ServerScanner::update(float /*gameDelta*/)
     {
         if (broadcast_clock.getElapsedTime().asSeconds() > BroadcastTimeout)
         {
-            sf::Packet sendPacket;
+            sp::io::DataBuffer sendPacket;
             sendPacket << multiplayerVerficationNumber << "ServerQuery" << int32_t(version_number);
-            UDPbroadcastPacket(*socket, sendPacket, server_port);
+            //TODO:SOCKET:UDPbroadcastPacket(*socket, sendPacket, server_port);
             broadcast_clock.restart();
         }
 
-        sf::IpAddress recv_address;
-        unsigned short recv_port;
-        sf::Packet recv_packet;
-        while(socket->receive(recv_packet, recv_address, recv_port) == sf::UdpSocket::Done)
+        sp::io::network::Address recv_address;
+        int recv_port;
+        sp::io::DataBuffer recv_packet;
+        while(socket->receive(recv_packet, recv_address, recv_port))
         {
             int32_t verification, version_nr;
             string name;
@@ -111,7 +111,7 @@ void ServerScanner::update(float /*gameDelta*/)
     }
 }
 
-void ServerScanner::updateServerEntry(sf::IpAddress address, int port, string name)
+void ServerScanner::updateServerEntry(sp::io::network::Address address, int port, string name)
 {
     sf::Lock lock(server_list_mutex);
     
@@ -126,7 +126,7 @@ void ServerScanner::updateServerEntry(sf::IpAddress address, int port, string na
         }
     }
 
-    LOG(INFO) << "ServerScanner::New server: " << address.toString() << " " << port << " " << name;
+    LOG(INFO) << "ServerScanner::New server: " << address.getHumanReadable()[0] << " " << port << " " << name;
     ServerInfo si;
     si.address = address;
     si.port = port;
@@ -138,7 +138,7 @@ void ServerScanner::updateServerEntry(sf::IpAddress address, int port, string na
         newServerCallback(address, name);
 }
 
-void ServerScanner::addCallbacks(std::function<void(sf::IpAddress, string)> newServerCallbackIn, std::function<void(sf::IpAddress)> removedServerCallbackIn)
+void ServerScanner::addCallbacks(std::function<void(sp::io::network::Address, string)> newServerCallbackIn, std::function<void(sp::io::network::Address)> removedServerCallbackIn)
 {
     this->newServerCallback = newServerCallbackIn;
     this->removedServerCallback = removedServerCallbackIn;
@@ -199,7 +199,7 @@ void ServerScanner::masterServerScanThread()
             std::vector<string> parts = line.split(":", 3);
             if (parts.size() == 4)
             {
-                sf::IpAddress address(parts[0]);
+                sp::io::network::Address address(parts[0]);
                 int part_port = parts[1].toInt();
                 int version = parts[2].toInt();
                 string name = parts[3];
