@@ -129,7 +129,9 @@ void GameClient::update(float /*delta*/)
                                 int16_t idx;
                                 while(packet >> idx)
                                 {
-                                    if (idx >= 0 && idx < int16_t(obj->memberReplicationInfo.size()))
+                                    if (idx & 0x8000 && (idx & 0x7FFF) < uint16_t(obj->staticMemberReplicationInfo.size()))
+                                        obj->staticMemberReplicationInfo[idx & 0x7FFF]->receive(packet);
+                                    else if (idx >= 0 && idx < int16_t(obj->memberReplicationInfo.size()))
                                         (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
                                     else
                                         LOG(DEBUG) << "Odd index from server replication: " << idx;
@@ -157,7 +159,9 @@ void GameClient::update(float /*delta*/)
                         P<MultiplayerObject> obj = objectMap[id];
                         while(packet >> idx)
                         {
-                            if (idx < int32_t(obj->memberReplicationInfo.size()))
+                            if (idx & 0x8000 && (idx & 0x7FFF) < uint16_t(obj->staticMemberReplicationInfo.size()))
+                                obj->staticMemberReplicationInfo[idx & 0x7FFF]->receive(packet);
+                            else if (idx < int32_t(obj->memberReplicationInfo.size()))
                                 (obj->memberReplicationInfo[idx].receiveFunction)(obj->memberReplicationInfo[idx].ptr, packet);
                         }
                     }

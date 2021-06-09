@@ -4,6 +4,16 @@
 #include "engine.h"
 #include "multiplayer_internal.h"
 
+
+void MultiplayerStaticReplicationBase::markChanged()
+{
+    if (updated) return;
+    updated = true;
+    next = owner->staticMemberSendList;
+    owner->staticMemberSendList = this;
+}
+
+
 static PVector<Collisionable> collisionable_significant;
 class CollisionableReplicationData
 {
