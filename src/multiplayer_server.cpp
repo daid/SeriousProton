@@ -164,6 +164,8 @@ void GameServer::update(float /*gameDelta*/)
                     }
                 }
             }
+
+            cnt += obj->replicationControl->send(packet, false, delta);
             if (cnt > 0)
             {
                 sendAll(packet);
@@ -529,6 +531,8 @@ void GameServer::generateCreatePacketFor(P<MultiplayerObject> obj, sf::Packet& p
         packet << int16_t(n);
         (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
     }
+
+    obj->replicationControl->send(packet, true);
 }
 
 void GameServer::generateDeletePacketFor(int32_t id, sf::Packet& packet)

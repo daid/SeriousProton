@@ -4,6 +4,142 @@
 #include "engine.h"
 #include "multiplayer_internal.h"
 
+namespace replication
+{
+    Item::Item(ControlBlock& control, const Settings& settings)
+    : controller{ control }
+    {
+        controller.add(*this, settings);
+    }
+
+    Item::~Item() = default;
+
+    void Item::setId(Key, uint16_t id)
+    {
+        replication_id = id;
+    }
+
+    ControlBlock& Item::getController(Key) const
+    {
+        return controller;
+    }
+
+    uint16_t Item::getId(Key) const
+    {
+        return replication_id;
+    }
+
+    void Item::setDirty()
+    {
+        controller.setDirty(*this);
+    }
+
+    void ControlBlock::add(Item& item, const Item::Settings& settings)
+    {
+        assert(items.size() < static_cast<size_t>(~controlled_flag));
+        item.setId({}, static_cast<uint16_t>(items.size()));
+        items.emplace_back(&item);
+        min_update_interval.emplace_back(settings.min_delay);
+        time_since_last_update.emplace_back(0.f);
+        if (dirty.size() * sizeof(size_t) < items.size())
+            dirty.resize((items.size() + sizeof(size_t) - 1) / sizeof(size_t));
+
+#ifdef DEBUG
+            names.emplace_back(settings.name);
+#endif
+    }
+
+    bool ControlBlock::isDirty(const Item& item) const
+    {
+        assert(&item.getController({}) == this);
+        return isDirty(item.getId({}));
+    }
+
+    void ControlBlock::setDirty(const Item& item)
+    {
+        assert(&item.getController({}) == this);
+        setDirty(item.getId({}));
+    }
+
+    size_t ControlBlock::send(sf::Packet& packet, bool everything, float delta /* = 0.f */)
+    {
+        size_t sent{};
+
+        // Update all deltas.
+        for (auto& value : time_since_last_update)
+            value += delta;
+
+        if (!everything)
+        {
+            for (auto dirty_batch = 0; dirty_batch < dirty.size(); ++dirty_batch)
+            {
+                auto batch = dirty[dirty_batch];
+                if (batch) // skip over entire batches with no change.
+                {
+                    for (auto i = 0; i < sizeof(size_t); ++i)
+                    {
+                        auto bit = (size_t{ 1 } << i);
+                        auto index = dirty_batch * sizeof(size_t) + i;
+                        if ((batch & bit) != 0 && time_since_last_update[index] > min_update_interval[index])
+                        {
+                            auto item = items[index];
+                            packet << int16_t(item->getId({}) | controlled_flag);
+                            item->send(*this, packet);
+                            time_since_last_update[index] = 0.f;
+                            sent += 1;
+                            batch &= ~bit;
+                        }
+                    }
+
+                    if (batch != dirty[dirty_batch])
+                    {
+                        dirty[dirty_batch] = batch;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (auto& item : items)
+            {
+                packet << int16_t(item->getId({}) | controlled_flag);
+                item->send(*this, packet);
+            }
+            sent = items.size();
+        }
+
+        return sent;
+    }
+
+    bool ControlBlock::handles(uint16_t net_id) const
+    {
+        return (net_id & controlled_flag) && (net_id & ~controlled_flag) < items.size();
+    }
+
+    void ControlBlock::receive(uint16_t net_id, sf::Packet& packet)
+    {
+        auto element_key = net_id & ~controlled_flag;
+        items[element_key]->receive(*this, packet);
+    }
+
+
+    bool ControlBlock::isDirty(size_t id) const
+    {
+        return (dirty[id / sizeof(size_t)] & (size_t{ 1 } << (id % sizeof(size_t)))) != 0;
+    }
+
+    void ControlBlock::setDirty(size_t id)
+    {
+        dirty[id / sizeof(size_t)] |= (size_t{ 1 } << (id % sizeof(size_t)));
+    }
+
+    void ControlBlock::resetDirty()
+    {
+        memset(dirty.data(), 0, dirty.size() * sizeof(size_t));
+    }
+} // ns replication
+
+
 static PVector<Collisionable> collisionable_significant;
 class CollisionableReplicationData
 {
@@ -26,6 +162,7 @@ MultiplayerClassListItem* multiplayerClassListStart;
 
 MultiplayerObject::MultiplayerObject(string multiplayerClassIdentifier)
 : multiplayerClassIdentifier(multiplayerClassIdentifier)
+, replicationControl{std::make_unique<replication::ControlBlock>()}
 {
     multiplayerObjectId = noId;
     replicated = false;
