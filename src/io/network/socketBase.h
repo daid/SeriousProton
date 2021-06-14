@@ -14,7 +14,6 @@ class SocketBase : sf::NonCopyable
 {
 public:
     void setBlocking(bool blocking);
-    void setNoDelay(bool no_delay);
     void setTimeout(int milliseconds);
 
 protected:
