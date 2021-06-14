@@ -258,4 +258,5 @@ void GameClient::runConnect()
         status = Disconnected;
     }
     socket.setBlocking(false);
+    socket.setDelay(false);
 }
