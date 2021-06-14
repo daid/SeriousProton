@@ -40,6 +40,7 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     listenSocket.setBlocking(false);
     new_socket = std::make_unique<sp::io::network::TcpSocket>();
     new_socket->setBlocking(false);
+    new_socket->setDelay(false);
     if (!broadcast_listen_socket.bind(static_cast<uint16_t>(listen_port)))
     {
         LOG(ERROR) << "Failed to listen on UDP port: " << listen_port;
@@ -66,6 +67,7 @@ void GameServer::connectToProxy(sp::io::network::Address address, int port)
     ClientInfo info;
     info.socket = std::move(socket);
     info.socket->setBlocking(false);
+    info.socket->setDelay(false);
     info.client_id = nextclient_id;
     info.receive_state = CRS_Auth;
     nextclient_id++;
@@ -192,13 +194,14 @@ void GameServer::update(float /*gameDelta*/)
         info.socket = std::move(new_socket);
         new_socket = std::make_unique<sp::io::network::TcpSocket>();
         new_socket->setBlocking(false);
+        new_socket->setDelay(false);
         info.client_id = nextclient_id;
         info.receive_state = CRS_Auth;
         nextclient_id++;
         {
             sp::io::DataBuffer packet;
             packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
-            info.socket->send(packet);
+            info.socket->queue(packet);
         }
         LOG(INFO) << "New connection: " << info.client_id << " waiting for authentication";
         clientList.push_back(std::move(info));
@@ -239,7 +242,7 @@ void GameServer::update(float /*gameDelta*/)
                                     //Wrong password, send a new auth request so the client knows the password was not accepted.
                                     sp::io::DataBuffer auth_request_packet;
                                     auth_request_packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
-                                    clientList[n].socket->send(auth_request_packet);
+                                    clientList[n].socket->queue(auth_request_packet);
                                 }
                             }else{
                                 LOG(ERROR) << n << ":Client version mismatch: " << version_number << " != " << client_version;
@@ -375,6 +378,9 @@ void GameServer::update(float /*gameDelta*/)
                 break;
             }
         }
+        if (clientList[n].socket != NULL) {
+            clientList[n].socket->sendSendQueue();
+        }
         if (clientList[n].socket == NULL || !clientList[n].socket->isConnected())
         {
             if (clientList[n].socket)
@@ -424,12 +430,12 @@ void GameServer::handleNewClient(ClientInfo& info)
     {
         sp::io::DataBuffer packet;
         packet << CMD_SET_CLIENT_ID << info.client_id;
-        info.socket->send(packet);
+        info.socket->queue(packet);
     }
     {
         sp::io::DataBuffer packet;
         packet << CMD_SET_GAME_SPEED << lastGameSpeed;
-        info.socket->send(packet);
+        info.socket->queue(packet);
     }
 
     onNewClient(info.client_id);
@@ -443,7 +449,7 @@ void GameServer::handleNewClient(ClientInfo& info)
             sp::io::DataBuffer packet;
             generateCreatePacketFor(obj, packet);
             sendDataCounter += packet.getDataSize();
-            info.socket->send(packet);
+            info.socket->queue(packet);
         }
     }
 }
@@ -454,13 +460,13 @@ void GameServer::handleNewProxy(ClientInfo& info, int32_t temp_id)
     {
         sp::io::DataBuffer packet;
         packet << CMD_SET_PROXY_CLIENT_ID << temp_id << nextclient_id;
-        info.socket->send(packet);
+        info.socket->queue(packet);
         nextclient_id++;
     }
     {
         sp::io::DataBuffer packet;
         packet << CMD_SET_GAME_SPEED << lastGameSpeed;
-        info.socket->send(packet);
+        info.socket->queue(packet);
     }
 
     onNewClient(info.proxy_ids.back());
@@ -474,7 +480,7 @@ void GameServer::handleNewProxy(ClientInfo& info, int32_t temp_id)
             sp::io::DataBuffer packet;
             generateCreatePacketFor(obj, packet);
             sendDataCounter += packet.getDataSize();
-            info.socket->send(packet);
+            info.socket->queue(packet);
         }
     }
 }
@@ -555,7 +561,7 @@ void GameServer::keepAliveAll()
         if (client.socket)
         {
             client.round_trip_time.restart();
-            client.socket->send(packet);
+            client.socket->queue(packet);
         }
     }
 }
@@ -566,7 +572,7 @@ void GameServer::sendAll(sp::io::DataBuffer& packet)
     for(auto& client : clientList)
     {
         if (client.receive_state != CRS_Auth && client.socket)
-            client.socket->send(packet);
+            client.socket->queue(packet);
     }
 }
 
@@ -693,7 +699,7 @@ void GameServer::sendAudioPacketFrom(int32_t client_id, sp::io::DataBuffer& pack
             }
             if (send)
             {
-                client.socket->send(packet);
+                client.socket->queue(packet);
             }
         }
     }

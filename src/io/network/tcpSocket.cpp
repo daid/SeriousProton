@@ -227,6 +227,17 @@ bool TcpSocket::connectSSL(const Address& host, int port)
     return true;
 }
 
+void TcpSocket::setDelay(bool delay)
+{
+#ifdef __WIN32
+    unsigned long mode = delay ? 0 : 1;
+    ::ioctlsocket(handle, TCP_NODELAY, &mode);
+#else
+    int mode = delay ? 1 : 0;
+    setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, (char*)&mode, sizeof(mode));
+#endif
+}
+
 void TcpSocket::close()
 {
     if (isConnected())
@@ -255,7 +266,7 @@ void TcpSocket::send(const void* data, size_t size)
         return;
     if (sendSendQueue())
     {
-        send_queue += std::string(static_cast<const char*>(data), size);
+        queue(data, size);
         return;
     }
 
@@ -276,6 +287,11 @@ void TcpSocket::send(const void* data, size_t size)
         }
         done += result;
     }
+}
+
+void TcpSocket::queue(const void* data, size_t size)
+{
+    send_queue += std::string(static_cast<const char*>(data), size);
 }
 
 size_t TcpSocket::receive(void* data, size_t size)
@@ -304,6 +320,13 @@ void TcpSocket::send(const io::DataBuffer& buffer)
     io::DataBuffer packet_size(uint32_t(buffer.getDataSize()));
     send(packet_size.getData(), packet_size.getDataSize());
     send(buffer.getData(), buffer.getDataSize());
+}
+
+void TcpSocket::queue(const io::DataBuffer& buffer)
+{
+    io::DataBuffer packet_size(uint32_t(buffer.getDataSize()));
+    queue(packet_size.getData(), packet_size.getDataSize());
+    queue(buffer.getData(), buffer.getDataSize());
 }
 
 bool TcpSocket::receive(io::DataBuffer& buffer)
