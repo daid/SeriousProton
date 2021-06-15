@@ -2,7 +2,6 @@
 #define NETWORK_AUDIO_RECORDER_H
 
 #include <SFML/Audio.hpp>
-#include <SFML/Network.hpp>
 #include <SFML/Window.hpp>
 #include <stdint.h>
 #include <list>

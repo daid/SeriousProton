@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <SFML/Network.hpp>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -194,60 +193,6 @@ int SoundManager::playSound(string name, sf::Vector2f position, float min_distan
 
     // No room in activeSoundList; return -1.
     return -1;
-}
-
-void SoundManager::setTextToSpeachVoice(string name)
-{
-}
-
-string url_encode(const string &value) {
-    std::ostringstream escaped;
-    escaped.fill('0');
-    escaped << std::hex;
-
-    for (string::const_iterator i = value.begin(), n = value.end(); i != n; ++i) {
-        string::value_type c = (*i);
-        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
-            escaped << c;
-        }
-        else if (c == ' ') {
-            escaped << '+';
-        }
-        else {
-            escaped << '%' << std::setw(2) << ((int) c) << std::setw(0);
-        }
-    }
-
-    return escaped.str();
-}
-
-void SoundManager::playTextToSpeech(string text)
-{
-    string name = "TTS:" + text;
-    sf::SoundBuffer* data = soundMap[name];
-    if (data != NULL)
-    {
-        playSoundData(data, 1.0, 100.0, false);
-        return;
-    }
-
-    sf::Http http("localhost", 59125);
-    sf::Http::Request request("process?INPUT_TEXT=" + url_encode(text) + "&INPUT_TYPE=TEXT&OUTPUT_TYPE=AUDIO&AUDIO=WAVE_FILE&LOCALE=en_US&VOICE=dfki-prudence");
-    sf::Http::Response response = http.sendRequest(request);
-
-    sf::Http::Response::Status status = response.getStatus();
-    if (status == sf::Http::Response::Ok)
-    {
-        string wave = response.getBody();
-        sf::SoundBuffer* soundbuffer = new sf::SoundBuffer();
-        data->loadFromMemory(wave.data(), wave.size());
-        soundMap[name] = soundbuffer;
-        playSoundData(soundbuffer, 1.f, 100.f, false);
-    }
-    else
-    {
-        std::cout << "Error requesting text to speech from Mary server: " << status << std::endl;
-    }
 }
 
 int SoundManager::playSoundData(sf::SoundBuffer* data, float pitch, float volume, bool loop)

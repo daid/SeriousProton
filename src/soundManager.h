@@ -68,9 +68,6 @@ public:
     void setSoundPitch(int index, float volume); // Valid values 0.0f+; 1.0 = default
     float getSoundPitch(int index);
 
-    // TTS
-    void setTextToSpeachVoice(string name);
-    void playTextToSpeech(string text);
 private:
     int playSoundData(sf::SoundBuffer* data, float pitch, float volume, bool loop = false);
     sf::SoundBuffer* loadSound(string name);

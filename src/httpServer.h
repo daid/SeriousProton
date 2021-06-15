@@ -2,7 +2,9 @@
 #define HTTP_SERVER_H
 
 #include <unordered_map>
-#include <SFML/Network.hpp>
+#include "io/network/tcpListener.h"
+#include "io/network/tcpSocket.h"
+#include "io/network/selector.h"
 #include "Updatable.h"
 #include "stringImproved.h"
 
@@ -54,7 +56,7 @@ private:
     int reply_code;
     bool headers_send;
 public:
-    sf::TcpSocket socket;
+    sp::io::network::TcpSocket socket;
 
     HttpServerConnection(HttpServer* server);
     bool read();
@@ -72,8 +74,8 @@ private:
 class HttpServer: public Updatable
 {
 private:
-    sf::TcpListener listenSocket;
-    sf::SocketSelector selector;
+    sp::io::network::TcpListener listenSocket;
+    sp::io::network::Selector selector;
     std::vector<HttpServerConnection*> connections;
     std::vector<HttpRequestHandler*> handlers;
 public:

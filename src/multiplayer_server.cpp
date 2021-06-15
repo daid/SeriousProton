@@ -3,7 +3,7 @@
 #include "multiplayer_internal.h"
 #include "engine.h"
 
-#include <SFML/Network/Http.hpp>
+#include "io/http/request.h"
 
 #define MULTIPLAYER_COLLECT_DATA_STATS 0
 
@@ -617,19 +617,16 @@ void GameServer::runMasterServerUpdateThread()
     
     LOG(INFO) << "Registering at master server " << master_server_url;
     
-    sf::Http http(hostname, static_cast<uint16_t>(port));
+    sp::io::http::Request http(hostname, port);
     while(!isDestroyed() && master_server_url != "")
     {
-        sf::Http::Request request(uri, sf::Http::Request::Post);
-        request.setBody("port=" + string(listen_port) + "&name=" + server_name + "&version=" + string(version_number));
-        
-        sf::Http::Response response = http.sendRequest(request, sf::seconds(10.0f));
-        if (response.getStatus() != sf::Http::Response::Ok)
+        auto response = http.post(uri, "port=" + string(listen_port) + "&name=" + server_name + "&version=" + string(version_number));
+        if (response.status != 200)
         {
-            LOG(WARNING) << "Failed to register at master server " << master_server_url << " (status " << response.getStatus() << ")";
-        }else if (response.getBody() != "OK")
+            LOG(WARNING) << "Failed to register at master server " << master_server_url << " (status " << response.status << ")";
+        }else if (response.body != "OK")
         {
-            LOG(WARNING) << "Master server " << master_server_url << " reports error on registering: " << response.getBody();
+            LOG(WARNING) << "Master server " << master_server_url << " reports error on registering: " << response.body;
         }
         
         for(int n=0;n<60 && !isDestroyed() && master_server_url != "";n++)
