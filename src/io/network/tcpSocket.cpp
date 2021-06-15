@@ -229,13 +229,8 @@ bool TcpSocket::connectSSL(const Address& host, int port)
 
 void TcpSocket::setDelay(bool delay)
 {
-#ifdef __WIN32
-    unsigned long mode = delay ? 0 : 1;
-    ::ioctlsocket(handle, TCP_NODELAY, &mode);
-#else
     int mode = delay ? 0 : 1;
     setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, (char*)&mode, sizeof(mode));
-#endif
 }
 
 void TcpSocket::close()
