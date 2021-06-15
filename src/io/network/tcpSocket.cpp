@@ -233,7 +233,7 @@ void TcpSocket::setDelay(bool delay)
     unsigned long mode = delay ? 0 : 1;
     ::ioctlsocket(handle, TCP_NODELAY, &mode);
 #else
-    int mode = delay ? 1 : 0;
+    int mode = delay ? 0 : 1;
     setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, (char*)&mode, sizeof(mode));
 #endif
 }
