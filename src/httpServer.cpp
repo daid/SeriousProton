@@ -21,29 +21,26 @@ HttpServer::~HttpServer()
 
 void HttpServer::update(float /*delta*/)
 {
-    if (selector.wait(sf::microseconds(1)))
+    if (selector.isReady(listenSocket))
     {
-        if (selector.isReady(listenSocket))
+        HttpServerConnection* connection = new HttpServerConnection(this);
+        if (listenSocket.accept(connection->socket))
         {
-            HttpServerConnection* connection = new HttpServerConnection(this);
-            if (listenSocket.accept(connection->socket) == sf::Socket::Done)
-            {
-                connections.push_back(connection);
-                selector.add(connection->socket);
-            }else{
-                delete connection;
-            }
+            connections.push_back(connection);
+            selector.add(connection->socket);
+        }else{
+            delete connection;
         }
-        for(unsigned int n=0; n<connections.size(); n++)
+    }
+    for(unsigned int n=0; n<connections.size(); n++)
+    {
+        if (selector.isReady(connections[n]->socket))
         {
-            if (selector.isReady(connections[n]->socket))
+            if (!connections[n]->read())
             {
-                if (!connections[n]->read())
-                {
-                    selector.remove(connections[n]->socket);
-                    delete connections[n];
-                    connections.erase(connections.begin() + n);
-                }
+                selector.remove(connections[n]->socket);
+                delete connections[n];
+                connections.erase(connections.begin() + n);
             }
         }
     }
@@ -59,8 +56,8 @@ HttpServerConnection::HttpServerConnection(HttpServer* server)
 bool HttpServerConnection::read()
 {
     char buffer[1024];
-    size_t size;
-    if (socket.receive(buffer, sizeof(buffer), size) != sf::Socket::Done)
+    size_t size = socket.receive(buffer, sizeof(buffer));
+    if (size == 0)
         return false;
     if (recvBufferCount + size > recvBufferSize)
         size = recvBufferSize - recvBufferCount;
@@ -243,8 +240,8 @@ bool HttpServerConnection::handleLine(string line)
                         return false;
                     while (body_length > recvBufferCount)
                     {
-                        size_t received;
-                        if (socket.receive(recvBuffer + recvBufferCount, body_length - recvBufferCount, received) != sf::Socket::Done)
+                        size_t received = socket.receive(recvBuffer + recvBufferCount, body_length - recvBufferCount);
+                        if (received == 0)
                             return false;
                         recvBufferCount += received;
                     }

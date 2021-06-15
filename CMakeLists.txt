@@ -130,6 +130,7 @@ set(source_files #All SeriousProton's objects to compile
     src/io/network/tcpListener.cpp
     src/io/network/tcpSocket.cpp
     src/io/network/udpSocket.cpp
+    src/io/http/request.cpp
 )
 
 if(NOT ANDROID)

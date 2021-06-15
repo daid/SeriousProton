@@ -1,5 +1,5 @@
 #include "multiplayer_server_scanner.h"
-#include <SFML/Network/Http.hpp>
+#include "io/http/request.h"
 
 ServerScanner::ServerScanner(int version_number, int server_port)
 : server_port(server_port), version_number(version_number)
@@ -184,17 +184,15 @@ void ServerScanner::masterServerScanThread()
 
     LOG(INFO) << "Reading servers from master server " << master_server_url;
 
-    sf::Http http(hostname, static_cast<uint16_t>(port));
+    sp::io::http::Request http(hostname, port);
     while(!isDestroyed() && master_server_url != "")
     {
-        sf::Http::Request request(uri, sf::Http::Request::Get);
-        sf::Http::Response response = http.sendRequest(request, sf::seconds(10.0f));
-        
-        if (response.getStatus() != sf::Http::Response::Ok)
+        auto response = http.get(uri);
+        if (response.status != 200)
         {
-            LOG(WARNING) << "Failed to query master server " << master_server_url << " (status " << response.getStatus() << ")";
+            LOG(WARNING) << "Failed to query master server " << master_server_url << " (status " << response.status << ")";
         }
-        for(string line : string(response.getBody()).split("\n"))
+        for(string line : response.body.split("\n"))
         {
             std::vector<string> parts = line.split(":", 3);
             if (parts.size() == 4)
