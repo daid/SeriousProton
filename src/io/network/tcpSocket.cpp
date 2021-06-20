@@ -230,8 +230,16 @@ bool TcpSocket::connectSSL(const Address& host, int port)
 
 void TcpSocket::setDelay(bool delay)
 {
+    if (handle == -1)
+    {
+        LOG(Warning, "Failed to setDelay due to being called on an incomplete socket");
+        return;
+    }
     int mode = delay ? 0 : 1;
-    setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, (char*)&mode, sizeof(mode));
+    if (setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, (char*)&mode, sizeof(mode)) == -1)
+    {
+        LOG(Warning, "Failed to setDelay on a socket");
+    }
 }
 
 void TcpSocket::close()

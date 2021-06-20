@@ -1,5 +1,7 @@
 #include <io/network/socketBase.h>
 
+#include "logging.h"
+
 #ifdef __WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -23,7 +25,10 @@ void SocketBase::setBlocking(bool blocking)
 {
     this->blocking = blocking;
     if (handle == -1)
+    {
+        LOG(Warning, "Failed to setBlocking due to being called on an incomplete socket");
         return;
+    }
 
 #ifdef __WIN32
    unsigned long mode = blocking ? 0 : 1;
