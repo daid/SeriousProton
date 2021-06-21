@@ -39,8 +39,6 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     }
     listenSocket.setBlocking(false);
     new_socket = std::make_unique<sp::io::network::TcpSocket>();
-    new_socket->setBlocking(false);
-    new_socket->setDelay(false);
     if (!broadcast_listen_socket.bind(static_cast<uint16_t>(listen_port)))
     {
         LOG(ERROR) << "Failed to listen on UDP port: " << listen_port;
@@ -190,11 +188,11 @@ void GameServer::update(float /*gameDelta*/)
 
     if (listenSocket.accept(*new_socket))
     {
+        new_socket->setBlocking(false);
+        new_socket->setDelay(false);
         ClientInfo info;
         info.socket = std::move(new_socket);
         new_socket = std::make_unique<sp::io::network::TcpSocket>();
-        new_socket->setBlocking(false);
-        new_socket->setDelay(false);
         info.client_id = nextclient_id;
         info.receive_state = CRS_Auth;
         nextclient_id++;
