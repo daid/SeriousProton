@@ -26,6 +26,10 @@ GameServerProxy::GameServerProxy(sp::io::network::Address hostname, int hostPort
         {
             LOG(ERROR) << "Failed to listen on UDP port: " << listenPort;
         }
+        if (!broadcast_listen_socket.joinMulticast(666))
+        {
+            LOG(ERROR) << "Failed to join multicast group for local network discovery.";
+        }
         broadcast_listen_socket.setBlocking(false);
     }
 
@@ -308,7 +312,6 @@ void GameServerProxy::handleBroadcastUDPSocket(float delta)
 
         sp::io::DataBuffer sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(serverVersion) << proxyName;
-        //TODO:SOCKET
-        //UDPbroadcastPacket(broadcast_listen_socket, sendPacket, broadcast_listen_socket.getLocalPort() + 1);
+        broadcast_listen_socket.sendMulticast(sendPacket, 666, 35667);
     }
 }

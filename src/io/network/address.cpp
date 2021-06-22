@@ -64,10 +64,19 @@ bool Address::operator==(const Address& other) const
 {
     if (addr_info.size() != other.addr_info.size())
         return false;
-    //TODO:SOCKET, this assumes the addr_info is always in the same order.
-    for(auto my_it=addr_info.begin(), other_it=other.addr_info.begin(); my_it != addr_info.end(); my_it++, other_it++)
+    
+    for(auto my_info : addr_info)
     {
-        if (my_it->addr != other_it->addr)
+        bool found = false;
+        for(auto other_info : other.addr_info)
+        {
+            if (my_info.family == other_info.family && my_info.addr == other_info.addr)
+            {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
             return false;
     }
     return true;
