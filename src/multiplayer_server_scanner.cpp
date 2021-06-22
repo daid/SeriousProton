@@ -65,6 +65,8 @@ void ServerScanner::scanLocalNetwork()
     int port_nr = server_port + 1;
     while(!socket->bind(static_cast<uint16_t>(port_nr)))
         port_nr++;
+    if (!socket->joinMulticast(666))
+        LOG(ERROR, "Failed to join multicast for local network discovery");
 
     socket->setBlocking(false);
     broadcast_clock.restart();
@@ -91,7 +93,7 @@ void ServerScanner::update(float /*gameDelta*/)
         {
             sp::io::DataBuffer sendPacket;
             sendPacket << multiplayerVerficationNumber << "ServerQuery" << int32_t(version_number);
-            //TODO:SOCKET:UDPbroadcastPacket(*socket, sendPacket, server_port);
+            socket->sendMulticast(sendPacket, 666, server_port);
             broadcast_clock.restart();
         }
 
