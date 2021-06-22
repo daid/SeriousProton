@@ -32,6 +32,9 @@ public:
 
     bool sendMulticast(const void* data, size_t size, int group_nr, int port);
     bool sendMulticast(const DataBuffer& buffer, int group_nr, int port);
+
+    bool sendBroadcast(const void* data, size_t size, int port);
+    bool sendBroadcast(const DataBuffer& buffer, int port);
 private:
     bool createSocket();
 
