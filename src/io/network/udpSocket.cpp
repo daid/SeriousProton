@@ -3,6 +3,7 @@
 #ifdef __WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <iphlpapi.h>
 static constexpr int flags = 0;
 #else
 #include <sys/types.h>
@@ -277,6 +278,57 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
 bool UdpSocket::sendMulticast(const DataBuffer& buffer, int group_nr, int port)
 {
     return sendMulticast(buffer.getData(), buffer.getDataSize(), group_nr, port);
+}
+
+bool UdpSocket::sendBroadcast(const void* data, size_t size, int port)
+{
+    if (handle == -1)
+        return false;
+
+#ifdef _WIN32
+    bool success = false;
+    //On windows, using a single broadcast address seems to send the UPD package only on 1 interface.
+    // So use the windows API to get all addresses, construct broadcast addresses and send out the packets to all of them.
+    PMIB_IPADDRTABLE pIPAddrTable;
+    DWORD tableSize = 0;
+    GetIpAddrTable(NULL, &tableSize, 0);
+    if (tableSize > 0)
+    {
+        pIPAddrTable = (PMIB_IPADDRTABLE)calloc(tableSize, 1);
+        if (GetIpAddrTable(pIPAddrTable, &tableSize, 0) == NO_ERROR)
+        {
+            for(unsigned int n=0; n<pIPAddrTable->dwNumEntries; n++)
+            {
+                struct sockaddr_in s;
+                memset(&s, '\0', sizeof(struct sockaddr_in));
+                s.sin_family = AF_INET;
+                s.sin_port = htons(port);
+                s.sin_addr.s_addr = (pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask;
+
+                if (::sendto(handle, (const char*)data, size, 0, (struct sockaddr*)&s, sizeof(struct sockaddr_in)) >= 0)
+                    success = true;
+            }
+        }
+        free(pIPAddrTable);
+    }
+    return success;
+#else
+    int enable = 1;
+    int ret = setsockopt(handle, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable));
+
+    struct sockaddr_in s;
+    memset(&s, '\0', sizeof(struct sockaddr_in));
+    s.sin_family = AF_INET;
+    s.sin_port = htons(port);
+    s.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+
+    return ::sendto(handle, (const char*)data, size, 0, (struct sockaddr*)&s, sizeof(struct sockaddr_in)) >= 0;
+#endif
+}
+
+bool UdpSocket::sendBroadcast(const DataBuffer& buffer, int port)
+{
+    return sendBroadcast(buffer.getData(), buffer.getDataSize(), port);
 }
 
 bool UdpSocket::createSocket()
