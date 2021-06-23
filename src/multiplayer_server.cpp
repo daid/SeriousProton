@@ -509,6 +509,7 @@ void GameServer::handleBroadcastUDPSocket(float delta)
         sp::io::DataBuffer sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
         broadcast_listen_socket.sendMulticast(sendPacket, 666, listen_port + 1);
+        broadcast_listen_socket.sendBroadcast(sendPacket, listen_port + 1);
     }
 }
 

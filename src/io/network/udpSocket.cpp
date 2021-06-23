@@ -88,19 +88,33 @@ bool UdpSocket::joinMulticast(int group_nr)
     }
     
     bool success = true;
-    struct sockaddr_in server_addr;
-    for(const auto& addr_info : Address::getLocalAddress().addr_info)
+    if (!socket_is_ipv6)
     {
-        if (addr_info.family == AF_INET && addr_info.addr.length() == sizeof(server_addr))
+        for(const auto& addr_info : Address::getLocalAddress().addr_info)
         {
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
-            
-            struct ip_mreq mreq;
-            mreq.imr_multiaddr.s_addr = htonl((239 << 24) | (192 << 16) | (group_nr));
-            mreq.imr_interface.s_addr = server_addr.sin_addr.s_addr;
-            
-            success = success && ::setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&mreq), sizeof(mreq)) == 0;
+            if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.length() == sizeof(struct sockaddr_in))
+            {
+                struct sockaddr_in server_addr;
+                memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+                
+                struct ip_mreq mreq;
+                mreq.imr_multiaddr.s_addr = htonl((239 << 24) | (192 << 16) | (group_nr));
+                mreq.imr_interface.s_addr = server_addr.sin_addr.s_addr;
+                
+                success = success && ::setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&mreq), sizeof(mreq)) == 0;
+            }
         }
+    }
+    else
+    {
+        struct ipv6_mreq mreq;
+        mreq.ipv6mr_interface = 0;
+        mreq.ipv6mr_multiaddr.s6_addr[0] = 0xff;
+        mreq.ipv6mr_multiaddr.s6_addr[1] = 0x08;
+        mreq.ipv6mr_multiaddr.s6_addr[14] = group_nr >> 8;
+        mreq.ipv6mr_multiaddr.s6_addr[15] = group_nr;
+
+        success = ::setsockopt(handle, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&mreq), sizeof(mreq)) == 0;
     }
     return success;
 }
@@ -252,11 +266,11 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
     }
 
     bool success = false;
-    struct sockaddr_in server_addr;
     for(const auto& addr_info : Address::getLocalAddress().addr_info)
     {
-        if (addr_info.family == AF_INET && addr_info.addr.length() == sizeof(server_addr))
+        if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.length() == sizeof(struct sockaddr_in))
         {
+            struct sockaddr_in server_addr;
             memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
             
             ::setsockopt(handle, IPPROTO_IP, IP_MULTICAST_IF, reinterpret_cast<const char*>(&server_addr.sin_addr), sizeof(server_addr.sin_addr));
@@ -266,6 +280,25 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
             
             server_addr.sin_family = AF_INET;
             server_addr.sin_port = htons(port);
+
+            int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
+            if (result == int(size))
+                success = true;
+        }
+        if (addr_info.family == AF_INET6 && socket_is_ipv6 && addr_info.addr.length() == sizeof(struct sockaddr_in6))
+        {
+            struct sockaddr_in6 server_addr;
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            
+            ::setsockopt(handle, IPPROTO_IPV6, IPV6_MULTICAST_IF, reinterpret_cast<const char*>(&server_addr.sin6_addr), sizeof(server_addr.sin6_addr));
+
+            memset(&server_addr, 0, sizeof(server_addr));
+            server_addr.sin6_addr.s6_addr[0] = 0xff;
+            server_addr.sin6_addr.s6_addr[1] = 0x08;
+            server_addr.sin6_addr.s6_addr[14] = group_nr >> 8;
+            server_addr.sin6_addr.s6_addr[15] = group_nr;
+            server_addr.sin6_family = AF_INET6;
+            server_addr.sin6_port = htons(port);
 
             int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
             if (result == int(size))
@@ -284,10 +317,12 @@ bool UdpSocket::sendBroadcast(const void* data, size_t size, int port)
 {
     if (handle == -1)
         return false;
+    if (socket_is_ipv6)
+        return false;
 
 #ifdef _WIN32
     bool success = false;
-    //On windows, using a single broadcast address seems to send the UPD package only on 1 interface.
+    //On windows, using a single broadcast address seems to send the UDP packets only on 1 interface.
     // So use the windows API to get all addresses, construct broadcast addresses and send out the packets to all of them.
     PMIB_IPADDRTABLE pIPAddrTable;
     DWORD tableSize = 0;
@@ -304,7 +339,6 @@ bool UdpSocket::sendBroadcast(const void* data, size_t size, int port)
                 s.sin_family = AF_INET;
                 s.sin_port = htons(port);
                 s.sin_addr.s_addr = (pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask;
-
                 if (::sendto(handle, (const char*)data, size, 0, (struct sockaddr*)&s, sizeof(struct sockaddr_in)) >= 0)
                     success = true;
             }
@@ -313,9 +347,6 @@ bool UdpSocket::sendBroadcast(const void* data, size_t size, int port)
     }
     return success;
 #else
-    int enable = 1;
-    int ret = setsockopt(handle, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable));
-
     struct sockaddr_in s;
     memset(&s, '\0', sizeof(struct sockaddr_in));
     s.sin_family = AF_INET;
@@ -335,19 +366,25 @@ bool UdpSocket::createSocket()
 {
     close();
 
-    handle = ::socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    //As IPv6 multicast isn't working yet, just use IPv4 sockets only right now.
+    //handle = ::socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    handle = -1;
     socket_is_ipv6 = true;
     if (handle == -1)
     {
         handle = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         socket_is_ipv6 = false;
-        
     }
     else
     {
+        //Make sure the ipv6 socket also does ipv4
         int optval = 0;
         ::setsockopt(handle, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char*>(&optval), sizeof(int));
     }
+    //Enable broadcasting
+    int enable = 1;
+    ::setsockopt(handle, SOL_SOCKET, SO_BROADCAST, reinterpret_cast<char*>(&enable), sizeof(enable));
+
     return handle != -1;
 }
 
