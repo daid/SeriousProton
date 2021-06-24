@@ -1,1 +1,0 @@
-#error "fixed socket is no longer needed"
