@@ -96,7 +96,6 @@ set(source_files #All SeriousProton's objects to compile
     src/collisionable.cpp
     src/engine.cpp
     src/event.cpp
-    src/fixedSocket.cpp
     src/gameEntity.cpp
     src/httpServer.cpp
     src/i18n.cpp
