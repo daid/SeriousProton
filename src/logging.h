@@ -2,8 +2,8 @@
 #define LOGGING_H
 #include <string_view>
 
-#include <SFML/System.hpp>
 #include <SFML/Graphics/Rect.hpp>
+#include "nonCopyable.h"
 #include "stringImproved.h"
 #if defined(_MSC_VER)
 #define LOG(LEVEL, ...) Logging(LOGLEVEL_ ## LEVEL, __FILE__, __LINE__, __FUNCTION__ , ##__VA_ARGS__)
@@ -24,7 +24,7 @@ enum ELogLevel
     LOGLEVEL_Error
 };
 
-class Logging : sf::NonCopyable
+class Logging : sp::NonCopyable
 {
     static ELogLevel global_level;
     static FILE* log_stream;

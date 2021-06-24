@@ -4,6 +4,8 @@
 #include "scriptInterfaceMagic.h"
 #include "stringImproved.h"
 #include "Updatable.h"
+#include "vectorUtils.h"
+
 
 class ScriptObject : public Updatable
 {
@@ -38,7 +40,7 @@ private:
     friend class ScriptSimpleCallback;
 };
 
-class ScriptCallback : public sf::NonCopyable
+class ScriptCallback : sp::NonCopyable
 {
 public:
     ScriptCallback();

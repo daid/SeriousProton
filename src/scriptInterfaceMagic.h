@@ -11,6 +11,7 @@
 #include "stringImproved.h"
 #include "lua/lua.hpp"
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/System/Vector3.hpp>
 #include <typeinfo>
 #include <optional>
 

@@ -8,7 +8,7 @@ class Renderable;
 class RenderLayer;
 extern RenderLayer* defaultRenderLayer;
 
-class RenderChain : public sf::NonCopyable
+class RenderChain : sp::NonCopyable
 {
 public:
     virtual void render(sf::RenderTarget& window) = 0;

@@ -8,7 +8,7 @@ namespace sp {
 namespace io {
 namespace http {
 
-class Request : public sf::NonCopyable
+class Request : sp::NonCopyable
 {
 public:
     class Response

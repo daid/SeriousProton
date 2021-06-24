@@ -8,7 +8,7 @@
 #include "Updatable.h"
 #include "stringImproved.h"
 
-class HttpRequest : public sf::NonCopyable
+class HttpRequest : sp::NonCopyable
 {
 public:
     string method;
@@ -20,7 +20,7 @@ public:
 
 class HttpServer;
 class HttpServerConnection;
-class HttpRequestHandler : public sf::NonCopyable
+class HttpRequestHandler : sp::NonCopyable
 {
 public:
     HttpRequestHandler() {}
@@ -38,7 +38,7 @@ public:
     virtual bool handleRequest(HttpRequest& request, HttpServerConnection* connection);
 };
 
-class HttpServerConnection: public sf::NonCopyable
+class HttpServerConnection : sp::NonCopyable
 {
 private:
     enum Status

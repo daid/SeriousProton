@@ -1,10 +1,10 @@
 #ifndef PEE_POINTER_H
 #define PEE_POINTER_H
 
-#include <SFML/System.hpp>
 #include <vector>
 #include <assert.h>
 
+#include "nonCopyable.h"
 #include "logging.h"
 
 /**
@@ -25,7 +25,7 @@ extern int DEBUG_PobjCount;
 extern PObject* DEBUG_PobjListStart;
 #endif
 
-class PObject: public sf::NonCopyable
+class PObject : sp::NonCopyable
 {
 private:
     int refCount;

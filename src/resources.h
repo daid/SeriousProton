@@ -3,6 +3,8 @@
 
 #include "stringImproved.h"
 #include "P.h"
+#include <SFML/System/InputStream.hpp>
+
 
 class ResourceStream : public virtual PObject, public sf::InputStream
 {
