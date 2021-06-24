@@ -1,7 +1,7 @@
 #include <io/network/address.h>
 #include <logging.h>
 
-#ifdef __WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
@@ -88,7 +88,7 @@ Address Address::getLocalAddress()
 
     std::list<AddrInfo> addr_info;
 
-#ifdef __WIN32
+#ifdef _WIN32
     char buffer[128];
 
     PIP_ADAPTER_ADDRESSES addresses;
@@ -158,7 +158,7 @@ Address::AddrInfo::~AddrInfo()
 
 void Address::initSocketLib()
 {
-#ifdef __WIN32
+#ifdef _WIN32
     static bool wsa_startup_done = false;
     if (!wsa_startup_done)
     {

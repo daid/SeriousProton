@@ -1,7 +1,7 @@
 #include <io/network/tcpSocket.h>
 #include <logging.h>
 
-#ifdef __WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 static constexpr int flags = 0;
@@ -61,7 +61,7 @@ static void initializeLibSSL()
     if (initialized) return;
     initialized = true;
 
-#ifdef __WIN32
+#ifdef _WIN32
     libcrypto = DynamicLibrary::open("libcrypto-1_1.dll");
     libssl = DynamicLibrary::open("libssl-1_1.dll");
 #else
@@ -89,7 +89,7 @@ static void initializeLibSSL()
     SSL_write = libssl->getFunction<int (*)(SSL *ssl, const void *buf, int num)>("SSL_write");
     SSL_free = libssl->getFunction<void (*)(SSL *ssl)>("SSL_free");
 
-#ifdef __WIN32
+#ifdef _WIN32
     HCERTSTORE hStore;
     PCCERT_CONTEXT pContext = NULL;
     X509 *x509;
@@ -112,7 +112,7 @@ static void initializeLibSSL()
 
     ssl_context = SSL_CTX_new(TLSv1_2_client_method());
     SSL_CTX_set_options(ssl_context, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
-#ifdef __WIN32
+#ifdef _WIN32
     SSL_CTX_set_cert_store(ssl_context, store);
 #else
     SSL_CTX_set_default_verify_paths(ssl_context);
@@ -246,7 +246,7 @@ void TcpSocket::close()
 {
     if (isConnected())
     {
-#ifdef __WIN32
+#ifdef _WIN32
         closesocket(handle);
 #else
         ::close(handle);

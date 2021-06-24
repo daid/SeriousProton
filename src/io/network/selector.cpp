@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <vector>
 
-#ifdef __WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
@@ -78,7 +78,7 @@ void Selector::remove(SocketBase& socket)
 
 void Selector::wait(int timeout_ms)
 {
-#ifdef __WIN32
+#ifdef _WIN32
     WSAPoll(data->fds.data(), data->fds.size(), timeout_ms);
 #else
     poll(data->fds.data(), data->fds.size(), timeout_ms);

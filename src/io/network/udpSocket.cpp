@@ -1,6 +1,6 @@
 #include <io/network/udpSocket.h>
 
-#ifdef __WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
@@ -123,7 +123,7 @@ void UdpSocket::close()
 {
     if (handle != -1)
     {
-#ifdef __WIN32
+#ifdef _WIN32
         closesocket(handle);
 #else
         ::close(handle);
