@@ -14,6 +14,10 @@ static constexpr int flags = 0;
 #include <string.h>
 #include <netdb.h>
 static constexpr int flags = MSG_NOSIGNAL;
+// Define IPV6_ADD_MEMBERSHIP for FreeBSD and Mac OS X
+#ifndef IPV6_ADD_MEMBERSHIP
+#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#endif
 #endif
 
 
