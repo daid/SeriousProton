@@ -338,18 +338,15 @@ bool TcpSocket::receive(io::DataBuffer& buffer)
     if (!isConnected())
         return 0;
     
-    if (receive_buffer.size() == 0)
+    if (!receive_packet_size_done)
     {
-        uint8_t size_buffer[sizeof(uint32_t)];
-        size_t idx = 0;
-        while(idx < sizeof(uint32_t))
-        {
-            //TOFIX: This blocks if we receive less then 4 bytes. Allows denial of service attack.
+        uint8_t size_buffer[1];
+        do {
             int result;
             if (ssl_handle)
-                result = SSL_read(static_cast<SSL*>(ssl_handle), reinterpret_cast<char*>(&size_buffer[idx]), sizeof(uint32_t) - idx);
+                result = SSL_read(static_cast<SSL*>(ssl_handle), reinterpret_cast<char*>(size_buffer), 1);
             else
-                result = ::recv(handle, reinterpret_cast<char*>(&size_buffer[idx]), sizeof(uint32_t) - idx, flags);
+                result = ::recv(handle, reinterpret_cast<char*>(size_buffer), 1, flags);
             if (result < 0)
             {
                 result = 0;
@@ -359,15 +356,15 @@ bool TcpSocket::receive(io::DataBuffer& buffer)
                     return false;
                 }
             }
-            if (result == 0 && idx == 0)
+            if (result == 0)
                 return false;
-            idx += result;
-        }
-        uint32_t size = *reinterpret_cast<uint32_t*>(size_buffer);
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-        size = __builtin_bswap32(size);
-#endif
-        receive_buffer.resize(size);
+            receive_packet_size = (receive_packet_size << 7) | (size_buffer[0] & 0x7F);
+            if (!(size_buffer[0] & 0x80))
+                receive_packet_size_done = true;
+        } while(!receive_packet_size_done);
+
+        receive_buffer.resize(receive_packet_size);
+        receive_packet_size = 0;
         received_size = 0;
     }
 
@@ -392,6 +389,7 @@ bool TcpSocket::receive(io::DataBuffer& buffer)
         {
             buffer = std::move(receive_buffer);
             received_size = 0;
+            receive_packet_size_done = false;
             return true;
         }
         if (result < 1)

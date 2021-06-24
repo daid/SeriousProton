@@ -5,11 +5,6 @@
 #include <vectorUtils.h>
 #include <string.h>
 
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#  define IF_LITTLE_ENDIAN(x) do { x; } while(0)
-#else
-#  define IF_LITTLE_ENDIAN(x) do { } while(0)
-#endif
 
 namespace sp {
 namespace io {
@@ -82,31 +77,24 @@ public:
         buffer.push_back(i);
     }
 
-    void write(int16_t i) { write(uint16_t(i)); }
-    void write(int32_t i) { write(uint32_t(i)); }
-    void write(int64_t i) { write(uint64_t(i)); }
+    void write(int16_t i)
+    {
+        writeVLQs(i);
+    }
+
+    void write(int32_t i)
+    {
+        writeVLQs(i);
+    }
+
     void write(uint16_t i)
     {
-        IF_LITTLE_ENDIAN(i = __builtin_bswap16(i));
-        size_t idx = buffer.size();
-        buffer.resize(idx + sizeof(i));
-        memcpy(&buffer[idx], &i, sizeof(i));
+        writeVLQu(i);
     }
     
     void write(uint32_t i)
     {
-        IF_LITTLE_ENDIAN(i = __builtin_bswap32(i));
-        size_t idx = buffer.size();
-        buffer.resize(idx + sizeof(i));
-        memcpy(&buffer[idx], &i, sizeof(i));
-    }
-
-    void write(uint64_t i)
-    {
-        IF_LITTLE_ENDIAN(i = __builtin_bswap64(i));
-        size_t idx = buffer.size();
-        buffer.resize(idx + sizeof(i));
-        memcpy(&buffer[idx], &i, sizeof(i));
+        writeVLQu(i);
     }
 
     void write(const float f)
@@ -189,49 +177,21 @@ public:
 
     void read(int16_t& i)
     {
-        if (read_index + sizeof(i) > buffer.size()) { i = 0; return; }
-        memcpy(&i, &buffer[read_index], sizeof(i));
-        read_index += sizeof(i);
-        IF_LITTLE_ENDIAN(i = __builtin_bswap16(i));
+        i = readVLQs();
     }
     void read(int32_t& i)
     {
-        if (read_index + sizeof(i) > buffer.size()) { i = 0; return; }
-        memcpy(&i, &buffer[read_index], sizeof(i));
-        read_index += sizeof(i);
-        IF_LITTLE_ENDIAN(i = __builtin_bswap32(i));
-    }
-    
-    void read(int64_t& i)
-    {
-        if (read_index + sizeof(i) > buffer.size()) { i = 0; return; }
-        memcpy(&i, &buffer[read_index], sizeof(i));
-        read_index += sizeof(i);
-        IF_LITTLE_ENDIAN(i = __builtin_bswap64(i));
+        i = readVLQs();
     }
     
     void read(uint16_t& i)
     {
-        if (read_index + sizeof(i) > buffer.size()) { i = 0; return; }
-        memcpy(&i, &buffer[read_index], sizeof(i));
-        read_index += sizeof(i);
-        IF_LITTLE_ENDIAN(i = __builtin_bswap16(i));
+        i = readVLQu();
     }
     
     void read(uint32_t& i)
     {
-        if (read_index + sizeof(i) > buffer.size()) { i = 0; return; }
-        memcpy(&i, &buffer[read_index], sizeof(i));
-        read_index += sizeof(i);
-        IF_LITTLE_ENDIAN(i = __builtin_bswap32(i));
-    }
-
-    void read(uint64_t& i)
-    {
-        if (read_index + sizeof(i) > buffer.size()) { i = 0; return; }
-        memcpy(&i, &buffer[read_index], sizeof(i));
-        read_index += sizeof(i);
-        IF_LITTLE_ENDIAN(i = __builtin_bswap64(i));
+        i = readVLQu();
     }
 
     void read(float& f)
@@ -285,8 +245,6 @@ public:
     DataBuffer& operator <<(uint16_t data) { write(data); return *this; }
     DataBuffer& operator <<(int32_t data) { write(data); return *this; }
     DataBuffer& operator <<(uint32_t data) { write(data); return *this; }
-    DataBuffer& operator <<(int64_t data) { write(data); return *this; }
-    DataBuffer& operator <<(uint64_t data) { write(data); return *this; }
     DataBuffer& operator <<(float data) { write(data); return *this; }
     DataBuffer& operator <<(double data) { write(data); return *this; }
     DataBuffer& operator <<(const string& data) { write(data); return *this; }
@@ -298,12 +256,50 @@ public:
     DataBuffer& operator >>(uint16_t& data) { read(data); return *this; }
     DataBuffer& operator >>(int32_t& data) { read(data); return *this; }
     DataBuffer& operator >>(uint32_t& data) { read(data); return *this; }
-    DataBuffer& operator >>(int64_t& data) { read(data); return *this; }
-    DataBuffer& operator >>(uint64_t& data) { read(data); return *this; }
     DataBuffer& operator >>(float& data) { read(data); return *this; }
     DataBuffer& operator >>(double& data) { read(data); return *this; }
     DataBuffer& operator >>(string& data) { read(data); return *this; }
 private:
+    void writeVLQu(uint32_t v) {
+        if (v >= (1 << 28))
+            buffer.push_back((v >> 28) | 0x80);
+        if (v >= (1 << 21))
+            buffer.push_back((v >> 21) | 0x80);
+        if (v >= (1 << 14))
+            buffer.push_back((v >> 14) | 0x80);
+        if (v >= (1 << 7))
+            buffer.push_back((v >> 7) | 0x80);
+        buffer.push_back((v & 0x7F));
+    }
+
+    void writeVLQs(int32_t v) {
+        if (v < 0)
+            writeVLQu((uint32_t(-v) << 1) | 1);
+        else
+            writeVLQu((uint32_t(v) << 1));
+    }
+
+    uint32_t readVLQu()
+    {
+        uint32_t result{0};
+        uint8_t u;
+        do
+        {
+            result <<= 7;
+            if (read_index >= buffer.size()) { return result; }
+            u = buffer[read_index++];
+            result |= u & 0x7F;
+        } while(u & 0x80);
+        return result;
+    }
+
+    int32_t readVLQs()
+    {
+        uint32_t v = readVLQu();
+        if (v & 1) return -int32_t(v >> 1);
+        return int32_t(v >> 1);
+    }
+
     std::vector<uint8_t> buffer;
     size_t read_index;
 };
@@ -311,7 +307,5 @@ private:
 }//namespace io
 }//namespace sp
 
-
-#undef IF_LITTLE_ENDIAN
 
 #endif//SP2_IO_DATABUFFER_H

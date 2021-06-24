@@ -42,6 +42,8 @@ private:
     void* ssl_handle;
 
     std::string send_queue;
+    uint32_t receive_packet_size{0};
+    bool receive_packet_size_done{false};
     std::vector<uint8_t> receive_buffer;
     size_t received_size;
     
