@@ -61,6 +61,7 @@ static void initializeLibSSL()
     if (initialized) return;
     initialized = true;
 
+#ifndef ANDROID
 #ifdef _WIN32
     libcrypto = DynamicLibrary::open("libcrypto-1_1.dll");
     libssl = DynamicLibrary::open("libssl-1_1.dll");
@@ -116,6 +117,7 @@ static void initializeLibSSL()
     SSL_CTX_set_cert_store(ssl_context, store);
 #else
     SSL_CTX_set_default_verify_paths(ssl_context);
+#endif
 #endif
 }
 
