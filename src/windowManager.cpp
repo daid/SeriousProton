@@ -6,6 +6,8 @@
 #include "postProcessManager.h"
 #include "input.h"
 
+#include "config.h"
+
 #include <cmath>
 
 #ifdef _WIN32

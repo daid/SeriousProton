@@ -8,6 +8,7 @@ set(CMAKE_MODULE_PATH
 
 # User-settings
 option(SERIOUSPROTON_WITH_JSON "Use json library." OFF)
+set(WINDOW_TITLE "SeriousProton Game" CACHE STRING "Title of the game window")
 
 if(WIN32)
     option(ENABLE_CRASH_LOGGER "Enable the Dr. MinGW crash logging facilities" OFF)
@@ -172,6 +173,9 @@ if(CMAKE_COMPILER_IS_GNUCC)
     endif()
 endif()
 
+# Config header.
+configure_file(cmake/config.h.in include/config.h)
+
 # Targets setup
 # =============
 #
@@ -191,7 +195,7 @@ add_library(seriousproton_deps INTERFACE)
 
 target_include_directories(seriousproton_deps
     INTERFACE
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src;${SFML_INCLUDE_DIR}>"
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src;${CMAKE_CURRENT_BINARY_DIR}/include;${SFML_INCLUDE_DIR}>"
 )
 target_compile_features(seriousproton_deps INTERFACE cxx_std_17)
 
