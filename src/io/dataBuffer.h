@@ -17,15 +17,15 @@ public:
     {
     }
     
-    DataBuffer(DataBuffer&& b)
+    DataBuffer(DataBuffer&& b) noexcept
     : buffer(std::move(b.buffer)), read_index(b.read_index)
     {
     }
     
-    template<typename... ARGS> explicit DataBuffer(const ARGS&... args)
+    template<typename... ARGS> explicit DataBuffer(ARGS&&... args)
     : DataBuffer()
     {
-        write(args...);
+        write(std::forward<ARGS>(args)...);
     }
     
     void operator=(std::vector<uint8_t>&& data)
@@ -47,7 +47,7 @@ public:
     
     unsigned int getDataSize() const
     {
-        return buffer.size();
+        return static_cast<unsigned int>(buffer.size());
     }
 
     void appendRaw(const void* ptr, size_t size)
@@ -124,21 +124,25 @@ public:
         write(v.z);
     }
 
+    void write(std::string_view s)
+    {
+        write(static_cast<uint32_t>(s.length()));
+        if (!s.empty())
+        {
+            size_t idx = buffer.size();
+            buffer.resize(idx + s.length());
+            memcpy(&buffer[idx], s.data(), s.length());
+        }
+    }
+
     void write(const string& s)
     {
-        write(uint32_t(s.length()));
-        size_t idx = buffer.size();
-        buffer.resize(idx + s.length());
-        memcpy(&buffer[idx], &s[0], s.length());
+        write(std::string_view{s});
     }
 
     void write(const char* s)
     {
-        uint32_t len = strlen(s);
-        write(len);
-        size_t idx = buffer.size();
-        buffer.resize(idx + len);
-        memcpy(&buffer[idx], s, len);
+        write(std::string_view{ s, strlen(s) });
     }
 
     template<class T, class=typename std::enable_if<std::is_enum<T>::value>::type>
