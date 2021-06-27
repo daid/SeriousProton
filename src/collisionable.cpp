@@ -310,7 +310,7 @@ void Collisionable::setPosition(sf::Vector2f position)
     body->SetTransform(v2b(position), body->GetAngle());
 }
 
-sf::Vector2f Collisionable::getPosition()
+sf::Vector2f Collisionable::getPosition() const
 {
     if (body == NULL) return sf::Vector2f(0, 0);
     return b2v(body->GetPosition());
@@ -322,7 +322,7 @@ void Collisionable::setRotation(float angle)
     body->SetTransform(body->GetPosition(), angle / 180.f * M_PI);
 }
 
-float Collisionable::getRotation()
+float Collisionable::getRotation() const
 {
     if (body == NULL) return 0;
     return body->GetAngle() / M_PI * 180.f;
@@ -333,7 +333,7 @@ void Collisionable::setVelocity(sf::Vector2f velocity)
     if (body == NULL) return;
     body->SetLinearVelocity(v2b(velocity));
 }
-sf::Vector2f Collisionable::getVelocity()
+sf::Vector2f Collisionable::getVelocity() const
 {
     if (body == NULL) return sf::Vector2f(0, 0);
     return b2v(body->GetLinearVelocity());
@@ -344,7 +344,7 @@ void Collisionable::setAngularVelocity(float velocity)
     if (body == NULL) return;
     body->SetAngularVelocity(velocity / 180.f * M_PI);
 }
-float Collisionable::getAngularVelocity()
+float Collisionable::getAngularVelocity() const
 {
     if (body == NULL) return 0;
     return body->GetAngularVelocity() / M_PI * 180.f;
@@ -356,18 +356,18 @@ void Collisionable::applyImpulse(sf::Vector2f position, sf::Vector2f impulse)
     body->ApplyLinearImpulse(v2b(impulse), v2b(position), true);
 }
 
-sf::Vector2f Collisionable::toLocalSpace(sf::Vector2f v)
+sf::Vector2f Collisionable::toLocalSpace(sf::Vector2f v) const
 {
     if (body == NULL) return sf::Vector2f(0, 0);
     return b2v(body->GetLocalPoint(v2b(v)));
 }
-sf::Vector2f Collisionable::toWorldSpace(sf::Vector2f v)
+sf::Vector2f Collisionable::toWorldSpace(sf::Vector2f v) const
 {
     if (body == NULL) return sf::Vector2f(0, 0);
     return b2v(body->GetWorldPoint(v2b(v)));
 }
 
-std::vector<sf::Vector2f> Collisionable::getCollisionShape()
+std::vector<sf::Vector2f> Collisionable::getCollisionShape() const
 {
     std::vector<sf::Vector2f> ret;
     if (body == NULL) return ret;
