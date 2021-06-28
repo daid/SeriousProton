@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(SeriousProton LANGUAGES CXX)
 
 set(CMAKE_MODULE_PATH
-    ${CMAKE_SOURCE_DIR}/cmake/
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/
     ${CMAKE_MODULE_PATH}
 )
 
@@ -16,6 +16,10 @@ endif()
 
 # Preflight checks.
 message(STATUS "Crash Logger is " ${ENABLE_CRASH_LOGGER})
+
+set(EXTERNALS_DIR "${PROJECT_BINARY_DIR}/externals")
+set(DOWNLOADS_DIR "${PROJECT_BINARY_DIR}/downloads")
+file(MAKE_DIRECTORY "${EXTERNAL_DIR}" "${DOWNLOADS_DIR}")
 
 if(ENABLE_CRASH_LOGGER)
     if(NOT DRMINGW_ROOT)
@@ -42,7 +46,7 @@ if(ENABLE_CRASH_LOGGER)
 endif()
 
 #--------------------------------Dependencies----------------------------------
-find_package(SFML 2.5 COMPONENTS system audio network window graphics)
+find_package(SFML 2.5 COMPONENTS system audio window graphics)
 if(NOT ${SFML_FOUND})
     message(STATUS "Couldn't find SFML. Building it from scratch.")
     
@@ -75,10 +79,25 @@ if(NOT ${SFML_FOUND})
         "-L${SFML_ROOT}/lib"
         "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-audio${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
         "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-graphics${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
-        "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-network${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
         "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-system${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
         "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-window${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
     )
+endif()
+
+
+find_package(glm QUIET)
+if(NOT ${glm_FOUND})
+    set(GLM_BASE_PATH "${EXTERNALS_DIR}")
+
+    if(NOT EXISTS "${GLM_BASE_PATH}/glm/CMakeLists.txt")
+        set(GLM_ZIP "${DOWNLOADS_DIR}/glm.zip")
+        file(DOWNLOAD "https://github.com/g-truc/glm/releases/download/0.9.9.8/glm-0.9.9.8.zip" "${GLM_ZIP}" TIMEOUT 60 TLS_VERIFY ON)
+
+        file(MAKE_DIRECTORY "${GLM_BASE_PATH}/glm")
+        execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf "${GLM_ZIP}" WORKING_DIRECTORY "${GLM_BASE_PATH}")
+    endif()
+
+    add_subdirectory("${GLM_BASE_PATH}/glm" "${PROJECT_BINARY_DIR}/glm" EXCLUDE_FROM_ALL)
 endif()
 
 add_subdirectory(src/Box2D)
@@ -198,7 +217,7 @@ target_compile_options(seriousproton_deps
 
 target_link_libraries(seriousproton_deps
     INTERFACE 
-        box2d lua glew ${SFML_LIBRARIES}
+        box2d lua glew ${SFML_LIBRARIES} glm::glm
         $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
@@ -264,7 +283,6 @@ if(WIN32)
             "${SFML_ROOT}/bin/OpenAL32.dll"
             "${SFML_ROOT}/bin/sfml-audio-2.dll"
             "${SFML_ROOT}/bin/sfml-graphics-2.dll"
-            "${SFML_ROOT}/bin/sfml-network-2.dll"
             "${SFML_ROOT}/bin/sfml-system-2.dll"
             "${SFML_ROOT}/bin/sfml-window-2.dll"
         DESTINATION .

@@ -196,13 +196,13 @@ bool Catalogue::load_resource(const string& resource_name)
                         if (!context.empty())
                         {
                             context_entries[context][origonal] = translated;
-                            context = "";
                         }
                         else
                         {
                             entries[origonal] = translated;
                         }
                     }
+                    context = "";
                 }
                 if (line.startswith("msgid \""))
                 {
