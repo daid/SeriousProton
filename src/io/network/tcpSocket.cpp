@@ -50,10 +50,12 @@ extern "C" {
 # define SSL_OP_NO_TLSv1_2                               0x08000000L
 # define SSL_OP_NO_TLSv1_1                               0x10000000L
 
+#ifndef __ANDROID__
 #include "dynamicLibrary.h"
 
 static std::unique_ptr<DynamicLibrary> libcrypto;
 static std::unique_ptr<DynamicLibrary> libssl;
+#endif
 
 static void initializeLibSSL()
 {
@@ -61,7 +63,7 @@ static void initializeLibSSL()
     if (initialized) return;
     initialized = true;
 
-#ifndef ANDROID
+#ifndef __ANDROID__
 #ifdef _WIN32
     libcrypto = DynamicLibrary::open("libcrypto-1_1.dll");
     libssl = DynamicLibrary::open("libssl-1_1.dll");

@@ -43,19 +43,19 @@ public:
     void setCollisionFilter(uint16_t category_bits, uint16_t mask_bits);    //Collision happens if (A->category_bits & B->mask_bits) && (B->category_bits & A->mask_bits)
 
     void setPosition(sf::Vector2f v);
-    sf::Vector2f getPosition();
+    sf::Vector2f getPosition() const;
     void setRotation(float angle);
-    float getRotation();
+    float getRotation() const;
     void setVelocity(sf::Vector2f velocity);
-    sf::Vector2f getVelocity();
+    sf::Vector2f getVelocity() const;
     void setAngularVelocity(float velocity);
-    float getAngularVelocity();
+    float getAngularVelocity() const;
     void applyImpulse(sf::Vector2f position, sf::Vector2f impulse);
 
-    sf::Vector2f toLocalSpace(sf::Vector2f v);
-    sf::Vector2f toWorldSpace(sf::Vector2f v);
+    sf::Vector2f toLocalSpace(sf::Vector2f v) const;
+    sf::Vector2f toWorldSpace(sf::Vector2f v) const;
 
-    std::vector<sf::Vector2f> getCollisionShape(); //For debugging
+    std::vector<sf::Vector2f> getCollisionShape() const; //For debugging
 
     float multiplayer_replication_object_significant_range;
 

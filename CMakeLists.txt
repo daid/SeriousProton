@@ -46,7 +46,7 @@ if(ENABLE_CRASH_LOGGER)
 endif()
 
 #--------------------------------Dependencies----------------------------------
-find_package(SFML 2.5 COMPONENTS system audio network window graphics)
+find_package(SFML 2.5 COMPONENTS system audio window graphics)
 if(NOT ${SFML_FOUND})
     message(STATUS "Couldn't find SFML. Building it from scratch.")
     
@@ -79,7 +79,6 @@ if(NOT ${SFML_FOUND})
         "-L${SFML_ROOT}/lib"
         "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-audio${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
         "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-graphics${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
-        "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-network${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
         "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-system${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
         "${CMAKE_${_SFML_LIB_TYPE}_LIBRARY_PREFIX}sfml-window${CMAKE_${_SFML_LIB_SUFFIX}_LIBRARY_SUFFIX}"
     )
@@ -284,7 +283,6 @@ if(WIN32)
             "${SFML_ROOT}/bin/OpenAL32.dll"
             "${SFML_ROOT}/bin/sfml-audio-2.dll"
             "${SFML_ROOT}/bin/sfml-graphics-2.dll"
-            "${SFML_ROOT}/bin/sfml-network-2.dll"
             "${SFML_ROOT}/bin/sfml-system-2.dll"
             "${SFML_ROOT}/bin/sfml-window-2.dll"
         DESTINATION .
