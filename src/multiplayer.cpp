@@ -12,7 +12,7 @@ public:
     glm::vec2 velocity{};
     float rotation;
     float angularVelocity;
-    sp::SystemStopwatch last_update_time;
+    sp::Stopwatch last_update_time;
     
     CollisionableReplicationData()
     : rotation(0), angularVelocity(0)

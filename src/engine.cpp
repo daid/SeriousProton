@@ -56,6 +56,7 @@ Engine::Engine()
     elapsedTime = 0.0;
     soundManager = new SoundManager();
 }
+
 Engine::~Engine()
 {
     if (windowManager)

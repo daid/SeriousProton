@@ -139,6 +139,7 @@ set(source_files #All SeriousProton's objects to compile
     src/soundManager.cpp
     src/stringImproved.cpp
     src/textureManager.cpp
+    src/timer.cpp
     src/tween.cpp
     src/Updatable.cpp
     src/windowManager.cpp

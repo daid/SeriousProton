@@ -104,6 +104,19 @@ private:
     typename ClockSource::time_point start_time;
 };
 
+class EngineTime
+{
+public:
+    using time_point = std::chrono::duration<double>;
+    using duration = time_point;
+
+    static time_point now();
+};
+
+// The normal timer runs at the game speed. If the game is paused or slowed down, this timer slows down as well.
+using Timer = TimerBase<EngineTime>;
+using Stopwatch = StopwatchBase<EngineTime>;
+
 // The system timer always runs, even if the game is paused or at a different game speed.
 using SystemTimer = TimerBase<std::chrono::steady_clock>;
 using SystemStopwatch = StopwatchBase<std::chrono::steady_clock>;
