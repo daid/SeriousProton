@@ -52,14 +52,18 @@ public:
 
     void appendRaw(const void* ptr, size_t size)
     {
-        buffer.resize(buffer.size() + size);
-        memcpy(buffer.data() + buffer.size() - size, ptr, size);
+        if (size > 0)
+        {
+            auto offset = buffer.size();
+            buffer.resize(offset + size);
+            memcpy(buffer.data() + offset, ptr, size);
+        }
     }
     
-    template<typename T, typename... ARGS> void write(const T& value, const ARGS&... args)
+    template<typename T, typename... ARGS> void write(const T& value, ARGS&&... args)
     {
         write(value);
-        write(args...);
+        write(std::forward<ARGS>(args)...);
     }
     
     void write(bool b)
@@ -99,16 +103,12 @@ public:
 
     void write(const float f)
     {
-        size_t idx = buffer.size();
-        buffer.resize(idx + sizeof(f));
-        memcpy(&buffer[idx], &f, sizeof(f));
+        appendRaw(&f, sizeof(f));
     }
 
     void write(const double f)
     {
-        size_t idx = buffer.size();
-        buffer.resize(idx + sizeof(f));
-        memcpy(&buffer[idx], &f, sizeof(f));
+        appendRaw(&f, sizeof(f));
     }
 
     template<typename T> void write(const sf::Vector2<T>& v)
@@ -127,22 +127,7 @@ public:
     void write(std::string_view s)
     {
         write(static_cast<uint32_t>(s.length()));
-        if (!s.empty())
-        {
-            size_t idx = buffer.size();
-            buffer.resize(idx + s.length());
-            memcpy(&buffer[idx], s.data(), s.length());
-        }
-    }
-
-    void write(const string& s)
-    {
-        write(std::string_view{s});
-    }
-
-    void write(const char* s)
-    {
-        write(std::string_view{ s, strlen(s) });
+        appendRaw(s.data(), s.length());
     }
 
     template<class T, class=typename std::enable_if<std::is_enum<T>::value>::type>
@@ -150,9 +135,7 @@ public:
 
     void write(const DataBuffer& other)
     {
-        size_t idx = buffer.size();
-        buffer.resize(idx + other.buffer.size());
-        memcpy(&buffer[idx], other.buffer.data(), other.buffer.size());
+        appendRaw(other.buffer.data(), other.buffer.size());
     }
     
     template<typename T, typename... ARGS> void read(T& value, ARGS&... args)
@@ -237,7 +220,7 @@ public:
     template<class T, class=typename std::enable_if<std::is_enum<T>::value>::type>
     void read(T& enum_value) { uint16_t v=0; read(v); enum_value = T(v); }
 
-    size_t available()
+    size_t available() const
     {
         return buffer.size() - read_index;
     }
@@ -251,7 +234,7 @@ public:
     DataBuffer& operator <<(uint32_t data) { write(data); return *this; }
     DataBuffer& operator <<(float data) { write(data); return *this; }
     DataBuffer& operator <<(double data) { write(data); return *this; }
-    DataBuffer& operator <<(const string& data) { write(data); return *this; }
+    DataBuffer& operator <<(std::string_view data) { write(data); return *this; }
 
     DataBuffer& operator >>(bool& data) { read(data); return *this; }
     DataBuffer& operator >>(int8_t& data) { read(data); return *this; }
