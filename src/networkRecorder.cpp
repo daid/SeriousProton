@@ -105,7 +105,7 @@ void NetworkAudioRecorder::startSending()
 bool NetworkAudioRecorder::sendAudioPacket()
 {
     bool result = false;
-    sample_buffer_mutex.lock();
+    std::lock_guard<std::mutex> guard(sample_buffer_mutex);
     if (sample_buffer.size() >= frame_size)
     {
         unsigned char packet_buffer[4096];
@@ -132,7 +132,6 @@ bool NetworkAudioRecorder::sendAudioPacket()
             samples_till_stop = std::max(0, samples_till_stop - frame_size);
         }
     }
-    sample_buffer_mutex.unlock();
     return result;
 }
 
@@ -141,10 +140,13 @@ void NetworkAudioRecorder::finishSending()
     while(sendAudioPacket())
     {
     }
-    sample_buffer_mutex.lock();
-    while(sample_buffer.size() < frame_size)
-        sample_buffer.push_back(0);
-    sample_buffer_mutex.unlock();
+
+    {
+        std::lock_guard<std::mutex> guard(sample_buffer_mutex);
+        while(sample_buffer.size() < frame_size)
+            sample_buffer.push_back(0);
+    }
+    
     sendAudioPacket();
     opus_encoder_destroy(encoder);
     encoder = nullptr;

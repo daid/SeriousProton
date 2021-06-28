@@ -5,6 +5,7 @@
 #include <memory>
 #include <iostream>
 #include <unordered_map>
+#include <mutex>
 
 
 struct OpusDecoder;
@@ -23,7 +24,7 @@ protected:
 
     //Members
     unsigned int sample_rate;
-    sf::Mutex              samples_lock;
+    std::mutex             samples_lock;
     std::vector<sf::Int16> samples;
     std::vector<sf::Int16> playing_samples;
 

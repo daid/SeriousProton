@@ -1,11 +1,15 @@
 #ifndef MULTIPLAYER_CLIENT_H
 #define MULTIPLAYER_CLIENT_H
 
-#include <stdint.h>
 #include "io/network/tcpSocket.h"
 #include "Updatable.h"
 #include "multiplayer_server.h"
 #include "networkAudioStream.h"
+
+#include <stdint.h>
+#include <thread>
+#include <chrono>
+
 
 class GameClient;
 class MultiplayerObject;
@@ -14,7 +18,7 @@ extern P<GameClient> game_client;
 
 class GameClient : public Updatable
 {
-    constexpr static float no_data_disconnect_time = 20.0f;
+    constexpr static std::chrono::seconds no_data_disconnect_time{20};
 public:
     enum Status
     {
@@ -44,10 +48,10 @@ private:
     std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
     int32_t client_id;
     Status status;
-    sf::Clock last_receive_time;
+    std::chrono::time_point<std::chrono::steady_clock> last_receive_time;
     NetworkAudioStreamManager audio_stream_manager;
 
-    sf::Thread connect_thread;
+    std::thread connect_thread;
     DisconnectReason disconnect_reason{ DisconnectReason::Unknown };
 public:
     GameClient(int version_number, sp::io::network::Address server, int port_nr = defaultServerPort);

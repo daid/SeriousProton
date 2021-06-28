@@ -9,13 +9,13 @@ ServerScanner::ServerScanner(int version_number, int server_port)
 ServerScanner::~ServerScanner()
 {
     destroy();
-    if (master_server_scan_thread)
-        master_server_scan_thread->wait();
+    if (master_server_scan_thread.joinable())
+        master_server_scan_thread.join();
 }
 
 void ServerScanner::scanMasterServer(string url)
 {
-    if (master_server_scan_thread)
+    if (master_server_scan_thread.joinable())
         return;
     LOG(INFO) << "Switching to master server scanning";
     if (socket)
@@ -23,19 +23,19 @@ void ServerScanner::scanMasterServer(string url)
         socket = nullptr;
     }
 
-    server_list_mutex.lock();
-    for(unsigned int n=0; n<server_list.size(); n++)
     {
-        if (removedServerCallback)
-            removedServerCallback(server_list[n].address);
-        server_list.erase(server_list.begin() + n);
-        n--;
+        std::lock_guard<std::mutex> guard(server_list_mutex);
+        for(unsigned int n=0; n<server_list.size(); n++)
+        {
+            if (removedServerCallback)
+                removedServerCallback(server_list[n].address);
+            server_list.erase(server_list.begin() + n);
+            n--;
+        }
     }
-    server_list_mutex.unlock();
 
     master_server_url = url;
-    master_server_scan_thread = std::unique_ptr<sf::Thread>(new sf::Thread(&ServerScanner::masterServerScanThread, this));
-    master_server_scan_thread->launch();
+    master_server_scan_thread = std::move(std::thread(&ServerScanner::masterServerScanThread, this));
 }
 
 void ServerScanner::scanLocalNetwork()
@@ -45,10 +45,9 @@ void ServerScanner::scanLocalNetwork()
 
     LOG(INFO) << "Switching to local server scanning";
     master_server_url = "";
-    if (master_server_scan_thread)
+    if (master_server_scan_thread.joinable())
     {
-        master_server_scan_thread->wait();
-        master_server_scan_thread = nullptr;
+        master_server_scan_thread.join();
     }
 
     server_list_mutex.lock();
@@ -115,8 +114,8 @@ void ServerScanner::update(float /*gameDelta*/)
 
 void ServerScanner::updateServerEntry(sp::io::network::Address address, int port, string name)
 {
-    sf::Lock lock(server_list_mutex);
-    
+    std::lock_guard<std::mutex> guard(server_list_mutex);
+
     for(unsigned int n=0; n<server_list.size(); n++)
     {
         if (server_list[n].address == address)
@@ -149,9 +148,10 @@ void ServerScanner::addCallbacks(std::function<void(sp::io::network::Address, st
 std::vector<ServerScanner::ServerInfo> ServerScanner::getServerList()
 {   
     std::vector<ServerScanner::ServerInfo> ret;
-    server_list_mutex.lock();
-    ret = server_list;
-    server_list_mutex.unlock();
+    {
+        std::lock_guard<std::mutex> guard(server_list_mutex);
+        ret = server_list;
+    }
     return ret;
 }
 

@@ -20,7 +20,7 @@ NetworkAudioStream::NetworkAudioStream()
 
 bool NetworkAudioStream::onGetData(sf::SoundStream::Chunk& data)
 {
-    sf::Lock lock(samples_lock);    //Get exclusive access to the samples vector.
+    std::lock_guard<std::mutex> guard(samples_lock);    //Get exclusive access to the samples vector.
     //Copy all new samples to the playback buffer. And clear our sample buffer.
     playing_samples = std::move(samples);
     samples.clear();
@@ -43,7 +43,7 @@ void NetworkAudioStream::receivedPacketFromNetwork(const unsigned char* packet, 
     int sample_count = opus_decode(decoder, packet, packet_size, samples_buffer.data(), static_cast<int>(samples_buffer.size()), 0);
     if (sample_count > 0)
     {
-        sf::Lock lock(samples_lock);
+        std::lock_guard<std::mutex> guard(samples_lock);
         this->samples.insert(this->samples.end(), samples_buffer.begin(), samples_buffer.begin() + sample_count);
     }
     if (this->samples.size() > sample_rate / 10 && getStatus() == sf::SoundSource::Stopped) //Start playback when there is 0.1 second of data

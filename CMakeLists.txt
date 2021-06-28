@@ -243,6 +243,9 @@ if(NOT ${SFML_FOUND})
     add_dependencies(seriousproton_deps SFML)
 endif()
 
+find_package(Threads REQUIRED)
+add_dependencies(seriousproton_deps Threads::Threads)
+
 target_compile_definitions(seriousproton_deps
     INTERFACE
         SFML_NO_DEPRECATED_WARNINGS # SFML 2.5 gives deprication warnings on a few functions we use. But we maintain 2.3 compatibility, so ignore those warnings.

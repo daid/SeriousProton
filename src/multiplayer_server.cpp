@@ -18,7 +18,7 @@ static std::unordered_map<string, int> multiplayer_stats;
 P<GameServer> game_server;
 
 GameServer::GameServer(string server_name, int version_number, int listen_port)
-: server_name(server_name), listen_port(listen_port), version_number(version_number), master_server_update_thread(&GameServer::runMasterServerUpdateThread, this)
+: server_name(server_name), listen_port(listen_port), version_number(version_number)
 {
     assert(!game_server);
     assert(!game_client);
@@ -27,7 +27,8 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     sendDataRate = 0.0;
     sendDataRatePerClient = 0.0;
     boardcastServerDelay = 0.0;
-    aliveClock.restart();
+    last_update_time = std::chrono::steady_clock::now();
+    keep_alive_send_time = std::chrono::steady_clock::now();
 
     nextObjectId = 1;
     nextclient_id = 1;
@@ -53,7 +54,8 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
 GameServer::~GameServer()
 {
     destroy();
-    master_server_update_thread.wait();
+    if (master_server_update_thread.joinable())
+        master_server_update_thread.join();
 }
 
 void GameServer::connectToProxy(sp::io::network::Address address, int port)
@@ -110,8 +112,9 @@ void GameServer::update(float /*gameDelta*/)
     sf::Clock update_run_time_clock;    //Clock used to measure how much time this update cycle is costing us.
     
     //Calculate our own delta, as we want wall-time delta, the gameDelta can be modified by the current game speed (could even be 0 on pause)
-    float delta = updateTimeClock.getElapsedTime().asSeconds();
-    updateTimeClock.restart();
+    auto now = std::chrono::steady_clock::now();
+    float delta = std::chrono::duration<double>(now - last_update_time).count();
+    last_update_time = now;
 
     sendDataCounter = 0;
     sendDataCounterPerClient = 0;
@@ -256,7 +259,7 @@ void GameServer::update(float /*gameDelta*/)
                         break;
                     case CMD_ALIVE_RESP:
                         {
-                            clientList[n].ping = clientList[n].round_trip_time.getElapsedTime().asMilliseconds();
+                            clientList[n].ping = std::chrono::duration<double>(clientList[n].round_trip_start_time - now).count() * 1000.0;
                         }
                         break;
                     default:
@@ -365,7 +368,7 @@ void GameServer::update(float /*gameDelta*/)
                         break;
                     case CMD_ALIVE_RESP:
                         {
-                            clientList[n].ping = clientList[n].round_trip_time.getElapsedTime().asMilliseconds();
+                            clientList[n].ping = std::chrono::duration<double>(clientList[n].round_trip_start_time - now).count() * 1000.0;
                         }
                     break;
                     default:
@@ -396,9 +399,10 @@ void GameServer::update(float /*gameDelta*/)
         }
     }
 
-    if (aliveClock.getElapsedTime().asSeconds() > 10.0)
+    
+    if (now - keep_alive_send_time > std::chrono::seconds(10))
     {
-        aliveClock.restart();
+        keep_alive_send_time = now;
 
         keepAliveAll();
     }
@@ -562,7 +566,7 @@ void GameServer::keepAliveAll()
     {
         if (client.socket)
         {
-            client.round_trip_time.restart();
+            client.round_trip_start_time = std::chrono::steady_clock::now();
             client.socket->queue(packet);
         }
     }
@@ -581,13 +585,14 @@ void GameServer::sendAll(sp::io::DataBuffer& packet)
 void GameServer::registerOnMasterServer(string master_url)
 {
     this->master_server_url = master_url;
-    master_server_update_thread.launch();
+    master_server_update_thread = std::move(std::thread(&GameServer::runMasterServerUpdateThread, this));
 }
 
 void GameServer::stopMasterServerRegistry()
 {
     this->master_server_url = "";
-    master_server_update_thread.wait();
+    if (master_server_update_thread.joinable())
+        master_server_update_thread.join();
 }
 
 void GameServer::runMasterServerUpdateThread()

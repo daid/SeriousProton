@@ -1,15 +1,18 @@
 #ifndef MULTIPLAYER_SERVER_H
 #define MULTIPLAYER_SERVER_H
 
-#include <stdint.h>
-#include <unordered_map>
-#include <unordered_set>
 #include "io/network/udpSocket.h"
 #include "io/network/tcpSocket.h"
 #include "io/network/tcpListener.h"
 #include "Updatable.h"
 #include "stringImproved.h"
 #include "networkAudioStream.h"
+
+#include <stdint.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <thread>
+
 
 static const int defaultServerPort = 35666;
 static const int multiplayerVerficationNumber = 0x2fab3f0f; //Used to verify that the server is actually a serious proton server
@@ -21,8 +24,8 @@ extern P<GameServer> game_server;
 
 class GameServer : public Updatable
 {
-    sf::Clock updateTimeClock;
-    sf::Clock aliveClock;
+    std::chrono::time_point<std::chrono::steady_clock> last_update_time;
+    std::chrono::time_point<std::chrono::steady_clock> keep_alive_send_time;
     sp::io::network::UdpSocket broadcast_listen_socket;
     sp::io::network::TcpListener listenSocket;
     std::unique_ptr<sp::io::network::TcpSocket> new_socket;
@@ -53,7 +56,7 @@ class GameServer : public Updatable
         int32_t command_client_id;
         EClientReceiveState receive_state;
         int32_t command_object_id;
-        sf::Clock round_trip_time;
+        std::chrono::time_point<std::chrono::steady_clock> round_trip_start_time;
         int32_t ping;
         std::vector<int32_t> proxy_ids;
     };
@@ -66,7 +69,7 @@ class GameServer : public Updatable
     std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
 
     string master_server_url;
-    sf::Thread master_server_update_thread;
+    std::thread master_server_update_thread;
 public:
     GameServer(string server_name, int versionNumber, int listenPort = defaultServerPort);
     virtual ~GameServer();
