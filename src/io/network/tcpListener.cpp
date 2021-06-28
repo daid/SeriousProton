@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+static constexpr intptr_t INVALID_SOCKET = -1;
 #endif
 
 
@@ -35,7 +36,7 @@ bool TcpListener::listen(int port)
         close();
     
     handle = ::socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-    if (handle != -1)
+    if (handle != INVALID_SOCKET)
     {
         int optval = 1;
         ::setsockopt(handle, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&optval), sizeof(int));
@@ -57,7 +58,7 @@ bool TcpListener::listen(int port)
     else
     {
         handle = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (handle == -1)
+        if (handle == INVALID_SOCKET)
             return false;
 
         int optval = 1;
@@ -93,13 +94,13 @@ void TcpListener::close()
 #else
         ::close(handle);
 #endif
-        handle = -1;
+        handle = INVALID_SOCKET;
     }
 }
 
 bool TcpListener::isListening()
 {
-    return handle != -1;
+    return handle != INVALID_SOCKET;
 }
 
 bool TcpListener::accept(TcpSocket& socket)

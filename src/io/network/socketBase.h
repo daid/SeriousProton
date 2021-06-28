@@ -1,7 +1,7 @@
 #ifndef SP2_IO_NETWORK_SOCKET_BASE_H
 #define SP2_IO_NETWORK_SOCKET_BASE_H
 
-#include <io/network/socketBase.h>
+#include <cstdint>
 #include "nonCopyable.h"
 
 
@@ -19,7 +19,11 @@ public:
 protected:
     bool isLastErrorNonBlocking();
 
-    int handle = -1;
+#ifdef _WIN32
+    uintptr_t handle = (~0);
+#else
+    intptr_t handle = -1;
+#endif
     bool blocking = true;
     
     friend class Selector;

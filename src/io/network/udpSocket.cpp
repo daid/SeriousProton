@@ -14,6 +14,7 @@ static constexpr int flags = 0;
 #include <string.h>
 #include <netdb.h>
 static constexpr int flags = MSG_NOSIGNAL;
+static constexpr intptr_t INVALID_SOCKET = -1;
 // Define IPV6_ADD_MEMBERSHIP for FreeBSD and Mac OS X
 #ifndef IPV6_ADD_MEMBERSHIP
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
@@ -38,7 +39,7 @@ UdpSocket::UdpSocket(UdpSocket&& socket)
     handle = socket.handle;
     blocking = socket.blocking;
 
-    socket.handle = -1;
+    socket.handle = INVALID_SOCKET;
 }
 
 UdpSocket::~UdpSocket()
@@ -88,7 +89,7 @@ bool UdpSocket::bind(int port)
 
 bool UdpSocket::joinMulticast(int group_nr)
 {
-    if (handle == -1)
+    if (handle == INVALID_SOCKET)
     {
         if (!createSocket())
             return false;
@@ -128,20 +129,20 @@ bool UdpSocket::joinMulticast(int group_nr)
 
 void UdpSocket::close()
 {
-    if (handle != -1)
+    if (handle != INVALID_SOCKET)
     {
 #ifdef _WIN32
         closesocket(handle);
 #else
         ::close(handle);
 #endif
-        handle = -1;
+        handle = INVALID_SOCKET;
     }
 }
 
 bool UdpSocket::send(const void* data, size_t size, const Address& address, int port)
 {
-    if (handle == -1)
+    if (handle == INVALID_SOCKET)
     {
         if (!createSocket())
             return false;
@@ -198,7 +199,7 @@ bool UdpSocket::send(const void* data, size_t size, const Address& address, int 
 
 size_t UdpSocket::receive(void* data, size_t size, Address& address, int& port)
 {
-    if (handle == -1)
+    if (handle == INVALID_SOCKET)
         return 0;
 
     address.addr_info.clear();
@@ -267,7 +268,7 @@ bool UdpSocket::receive(DataBuffer& buffer, Address& address, int& port)
 
 bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int port)
 {
-    if (handle == -1)
+    if (handle == INVALID_SOCKET)
     {
         createSocket();
     }
@@ -322,7 +323,7 @@ bool UdpSocket::sendMulticast(const DataBuffer& buffer, int group_nr, int port)
 
 bool UdpSocket::sendBroadcast(const void* data, size_t size, int port)
 {
-    if (handle == -1)
+    if (handle == INVALID_SOCKET)
         return false;
     if (socket_is_ipv6)
         return false;
@@ -375,9 +376,9 @@ bool UdpSocket::createSocket()
 
     //As IPv6 multicast isn't working yet, just use IPv4 sockets only right now.
     //handle = ::socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-    handle = -1;
+    handle = INVALID_SOCKET;
     socket_is_ipv6 = true;
-    if (handle == -1)
+    if (handle == INVALID_SOCKET)
     {
         handle = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         socket_is_ipv6 = false;
@@ -392,7 +393,7 @@ bool UdpSocket::createSocket()
     int enable = 1;
     ::setsockopt(handle, SOL_SOCKET, SO_BROADCAST, reinterpret_cast<char*>(&enable), sizeof(enable));
 
-    return handle != -1;
+    return handle != INVALID_SOCKET;
 }
 
 }//namespace network

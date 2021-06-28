@@ -14,6 +14,7 @@ static constexpr int flags = 0;
 #include <arpa/inet.h>
 #include <string.h>
 static constexpr int flags = MSG_NOSIGNAL;
+static constexpr intptr_t INVALID_SOCKET = -1;
 #endif
 
 
@@ -157,7 +158,7 @@ TcpSocket& TcpSocket::operator=(TcpSocket&& socket)
     receive_buffer = std::move(socket.receive_buffer);
     received_size = socket.received_size;
 
-    socket.handle = -1;
+    socket.handle = INVALID_SOCKET;
     socket.send_queue.clear();
     socket.receive_buffer.clear();
     socket.received_size = 0;
@@ -174,7 +175,7 @@ bool TcpSocket::connect(const Address& host, int port)
     for(const auto& addr_info : host.addr_info)
     {
         handle = ::socket(addr_info.family, SOCK_STREAM, 0);
-        if (handle < 0)
+        if (handle == INVALID_SOCKET)
             return false;
         if (addr_info.family == AF_INET && sizeof(struct sockaddr_in) == addr_info.addr.length())
         {
@@ -236,7 +237,7 @@ bool TcpSocket::connectSSL(const Address& host, int port)
 
 void TcpSocket::setDelay(bool delay)
 {
-    if (handle == -1)
+    if (handle == INVALID_SOCKET)
     {
         LOG(Warning, "Failed to setDelay due to being called on an incomplete socket");
         return;
@@ -257,7 +258,7 @@ void TcpSocket::close()
 #else
         ::close(handle);
 #endif
-        handle = -1;
+        handle = INVALID_SOCKET;
         send_queue.clear();
         if (ssl_handle)
             SSL_free(static_cast<SSL*>(ssl_handle));
@@ -267,7 +268,7 @@ void TcpSocket::close()
 
 bool TcpSocket::isConnected()
 {
-    return handle != -1;
+    return handle != INVALID_SOCKET;
 }
 
 void TcpSocket::send(const void* data, size_t size)

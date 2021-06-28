@@ -18,6 +18,7 @@
 #include <ifaddrs.h>
 #include <errno.h>
 #include <poll.h>
+static constexpr intptr_t INVALID_SOCKET = -1;
 #endif
 
 
@@ -55,7 +56,7 @@ Selector& Selector::operator =(const Selector& other)
 
 void Selector::add(SocketBase& socket)
 {
-    if (socket.handle != -1)
+    if (socket.handle != INVALID_SOCKET)
     {
         struct pollfd fds;
         fds.fd = socket.handle;
@@ -67,11 +68,11 @@ void Selector::add(SocketBase& socket)
 
 void Selector::remove(SocketBase& socket)
 {
-    if (socket.handle != -1)
+    if (socket.handle != INVALID_SOCKET)
     {
         data->fds.erase(std::remove_if(data->fds.begin(), data->fds.end(), [&socket](const struct pollfd& pfd)
         {
-            return int(pfd.fd) == socket.handle;
+            return pfd.fd == socket.handle;
         }), data->fds.end());
     }
 }
@@ -89,7 +90,7 @@ bool Selector::isReady(SocketBase& socket)
 {
     for(const auto& pfd : data->fds)
     {
-        if (int(pfd.fd) == socket.handle)
+        if (pfd.fd == socket.handle)
             return pfd.revents & POLLIN;
     }
     return false;

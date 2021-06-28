@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+static constexpr intptr_t INVALID_SOCKET = -1;
 #endif
 
 
@@ -24,7 +25,7 @@ namespace network {
 void SocketBase::setBlocking(bool blocking)
 {
     this->blocking = blocking;
-    if (handle == -1)
+    if (handle == INVALID_SOCKET)
     {
         LOG(Warning, "Failed to setBlocking due to being called on an incomplete socket");
         return;
@@ -45,6 +46,12 @@ void SocketBase::setBlocking(bool blocking)
 
 void SocketBase::setTimeout(int milliseconds)
 {
+    if (handle == INVALID_SOCKET)
+    {
+        LOG(Warning, "Failed to setTimeout due to being called on an incomplete socket");
+        return;
+    }
+
 #ifdef _WIN32
     DWORD timeout = milliseconds;
     ::setsockopt(handle, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof timeout);
