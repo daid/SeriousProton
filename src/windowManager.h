@@ -1,10 +1,6 @@
 #ifndef WINDOW_MANAGER_H
 #define WINDOW_MANAGER_H
 
-#ifndef WINDOW_TITLE
-#define WINDOW_TITLE "SeriousProton Game"
-#endif // WINDOW_TITLE
-
 #include <SFML/Graphics.hpp>
 #include "P.h"
 #include "Renderable.h"
