@@ -149,6 +149,51 @@ set(source_files #All SeriousProton's objects to compile
     src/io/network/tcpSocket.cpp
     src/io/network/udpSocket.cpp
     src/io/http/request.cpp
+
+    src/clipboard.h
+    src/collisionable.h
+    src/dtoa/dtoa_milo.h
+    src/dynamicLibrary.h
+    src/engine.h
+    src/event.h
+    src/gameEntity.h
+    src/httpServer.h
+    src/i18n.h
+    src/input.h
+    src/io/dataBuffer.h
+    src/io/http/request.h
+    src/io/network/address.h
+    src/io/network/selector.h
+    src/io/network/socketBase.h
+    src/io/network/tcpListener.h
+    src/io/network/tcpSocket.h
+    src/io/network/udpSocket.h
+    src/logging.h
+    src/multiplayer_client.h
+    src/multiplayer.h
+    src/multiplayer_internal.h
+    src/multiplayer_proxy.h
+    src/multiplayer_server.h
+    src/multiplayer_server_scanner.h
+    src/networkAudioStream.h
+    src/networkRecorder.h
+    src/nonCopyable.h
+    src/P.h
+    src/PlayerController.h
+    src/postProcessManager.h
+    src/random.h
+    src/Renderable.h
+    src/resources.h
+    src/scriptInterface.h
+    src/scriptInterfaceMagic.h
+    src/shaderManager.h
+    src/soundManager.h
+    src/stringImproved.h
+    src/textureManager.h
+    src/tween.h
+    src/Updatable.h
+    src/vectorUtils.h
+    src/windowManager.h
 )
 
 if(NOT ANDROID)
