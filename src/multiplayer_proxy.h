@@ -6,7 +6,7 @@
 
 class GameServerProxy : public Updatable
 {
-    sf::Clock lastReceiveTime;
+    sp::SystemTimer no_data_timeout;
     constexpr static float noDataDisconnectTime = 20.0f;
 
     sp::io::network::UdpSocket broadcast_listen_socket;

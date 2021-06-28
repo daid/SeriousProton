@@ -5,6 +5,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include "timer.h"
 #include "resources.h"
 #include "stringImproved.h"
 
@@ -30,7 +31,7 @@ private:
         FadeMode mode;
         float fade_delay;
     };
-    sf::Clock clock;
+    sp::SystemStopwatch clock;
     MusicChannel music_channel;
 
     std::vector<string> music_set;

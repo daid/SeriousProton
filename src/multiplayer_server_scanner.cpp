@@ -68,7 +68,7 @@ void ServerScanner::scanLocalNetwork()
         LOG(ERROR, "Failed to join multicast for local network discovery");
 
     socket->setBlocking(false);
-    broadcast_clock.restart();
+    broadcast_timer.repeat(BroadcastTimeout);
 }
 
 void ServerScanner::update(float /*gameDelta*/)
@@ -76,7 +76,7 @@ void ServerScanner::update(float /*gameDelta*/)
     server_list_mutex.lock();
     for(unsigned int n=0; n<server_list.size(); n++)
     {
-        if (server_list[n].timeout_clock.getElapsedTime().asSeconds() > ServerTimeout)
+        if (server_list[n].timeout.isExpired())
         {
             if (removedServerCallback)
                 removedServerCallback(server_list[n].address);
@@ -88,12 +88,11 @@ void ServerScanner::update(float /*gameDelta*/)
 
     if (socket)
     {
-        if (broadcast_clock.getElapsedTime().asSeconds() > BroadcastTimeout)
+        if (broadcast_timer.isExpired())
         {
             sp::io::DataBuffer sendPacket;
             sendPacket << multiplayerVerficationNumber << "ServerQuery" << int32_t(version_number);
             socket->sendMulticast(sendPacket, 666, server_port);
-            broadcast_clock.restart();
         }
 
         sp::io::network::Address recv_address;
@@ -122,7 +121,7 @@ void ServerScanner::updateServerEntry(sp::io::network::Address address, int port
         {
             server_list[n].port = port;
             server_list[n].name = name;
-            server_list[n].timeout_clock.restart();
+            server_list[n].timeout.start(ServerTimeout);
             return;
         }
     }
@@ -132,7 +131,7 @@ void ServerScanner::updateServerEntry(sp::io::network::Address address, int port
     si.address = address;
     si.port = port;
     si.name = name;
-    si.timeout_clock.restart();
+    si.timeout.start(ServerTimeout);
     server_list.push_back(si);
     
     if (newServerCallback)

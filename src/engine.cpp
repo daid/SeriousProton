@@ -89,11 +89,10 @@ void Engine::runMainLoop()
     windowManager = dynamic_cast<WindowManager*>(*getObject("windowManager"));
     if (!windowManager)
     {
-        sf::Clock frameTimeClock;
+        sp::SystemStopwatch frame_timer;
         while(running)
         {
-            float delta = frameTimeClock.getElapsedTime().asSeconds();
-            frameTimeClock.restart();
+            float delta = frame_timer.restart();
             if (delta > 0.5f)
                 delta = 0.5f;
             if (delta < 0.001f)
@@ -113,9 +112,10 @@ void Engine::runMainLoop()
             //    break;
         }
     }else{
-        sf::Clock frameTimeClock;
+        sp::SystemStopwatch frame_timer;
 #ifdef DEBUG
-        sf::Clock debugOutputClock;
+        sp::SystemTimer debug_output_timer;
+        debug_output_timer.repeat(5);
 #endif
         while(running && windowManager->window.isOpen())
         {
@@ -132,14 +132,11 @@ void Engine::runMainLoop()
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && windowManager->hasFocus())
                 running = false;
 
-            if (debugOutputClock.getElapsedTime().asSeconds() > 1.0)
-            {
+            if (debug_output_timer.isExpired())
                 printf("Object count: %4d %4zd %4zd\n", DEBUG_PobjCount, updatableList.size(), entityList.size());
-                debugOutputClock.restart();
-            }
 #endif
 
-            float delta = frameTimeClock.restart().asSeconds();
+            float delta = frame_timer.restart();
             if (delta > 0.5f)
                 delta = 0.5f;
             if (delta < 0.001f)
@@ -153,21 +150,21 @@ void Engine::runMainLoop()
 #endif
             EngineTiming engine_timing;
             
-            sf::Clock engine_timing_clock;
+            sp::SystemStopwatch engine_timing_stopwatch;
             entityList.update();
             foreach(Updatable, u, updatableList) {
                 u->update(delta);
             }
             elapsedTime += delta;
-            engine_timing.update = engine_timing_clock.restart().asSeconds();
+            engine_timing.update = engine_timing_stopwatch.restart();
             CollisionManager::handleCollisions(delta);
-            engine_timing.collision = engine_timing_clock.restart().asSeconds();
+            engine_timing.collision = engine_timing_stopwatch.restart();
             ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();
 
             // Clear the window
             windowManager->render();
-            engine_timing.render = engine_timing_clock.restart().asSeconds();
+            engine_timing.render = engine_timing_stopwatch.restart();
             engine_timing.server_update = 0.0f;
             if (game_server)
                 engine_timing.server_update = game_server->getUpdateTime();

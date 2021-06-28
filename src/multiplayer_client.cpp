@@ -15,7 +15,7 @@ GameClient::GameClient(int version_number, sp::io::network::Address server, int 
     game_client = this;
     status = ReadyToConnect;
 
-    last_receive_time = std::chrono::steady_clock::now();
+    no_data_timeout.start(no_data_disconnect_time);
 }
 
 GameClient::~GameClient()
@@ -56,7 +56,7 @@ void GameClient::update(float /*delta*/)
     sp::io::DataBuffer packet;
     while(socket.receive(packet))
     {
-        last_receive_time = std::chrono::steady_clock::now();
+        no_data_timeout.start(no_data_disconnect_time);
 
         command_t command;
         packet >> command;
@@ -220,11 +220,10 @@ void GameClient::update(float /*delta*/)
         }
     }
 
-    auto timed_out = (last_receive_time - std::chrono::steady_clock::now()) > no_data_disconnect_time;
-    if (!socket.isConnected() || timed_out)
+    if (!socket.isConnected() || no_data_timeout.isExpired())
     {
         if (disconnect_reason == DisconnectReason::None)
-            disconnect_reason = timed_out ? DisconnectReason::TimedOut : DisconnectReason::ClosedByServer;
+            disconnect_reason = socket.isConnected() ? DisconnectReason::TimedOut : DisconnectReason::ClosedByServer;
         socket.close();
         status = Disconnected;
     }

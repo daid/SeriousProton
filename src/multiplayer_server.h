@@ -7,6 +7,7 @@
 #include "Updatable.h"
 #include "stringImproved.h"
 #include "networkAudioStream.h"
+#include "timer.h"
 
 #include <stdint.h>
 #include <unordered_map>
@@ -24,8 +25,8 @@ extern P<GameServer> game_server;
 
 class GameServer : public Updatable
 {
-    std::chrono::time_point<std::chrono::steady_clock> last_update_time;
-    std::chrono::time_point<std::chrono::steady_clock> keep_alive_send_time;
+    sp::SystemStopwatch last_update_time;
+    sp::SystemTimer keep_alive_send_timer;
     sp::io::network::UdpSocket broadcast_listen_socket;
     sp::io::network::TcpListener listenSocket;
     std::unique_ptr<sp::io::network::TcpSocket> new_socket;
@@ -33,7 +34,7 @@ class GameServer : public Updatable
     int listen_port;
     int version_number;
     string server_password;
-    
+
     int sendDataCounter;
     int sendDataCounterPerClient;
     float sendDataRate;
@@ -56,7 +57,7 @@ class GameServer : public Updatable
         int32_t command_client_id;
         EClientReceiveState receive_state;
         int32_t command_object_id;
-        std::chrono::time_point<std::chrono::steady_clock> round_trip_start_time;
+        sp::SystemStopwatch round_trip_start_time;
         int32_t ping;
         std::vector<int32_t> proxy_ids;
     };

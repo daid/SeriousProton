@@ -265,7 +265,7 @@ void SoundManager::startMusic(P<ResourceStream> stream, bool loop)
 
 void SoundManager::updateTick()
 {
-    float delta = clock.restart().asSeconds();
+    float delta = clock.restart();
     updateChannel(music_channel, delta);
     
     if (music_set.size() > 0)

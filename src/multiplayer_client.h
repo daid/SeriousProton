@@ -5,10 +5,10 @@
 #include "Updatable.h"
 #include "multiplayer_server.h"
 #include "networkAudioStream.h"
+#include "timer.h"
 
 #include <stdint.h>
 #include <thread>
-#include <chrono>
 
 
 class GameClient;
@@ -18,7 +18,7 @@ extern P<GameClient> game_client;
 
 class GameClient : public Updatable
 {
-    constexpr static std::chrono::seconds no_data_disconnect_time{20};
+    constexpr static float no_data_disconnect_time = 20;
 public:
     enum Status
     {
@@ -48,7 +48,7 @@ private:
     std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
     int32_t client_id;
     Status status;
-    std::chrono::time_point<std::chrono::steady_clock> last_receive_time;
+    sp::SystemTimer no_data_timeout;
     NetworkAudioStreamManager audio_stream_manager;
 
     std::thread connect_thread;

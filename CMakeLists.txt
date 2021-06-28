@@ -191,6 +191,7 @@ set(source_files #All SeriousProton's objects to compile
     src/stringImproved.h
     src/textureManager.h
     src/tween.h
+    src/timer.h
     src/Updatable.h
     src/vectorUtils.h
     src/windowManager.h

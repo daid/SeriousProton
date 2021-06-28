@@ -33,7 +33,7 @@ GameServerProxy::GameServerProxy(sp::io::network::Address hostname, int hostPort
         broadcast_listen_socket.setBlocking(false);
     }
 
-    lastReceiveTime.restart();
+    no_data_timeout.start(noDataDisconnectTime);
 }
 
 GameServerProxy::GameServerProxy(string password, int listenPort, string proxyName)
@@ -56,7 +56,7 @@ GameServerProxy::GameServerProxy(string password, int listenPort, string proxyNa
         broadcast_listen_socket.setBlocking(false);
     }
 
-    lastReceiveTime.restart();
+    no_data_timeout.start(noDataDisconnectTime);
 }
 
 GameServerProxy::~GameServerProxy()
@@ -77,7 +77,7 @@ void GameServerProxy::update(float delta)
         sp::io::DataBuffer packet;
         while(mainSocket->receive(packet))
         {
-            lastReceiveTime.restart();
+            no_data_timeout.start(noDataDisconnectTime);
             command_t command;
             packet >> command;
             switch(command)
@@ -145,7 +145,7 @@ void GameServerProxy::update(float delta)
                 break;
             }
         }
-        if (!mainSocket->isConnected() || lastReceiveTime.getElapsedTime().asSeconds() > noDataDisconnectTime)
+        if (!mainSocket->isConnected() || no_data_timeout.isExpired())
         {
             LOG(INFO) << "Disconnected proxy";
             mainSocket->close();
@@ -194,7 +194,7 @@ void GameServerProxy::update(float delta)
                     else
                     {
                         mainSocket = std::move(info.socket);
-                        lastReceiveTime.restart();
+                        no_data_timeout.start(noDataDisconnectTime);
                     }
                     break;
                 case CMD_CLIENT_SEND_AUTH:

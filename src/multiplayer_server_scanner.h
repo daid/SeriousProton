@@ -12,7 +12,7 @@ class ServerScanner : public Updatable
 {
     int server_port;
     std::unique_ptr<sp::io::network::UdpSocket> socket;
-    sf::Clock broadcast_clock;
+    sp::SystemTimer broadcast_timer;
 
 public:
     struct ServerInfo
@@ -21,7 +21,7 @@ public:
         int port;
         string name;
 
-        sf::Clock timeout_clock;
+        sp::SystemTimer timeout;
     };
 private:
     std::vector<struct ServerInfo> server_list;

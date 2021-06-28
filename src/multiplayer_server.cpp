@@ -8,7 +8,7 @@
 #define MULTIPLAYER_COLLECT_DATA_STATS 0
 
 #if MULTIPLAYER_COLLECT_DATA_STATS
-sf::Clock multiplayer_stats_dump;
+sp::SystemTimer multiplayer_stats_dump;
 static std::unordered_map<string, int> multiplayer_stats;
 #define ADD_MULTIPLAYER_STATS(name, bytes) multiplayer_stats[name] += (bytes)
 #else
@@ -27,8 +27,7 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     sendDataRate = 0.0;
     sendDataRatePerClient = 0.0;
     boardcastServerDelay = 0.0;
-    last_update_time = std::chrono::steady_clock::now();
-    keep_alive_send_time = std::chrono::steady_clock::now();
+    keep_alive_send_timer.repeat(10);;
 
     nextObjectId = 1;
     nextclient_id = 1;
@@ -49,6 +48,9 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
         LOG(Error, "Failed to join multicast group for local server discovery");
     }
     broadcast_listen_socket.setBlocking(false);
+#if MULTIPLAYER_COLLECT_DATA_STATS
+    multiplayer_stats_dump.repeat(1.0f);
+#endif
 }
 
 GameServer::~GameServer()
@@ -109,12 +111,10 @@ P<MultiplayerObject> GameServer::getObjectById(int32_t id)
 
 void GameServer::update(float /*gameDelta*/)
 {
-    sf::Clock update_run_time_clock;    //Clock used to measure how much time this update cycle is costing us.
+    sp::SystemStopwatch update_run_time_clock;    //Clock used to measure how much time this update cycle is costing us.
     
     //Calculate our own delta, as we want wall-time delta, the gameDelta can be modified by the current game speed (could even be 0 on pause)
-    auto now = std::chrono::steady_clock::now();
-    float delta = std::chrono::duration<double>(now - last_update_time).count();
-    last_update_time = now;
+    float delta = last_update_time.restart();
 
     sendDataCounter = 0;
     sendDataCounterPerClient = 0;
@@ -259,7 +259,7 @@ void GameServer::update(float /*gameDelta*/)
                         break;
                     case CMD_ALIVE_RESP:
                         {
-                            clientList[n].ping = std::chrono::duration<double>(clientList[n].round_trip_start_time - now).count() * 1000.0;
+                            clientList[n].ping = clientList[n].round_trip_start_time.get() * 1000.0f;
                         }
                         break;
                     default:
@@ -368,7 +368,7 @@ void GameServer::update(float /*gameDelta*/)
                         break;
                     case CMD_ALIVE_RESP:
                         {
-                            clientList[n].ping = std::chrono::duration<double>(clientList[n].round_trip_start_time - now).count() * 1000.0;
+                            clientList[n].ping = clientList[n].round_trip_start_time.get() * 1000.0f;
                         }
                     break;
                     default:
@@ -400,10 +400,8 @@ void GameServer::update(float /*gameDelta*/)
     }
 
     
-    if (now - keep_alive_send_time > std::chrono::seconds(10))
+    if (keep_alive_send_timer.isExpired())
     {
-        keep_alive_send_time = now;
-
         keepAliveAll();
     }
 
@@ -413,10 +411,8 @@ void GameServer::update(float /*gameDelta*/)
     sendDataRatePerClient = sendDataRatePerClient * (1.f - delta) + dataPerSecond * delta;
 
 #if MULTIPLAYER_COLLECT_DATA_STATS
-    if (multiplayer_stats_dump.getElapsedTime().asSeconds() > 1.0)
+    if (multiplayer_stats_dump.isExpired())
     {
-        multiplayer_stats_dump.restart();
-
         int total = 0;
         for(std::unordered_map<string, int >::iterator i=multiplayer_stats.begin(); i != multiplayer_stats.end(); i++)
             total += i->second;
@@ -428,7 +424,7 @@ void GameServer::update(float /*gameDelta*/)
         multiplayer_stats.clear();
     }
 #endif
-    update_run_time = update_run_time_clock.getElapsedTime().asSeconds();
+    update_run_time = update_run_time_clock.get();
 }
 
 void GameServer::handleNewClient(ClientInfo& info)
@@ -566,7 +562,7 @@ void GameServer::keepAliveAll()
     {
         if (client.socket)
         {
-            client.round_trip_start_time = std::chrono::steady_clock::now();
+            client.round_trip_start_time.restart();
             client.socket->queue(packet);
         }
     }

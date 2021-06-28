@@ -12,12 +12,11 @@ public:
     glm::vec2 velocity{};
     float rotation;
     float angularVelocity;
-    sf::Clock last_update_time;
+    sp::SystemStopwatch last_update_time;
     
     CollisionableReplicationData()
     : rotation(0), angularVelocity(0)
     {
-        last_update_time.restart();
     }
 };
 
@@ -72,7 +71,7 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
     auto velocity = c->getVelocity();
     float rotation = c->getRotation();
     float angular_velocity = c->getAngularVelocity();
-    float time_after_update = rep_data->last_update_time.getElapsedTime().asSeconds();
+    float time_after_update = rep_data->last_update_time.get();
     float significance = 0.f;
     float significant_range = 1.f;
 
