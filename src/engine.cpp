@@ -108,9 +108,7 @@ void Engine::runMainLoop()
             ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();
             
-            sf::sleep(sf::seconds(1.f/60.f - delta));
-            //if (elapsedTime > 2.0)
-            //    break;
+            std::this_thread::sleep_for(std::chrono::duration<float>(1.f/60.f - delta));
         }
     }else{
         sp::SystemStopwatch frame_timer;

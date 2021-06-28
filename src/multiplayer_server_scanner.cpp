@@ -211,6 +211,6 @@ void ServerScanner::masterServerScanThread()
         }
         
         for(int n=0;n<10 && !isDestroyed() && master_server_url != ""; n++)
-            sf::sleep(sf::seconds(1.0f));
+            std::this_thread::sleep_for(std::chrono::duration<float>(1.f));
     }
 }
