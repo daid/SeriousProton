@@ -5,11 +5,11 @@
 #include "vectorUtils.h"
 
 #define BOX2D_SCALE 20.0f
-static inline sf::Vector2f b2v(b2Vec2 v)
+static inline glm::vec2 b2v(b2Vec2 v)
 {
-    return sf::Vector2f(v.x * BOX2D_SCALE, v.y * BOX2D_SCALE);
+    return glm::vec2(v.x * BOX2D_SCALE, v.y * BOX2D_SCALE);
 }
-static inline b2Vec2 v2b(sf::Vector2f v)
+static inline b2Vec2 v2b(glm::vec2 v)
 {
     return b2Vec2(v.x / BOX2D_SCALE, v.y / BOX2D_SCALE);
 }
@@ -37,7 +37,7 @@ public:
 	}
 };
 
-PVector<Collisionable> CollisionManager::queryArea(sf::Vector2f lowerBound, sf::Vector2f upperBound)
+PVector<Collisionable> CollisionManager::queryArea(glm::vec2 lowerBound, glm::vec2 upperBound)
 {
     QueryCallback callback;
     b2AABB aabb;
@@ -129,7 +129,7 @@ Collisionable::Collisionable(float radius)
     setCollisionRadius(radius);
 }
 
-Collisionable::Collisionable(sf::Vector2f box_size, sf::Vector2f box_origin)
+Collisionable::Collisionable(glm::vec2 box_size, glm::vec2 box_origin)
 {
     enable_physics = false;
     static_physics = false;
@@ -138,7 +138,7 @@ Collisionable::Collisionable(sf::Vector2f box_size, sf::Vector2f box_origin)
     setCollisionBox(box_size, box_origin);
 }
 
-Collisionable::Collisionable(const std::vector<sf::Vector2f>& shape)
+Collisionable::Collisionable(const std::vector<glm::vec2>& shape)
 {
     enable_physics = false;
     static_physics = false;
@@ -165,7 +165,7 @@ void Collisionable::setCollisionRadius(float radius)
     }
 }
 
-void Collisionable::setCollisionBox(sf::Vector2f box_size, sf::Vector2f box_origin)
+void Collisionable::setCollisionBox(glm::vec2 box_size, glm::vec2 box_origin)
 {
     b2PolygonShape shape;
     shape.SetAsBox(box_size.x / 2.f / BOX2D_SCALE, box_size.y / 2.f / BOX2D_SCALE, v2b(box_origin), 0);
@@ -173,7 +173,7 @@ void Collisionable::setCollisionBox(sf::Vector2f box_size, sf::Vector2f box_orig
     createBody(&shape);
 }
 
-void Collisionable::setCollisionShape(const std::vector<sf::Vector2f>& shapeList)
+void Collisionable::setCollisionShape(const std::vector<glm::vec2>& shapeList)
 {
     for(unsigned int offset=1; offset<shapeList.size(); offset+=b2_maxPolygonVertices-2)
     {
@@ -214,12 +214,12 @@ void Collisionable::setCollisionShape(const std::vector<sf::Vector2f>& shapeList
     }
 }
 
-void Collisionable::setCollisionChain(const std::vector<sf::Vector2f>& points, bool loop)
+void Collisionable::setCollisionChain(const std::vector<glm::vec2>& points, bool loop)
 {
     b2ChainShape shape;
     std::vector<b2Vec2> b_points;
     b_points.reserve(points.size());
-    for(sf::Vector2f point : points)
+    for(glm::vec2 point : points)
     {
         b_points.push_back(v2b(point));
     }
@@ -304,15 +304,15 @@ void Collisionable::collide(Collisionable* /*target*/, float /*force*/)
 {
 }
 
-void Collisionable::setPosition(sf::Vector2f position)
+void Collisionable::setPosition(glm::vec2 position)
 {
     if (body == NULL) return;
     body->SetTransform(v2b(position), body->GetAngle());
 }
 
-sf::Vector2f Collisionable::getPosition() const
+glm::vec2 Collisionable::getPosition() const
 {
-    if (body == NULL) return sf::Vector2f(0, 0);
+    if (body == NULL) return glm::vec2(0, 0);
     return b2v(body->GetPosition());
 }
 
@@ -328,14 +328,14 @@ float Collisionable::getRotation() const
     return body->GetAngle() / M_PI * 180.f;
 }
 
-void Collisionable::setVelocity(sf::Vector2f velocity)
+void Collisionable::setVelocity(glm::vec2 velocity)
 {
     if (body == NULL) return;
     body->SetLinearVelocity(v2b(velocity));
 }
-sf::Vector2f Collisionable::getVelocity() const
+glm::vec2 Collisionable::getVelocity() const
 {
-    if (body == NULL) return sf::Vector2f(0, 0);
+    if (body == NULL) return glm::vec2(0, 0);
     return b2v(body->GetLinearVelocity());
 }
 
@@ -350,26 +350,26 @@ float Collisionable::getAngularVelocity() const
     return body->GetAngularVelocity() / M_PI * 180.f;
 }
 
-void Collisionable::applyImpulse(sf::Vector2f position, sf::Vector2f impulse)
+void Collisionable::applyImpulse(glm::vec2 position, glm::vec2 impulse)
 {
     if (body == NULL) return;
     body->ApplyLinearImpulse(v2b(impulse), v2b(position), true);
 }
 
-sf::Vector2f Collisionable::toLocalSpace(sf::Vector2f v) const
+glm::vec2 Collisionable::toLocalSpace(glm::vec2 v) const
 {
-    if (body == NULL) return sf::Vector2f(0, 0);
+    if (body == NULL) return glm::vec2(0, 0);
     return b2v(body->GetLocalPoint(v2b(v)));
 }
-sf::Vector2f Collisionable::toWorldSpace(sf::Vector2f v) const
+glm::vec2 Collisionable::toWorldSpace(glm::vec2 v) const
 {
-    if (body == NULL) return sf::Vector2f(0, 0);
+    if (body == NULL) return glm::vec2(0, 0);
     return b2v(body->GetWorldPoint(v2b(v)));
 }
 
-std::vector<sf::Vector2f> Collisionable::getCollisionShape() const
+std::vector<glm::vec2> Collisionable::getCollisionShape() const
 {
-    std::vector<sf::Vector2f> ret;
+    std::vector<glm::vec2> ret;
     if (body == NULL) return ret;
     b2Fixture* f = body->GetFixtureList();
     b2Shape* s = f->GetShape();
@@ -380,7 +380,7 @@ std::vector<sf::Vector2f> Collisionable::getCollisionShape() const
             b2CircleShape* cs = static_cast<b2CircleShape*>(s);
             float radius = cs->m_radius * BOX2D_SCALE;
             for(int n=0; n<32; n++)
-                ret.push_back(sf::Vector2f(sin(float(n)/32.f*M_PI*2) * radius, cos(float(n)/32.f*M_PI*2) * radius));
+                ret.push_back(glm::vec2(sin(float(n)/32.f*M_PI*2) * radius, cos(float(n)/32.f*M_PI*2) * radius));
         }
         break;
     case b2Shape::e_polygon:
@@ -397,6 +397,11 @@ std::vector<sf::Vector2f> Collisionable::getCollisionShape() const
 }
 
 #ifdef DEBUG
+static inline sf::Vector2f b2sfv(b2Vec2 v)
+{
+    return sf::Vector2f(v.x * BOX2D_SCALE, v.y * BOX2D_SCALE);
+}
+
 CollisionDebugDraw::CollisionDebugDraw(RenderLayer* layer)
 : Renderable(layer)
 {
@@ -416,10 +421,10 @@ void CollisionDebugDraw::DrawPolygon(const b2Vec2* vertices, int32 vertexCount, 
     sf::VertexArray a(sf::LinesStrip, vertexCount+1);
     for(int32 n=0; n<vertexCount; n++)
     {
-        a[n].position = b2v(vertices[n]);
+        a[n].position = b2sfv(vertices[n]);
         a[n].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
     }
-    a[vertexCount].position = b2v(vertices[0]);
+    a[vertexCount].position = b2sfv(vertices[0]);
     a[vertexCount].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
     render_target->draw(a);
 }
@@ -430,10 +435,10 @@ void CollisionDebugDraw::DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCo
     sf::VertexArray a(sf::LinesStrip, vertexCount+1);
     for(int32 n=0; n<vertexCount; n++)
     {
-        a[n].position = b2v(vertices[n]);
+        a[n].position = b2sfv(vertices[n]);
         a[n].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
     }
-    a[vertexCount].position = b2v(vertices[0]);
+    a[vertexCount].position = b2sfv(vertices[0]);
     a[vertexCount].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
     render_target->draw(a);
 }
@@ -443,7 +448,7 @@ void CollisionDebugDraw::DrawCircle(const b2Vec2& center, float32 radius, const 
 {
     sf::CircleShape shape(radius * BOX2D_SCALE, 16);
     shape.setOrigin(radius * BOX2D_SCALE, radius * BOX2D_SCALE);
-    shape.setPosition(b2v(center));
+    shape.setPosition(b2sfv(center));
     shape.setFillColor(sf::Color::Transparent);
     shape.setOutlineColor(sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255));
     shape.setOutlineThickness(0.3);
@@ -455,7 +460,7 @@ void CollisionDebugDraw::DrawSolidCircle(const b2Vec2& center, float32 radius, c
 {
     sf::CircleShape shape(radius * BOX2D_SCALE, 16);
     shape.setOrigin(radius * BOX2D_SCALE, radius * BOX2D_SCALE);
-    shape.setPosition(b2v(center));
+    shape.setPosition(b2sfv(center));
     shape.setFillColor(sf::Color::Transparent);
     shape.setOutlineColor(sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255));
     shape.setOutlineThickness(0.3);
@@ -466,9 +471,9 @@ void CollisionDebugDraw::DrawSolidCircle(const b2Vec2& center, float32 radius, c
 void CollisionDebugDraw::DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color)
 {
     sf::VertexArray a(sf::Lines, 2);
-    a[0].position = b2v(p1);
+    a[0].position = b2sfv(p1);
     a[0].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
-    a[1].position = b2v(p2);
+    a[1].position = b2sfv(p2);
     a[1].color = sf::Color(color.r * 255, color.g * 255, color.b * 255, color.a * 255);
     render_target->draw(a);
 }
@@ -478,10 +483,10 @@ void CollisionDebugDraw::DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b
 void CollisionDebugDraw::DrawTransform(const b2Transform& xf)
 {
     sf::VertexArray a(sf::Lines, 4);
-    a[0].position = b2v(xf.p);
-    a[1].position = b2v(xf.p) + sf::Vector2f(xf.q.GetXAxis().x * 10, xf.q.GetXAxis().y * 10);
-    a[0].position = b2v(xf.p);
-    a[1].position = b2v(xf.p) + sf::Vector2f(xf.q.GetYAxis().x * 10, xf.q.GetYAxis().y * 10);
+    a[0].position = b2sfv(xf.p);
+    a[1].position = b2sfv(xf.p) + sf::Vector2f(xf.q.GetXAxis().x * 10, xf.q.GetXAxis().y * 10);
+    a[0].position = b2sfv(xf.p);
+    a[1].position = b2sfv(xf.p) + sf::Vector2f(xf.q.GetYAxis().x * 10, xf.q.GetYAxis().y * 10);
     render_target->draw(a);
 }
 #endif//DEBUG

@@ -8,8 +8,8 @@ static PVector<Collisionable> collisionable_significant;
 class CollisionableReplicationData
 {
 public:
-    sf::Vector2f position;
-    sf::Vector2f velocity;
+    glm::vec2 position{};
+    glm::vec2 velocity{};
     float rotation;
     float angularVelocity;
     sf::Clock last_update_time;
@@ -68,8 +68,8 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
     CollisionableReplicationData* rep_data = *(CollisionableReplicationData**)prev_data_ptr;
     Collisionable* c = (Collisionable*)data;
 
-    sf::Vector2f position = c->getPosition();
-    sf::Vector2f velocity = c->getVelocity();
+    auto position = c->getPosition();
+    auto velocity = c->getVelocity();
     float rotation = c->getRotation();
     float angular_velocity = c->getAngularVelocity();
     float time_after_update = rep_data->last_update_time.getElapsedTime().asSeconds();
@@ -78,7 +78,7 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
 
     foreach(Collisionable, sig, collisionable_significant)
     {
-        float dist = sf::length(sig->getPosition() - position);
+        float dist = glm::length(sig->getPosition() - position);
         float s = 0.f;
         if (dist < sig->multiplayer_replication_object_significant_range)
             s = 1.f;
@@ -92,8 +92,8 @@ static bool collisionable_isChanged(void* data, void* prev_data_ptr)
         }
     }
     
-    float delta_position = sf::length(rep_data->position - position);
-    float delta_velocity = sf::length(rep_data->velocity - velocity);
+    float delta_position = glm::length(rep_data->position - position);
+    float delta_velocity = glm::length(rep_data->velocity - velocity);
     float delta_rotation = fabs(rep_data->rotation - rotation);
     float delta_angular_velocity = fabs(rep_data->angularVelocity - angular_velocity);
     
@@ -125,8 +125,8 @@ static void collisionable_sendFunction(void* data, sp::io::DataBuffer& packet)
 {
     Collisionable* c = (Collisionable*)data;
 
-    sf::Vector2f position = c->getPosition();
-    sf::Vector2f velocity = c->getVelocity();
+    auto position = c->getPosition();
+    auto velocity = c->getVelocity();
     float rotation = c->getRotation();
     float angularVelocity = c->getAngularVelocity();
 
@@ -137,8 +137,8 @@ static void collisionable_receiveFunction(void* data, sp::io::DataBuffer& packet
 {
     Collisionable* c = (Collisionable*)data;
 
-    sf::Vector2f position;
-    sf::Vector2f velocity;
+    glm::vec2 position{};
+    glm::vec2 velocity{};
     float rotation;
     float angularVelocity;
 

@@ -155,8 +155,9 @@ void Engine::runMainLoop()
             
             sf::Clock engine_timing_clock;
             entityList.update();
-            foreach(Updatable, u, updatableList)
+            foreach(Updatable, u, updatableList) {
                 u->update(delta);
+            }
             elapsedTime += delta;
             engine_timing.update = engine_timing_clock.restart().asSeconds();
             CollisionManager::handleCollisions(delta);

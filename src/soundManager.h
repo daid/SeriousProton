@@ -55,8 +55,8 @@ public:
     int playSound(string name, float pitch = 1.0f, float volume = 100.0f, bool loop = false);
 
     // Positional sounds
-    int playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch = 1.0f, float volume = 100.0f, bool loop = false);
-    void setListenerPosition(sf::Vector2f position, float angle);
+    int playSound(string name, glm::vec2 position, float min_distance, float attenuation, float pitch = 1.0f, float volume = 100.0f, bool loop = false);
+    void setListenerPosition(glm::vec2 position, float angle);
     void disablePositionalSound();
 
     // Sound management

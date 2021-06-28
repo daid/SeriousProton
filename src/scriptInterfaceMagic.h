@@ -254,6 +254,33 @@ struct convert<sf::Vector3<T>>
     }
 };
 
+template<typename T, glm::qualifier Q>
+struct convert<glm::vec<2, T, Q>>
+{
+    static void param(lua_State* L, int& idx, glm::vec<2, T, Q>& v)
+    {
+        convert<T>::param(L, idx, v.x);
+        convert<T>::param(L, idx, v.y);
+    }
+    
+    static int returnType(lua_State* L, const glm::vec<2, T, Q>& t)
+    {
+        auto result = convert<T>::returnType(L, t.x);
+        result += convert<T>::returnType(L, t.y);
+        return result;
+    }
+};
+template<typename T, glm::qualifier Q>
+struct convert<glm::vec<3, T, Q>>
+{
+    static void param(lua_State* L, int& idx, glm::vec<3, T, Q>& v)
+    {
+        convert<T>::param(L, idx, v.x);
+        convert<T>::param(L, idx, v.y);
+        convert<T>::param(L, idx, v.z);
+    }
+};
+
 /* Convert parameters to std::vector<?> objects. */
 template<typename T>
 struct convert<std::vector<T>>

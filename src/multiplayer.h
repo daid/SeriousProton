@@ -17,6 +17,14 @@ class MultiplayerObject;
 
 #define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
 
+template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::vec<2, T, Q>& v)
+{
+    return packet << v.x << v.y;
+}
+template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::vec<2, T, Q>& v)
+{
+    return packet >> v.x >> v.y;
+}
 template<typename T> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sf::Vector2<T>& v)
 {
     return packet << v.x << v.y;

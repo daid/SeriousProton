@@ -150,9 +150,9 @@ int SoundManager::playSound(string name, float pitch, float volume, bool loop)
     return playSoundData(data, pitch, volume * (master_sound_volume / 100.f), loop);
 }
 
-void SoundManager::setListenerPosition(sf::Vector2f position, float angle)
+void SoundManager::setListenerPosition(glm::vec2 position, float angle)
 {
-    sf::Vector2f listen_vector = sf::vector2FromAngle(angle);
+    auto listen_vector = vec2FromAngle(angle);
     sf::Listener::setPosition(position.x, 0, position.y);
     sf::Listener::setDirection(listen_vector.x, 0, listen_vector.y);
     positional_sound_enabled = true;
@@ -163,7 +163,7 @@ void SoundManager::disablePositionalSound()
     positional_sound_enabled = false;
 }
 
-int SoundManager::playSound(string name, sf::Vector2f position, float min_distance, float attenuation, float pitch, float volume, bool loop)
+int SoundManager::playSound(string name, glm::vec2 position, float min_distance, float attenuation, float pitch, float volume, bool loop)
 {
     if (!positional_sound_enabled)
         return -1;
