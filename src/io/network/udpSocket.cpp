@@ -32,6 +32,9 @@ UdpSocket::UdpSocket()
 
 UdpSocket::UdpSocket(UdpSocket&& socket)
 {
+    if (this == &socket)
+        return;
+
     handle = socket.handle;
     blocking = socket.blocking;
 

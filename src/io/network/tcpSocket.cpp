@@ -146,6 +146,8 @@ TcpSocket::~TcpSocket()
 
 TcpSocket& TcpSocket::operator=(TcpSocket&& socket)
 {
+    if (this == &socket)
+        return *this;
     close();
 
     handle = socket.handle;
