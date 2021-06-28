@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(SeriousProton LANGUAGES CXX)
 
 set(CMAKE_MODULE_PATH
-    ${CMAKE_SOURCE_DIR}/cmake/
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/
     ${CMAKE_MODULE_PATH}
 )
 
