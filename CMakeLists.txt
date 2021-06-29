@@ -89,8 +89,22 @@ if(NOT ${SFML_FOUND})
 endif()
 
 
-find_package(glm QUIET)
-if(NOT ${glm_FOUND})
+# GLM - OpenGL Mathematic library
+SET(WITH_GLM "auto" CACHE STRING "Which GLM to use (possible values are 'bundled', 'system' or 'auto')")
+
+if(WITH_GLM STREQUAL "system" OR WITH_GLM STREQUAL "auto")
+    find_package(glm QUIET)
+
+    if(glm_FOUND)
+        message(STATUS "GLM version used: SYSTEM")
+    elseif(WITH_GLM STREQUAL "system")
+        message(FATAL_ERROR "GLM: system package is not found or is unusable")
+    endif()
+endif()
+
+if(WITH_GLM STREQUAL "bundled" OR (WITH_GLM STREQUAL "auto" AND NOT glm_FOUND))
+    message(STATUS "GLM version used: BUNDLED")
+
     set(GLM_BASE_PATH "${EXTERNALS_DIR}")
 
     if(NOT EXISTS "${GLM_BASE_PATH}/glm/CMakeLists.txt")
