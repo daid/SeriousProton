@@ -143,6 +143,7 @@ endif()
 #---------------------------------File lists-----------------------------------
 set(source_files #All SeriousProton's objects to compile
     src/audio/source.cpp
+    src/audio/sound.cpp
     src/audio/music.cpp
     src/clipboard.cpp
     src/collisionable.cpp
@@ -185,6 +186,7 @@ set(source_files #All SeriousProton's objects to compile
     src/io/http/request.cpp
 
     src/audio/source.h
+    src/audio/sound.h
     src/audio/music.h
     src/clipboard.h
     src/collisionable.h

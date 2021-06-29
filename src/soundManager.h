@@ -1,11 +1,12 @@
 #ifndef SOUNDMANAGER_H
 #define SOUNDMANAGER_H
 
-#include <SFML/Audio.hpp>
 #include "audio/music.h"
+#include "audio/sound.h"
 
 #include <unordered_map>
 #include <vector>
+#include <array>
 #include "timer.h"
 #include "resources.h"
 #include "stringImproved.h"
@@ -31,16 +32,27 @@ private:
         FadeMode mode;
         float fade_delay;
     };
+    struct SoundChannel
+    {
+        bool positional = false;
+        float min_distance = 1.0;
+        float attenuation = 30.0;
+        float volume = 1.0;
+        glm::vec2 position;
+        sp::audio::SoundPlayback playback;
+    };
     sp::SystemStopwatch clock;
     MusicChannel music_channel;
 
     std::vector<string> music_set;
 
-    std::unordered_map<string, sf::SoundBuffer*> soundMap;
-    std::vector<sf::Sound> activeSoundList;
+    std::unordered_map<string, sp::audio::Sound*> sound_map;
+    std::array<SoundChannel, 16> active_sound_list;
     float music_volume;
     float master_sound_volume;
+
     bool positional_sound_enabled;
+    glm::vec2 listener_position;
 public:
     SoundManager();
     ~SoundManager();
@@ -65,13 +77,12 @@ public:
     void setMasterSoundVolume(float volume); // Valid values 0.0f-100.0f
     float getMasterSoundVolume();
     void setSoundVolume(int index, float volume); // Valid values 0.0f-100.0f
-    float getSoundVolume(int index);
     void setSoundPitch(int index, float volume); // Valid values 0.0f+; 1.0 = default
-    float getSoundPitch(int index);
 
 private:
-    int playSoundData(sf::SoundBuffer* data, float pitch, float volume, bool loop = false);
-    sf::SoundBuffer* loadSound(string name);
+    int playSoundData(sp::audio::Sound* data, float pitch, float volume, bool loop = false);
+    sp::audio::Sound* loadSound(const string& name);
+    void updateChannelVolume(SoundChannel& channel);
 
     void startMusic(const string& name, bool loop=false);
 

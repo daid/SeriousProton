@@ -11,7 +11,7 @@ namespace sp {
 namespace audio {
 
 
-static std::mutex source_list_mutex;
+static std::recursive_mutex source_list_mutex;
 static Source* source_list_start = nullptr;
 
 class MySFMLStream : public sf::SoundStream
@@ -26,6 +26,7 @@ public:
     {
         data.samples = buffer.data();
         data.sampleCount = buffer.size();
+        std::lock_guard<std::recursive_mutex> guard(source_list_mutex);
         Source::onAudioCallback(buffer.data(), buffer.size());
         return true;
     }
@@ -46,16 +47,14 @@ Source::~Source()
 
 void Source::start()
 {
+    std::lock_guard<std::recursive_mutex> guard(source_list_mutex);
     if (active)
         return;
 
-    std::lock_guard<std::mutex> guard(source_list_mutex);
     active = true;
     next = source_list_start;
     if (next)
         next->previous = this;
-    else if (sfml_stream)
-        sfml_stream->play();
     previous = nullptr;
     source_list_start = this;
 }
@@ -67,18 +66,16 @@ bool Source::isPlaying()
 
 void Source::stop()
 {
+    std::lock_guard<std::recursive_mutex> guard(source_list_mutex);
     if (!active)
         return;
     
-    std::lock_guard<std::mutex> guard(source_list_mutex);
     active = false;
     if (source_list_start == this)
     {
         source_list_start = next;
         if (source_list_start)
             source_list_start->previous = nullptr;
-        else if (sfml_stream)
-            sfml_stream->stop();
     }
     else
     {
@@ -91,10 +88,7 @@ void Source::stop()
 void Source::startAudioSystem()
 {
     sfml_stream = new MySFMLStream();
-
-    //Check if any audio source was started before we opened our audio device.
-    if (source_list_start)
-        sfml_stream->play();
+    sfml_stream->play();
 }
 
 void Source::onAudioCallback(int16_t* stream, int sample_count)

@@ -2,6 +2,7 @@
 #define SP2_AUDIO_SOURCE_H
 
 #include <stdint.h>
+#include "nonCopyable.h"
 
 
 class Engine;
@@ -12,7 +13,7 @@ namespace audio {
     Generally, this is used by the sound and music modules to output their audio.
     But if you want to create custom generated audio output, this class can be used.
  */
-class Source
+class Source : sp::NonCopyable
 {
 public:
     virtual ~Source();
