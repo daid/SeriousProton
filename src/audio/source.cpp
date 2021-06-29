@@ -2,6 +2,7 @@
 #include "logging.h"
 
 #include <mutex>
+#include <array>
 #include <string.h>
 
 #include <SFML/Audio/SoundStream.hpp>
