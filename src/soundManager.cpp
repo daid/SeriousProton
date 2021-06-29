@@ -36,16 +36,14 @@ SoundManager::~SoundManager()
 void SoundManager::playMusic(string name)
 {
     music_set.clear();
-    P<ResourceStream> stream = getResourceStream(name);
-    if (stream)
-        startMusic(stream, true);
+    startMusic(name, true);
 }
 
 void SoundManager::playMusicSet(std::vector<string> filenames)
 {
     music_set = filenames;
     if (music_set.size() > 0)
-        startMusic(getResourceStream(music_set[irandom(0, static_cast<int>(music_set.size()) - 1)]), false);
+        startMusic(music_set[irandom(0, static_cast<int>(music_set.size()) - 1)], false);
     else
         stopMusic();
 }
@@ -61,7 +59,7 @@ void SoundManager::setMusicVolume(float volume)
     if (music_volume != volume)
     {
         music_volume = volume;
-        if (music_channel.mode == None && music_channel.music.getStatus() != sf::Music::Stopped)
+        if (music_channel.mode == None && music_channel.music.isPlaying())
             music_channel.music.setVolume(music_volume);
     }
 }
@@ -241,25 +239,22 @@ sf::SoundBuffer* SoundManager::loadSound(string name)
     return data;
 }
 
-void SoundManager::startMusic(P<ResourceStream> stream, bool loop)
+void SoundManager::startMusic(const string& name, bool loop)
 {
-    if (!stream)
+    if (name.empty())
         return;
     
-    if (music_channel.music.getStatus() == sf::Music::Playing)
+    if (music_channel.music.isPlaying())
     {
-        music_channel.next_stream = stream;
+        music_channel.next_stream = name;
         music_channel.mode = FadeOut;
         music_channel.fade_delay = fade_music_time;
     }else{
         music_channel.mode = FadeIn;
         music_channel.fade_delay = fade_music_time;
 
-        music_channel.music.openFromStream(**stream);
-        music_channel.stream = stream;
-        music_channel.music.setLoop(loop);
         music_channel.music.setVolume(0);
-        music_channel.music.play();
+        music_channel.music.open(name, loop);
     }
 }
 
@@ -270,14 +265,16 @@ void SoundManager::updateTick()
     
     if (music_set.size() > 0)
     {
-        if (music_channel.music.getStatus() == sf::Music::Playing && music_channel.mode == None)
+        if (music_channel.music.isPlaying() && music_channel.mode == None)
         {
-            if (!music_channel.next_stream)
+            if (music_channel.next_stream.empty())
             {
+                /* TODO
                 if (music_channel.music.getPlayingOffset() > music_channel.music.getDuration() - sf::seconds(fade_music_time))
                 {
                     startMusic(getResourceStream(music_set[irandom(0, static_cast<int>(music_set.size()) - 1)]), false);
                 }
+                */
             }
         }
     }
@@ -307,15 +304,13 @@ void SoundManager::updateChannel(MusicChannel& channel, float delta)
         }else{
             channel.music.stop();
             channel.mode = None;
-            if (channel.next_stream)
+            if (!channel.next_stream.empty())
             {
-                channel.music.openFromStream(**channel.next_stream);
-                channel.stream = channel.next_stream;
-                channel.next_stream = nullptr;
+                channel.music.setVolume(0);
+                channel.music.open(channel.next_stream, false);
+                channel.next_stream.clear();
                 channel.mode = FadeIn;
                 channel.fade_delay = fade_music_time;
-                channel.music.setVolume(0);
-                channel.music.play();
             }
         }
         break;

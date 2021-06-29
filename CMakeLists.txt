@@ -115,6 +115,8 @@ endif()
 
 #---------------------------------File lists-----------------------------------
 set(source_files #All SeriousProton's objects to compile
+    src/audio/source.cpp
+    src/audio/music.cpp
     src/clipboard.cpp
     src/collisionable.cpp
     src/engine.cpp
@@ -155,6 +157,8 @@ set(source_files #All SeriousProton's objects to compile
     src/io/network/udpSocket.cpp
     src/io/http/request.cpp
 
+    src/audio/source.h
+    src/audio/music.h
     src/clipboard.h
     src/collisionable.h
     src/dtoa/dtoa_milo.h

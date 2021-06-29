@@ -3,6 +3,8 @@
 #include "gameEntity.h"
 #include "Updatable.h"
 #include "collisionable.h"
+#include "audio/source.h"
+
 
 #ifdef DEBUG
 #include <typeinfo>
@@ -111,6 +113,7 @@ void Engine::runMainLoop()
             std::this_thread::sleep_for(std::chrono::duration<float>(1.f/60.f - delta));
         }
     }else{
+        sp::audio::Source::startAudioSystem();
         sp::SystemStopwatch frame_timer;
 #ifdef DEBUG
         sp::SystemTimer debug_output_timer;

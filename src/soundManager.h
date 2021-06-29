@@ -2,6 +2,7 @@
 #define SOUNDMANAGER_H
 
 #include <SFML/Audio.hpp>
+#include "audio/music.h"
 
 #include <unordered_map>
 #include <vector>
@@ -25,9 +26,8 @@ private:
     };
     struct MusicChannel
     {
-        P<ResourceStream> stream;
-        P<ResourceStream> next_stream;
-        sf::Music music;
+        string next_stream;
+        sp::audio::Music music;
         FadeMode mode;
         float fade_delay;
     };
@@ -73,7 +73,7 @@ private:
     int playSoundData(sf::SoundBuffer* data, float pitch, float volume, bool loop = false);
     sf::SoundBuffer* loadSound(string name);
 
-    void startMusic(P<ResourceStream> stream, bool loop=false);
+    void startMusic(const string& name, bool loop=false);
 
     void updateTick();
     void updateChannel(MusicChannel& channel, float delta);
