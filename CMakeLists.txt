@@ -246,7 +246,6 @@ if(NOT ${SFML_FOUND})
 endif()
 
 find_package(Threads REQUIRED)
-add_dependencies(seriousproton_deps Threads::Threads)
 
 target_compile_definitions(seriousproton_deps
     INTERFACE
@@ -267,7 +266,7 @@ target_compile_options(seriousproton_deps
 
 target_link_libraries(seriousproton_deps
     INTERFACE 
-        box2d lua glew ${SFML_LIBRARIES} glm::glm
+        box2d lua glew ${SFML_LIBRARIES} glm::glm Threads::Threads
         $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
