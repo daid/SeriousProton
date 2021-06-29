@@ -89,8 +89,13 @@ if(NOT ${SFML_FOUND})
 endif()
 
 
+# GLM - OpenGL Mathematic library
 find_package(glm QUIET)
-if(NOT ${glm_FOUND})
+if(${glm_FOUND})
+    message(STATUS "GLM version used: SYSTEM")
+else()
+    message(STATUS "GLM version used: BUNDLED")
+
     set(GLM_BASE_PATH "${EXTERNALS_DIR}")
 
     if(NOT EXISTS "${GLM_BASE_PATH}/glm/CMakeLists.txt")
