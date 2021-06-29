@@ -35,9 +35,11 @@ bool Music::open(const string& resource_name, bool loop)
 
     file_data.resize(stream->getSize());
     stream->read(file_data.data(), file_data.size());
-    vorbis = stb_vorbis_open_memory(file_data.data(), file_data.size(), nullptr, nullptr);
+    int error = 0;
+    vorbis = stb_vorbis_open_memory(file_data.data(), file_data.size(), &error, nullptr);
     if (!vorbis)
     {
+        LOG(Error, "Failed to read music file", resource_name, "error:", error);
         return false;
     }
     
@@ -55,8 +57,9 @@ void Music::setVolume(float _volume)
 
 void Music::onMixSamples(int16_t* stream, int sample_count)
 {
-    int16_t buffer[sample_count];
-    int vorbis_samples = stb_vorbis_get_samples_short_interleaved(reinterpret_cast<stb_vorbis*>(vorbis), 2, buffer, sample_count) * 2;
+    static std::vector<int16_t> buffer;
+    buffer.resize(sample_count);
+    int vorbis_samples = stb_vorbis_get_samples_short_interleaved(reinterpret_cast<stb_vorbis*>(vorbis), 2, buffer.data(), sample_count) * 2;
     if (vorbis_samples == 0)
     {
         if (loop)
