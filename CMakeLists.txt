@@ -109,8 +109,21 @@ add_subdirectory(src/lua)
 add_subdirectory(src/GL)
 add_subdirectory(src/libopus)
 
+# json11
 if(SERIOUSPROTON_WITH_JSON)
-    add_subdirectory(src/json11)
+    SET(WITH_JSON "bundled" CACHE STRING "Which json11 to use (possible values are 'bundled' or 'system')")
+
+    if(WITH_JSON STREQUAL "system")
+        find_package(json11 QUIET)
+        if(json11_FOUND)
+            message(STATUS "json11 version used: SYSTEM")
+        else()
+            message(FATAL_ERROR "json11: system package is not found or is unusable")
+        endif()
+    elseif(WITH_JSON STREQUAL "bundled")
+        message(STATUS "json11 version used: BUNDLED")
+        add_subdirectory(src/json11)
+    endif()
 endif()
 
 #---------------------------------File lists-----------------------------------
