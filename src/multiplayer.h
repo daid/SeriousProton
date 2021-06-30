@@ -234,13 +234,6 @@ public:
         memberReplicationInfo.push_back(info);
     }
 
-    void registerMemberReplication_(F_PARAM sf::Vector3f* member, float update_delay = 0.0)
-    {
-        registerMemberReplication(&member->x, update_delay);
-        registerMemberReplication(&member->y, update_delay);
-        registerMemberReplication(&member->z, update_delay);
-    }
-
     void registerMemberReplication_(F_PARAM glm::vec3* member, float update_delay = 0.0)
     {
         registerMemberReplication(&member->x, update_delay);
