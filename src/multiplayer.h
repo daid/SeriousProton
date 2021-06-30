@@ -25,6 +25,14 @@ template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operato
 {
     return packet >> v.x >> v.y;
 }
+template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::vec<3, T, Q>& v)
+{
+    return packet << v.x << v.y << v.z;
+}
+template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::vec<3, T, Q>& v)
+{
+    return packet >> v.x >> v.y >> v.z;
+}
 template<typename T> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sf::Vector2<T>& v)
 {
     return packet << v.x << v.y;
@@ -227,6 +235,13 @@ public:
     }
 
     void registerMemberReplication_(F_PARAM sf::Vector3f* member, float update_delay = 0.0)
+    {
+        registerMemberReplication(&member->x, update_delay);
+        registerMemberReplication(&member->y, update_delay);
+        registerMemberReplication(&member->z, update_delay);
+    }
+
+    void registerMemberReplication_(F_PARAM glm::vec3* member, float update_delay = 0.0)
     {
         registerMemberReplication(&member->x, update_delay);
         registerMemberReplication(&member->y, update_delay);
