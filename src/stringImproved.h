@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <string_view>
 #include <limits>
 #include <vector>
 #include <map>
@@ -21,6 +22,7 @@ class string : public std::string
 {
 public:
     string() : std::string() {}
+    string(std::string_view str) : std::string(str) {}
     string(const std::string& str) : std::string(str) {}
     string(const char* str) : std::string(str) {}
     string(const char* str, int length) : std::string(str, length) {}
@@ -136,11 +138,15 @@ public:
         With optional start, test S beginning at that position.
         With optional end, stop comparing S at that position.
     */
-    bool endswith(const string &suffix) const
+    bool endswith(std::string_view suffix) const
     {
         if (suffix.length() == 0)
             return true;
         return substr(-int(suffix.length())) == suffix;
+    }
+    bool endswith(char suffix) const
+    {
+        return !empty() && (*this)[length()-1] == suffix;
     }
 
     /*
@@ -177,13 +183,25 @@ public:
         such that sub is contained within s[start:end].  Optional
         arguments start and end are interpreted as in slice notation.
     */
-    int find(const string &sub, int start=0) const
+    int find(std::string_view sub, int start=0) const
     {
         if (sub.length() + start > length() || sub.length() < 1)
             return -1;
+        std::string_view sv{*this};
         for(unsigned int n=start; n<=length() - sub.length(); n++)
         {
-            if(substr(n, n+int(sub.length())) == sub)
+            if(sv.substr(n, n+int(sub.length())) == sub)
+                return n;
+        }
+        return -1;
+    }
+    int find(char sub, int start=0) const
+    {
+        if (start >= int(length()))
+            return -1;
+        for(unsigned int n=start; n<length(); n++)
+        {
+            if((*this)[n] == sub)
                 return n;
         }
         return -1;
@@ -461,9 +479,10 @@ public:
     {
         if (sub.length() + start > length())
             return -1;
+        std::string_view sv{*this};
         for(int n=int(length()) - int(sub.length()); n>=start; n--)
         {
-            if(substr(n, n+int(sub.length())) == sub)
+            if(sv.substr(n, n+int(sub.length())) == sub)
                 return n;
         }
         return -1;
