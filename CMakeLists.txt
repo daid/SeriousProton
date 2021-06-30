@@ -121,7 +121,6 @@ endif()
 add_subdirectory(src/Box2D)
 add_subdirectory(src/lua)
 add_subdirectory(src/GL)
-add_subdirectory(src/libopus)
 
 # json11
 if(SERIOUSPROTON_WITH_JSON)
@@ -139,6 +138,22 @@ if(SERIOUSPROTON_WITH_JSON)
         add_subdirectory(src/json11)
     endif()
 endif()
+
+SET(WITH_OPUS "bundled" CACHE STRING "Which opus library to use (possible values are 'bundled' or 'system')")
+
+if(WITH_OPUS STREQUAL "system")
+    find_package(PkgConfig)
+    pkg_check_modules(OPUS REQUIRED opus)
+    message(STATUS "opus version used: SYSTEM")
+    add_library(opus INTERFACE)
+    target_link_libraries(opus ${OPUS_LIBRARIES})
+    target_include_directories(opus PUBLIC ${OPUS_INCLUDE_DIRS})
+    target_compile_options(opus PUBLIC ${OPUS_CFLAGS_OTHER})
+elseif(WITH_OPUS STREQUAL "bundled")
+    message(STATUS "opus version used: BUNDLED")
+    add_subdirectory(src/libopus)
+endif()
+
 
 #---------------------------------File lists-----------------------------------
 set(source_files #All SeriousProton's objects to compile
