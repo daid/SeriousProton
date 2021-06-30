@@ -95,37 +95,6 @@ namespace sf
     {
         return v / length(v);
     }
-    
-    template <typename T>
-    T dot(const Vector2<T>& v0, const Vector2<T>& v1)
-    {
-        return v0.x * v1.x + v0.y * v1.y;
-    }
-
-    //Check if C is left of the infinite line from A to B
-    template <typename T>
-    bool isLeft(const Vector2<T>& a, const Vector2<T>& b, const Vector2<T>& c)
-    {
-        return ((b.x - a.x)*(c.y - a.y) - (b.y - a.y)*(c.x - a.x)) < 0;
-    }
-
-	// Return the intersection of the infinite line trough points p0 and p1 and infinite line trough points p2 and p3.
-	template <typename T>
-    Vector2<T> lineLineIntersection(const Vector2<T>& p0, const Vector2<T>& p1, const Vector2<T>& p2, const Vector2<T>& p3)
-    {
-        T A1 = p1.y - p0.y;
-        T B1 = p0.x - p1.x;
-        T C1 = A1*p0.x + B1*p0.y;
-
-        T A2 = p3.y - p2.y;
-        T B2 = p2.x - p3.x;
-        T C2 = A2 * p2.x + B2 * p2.y;
-
-        T det = A1*B2 - A2*B1;
-        if (det == 0)
-            return p0;
-        return Vector2<T>((B2*C1 - B1*C2)/det, (A1 * C2 - A2 * C1) / det);
-    }
 }
 
 #endif//SFML_EXTRA_VECTOR_UTILS_H
