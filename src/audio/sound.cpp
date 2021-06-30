@@ -6,10 +6,7 @@
 namespace sp {
 namespace audio {
 
-/*
-    P<ResourceStream> stream = getResourceStream(name);
-    if (!stream) stream = getResourceStream(name + ".wav");
-*/
+
 void SoundPlayback::play(const Sound& _sound, bool _loop)
 {
     stop();
@@ -50,8 +47,8 @@ void SoundPlayback::onMixSamples(int16_t* stream, int sample_count)
             }
 
             int sample = float(sound->samples[int(index)]) * volume;
-            stream[idx+0] = std::clamp(int(stream[idx+0] + sample), int(std::numeric_limits<int16_t>::min()), int(std::numeric_limits<int16_t>::max()));
-            stream[idx+1] = std::clamp(int(stream[idx+1] + sample), int(std::numeric_limits<int16_t>::min()), int(std::numeric_limits<int16_t>::max()));
+            mix(stream[idx+0], sample);
+            mix(stream[idx+1], sample);
 
             index += index_offset;
         }
@@ -74,8 +71,8 @@ void SoundPlayback::onMixSamples(int16_t* stream, int sample_count)
 
             int sample_left = float(sound->samples[int(index) * 2]) * volume;
             int sample_right = float(sound->samples[int(index) * 2 + 1]) * volume;
-            stream[idx+0] = std::clamp(int(stream[idx+0] + sample_left), int(std::numeric_limits<int16_t>::min()), int(std::numeric_limits<int16_t>::max()));
-            stream[idx+1] = std::clamp(int(stream[idx+1] + sample_right), int(std::numeric_limits<int16_t>::min()), int(std::numeric_limits<int16_t>::max()));
+            mix(stream[idx+0], sample_left);
+            mix(stream[idx+1], sample_right);
 
             index += index_offset;
         }

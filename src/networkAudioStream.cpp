@@ -4,37 +4,34 @@
 #include <array>
 #include <opus.h>
 
+
 NetworkAudioStream::NetworkAudioStream()
 {
-    sample_rate = 48000;
+    sample_rate = 44100;
     
     //Reserve 10 seconds of playback in our buffers.
     samples.reserve(sample_rate * 10);
-    playing_samples.reserve(sample_rate * 10);
     
-    initialize(1, sample_rate);  //initialize the sound stream on 1 channel with 48000Hz. This needs to match the data in NetworkAudioRecorder
-
     int error = 0;
-    decoder = opus_decoder_create(48000, 1, &error);
+    decoder = opus_decoder_create(sample_rate, 1, &error);
 }
 
-bool NetworkAudioStream::onGetData(sf::SoundStream::Chunk& data)
+void NetworkAudioStream::onMixSamples(int16_t* stream, int sample_count)
 {
     std::lock_guard<std::mutex> guard(samples_lock);    //Get exclusive access to the samples vector.
+
     //Copy all new samples to the playback buffer. And clear our sample buffer.
-    playing_samples = std::move(samples);
-    samples.clear();
-    
-    data.samples = playing_samples.data();
-    data.sampleCount = playing_samples.size();
+    int mix_count = std::min(sample_count / 2, int(samples.size()));
+    for(int index=0; index<mix_count; index++) {
+        int sample = samples[index];
+        mix(stream[index*2+0], sample);
+        mix(stream[index*2+1], sample);
+    }
+    samples.erase(samples.begin(), samples.begin() + mix_count);
     
     //Stop playback if the buffer is empty.
-    return data.sampleCount > 0;
-}
-
-void NetworkAudioStream::onSeek(sf::Time /*timeOffset*/)
-{
-    //We cannot seek in the network audio stream.
+    if (samples.empty())
+        stop();
 }
 
 void NetworkAudioStream::receivedPacketFromNetwork(const unsigned char* packet, int packet_size)
@@ -46,23 +43,23 @@ void NetworkAudioStream::receivedPacketFromNetwork(const unsigned char* packet, 
         std::lock_guard<std::mutex> guard(samples_lock);
         this->samples.insert(this->samples.end(), samples_buffer.begin(), samples_buffer.begin() + sample_count);
     }
-    if (this->samples.size() > sample_rate / 10 && getStatus() == sf::SoundSource::Stopped) //Start playback when there is 0.1 second of data
+    if (this->samples.size() > sample_rate / 10 && !isPlaying()) //Start playback when there is 0.1 second of data
     {
-        play();
+        start();
     }
 }
 
 void NetworkAudioStream::finalize()
 {
-    if (this->samples.size() > 0 && getStatus() == sf::SoundSource::Stopped)
+    if (this->samples.size() > 0 && !isPlaying())
     {
-        play();
+        start();
     }
 }
 
 bool NetworkAudioStream::isFinished()
 {
-    return getStatus() == sf::SoundSource::Stopped && this->samples.size() == 0;
+    return !isPlaying() && this->samples.size() == 0;
 }
 
 void NetworkAudioStreamManager::start(int32_t id)

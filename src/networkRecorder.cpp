@@ -54,7 +54,7 @@ void NetworkAudioRecorder::update(float /*delta*/)
             {
                 samples_till_stop = -1;
                 active_key_index = static_cast<int>(idx);
-                start(48000);
+                start(44100);
                 startSending();
             } else if (idx == size_t(active_key_index))
             {
@@ -69,7 +69,7 @@ void NetworkAudioRecorder::update(float /*delta*/)
     {
         if (InputHandler::keyboardIsReleased(keys[active_key_index].key))
         {
-            samples_till_stop = 48000 / 2;
+            samples_till_stop = 44100 / 2;
         }
     }
     if (samples_till_stop == 0)
@@ -84,7 +84,7 @@ void NetworkAudioRecorder::update(float /*delta*/)
 void NetworkAudioRecorder::startSending()
 {
     int error = 0;
-    encoder = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &error);
+    encoder = opus_encoder_create(44100, 1, OPUS_APPLICATION_VOIP, &error);
     if (!encoder)
     {
         LOG(ERROR) << "Failed to create opus encoder:" << error;

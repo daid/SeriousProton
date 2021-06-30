@@ -1,7 +1,6 @@
 #ifndef SP2_IO_NETWORK_UDP_SOCKET_H
 #define SP2_IO_NETWORK_UDP_SOCKET_H
 
-#include <SFML/System/NonCopyable.hpp>
 #include <stringImproved.h>
 #include <io/network/address.h>
 #include <io/network/socketBase.h>

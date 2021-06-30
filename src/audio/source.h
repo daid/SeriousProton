@@ -1,8 +1,11 @@
 #ifndef SP2_AUDIO_SOURCE_H
 #define SP2_AUDIO_SOURCE_H
 
-#include <stdint.h>
 #include "nonCopyable.h"
+
+#include <stdint.h>
+#include <algorithm>
+#include <limits>
 
 
 class Engine;
@@ -25,6 +28,9 @@ public:
 protected:
     virtual void onMixSamples(int16_t* stream, int sample_count) = 0;
 
+    static inline void mix(int16_t& stream, int sample) {
+        stream = std::clamp(int(stream) + sample, int(std::numeric_limits<int16_t>::min()), int(std::numeric_limits<int16_t>::max()));
+    }
 private:
     bool active = false;
     Source* next;

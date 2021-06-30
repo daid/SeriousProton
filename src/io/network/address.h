@@ -2,7 +2,6 @@
 #define SP2_IO_NETWORK_ADDRESS_H
 
 #include <stringImproved.h>
-#include <SFML/System/NonCopyable.hpp>
 #include <list>
 
 

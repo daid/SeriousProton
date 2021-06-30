@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <SFML/System.hpp>
 #include "P.h"
 #include "stringImproved.h"
 
