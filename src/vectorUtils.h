@@ -41,7 +41,6 @@ static inline glm::vec2 lineLineIntersection(const glm::vec2& p0, const glm::vec
 }
 
 #include <SFML/System/Vector2.hpp>
-#include <SFML/System/Vector3.hpp>
 #include <SFML/Graphics/Color.hpp>
 
 /** math.h no longer defines M_PI in C++11. For... reasons? */
@@ -176,82 +175,6 @@ namespace sf
         if (det == 0)
             return p0;
         return Vector2<T>((B2*C1 - B1*C2)/det, (A1 * C2 - A2 * C1) / det);
-    }
-}
-
-namespace sf
-{
-    /** < and > operators are length compares. Return true or false if the distance is longer/shorter then asked distance. */
-    template <typename T>
-    static inline bool operator > (const Vector3<T>& v, const T& f)
-    {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) > f * f;
-    }
-
-    template <typename T>
-    static inline bool operator < (const Vector3<T>& v, const T& f)
-    {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) < f * f;
-    }
-
-    template <typename T>
-    static inline bool operator >= (const Vector3<T>& v, const T& f)
-    {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) >= f * f;
-    }
-
-    template <typename T>
-    static inline bool operator <= (const Vector3<T>& v, const T& f)
-    {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) <= f * f;
-    }
-
-    template <typename T>
-    static inline bool operator > (const Vector3<T>& v, const Vector3<T>& v2)
-    {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) > (v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
-    }
-
-    template <typename T>
-    static inline bool operator < (const Vector3<T>& v, const Vector3<T>& v2)
-    {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) < (v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
-    }
-
-    template <typename T>
-    static inline bool operator >= (const Vector3<T>& v, const Vector3<T>& v2)
-    {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) >= (v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
-    }
-
-    template <typename T>
-    static inline bool operator <= (const Vector3<T>& v, const Vector3<T>& v2)
-    {
-        return (v.x * v.x + v.y * v.y + v.z * v.z) <= (v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
-    }
-
-    template <typename T>
-    T length(const Vector3<T>& v)
-    {
-        return sqrtf(v.x*v.x+v.y*v.y+v.z*v.z);
-    }
-
-    template <typename T>
-    Vector3<T> normalize(const Vector3<T>& v)
-    {
-        return v / length(v);
-    }
-    
-    template <typename T>
-    T dot(const Vector3<T>& v0, const Vector3<T>& v1)
-    {
-        return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
-    }
-
-    template <typename T>
-    Vector3<T> cross(const Vector3<T>& v0, const Vector3<T>& v1)
-    {
-        return Vector3<T>(v0.y * v1.z - v1.y * v0.z, v1.x*v0.z - v0.x*v1.z, v0.x*v1.y - v0.y*v1.x);
     }
 }
 

@@ -11,7 +11,6 @@
 #include "stringImproved.h"
 #include "lua/lua.hpp"
 #include <SFML/Graphics/Color.hpp>
-#include <SFML/System/Vector3.hpp>
 #include <typeinfo>
 #include <optional>
 
@@ -240,17 +239,6 @@ struct convert<sf::Vector2<T>>
         auto result = convert<T>::returnType(L, t.x);
         result += convert<T>::returnType(L, t.y);
         return result;
-    }
-};
-/* Convert parameters to sf::Vector3 objects. */
-template<typename T>
-struct convert<sf::Vector3<T>>
-{
-    static void param(lua_State* L, int& idx, sf::Vector3<T>& v)
-    {
-        convert<T>::param(L, idx, v.x);
-        convert<T>::param(L, idx, v.y);
-        convert<T>::param(L, idx, v.z);
     }
 };
 

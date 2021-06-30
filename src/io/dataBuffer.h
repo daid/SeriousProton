@@ -117,13 +117,6 @@ public:
         write(v.y);
     }
 
-    template<typename T> void write(const sf::Vector3<T>& v)
-    {
-        write(v.x);
-        write(v.y);
-        write(v.z);
-    }
-
     void write(std::string_view s)
     {
         write(static_cast<uint32_t>(s.length()));
@@ -199,13 +192,6 @@ public:
     {
         read(v.x);
         read(v.y);
-    }
-
-    template<typename T> void read(sf::Vector3<T>& v)
-    {
-        read(v.x);
-        read(v.y);
-        read(v.z);
     }
 
     void read(string& s)

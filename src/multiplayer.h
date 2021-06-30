@@ -41,14 +41,6 @@ template<typename T> static inline sp::io::DataBuffer& operator >> (sp::io::Data
 {
     return packet >> v.x >> v.y;
 }
-template<typename T> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sf::Vector3<T>& v)
-{
-    return packet << v.x << v.y << v.z;
-}
-template<typename T> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sf::Vector3<T>& v)
-{
-    return packet >> v.x >> v.y >> v.z;
-}
 template<typename T1, typename T2> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const std::pair<T1, T2>& pair)
 {
     return packet << pair.first << pair.second;
