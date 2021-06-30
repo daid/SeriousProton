@@ -15,7 +15,6 @@ private:
     static b2World* world;
 
     friend class Collisionable;
-    friend class CollisionDebugDraw;
 };
 
 class Collisionable : public virtual PObject
@@ -61,25 +60,5 @@ public:
 
     friend class CollisionManager;
 };
-
-#ifdef DEBUG
-#include "Renderable.h"
-
-class CollisionDebugDraw : public Renderable, public b2Draw
-{
-    sf::RenderTarget* render_target;
-public:
-    CollisionDebugDraw(RenderLayer* layer);
-
-    virtual void render(sf::RenderTarget& window);
-
-	virtual void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color);
-	virtual void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color);
-	virtual void DrawCircle(const b2Vec2& center, float32 radius, const b2Color& color);
-	virtual void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color);
-	virtual void DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color);
-	virtual void DrawTransform(const b2Transform& xf);
-};
-#endif//DEBUG
 
 #endif // COLLISIONABLE_H
