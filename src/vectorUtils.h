@@ -40,6 +40,15 @@ static inline glm::vec2 lineLineIntersection(const glm::vec2& p0, const glm::vec
     return glm::vec2((B2*C1 - B1*C2)/det, (A1 * C2 - A2 * C1) / det);
 }
 
+/* Return the difference between angle_a and angle_b within a range of -180 and 180 degrees */
+static inline float angleDifference(float angle_a, float angle_b)
+{
+    float ret = (angle_b - angle_a);
+    while(ret > 180) ret -= 360;
+    while(ret < -180) ret += 360;
+    return ret;
+}
+
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/Color.hpp>
 
@@ -66,16 +75,6 @@ namespace sf
     T vector2ToAngle(const Vector2<T>& v)
     {
         return atan2(v.y, v.x) / M_PI * 180;
-    }
-
-    /* Return the difference between angle_a and angle_b within a range of -180 and 180 degrees */
-    template <typename T>
-    T angleDifference(const T& angle_a, const T& angle_b)
-    {
-        T ret = (angle_b - angle_a);
-        while(ret > 180) ret -= 360;
-        while(ret < -180) ret += 360;
-        return ret;
     }
 
     template <typename T>
