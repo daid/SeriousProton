@@ -55,55 +55,6 @@ static inline glm::vec2 lineLineIntersection(const glm::vec2& p0, const glm::vec
 
 namespace sf
 {
-    /** < and > operators are length compares. Return true or false if the distance is longer/shorter then asked distance. */
-    template <typename T>
-    static inline bool operator > (const Vector2<T>& v, const T& f)
-    {
-        return (v.x * v.x + v.y * v.y) > f * f;
-    }
-
-    template <typename T>
-    static inline bool operator < (const Vector2<T>& v, const T& f)
-    {
-        return (v.x * v.x + v.y * v.y) < f * f;
-    }
-
-    template <typename T>
-    static inline bool operator >= (const Vector2<T>& v, const T& f)
-    {
-        return (v.x * v.x + v.y * v.y) >= f * f;
-    }
-
-    template <typename T>
-    static inline bool operator <= (const Vector2<T>& v, const T& f)
-    {
-        return (v.x * v.x + v.y * v.y) <= f * f;
-    }
-
-    template <typename T>
-    static inline bool operator > (const Vector2<T>& v, const Vector2<T>& v2)
-    {
-        return (v.x * v.x + v.y * v.y) > (v2.x * v2.x + v2.y * v2.y);
-    }
-
-    template <typename T>
-    static inline bool operator < (const Vector2<T>& v, const Vector2<T>& v2)
-    {
-        return (v.x * v.x + v.y * v.y) < (v2.x * v2.x + v2.y * v2.y);
-    }
-
-    template <typename T>
-    static inline bool operator >= (const Vector2<T>& v, const Vector2<T>& v2)
-    {
-        return (v.x * v.x + v.y * v.y) >= (v2.x * v2.x + v2.y * v2.y);
-    }
-
-    template <typename T>
-    static inline bool operator <= (const Vector2<T>& v, const Vector2<T>& v2)
-    {
-        return (v.x * v.x + v.y * v.y) <= (v2.x * v2.x + v2.y * v2.y);
-    }
-
     template <typename T>
     Vector2<T> vector2FromAngle(const T& angle)
     {
