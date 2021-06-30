@@ -118,9 +118,9 @@ if(WITH_GLM STREQUAL "bundled" OR (WITH_GLM STREQUAL "auto" AND NOT glm_FOUND))
     add_subdirectory("${GLM_BASE_PATH}/glm" "${PROJECT_BINARY_DIR}/glm" EXCLUDE_FROM_ALL)
 endif()
 
-add_subdirectory(src/Box2D)
-add_subdirectory(src/lua)
-add_subdirectory(src/GL)
+add_subdirectory(libs/Box2D)
+add_subdirectory(libs/lua)
+add_subdirectory(libs/GL)
 
 # json11
 if(SERIOUSPROTON_WITH_JSON)
@@ -135,7 +135,7 @@ if(SERIOUSPROTON_WITH_JSON)
         endif()
     elseif(WITH_JSON STREQUAL "bundled")
         message(STATUS "json11 version used: BUNDLED")
-        add_subdirectory(src/json11)
+        add_subdirectory(libs/json11)
     endif()
 endif()
 
@@ -151,7 +151,7 @@ if(WITH_OPUS STREQUAL "system")
     target_compile_options(opus PUBLIC ${OPUS_CFLAGS_OTHER})
 elseif(WITH_OPUS STREQUAL "bundled")
     message(STATUS "opus version used: BUNDLED")
-    add_subdirectory(src/libopus)
+    add_subdirectory(libs/libopus)
 endif()
 
 
@@ -205,7 +205,6 @@ set(source_files #All SeriousProton's objects to compile
     src/audio/music.h
     src/clipboard.h
     src/collisionable.h
-    src/dtoa/dtoa_milo.h
     src/dynamicLibrary.h
     src/engine.h
     src/event.h
