@@ -59,10 +59,10 @@ public:
     }
 
     /*
-        substr works the same as the [start:end] operator in python, allowing negative indexes to get the back of the string.
+        substr/substr_view works the same as the [start:end] operator in python, allowing negative indexes to get the back of the string.
         It is also garanteed to be safe. So if you request an out of range index, you will get an empty string.
     */
-    string substr(const int pos = 0, const int endpos = std::numeric_limits<int>::max()) const
+    std::string_view substr_view(const int pos = 0, const int endpos = std::numeric_limits<int>::max()) const
     {
         int start = pos;
         int end = endpos;
@@ -79,9 +79,14 @@ public:
         len = std::min(end, len);
         if (end <= start)
         {
-            return "";
+            return {};
         }
-        return std::string::substr(start, end - start);
+        return std::string_view{ *this }.substr(start, end - start);
+    }
+
+    string substr(const int pos = 0, const int endpos = std::numeric_limits<int>::max()) const
+    {
+        return substr_view(pos, endpos);
     }
 
     string operator*(const int count)
@@ -146,7 +151,7 @@ public:
     }
     bool endswith(char suffix) const
     {
-        return !empty() && (*this)[length()-1] == suffix;
+        return endswith({ &suffix, 1 });
     }
 
     /*
@@ -187,24 +192,16 @@ public:
     {
         if (sub.length() + start > length() || sub.length() < 1)
             return -1;
-        std::string_view sv{*this};
         for(unsigned int n=start; n<=length() - sub.length(); n++)
         {
-            if(sv.substr(n, n+int(sub.length())) == sub)
+            if(substr_view(n, n+int(sub.length())) == sub)
                 return n;
         }
         return -1;
     }
     int find(char sub, int start=0) const
     {
-        if (start >= int(length()))
-            return -1;
-        for(unsigned int n=start; n<length(); n++)
-        {
-            if((*this)[n] == sub)
-                return n;
-        }
-        return -1;
+        return find({ &sub, 1 }, start);
     }
 
     /*
