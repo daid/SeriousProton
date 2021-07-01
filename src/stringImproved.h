@@ -185,12 +185,14 @@ public:
     */
     int find(std::string_view sub, int start=0) const
     {
-        if (sub.length() + start > length() || sub.length() < 1)
+        if (sub.length() + start > length())
             return -1;
+        if (sub.length() < 1)
+            return start;
         std::string_view sv{*this};
         for(unsigned int n=start; n<=length() - sub.length(); n++)
         {
-            if(sv.substr(n, n+int(sub.length())) == sub)
+            if(sv.substr(n, int(sub.length())) == sub)
                 return n;
         }
         return -1;
@@ -482,7 +484,7 @@ public:
         std::string_view sv{*this};
         for(int n=int(length()) - int(sub.length()); n>=start; n--)
         {
-            if(sv.substr(n, n+int(sub.length())) == sub)
+            if(sv.substr(n, int(sub.length())) == sub)
                 return n;
         }
         return -1;
