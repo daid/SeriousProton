@@ -159,17 +159,17 @@ public:
         int p = 0;
         int t;
         int start = 0;
-        int end = find("\r");
-        if (find("\n") > -1 && (end == -1 || find("\n") < end))
-            end = find("\n");
-        while((t = find("\t", p)) > -1)
+        int end = find('\r');
+        if (find('\n') > -1 && (end == -1 || find('\n') < end))
+            end = find('\n');
+        while((t = find('\t', p)) > -1)
         {
             while(end != -1 && end < t)
             {
                 start = end + 1;
-                end = find("\r", start);
-                if (find("\n", start) > -1 && (end == -1 || find("\n", start) < end))
-                    end = find("\n", start);
+                end = find('\r', start);
+                if (find('\n', start) > -1 && (end == -1 || find('\n', start) < end))
+                    end = find('\n', start);
             }
             ret += substr(p, t) + string(" ") * (tabsize - ((t - start) % tabsize));
             p = t + 1;

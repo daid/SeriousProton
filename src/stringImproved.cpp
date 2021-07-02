@@ -8,11 +8,12 @@
         std::cout << "" << a << "\n!=\n" << b << "" << std::endl; \
         std::cout << "For test:" << std::endl; \
         std::cout << #a << " == " << #b << std::endl; \
-        exit(1); \
+        error_count ++; \
     }}
 
 void __stringTest()
 {
+    int error_count = 0;
     checkequal(string("hello"), string("hello").substr());
     checkequal(string("hel"), string("hello").substr(0, 3));
     checkequal(string("he"), string("hello").substr(0, -3));
@@ -38,7 +39,7 @@ void __stringTest()
 
     checkequal(0, string("").count("xx"));
 
-    //test_find
+    //test_find    
     checkequal(0, string("abcdefghiabc").find("abc"));
     checkequal(9, string("abcdefghiabc").find("abc", 1));
     checkequal(-1, string("abcdefghiabc").find("def", 4));
@@ -49,6 +50,12 @@ void __stringTest()
 
     checkequal(0, string("").find(""));
     checkequal(-1, string("").find("xx"));
+    
+    checkequal(1, string("123").find("2"));
+    checkequal(1, string("123").find('2'));
+    checkequal(-1, string("123").find('2', 2));
+    checkequal(-1, string("123").find('4'));
+    checkequal(-1, string("123").find('\0'));
 
     //test_rfind
     checkequal(9,  string("abcdefghiabc").rfind("abc"));
@@ -59,6 +66,11 @@ void __stringTest()
     checkequal(3, string("abc").rfind("", 0));
     checkequal(3, string("abc").rfind("", 3));
     checkequal(-1, string("abc").rfind("", 4));
+
+    checkequal(1, string("123").rfind("2"));
+    checkequal(1, string("123").rfind('2'));
+    checkequal(-1, string("123").rfind('4'));
+    checkequal(-1, string("123").rfind('\0'));
 
     //test_lower
     checkequal(string("hello"), string("HeLLo").lower());
@@ -272,175 +284,160 @@ void __stringTest()
     //test_swapcase
     checkequal(string("hEllO CoMPuTErS"), string("HeLLo cOmpUteRs").swapcase());
 
-/*
+
     //test_replace
-        # Operations on the empty string
-        checkequal("", "", "replace", "", "")
-        checkequal("A", "", "replace", "", "A")
-        checkequal("", "", "replace", "A", "")
-        checkequal("", "", "replace", "A", "A")
-        checkequal("", "", "replace", "", "", 100)
-        checkequal("", "", "replace", "", "", sys.maxint)
+    // Operations on the empty string
+    //checkequal("", string("").replace("", ""))
+    //checkequal("A", string("").replace("", "A"))
+    checkequal("", string("").replace("A", ""))
+    checkequal("", string("").replace("A", "A"))
+    //checkequal("", string("").replace("", "", 100))
+    //checkequal("", string("").replace("", "", sys.maxint))
 
-        # interleave (from=="", "to" gets inserted everywhere)
-        checkequal("A", "A", "replace", "", "")
-        checkequal("*A*", "A", "replace", "", "*")
-        checkequal("*1A*1", "A", "replace", "", "*1")
-        checkequal("*-#A*-#", "A", "replace", "", "*-#")
-        checkequal("*-A*-A*-", "AA", "replace", "", "*-")
-        checkequal("*-A*-A*-", "AA", "replace", "", "*-", -1)
-        checkequal("*-A*-A*-", "AA", "replace", "", "*-", sys.maxint)
-        checkequal("*-A*-A*-", "AA", "replace", "", "*-", 4)
-        checkequal("*-A*-A*-", "AA", "replace", "", "*-", 3)
-        checkequal("*-A*-A", "AA", "replace", "", "*-", 2)
-        checkequal("*-AA", "AA", "replace", "", "*-", 1)
-        checkequal("AA", "AA", "replace", "", "*-", 0)
+    // interleave (from=="", "to" gets inserted everywhere)
+    //checkequal("A", string("A").replace("", ""))
+    //checkequal("*A*", string("A").replace("", "*"))
+    //checkequal("*1A*1", string("A").replace("", "*1"))
+    //checkequal("*-#A*-#", string("A").replace("", "*-#"))
+    //checkequal("*-A*-A*-", string("AA").replace("", "*-"))
+    //checkequal("*-A*-A*-", string("AA").replace("", "*-", -1))
+    //checkequal("*-A*-A*-", string("AA").replace("", "*-", sys.maxint))
+    //checkequal("*-A*-A*-", string("AA").replace("", "*-", 4))
+    //checkequal("*-A*-A*-", string("AA").replace("", "*-", 3))
+    //checkequal("*-A*-A", string("AA").replace("", "*-", 2))
+    //checkequal("*-AA", string("AA").replace("", "*-", 1))
+    //checkequal("AA", string("AA").replace("", "*-", 0))
 
-        # single character deletion (from=="A", to=="")
-        checkequal("", "A", "replace", "A", "")
-        checkequal("", "AAA", "replace", "A", "")
-        checkequal("", "AAA", "replace", "A", "", -1)
-        checkequal("", "AAA", "replace", "A", "", sys.maxint)
-        checkequal("", "AAA", "replace", "A", "", 4)
-        checkequal("", "AAA", "replace", "A", "", 3)
-        checkequal("A", "AAA", "replace", "A", "", 2)
-        checkequal("AA", "AAA", "replace", "A", "", 1)
-        checkequal("AAA", "AAA", "replace", "A", "", 0)
-        checkequal("", "AAAAAAAAAA", "replace", "A", "")
-        checkequal("BCD", "ABACADA", "replace", "A", "")
-        checkequal("BCD", "ABACADA", "replace", "A", "", -1)
-        checkequal("BCD", "ABACADA", "replace", "A", "", sys.maxint)
-        checkequal("BCD", "ABACADA", "replace", "A", "", 5)
-        checkequal("BCD", "ABACADA", "replace", "A", "", 4)
-        checkequal("BCDA", "ABACADA", "replace", "A", "", 3)
-        checkequal("BCADA", "ABACADA", "replace", "A", "", 2)
-        checkequal("BACADA", "ABACADA", "replace", "A", "", 1)
-        checkequal("ABACADA", "ABACADA", "replace", "A", "", 0)
-        checkequal("BCD", "ABCAD", "replace", "A", "")
-        checkequal("BCD", "ABCADAA", "replace", "A", "")
-        checkequal("BCD", "BCD", "replace", "A", "")
-        checkequal("*************", "*************", "replace", "A", "")
-        checkequal("^A^", "^"+"A"*1000+"^", "replace", "A", "", 999)
+    // single character deletion (from=="A", to=="")
+    checkequal("", string("A").replace("A", ""))
+    checkequal("", string("AAA").replace("A", ""))
+    checkequal("", string("AAA").replace("A", "", -1))
+    //checkequal("", string("AAA").replace("A", "", sys.maxint))
+    checkequal("", string("AAA").replace("A", "", 4))
+    checkequal("", string("AAA").replace("A", "", 3))
+    checkequal("A", string("AAA").replace("A", "", 2))
+    checkequal("AA", string("AAA").replace("A", "", 1))
+    checkequal("AAA", string("AAA").replace("A", "", 0))
+    checkequal("", string("AAAAAAAAAA").replace("A", ""))
+    checkequal("BCD", string("ABACADA").replace("A", ""))
+    checkequal("BCD", string("ABACADA").replace("A", "", -1))
+    //checkequal("BCD", string("ABACADA").replace("A", "", sys.maxint))
+    checkequal("BCD", string("ABACADA").replace("A", "", 5))
+    checkequal("BCD", string("ABACADA").replace("A", "", 4))
+    checkequal("BCDA", string("ABACADA").replace("A", "", 3))
+    checkequal("BCADA", string("ABACADA").replace("A", "", 2))
+    checkequal("BACADA", string("ABACADA").replace("A", "", 1))
+    checkequal("ABACADA", string("ABACADA").replace("A", "", 0))
+    checkequal("BCD", string("ABCAD").replace("A", ""))
+    checkequal("BCD", string("ABCADAA").replace("A", ""))
+    checkequal("BCD", string("BCD").replace("A", ""))
+    checkequal("*************", string("*************").replace("A", ""))
+    checkequal("^A^", string(string("^")+string("A")*1000+string("^")).replace("A", "", 999))
 
-        # substring deletion (from=="the", to=="")
-        checkequal("", "the", "replace", "the", "")
-        checkequal("ater", "theater", "replace", "the", "")
-        checkequal("", "thethe", "replace", "the", "")
-        checkequal("", "thethethethe", "replace", "the", "")
-        checkequal("aaaa", "theatheatheathea", "replace", "the", "")
-        checkequal("that", "that", "replace", "the", "")
-        checkequal("thaet", "thaet", "replace", "the", "")
-        checkequal("here and re", "here and there", "replace", "the", "")
-        checkequal("here and re and re", "here and there and there",
-           "replace", "the", "", sys.maxint)
-        checkequal("here and re and re", "here and there and there",
-           "replace", "the", "", -1)
-        checkequal("here and re and re", "here and there and there",
-           "replace", "the", "", 3)
-        checkequal("here and re and re", "here and there and there",
-           "replace", "the", "", 2)
-        checkequal("here and re and there", "here and there and there",
-           "replace", "the", "", 1)
-        checkequal("here and there and there", "here and there and there",
-           "replace", "the", "", 0)
-        checkequal("here and re and re", "here and there and there", "replace", "the", "")
+    // substring deletion (from=="the", to=="")
+    checkequal("", string("the").replace("the", ""))
+    checkequal("ater", string("theater").replace("the", ""))
+    checkequal("", string("thethe").replace("the", ""))
+    checkequal("", string("thethethethe").replace("the", ""))
+    checkequal("aaaa", string("theatheatheathea").replace("the", ""))
+    checkequal("that", string("that").replace("the", ""))
+    checkequal("thaet", string("thaet").replace("the", ""))
+    checkequal("here and re", string("here and there").replace("the", ""))
+    //checkequal("here and re and re", string("here and there and there").replace("the", "", sys.maxint))
+    checkequal("here and re and re", string("here and there and there").replace("the", "", -1))
+    checkequal("here and re and re", string("here and there and there").replace("the", "", 3))
+    checkequal("here and re and re", string("here and there and there").replace("the", "", 2))
+    checkequal("here and re and there", string("here and there and there").replace("the", "", 1))
+    checkequal("here and there and there", string("here and there and there").replace("the", "", 0))
+    checkequal("here and re and re", string("here and there and there").replace("the", ""))
 
-        checkequal("abc", "abc", "replace", "the", "")
-        checkequal("abcdefg", "abcdefg", "replace", "the", "")
+    checkequal("abc", string("abc").replace("the", ""))
+    checkequal("abcdefg", string("abcdefg").replace("the", ""))
 
-        # substring deletion (from=="bob", to=="")
-        checkequal("bob", "bbobob", "replace", "bob", "")
-        checkequal("bobXbob", "bbobobXbbobob", "replace", "bob", "")
-        checkequal("aaaaaaa", "aaaaaaabob", "replace", "bob", "")
-        checkequal("aaaaaaa", "aaaaaaa", "replace", "bob", "")
+    // substring deletion (from=="bob", to=="")
+    checkequal("bob", string("bbobob").replace("bob", ""))
+    checkequal("bobXbob", string("bbobobXbbobob").replace("bob", ""))
+    checkequal("aaaaaaa", string("aaaaaaabob").replace("bob", ""))
+    checkequal("aaaaaaa", string("aaaaaaa").replace("bob", ""))
 
-        # single character replace in place (len(from)==len(to)==1)
-        checkequal("Who goes there?", "Who goes there?", "replace", "o", "o")
-        checkequal("WhO gOes there?", "Who goes there?", "replace", "o", "O")
-        checkequal("WhO gOes there?", "Who goes there?", "replace", "o", "O", sys.maxint)
-        checkequal("WhO gOes there?", "Who goes there?", "replace", "o", "O", -1)
-        checkequal("WhO gOes there?", "Who goes there?", "replace", "o", "O", 3)
-        checkequal("WhO gOes there?", "Who goes there?", "replace", "o", "O", 2)
-        checkequal("WhO goes there?", "Who goes there?", "replace", "o", "O", 1)
-        checkequal("Who goes there?", "Who goes there?", "replace", "o", "O", 0)
+    // single character replace in place (len(from)==len(to)==1)
+    checkequal("Who goes there?", string("Who goes there?").replace("o", "o"))
+    checkequal("WhO gOes there?", string("Who goes there?").replace("o", "O"))
+    //checkequal("WhO gOes there?", string("Who goes there?").replace("o", "O", sys.maxint))
+    checkequal("WhO gOes there?", string("Who goes there?").replace("o", "O", -1))
+    checkequal("WhO gOes there?", string("Who goes there?").replace("o", "O", 3))
+    checkequal("WhO gOes there?", string("Who goes there?").replace("o", "O", 2))
+    checkequal("WhO goes there?", string("Who goes there?").replace("o", "O", 1))
+    checkequal("Who goes there?", string("Who goes there?").replace("o", "O", 0))
 
-        checkequal("Who goes there?", "Who goes there?", "replace", "a", "q")
-        checkequal("who goes there?", "Who goes there?", "replace", "W", "w")
-        checkequal("wwho goes there?ww", "WWho goes there?WW", "replace", "W", "w")
-        checkequal("Who goes there!", "Who goes there?", "replace", "?", "!")
-        checkequal("Who goes there!!", "Who goes there??", "replace", "?", "!")
+    checkequal("Who goes there?", string("Who goes there?").replace("a", "q"))
+    checkequal("who goes there?", string("Who goes there?").replace("W", "w"))
+    checkequal("wwho goes there?ww", string("WWho goes there?WW").replace("W", "w"))
+    checkequal("Who goes there!", string("Who goes there?").replace("?", "!"))
+    checkequal("Who goes there!!", string("Who goes there??").replace("?", "!"))
 
-        checkequal("Who goes there?", "Who goes there?", "replace", ".", "!")
+    checkequal("Who goes there?", string("Who goes there?").replace(".", "!"))
 
-        # substring replace in place (len(from)==len(to) > 1)
-        checkequal("Th** ** a t**sue", "This is a tissue", "replace", "is", "**")
-        checkequal("Th** ** a t**sue", "This is a tissue", "replace", "is", "**", sys.maxint)
-        checkequal("Th** ** a t**sue", "This is a tissue", "replace", "is", "**", -1)
-        checkequal("Th** ** a t**sue", "This is a tissue", "replace", "is", "**", 4)
-        checkequal("Th** ** a t**sue", "This is a tissue", "replace", "is", "**", 3)
-        checkequal("Th** ** a tissue", "This is a tissue", "replace", "is", "**", 2)
-        checkequal("Th** is a tissue", "This is a tissue", "replace", "is", "**", 1)
-        checkequal("This is a tissue", "This is a tissue", "replace", "is", "**", 0)
-        checkequal("cobob", "bobob", "replace", "bob", "cob")
-        checkequal("cobobXcobocob", "bobobXbobobob", "replace", "bob", "cob")
-        checkequal("bobob", "bobob", "replace", "bot", "bot")
+    // substring replace in place (len(from)==len(to) > 1)
+    checkequal("Th** ** a t**sue", string("This is a tissue").replace("is", "**"))
+    //checkequal("Th** ** a t**sue", string("This is a tissue").replace("is", "**", sys.maxint))
+    checkequal("Th** ** a t**sue", string("This is a tissue").replace("is", "**", -1))
+    checkequal("Th** ** a t**sue", string("This is a tissue").replace("is", "**", 4))
+    checkequal("Th** ** a t**sue", string("This is a tissue").replace("is", "**", 3))
+    checkequal("Th** ** a tissue", string("This is a tissue").replace("is", "**", 2))
+    checkequal("Th** is a tissue", string("This is a tissue").replace("is", "**", 1))
+    checkequal("This is a tissue", string("This is a tissue").replace("is", "**", 0))
+    checkequal("cobob", string("bobob").replace("bob", "cob"))
+    checkequal("cobobXcobocob", string("bobobXbobobob").replace("bob", "cob"))
+    checkequal("bobob", string("bobob").replace("bot", "bot"))
 
-        # replace single character (len(from)==1, len(to)>1)
-        checkequal("ReyKKjaviKK", "Reykjavik", "replace", "k", "KK")
-        checkequal("ReyKKjaviKK", "Reykjavik", "replace", "k", "KK", -1)
-        checkequal("ReyKKjaviKK", "Reykjavik", "replace", "k", "KK", sys.maxint)
-        checkequal("ReyKKjaviKK", "Reykjavik", "replace", "k", "KK", 2)
-        checkequal("ReyKKjavik", "Reykjavik", "replace", "k", "KK", 1)
-        checkequal("Reykjavik", "Reykjavik", "replace", "k", "KK", 0)
-        checkequal("A----B----C----", "A.B.C.", "replace", ".", "----")
+    // replace single character (len(from)==1, len(to)>1)
+    checkequal("ReyKKjaviKK", string("Reykjavik").replace("k", "KK"))
+    checkequal("ReyKKjaviKK", string("Reykjavik").replace("k", "KK", -1))
+    //checkequal("ReyKKjaviKK", string("Reykjavik").replace("k", "KK", sys.maxint))
+    checkequal("ReyKKjaviKK", string("Reykjavik").replace("k", "KK", 2))
+    checkequal("ReyKKjavik", string("Reykjavik").replace("k", "KK", 1))
+    checkequal("Reykjavik", string("Reykjavik").replace("k", "KK", 0))
+    checkequal("A----B----C----", string("A.B.C.").replace(".", "----"))
 
-        checkequal("Reykjavik", "Reykjavik", "replace", "q", "KK")
+    checkequal("Reykjavik", string("Reykjavik").replace("q", "KK"))
 
-        # replace substring (len(from)>1, len(to)!=len(from))
-        checkequal("ham, ham, eggs and ham", "spam, spam, eggs and spam",
-           "replace", "spam", "ham")
-        checkequal("ham, ham, eggs and ham", "spam, spam, eggs and spam",
-           "replace", "spam", "ham", sys.maxint)
-        checkequal("ham, ham, eggs and ham", "spam, spam, eggs and spam",
-           "replace", "spam", "ham", -1)
-        checkequal("ham, ham, eggs and ham", "spam, spam, eggs and spam",
-           "replace", "spam", "ham", 4)
-        checkequal("ham, ham, eggs and ham", "spam, spam, eggs and spam",
-           "replace", "spam", "ham", 3)
-        checkequal("ham, ham, eggs and spam", "spam, spam, eggs and spam",
-           "replace", "spam", "ham", 2)
-        checkequal("ham, spam, eggs and spam", "spam, spam, eggs and spam",
-           "replace", "spam", "ham", 1)
-        checkequal("spam, spam, eggs and spam", "spam, spam, eggs and spam",
-           "replace", "spam", "ham", 0)
+    // replace substring (len(from)>1, len(to)!=len(from))
+    checkequal("ham, ham, eggs and ham", string("spam, spam, eggs and spam").replace("spam", "ham"))
+    //checkequal("ham, ham, eggs and ham", string("spam, spam, eggs and spam").replace("spam", "ham", sys.maxint))
+    checkequal("ham, ham, eggs and ham", string("spam, spam, eggs and spam").replace("spam", "ham", -1))
+    checkequal("ham, ham, eggs and ham", string("spam, spam, eggs and spam").replace("spam", "ham", 4))
+    checkequal("ham, ham, eggs and ham", string("spam, spam, eggs and spam").replace("spam", "ham", 3))
+    checkequal("ham, ham, eggs and spam", string("spam, spam, eggs and spam").replace("spam", "ham", 2))
+    checkequal("ham, spam, eggs and spam", string("spam, spam, eggs and spam").replace("spam", "ham", 1))
+    checkequal("spam, spam, eggs and spam", string("spam, spam, eggs and spam").replace("spam", "ham", 0))
 
-        checkequal("bobob", "bobobob", "replace", "bobob", "bob")
-        checkequal("bobobXbobob", "bobobobXbobobob", "replace", "bobob", "bob")
-        checkequal("BOBOBOB", "BOBOBOB", "replace", "bob", "bobby")
+    checkequal("bobob", string("bobobob").replace("bobob", "bob"))
+    checkequal("bobobXbobob", string("bobobobXbobobob").replace("bobob", "bob"))
+    checkequal("BOBOBOB", string("BOBOBOB").replace("bob", "bobby"))
 
-        checkequal("one@two!three!", "one!two!three!", "replace", "!", "@", 1)
-        checkequal("onetwothree", "one!two!three!", "replace", "!", "")
-        checkequal("one@two@three!", "one!two!three!", "replace", "!", "@", 2)
-        checkequal("one@two@three@", "one!two!three!", "replace", "!", "@", 3)
-        checkequal("one@two@three@", "one!two!three!", "replace", "!", "@", 4)
-        checkequal("one!two!three!", "one!two!three!", "replace", "!", "@", 0)
-        checkequal("one@two@three@", "one!two!three!", "replace", "!", "@")
-        checkequal("one!two!three!", "one!two!three!", "replace", "x", "@")
-        checkequal("one!two!three!", "one!two!three!", "replace", "x", "@", 2)
-        checkequal("-a-b-c-", "abc", "replace", "", "-")
-        checkequal("-a-b-c", "abc", "replace", "", "-", 3)
-        checkequal("abc", "abc", "replace", "", "-", 0)
-        checkequal("", "", "replace", "", "")
-        checkequal("abc", "abc", "replace", "ab", "--", 0)
-        checkequal("abc", "abc", "replace", "xy", "--")
-        # Next three for SF bug 422088: [OSF1 alpha] string.replace(); died with
-        # MemoryError due to empty result (platform malloc issue when requesting
-        # 0 bytes).
-        checkequal("", "123", "replace", "123", "")
-        checkequal("", "123123", "replace", "123", "")
-        checkequal("x", "123x123", "replace", "123", "")
+    checkequal("one@two!three!", string("one!two!three!").replace("!", "@", 1))
+    checkequal("onetwothree", string("one!two!three!").replace("!", ""))
+    checkequal("one@two@three!", string("one!two!three!").replace("!", "@", 2))
+    checkequal("one@two@three@", string("one!two!three!").replace("!", "@", 3))
+    checkequal("one@two@three@", string("one!two!three!").replace("!", "@", 4))
+    checkequal("one!two!three!", string("one!two!three!").replace("!", "@", 0))
+    checkequal("one@two@three@", string("one!two!three!").replace("!", "@"))
+    checkequal("one!two!three!", string("one!two!three!").replace("x", "@"))
+    checkequal("one!two!three!", string("one!two!three!").replace("x", "@", 2))
+    //checkequal("-a-b-c-", string("abc").replace("", "-"))
+    //checkequal("-a-b-c", string("abc").replace("", "-", 3))
+    checkequal("abc", string("abc").replace("", "-", 0))
+    checkequal("", string("").replace("", ""))
+    checkequal("abc", string("abc").replace("ab", "--", 0))
+    checkequal("abc", string("abc").replace("xy", "--"))
+    // Next three for SF bug 422088: [OSF1 alpha] string.replace(); died with
+    // MemoryError due to empty result (platform malloc issue when requesting
+    // 0 bytes).
+    checkequal("", string("123").replace("123", ""))
+    checkequal("", string("123123").replace("123", ""))
+    checkequal("x", string("123x123").replace("123", ""))
 
-*/
     //test_zfill
     checkequal(string("123"), string("123").zfill(2));
     checkequal(string("123"), string("123").zfill(3));
@@ -547,6 +544,8 @@ void __stringTest()
     checkequal(false, string("hello").startswith("hello world"));
     checkequal(true, string("hello").startswith(""));
     checkequal(false, string("hello").startswith("ello"));
+    checkequal(true, string("hello").startswith('h'));
+    checkequal(false, string("hello").startswith('o'));
     //checkequal(true, string("hello").startswith("ello", 1));
     //checkequal(true, string("hello").startswith("o", 4));
     //checkequal(false, string("hello").startswith("o", 5));
@@ -574,6 +573,9 @@ void __stringTest()
     checkequal(true, string("hello").endswith(""));
     checkequal(false, string("hello").endswith("hello world"));
     checkequal(false, string("helloworld").endswith("worl"));
+    checkequal(true, string("hello").endswith('o'));
+    checkequal(false, string("hello").endswith('h'));
+    checkequal(false, string("hello").endswith('\0'));
     //checkequal(true, string("helloworld").endswith("worl", 3, 9));
     //checkequal(true, string("helloworld").endswith("world", 3, 12));
     //checkequal(true, string("helloworld").endswith("lowo", 1, 7));
@@ -716,4 +718,5 @@ void __stringTest()
         checkequal(("", "http://", "www.python.org"), S, "rpartition", "http://")
         checkequal(("http://www.python.", "org", ""), S, "rpartition", "org")
 */
+    if (error_count) exit(1);
 }
