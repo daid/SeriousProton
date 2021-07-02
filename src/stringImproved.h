@@ -434,7 +434,7 @@ public:
     string lstrip(const string &chars=_WHITESPACE) const
     {
         int start=0;
-        while(chars.find(substr(start, start+1)) > -1)
+        while(start < int(length()) && chars.find(substr(start, start+1)) > -1)
             start++;
         return substr(start);
     }
@@ -444,7 +444,15 @@ public:
         the separator itand the part after it.  If the separator is not
         found, return S and two empty strings.
     */
-    std::vector<string> partition(const string &sep) const;
+    std::pair<string, string> partition(const string &sep) const
+    {
+        int index = find(sep);
+        if (index < 0)
+        {
+            return {*this, ""};
+        }
+        return {substr(0, index), substr(index + sep.length())};
+    }
 
     /*
         Return a copy of string S with all occurrences of substring
@@ -524,7 +532,7 @@ public:
     string rstrip(const string &chars=_WHITESPACE) const
     {
         int end=int(length())-1;
-        while(chars.find(substr(end, end+1)) > -1)
+        while(end >= -1 && chars.find(substr(end, end+1)) > -1)
             end--;
         return substr(0, end+1);
     }
