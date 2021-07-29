@@ -171,7 +171,6 @@ set(source_files #All SeriousProton's objects to compile
     src/engine.cpp
     src/event.cpp
     src/gameEntity.cpp
-    src/httpServer.cpp
     src/i18n.cpp
     src/input.cpp
     src/logging.cpp
@@ -193,6 +192,8 @@ set(source_files #All SeriousProton's objects to compile
     src/shaderManager.cpp
     src/soundManager.cpp
     src/stringImproved.cpp
+    src/stringutil/base64.cpp
+    src/stringutil/sha1.cpp
     src/textureManager.cpp
     src/timer.cpp
     src/tween.cpp
@@ -205,6 +206,8 @@ set(source_files #All SeriousProton's objects to compile
     src/io/network/tcpSocket.cpp
     src/io/network/udpSocket.cpp
     src/io/http/request.cpp
+    src/io/http/server.cpp
+    src/io/http/websocket.cpp
 
     src/audio/source.h
     src/audio/sound.h
@@ -215,11 +218,12 @@ set(source_files #All SeriousProton's objects to compile
     src/engine.h
     src/event.h
     src/gameEntity.h
-    src/httpServer.h
     src/i18n.h
     src/input.h
     src/io/dataBuffer.h
     src/io/http/request.h
+    src/io/http/server.h
+    src/io/http/websocket.h
     src/io/network/address.h
     src/io/network/selector.h
     src/io/network/socketBase.h
@@ -247,6 +251,8 @@ set(source_files #All SeriousProton's objects to compile
     src/shaderManager.h
     src/soundManager.h
     src/stringImproved.h
+    src/stringutil/base64.h
+    src/stringutil/sha1.h
     src/textureManager.h
     src/tween.h
     src/timer.h
