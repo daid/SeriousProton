@@ -12,7 +12,7 @@ bool InputHandler::keyboard_button_pressed[sf::Keyboard::KeyCount];
 bool InputHandler::keyboard_button_released[sf::Keyboard::KeyCount];
 sf::Event::KeyEvent InputHandler::last_key_press;
 
-sf::Vector2f InputHandler::mouse_position;
+glm::vec2 InputHandler::mouse_position;
 float InputHandler::mouse_wheel_delta;
 bool InputHandler::mouse_button_down[sf::Mouse::ButtonCount];
 bool InputHandler::mouse_button_pressed[sf::Mouse::ButtonCount];
@@ -189,7 +189,8 @@ void InputHandler::postEventsUpdate()
 #else
     mouse_position = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
 #endif
-    mouse_position = mouse_transform.transformPoint(mouse_position);
+    mouse_position.x = mouse_transform.transformPoint(sf::Vector2f(mouse_position.x, mouse_position.y)).x;
+    mouse_position.y = mouse_transform.transformPoint(sf::Vector2f(mouse_position.x, mouse_position.y)).y;
     
     if (touch_screen)
     {
@@ -199,7 +200,7 @@ void InputHandler::postEventsUpdate()
                 any_button_down = true;
         if (!any_button_down)
         {
-            mouse_position = sf::Vector2f(-1, -1);
+            mouse_position = {-1, -1};
         }
     }
     for(unsigned int i=0; i<sf::Joystick::Count; i++)
@@ -227,7 +228,7 @@ void InputHandler::postEventsUpdate()
     }
 }
 
-void InputHandler::setMousePos(sf::Vector2f position)
+void InputHandler::setMousePos(glm::vec2 position)
 {
     if (!windowManager)
         windowManager = engine->getObject("windowManager");
@@ -244,10 +245,10 @@ void InputHandler::fireKeyEvent(sf::Event::KeyEvent key, int unicode)
     }
 }
 
-sf::Vector2f InputHandler::realWindowPosToVirtual(sf::Vector2i position)
+glm::vec2 InputHandler::realWindowPosToVirtual(sf::Vector2i position)
 {
     sf::FloatRect viewport = windowManager->window.getView().getViewport();
-    sf::Vector2f pos = sf::Vector2f(position);
+    glm::vec2 pos = glm::vec2(position.x, position.y);
     
     pos.x -= viewport.left * float(windowManager->window.getSize().x);
     pos.y -= viewport.top * float(windowManager->window.getSize().y);
@@ -256,7 +257,7 @@ sf::Vector2f InputHandler::realWindowPosToVirtual(sf::Vector2i position)
     return pos;
 }
 
-sf::Vector2i InputHandler::virtualWindowPosToReal(sf::Vector2f position)
+sf::Vector2i InputHandler::virtualWindowPosToReal(glm::vec2 position)
 {
     sf::FloatRect viewport = windowManager->window.getView().getViewport();
 
@@ -265,5 +266,5 @@ sf::Vector2i InputHandler::virtualWindowPosToReal(sf::Vector2f position)
     
     position.x += viewport.left * float(windowManager->window.getSize().x);
     position.y += viewport.top * float(windowManager->window.getSize().y);
-    return sf::Vector2i(position);
+    return sf::Vector2i(position.x, position.y);
 }

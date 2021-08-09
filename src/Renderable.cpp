@@ -12,13 +12,13 @@ RenderLayer::RenderLayer(RenderChain* link)
 {
 }
 
-void RenderLayer::render(sf::RenderTarget& window)
+void RenderLayer::render(sp::RenderTarget& target)
 {
     if (link)
-        link->render(window);
+        link->render(target);
     if (active)
         foreach(Renderable, r, renderableList)
-            r->render(window);
+            r->render(target);
 }
 
 Renderable::Renderable()

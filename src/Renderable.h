@@ -1,7 +1,7 @@
 #ifndef RENDERABLE_H
 #define RENDERABLE_H
 
-#include <SFML/Graphics.hpp>
+#include "graphics/renderTarget.h"
 #include "P.h"
 
 class Renderable;
@@ -11,7 +11,7 @@ extern RenderLayer* defaultRenderLayer;
 class RenderChain : sp::NonCopyable
 {
 public:
-    virtual void render(sf::RenderTarget& window) = 0;
+    virtual void render(sp::RenderTarget& window) = 0;
 };
 
 class RenderLayer : public RenderChain
@@ -26,7 +26,7 @@ public:
     RenderLayer();
     RenderLayer(RenderChain* link);
     
-    virtual void render(sf::RenderTarget& window);
+    virtual void render(sp::RenderTarget& target) override;
     
     friend class Renderable;
 };
@@ -38,7 +38,7 @@ class Renderable: public virtual PObject
         Renderable();
         Renderable(RenderLayer* renderLayer);
         virtual ~Renderable();
-        virtual void render(sf::RenderTarget& window) = 0;
+        virtual void render(sp::RenderTarget& target) = 0;
         
         void moveToRenderLayer(RenderLayer* renderLayer);
     protected:

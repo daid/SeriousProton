@@ -40,14 +40,14 @@ public:
     static bool keyboardIsPressed(sf::Keyboard::Key key) { return keyboard_button_pressed[key]; }
     static bool keyboardIsReleased(sf::Keyboard::Key key) { return !keyboard_button_pressed[key] && keyboard_button_released[key]; }
 
-    static sf::Vector2f getMousePos() { return mouse_position; }
-    static void setMousePos(sf::Vector2f position);
+    static glm::vec2 getMousePos() { return mouse_position; }
+    static void setMousePos(glm::vec2 position);
     static bool mouseIsDown(sf::Mouse::Button button) { return mouse_button_down[button]; }
     static bool mouseIsPressed(sf::Mouse::Button button) { return mouse_button_pressed[button]; }
     static bool mouseIsReleased(sf::Mouse::Button button) { return !mouse_button_pressed[button] && mouse_button_released[button]; }
     static float getMouseWheelDelta() { return mouse_wheel_delta; }
     
-    static sf::Vector2f getJoysticXYPos() { return sf::Vector2f(joystick_axis_pos[0][sf::Joystick::X], joystick_axis_pos[0][sf::Joystick::Y]); }
+    static glm::vec2    getJoysticXYPos() { return glm::vec2(joystick_axis_pos[0][sf::Joystick::X], joystick_axis_pos[0][sf::Joystick::Y]); }
     static float        getJoysticZPos()  { return joystick_axis_pos[0][sf::Joystick::Z]; }
     static float        getJoysticRPos()  { return joystick_axis_pos[0][sf::Joystick::R]; }
 
@@ -57,7 +57,7 @@ public:
 private:
     static P<WindowManager> windowManager;
 
-    static sf::Vector2f mouse_position;
+    static glm::vec2 mouse_position;
     static float mouse_wheel_delta;
     static bool keyboard_button_down[sf::Keyboard::KeyCount];
     static bool keyboard_button_pressed[sf::Keyboard::KeyCount];
@@ -80,8 +80,8 @@ private:
     static void handleEvent(sf::Event& event);
     
     static void fireKeyEvent(sf::Event::KeyEvent key, int unicode);
-    static sf::Vector2f realWindowPosToVirtual(sf::Vector2i position);
-    static sf::Vector2i virtualWindowPosToReal(sf::Vector2f position);
+    static glm::vec2 realWindowPosToVirtual(sf::Vector2i position);
+    static sf::Vector2i virtualWindowPosToReal(glm::vec2 position);
 
     friend class Engine;
 };

@@ -171,6 +171,7 @@ set(source_files #All SeriousProton's objects to compile
     src/engine.cpp
     src/event.cpp
     src/gameEntity.cpp
+    src/graphics/renderTarget.cpp
     src/i18n.cpp
     src/input.cpp
     src/logging.cpp
@@ -218,6 +219,7 @@ set(source_files #All SeriousProton's objects to compile
     src/engine.h
     src/event.h
     src/gameEntity.h
+    src/graphics/renderTarget.h
     src/i18n.h
     src/input.h
     src/io/dataBuffer.h
@@ -244,6 +246,7 @@ set(source_files #All SeriousProton's objects to compile
     src/PlayerController.h
     src/postProcessManager.h
     src/random.h
+    src/rect.h
     src/Renderable.h
     src/resources.h
     src/scriptInterface.h

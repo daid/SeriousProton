@@ -30,16 +30,16 @@ PostProcessor::PostProcessor(string name, RenderChain* chain)
     }
 }
 
-void PostProcessor::render(sf::RenderTarget& window)
+void PostProcessor::render(sp::RenderTarget& target)
 {
     if (!enabled || !sf::Shader::isAvailable() || !global_post_processor_enabled)
     {
-        chain->render(window);
+        chain->render(target);
         return;
     } 
 
     //Hack the rectangle for this element so it sits perfectly on pixel boundaries.
-    sf::Vector2u pixel_size{ window.getSize() };
+    sf::Vector2u pixel_size{ target.getSFMLTarget().getSize() };
 
     // If the window or texture size is 0/impossible, or if the window size has
     // changed, resize the viewport, render texture, and input/textureSizes.
@@ -54,7 +54,7 @@ void PostProcessor::render(sf::RenderTarget& window)
             // If we fail to create the RT, just disable the post processor and fallback to the backbuffer.
             LOG(WARNING) << "Failed to setup the render texture for post processing effects. They will be disabled.";
             global_post_processor_enabled = false;
-            chain->render(window);
+            chain->render(target);
             return;
         }
 
@@ -66,22 +66,23 @@ void PostProcessor::render(sf::RenderTarget& window)
     }
 
     // The view can evolve independently from the window size - update every frame.
-    renderTexture.setView(window.getView());
+    renderTexture.setView(target.getSFMLTarget().getView());
     renderTexture.clear(sf::Color(20, 20, 20));
    
-    chain->render(renderTexture);
+    sp::RenderTarget textureTarget(renderTexture);
+    chain->render(textureTarget);
 
     renderTexture.display();
 
     // The RT is a fullscreen texture.
     // Setup the view to cover the entire RT.
-    window.setView(sf::View({ 0.f, 0.f, static_cast<float>(renderTexture.getSize().x), static_cast<float>(renderTexture.getSize().y) }));
+    target.getSFMLTarget().setView(sf::View({ 0.f, 0.f, static_cast<float>(renderTexture.getSize().x), static_cast<float>(renderTexture.getSize().y) }));
     
     sf::Sprite backBufferSprite(renderTexture.getTexture());
-    window.draw(backBufferSprite, &shader);
+    target.getSFMLTarget().draw(backBufferSprite, &shader);
 
     // Restore view
-    window.setView(renderTexture.getView());
+    target.getSFMLTarget().setView(renderTexture.getView());
 }
 
 void PostProcessor::setUniform(string name, float value)

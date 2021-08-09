@@ -52,7 +52,8 @@ void WindowManager::render()
     window.clear(sf::Color(20, 20, 20));
 
     //Call the first item of the rendering chain.
-    renderChain->render(window);
+    sp::RenderTarget target(window);
+    renderChain->render(target);
 
     // Display things on screen
     window.display();

@@ -18,7 +18,7 @@ extern PVector<GameEntity> entityList;
 class GameEntity: public Updatable, public Renderable
 {
 public:
-    sf::Sprite sprite;
+    //sf::Sprite sprite;
 
     GameEntity()
     {
