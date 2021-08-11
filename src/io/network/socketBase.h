@@ -26,6 +26,8 @@ protected:
 #endif
     bool blocking = true;
     
+    static void initSocketLib();
+    friend class Address;
     friend class Selector;
 };
 

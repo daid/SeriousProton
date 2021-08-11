@@ -49,6 +49,7 @@ UdpSocket::~UdpSocket()
 
 bool UdpSocket::bind(int port)
 {
+    initSocketLib();
     close();
     
     if (!createSocket())

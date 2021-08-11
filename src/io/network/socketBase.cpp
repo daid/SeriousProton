@@ -76,6 +76,20 @@ bool SocketBase::isLastErrorNonBlocking()
     return false;
 }
 
+void SocketBase::initSocketLib()
+{
+#ifdef _WIN32
+    static bool wsa_startup_done = false;
+    if (!wsa_startup_done)
+    {
+        WSADATA wsa_data;
+        memset(&wsa_data, 0, sizeof(WSADATA));
+        WSAStartup(MAKEWORD(2, 2), &wsa_data);
+        wsa_startup_done = true;
+    }
+#endif
+}
+
 }//namespace network
 }//namespace io
 }//namespace sp

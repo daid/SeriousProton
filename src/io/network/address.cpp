@@ -1,4 +1,5 @@
 #include <io/network/address.h>
+#include <io/network/socketBase.h>
 #include <logging.h>
 
 #ifdef _WIN32
@@ -27,7 +28,7 @@ Address::Address()
 
 Address::Address(const string& hostname)
 {
-    initSocketLib();
+    SocketBase::initSocketLib();
 #ifndef EMSCRIPTEN
     struct addrinfo* result;
     if (::getaddrinfo(hostname.c_str(), nullptr, nullptr, &result))
@@ -84,7 +85,7 @@ bool Address::operator==(const Address& other) const
 
 Address Address::getLocalAddress()
 {
-    initSocketLib();
+    SocketBase::initSocketLib();
 
     std::list<AddrInfo> addr_info;
 
@@ -155,21 +156,6 @@ Address::AddrInfo::AddrInfo(int family, const string& human_readable, const void
 Address::AddrInfo::~AddrInfo()
 {
 }
-
-void Address::initSocketLib()
-{
-#ifdef _WIN32
-    static bool wsa_startup_done = false;
-    if (!wsa_startup_done)
-    {
-        WSADATA wsa_data;
-        memset(&wsa_data, 0, sizeof(WSADATA));
-        WSAStartup(MAKEWORD(2, 2), &wsa_data);
-        wsa_startup_done = true;
-    }
-#endif
-}
-
 
 }//namespace network
 }//namespace io

@@ -22,8 +22,6 @@ public:
 
     static Address getLocalAddress();
 private:
-    static void initSocketLib();
-
     class AddrInfo
     {
     public:

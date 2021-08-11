@@ -31,7 +31,7 @@ TcpListener::~TcpListener()
 
 bool TcpListener::listen(int port)
 {
-    Address::initSocketLib();
+    initSocketLib();
     if (isListening())
         close();
     
