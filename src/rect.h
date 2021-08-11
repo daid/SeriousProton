@@ -9,7 +9,7 @@ namespace sp {
 class Rect
 {
 public:
-    Rect() {}
+    Rect() : position{0, 0}, size{0, 0} {}
     Rect(glm::vec2 position, glm::vec2 size) : position(position), size(size) {}
     Rect(float x, float y, float w, float h) : position(x, y), size(w, h) {}
     
