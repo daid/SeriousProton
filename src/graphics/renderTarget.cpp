@@ -116,6 +116,15 @@ void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2> points, glm::u8
     target.draw(a, sf::RenderStates(sf::BlendAdd));
 }
 
+void RenderTarget::drawPoint(glm::vec2 position, glm::u8vec4 color)
+{
+    sf::VertexArray a(sf::Points, 1);
+    a[0].position.x = position.x;
+    a[0].position.y = position.y;
+    a[0].color = sf::Color(color.r, color.g, color.b, color.a);
+    target.draw(a);
+}
+
 void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color)
 {
     sf::RectangleShape overlay(sf::Vector2f(rect.size.x, rect.size.y));
