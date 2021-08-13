@@ -77,18 +77,18 @@ template<> void convert<bool>::param(lua_State* L, int& idx, bool& b)
     b = lua_toboolean(L, idx++);
 }
 
-template<> void convert<sf::Color>::param(lua_State* L, int& idx, sf::Color& color)
+template<> void convert<glm::u8vec4>::param(lua_State* L, int& idx, glm::u8vec4& color)
 {
-    color = sf::Color::White;
+    color = glm::u8vec4(255,255,255,255);
     string str = string(luaL_checkstring(L, idx++)).lower();
-    if (str == "black") { color = sf::Color::Black; return; }
-    else if (str == "white") { color = sf::Color::White; return; }
-    else if (str == "red") { color = sf::Color::Red; return; }
-    else if (str == "green") { color = sf::Color::Green; return; }
-    else if (str == "blue") { color = sf::Color::Blue; return; }
-    else if (str == "yellow") { color = sf::Color::Yellow; return; }
-    else if (str == "magenta") { color = sf::Color::Magenta; return; }
-    else if (str == "cyan") { color = sf::Color::Cyan; return; }
+    if (str == "black") { color = glm::u8vec4(0,0,0,255); return; }
+    else if (str == "white") { color = glm::u8vec4(255,255,255,255); return; }
+    else if (str == "red") { color = glm::u8vec4(255,0,0,255); return; }
+    else if (str == "green") { color = glm::u8vec4(0,255,0,255); return; }
+    else if (str == "blue") { color = glm::u8vec4(0,0,255,255); return; }
+    else if (str == "yellow") { color = glm::u8vec4(255,255,0,255); return; }
+    else if (str == "magenta") { color = glm::u8vec4(255,0,255,255); return; }
+    else if (str == "cyan") { color = glm::u8vec4(0,255,255,255); return; }
     
     if (str.startswith("#") && str.length() == 7)
     {

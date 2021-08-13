@@ -50,8 +50,8 @@ template<typename T1, typename T2> static inline sp::io::DataBuffer& operator >>
     return packet >> pair.first >> pair.second;
 }
 
-static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sf::Color& c) { return packet << c.r << c.g << c.b << c.a; } \
-static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sf::Color& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
+static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::u8vec4& c) { return packet << c.r << c.g << c.b << c.a; } \
+static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::u8vec4& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
 
 template <typename T> struct multiplayerReplicationFunctions
 {

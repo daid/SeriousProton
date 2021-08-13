@@ -19,23 +19,23 @@ void RenderTarget::setDefaultFont(sf::Font* font)
     default_font = font;
 }
 
-void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float size, sf::Color color)
+void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color)
 {
     sf::Sprite sprite;
     textureManager.setTexture(sprite, texture);
     sprite.setPosition(sf::Vector2f(center.x, center.y));
     sprite.setScale(size / sprite.getTextureRect().height, size / sprite.getTextureRect().height);
-    sprite.setColor(color);
+    sprite.setColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(sprite);
 }
 
-void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center, float size, float rotation, sf::Color color)
+void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center, float size, float rotation, glm::u8vec4 color)
 {
     sf::Sprite sprite;
     textureManager.setTexture(sprite, texture);
     sprite.setPosition(sf::Vector2f(center.x, center.y));
     sprite.setScale(size / sprite.getTextureRect().height, size / sprite.getTextureRect().height);
-    sprite.setColor(color);
+    sprite.setColor(sf::Color(color.r, color.g, color.b, color.a));
     sprite.setRotation(rotation);
     target.draw(sprite);
 }
@@ -50,31 +50,31 @@ void RenderTarget::drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2
     target.draw(sprite, sf::BlendAdd);
 }
 
-void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, sf::Color color)
+void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 {
     sf::VertexArray a(sf::LinesStrip, 2);
     a[0].position.x = start.x;
     a[0].position.y = start.y;
     a[1].position.x = end.x;
     a[1].position.y = end.y;
-    a[0].color = color;
-    a[1].color = color;
+    a[0].color = sf::Color(color.r, color.g, color.b, color.a);
+    a[1].color = sf::Color(color.r, color.g, color.b, color.a);
     target.draw(a);
 }
 
-void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, sf::Color start_color, sf::Color end_color)
+void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color)
 {
     sf::VertexArray a(sf::LinesStrip, 2);
     a[0].position.x = start.x;
     a[0].position.y = start.y;
     a[1].position.x = end.x;
     a[1].position.y = end.y;
-    a[0].color = start_color;
-    a[1].color = end_color;
+    a[0].color = sf::Color(start_color.r, start_color.g, start_color.b, start_color.a);
+    a[1].color = sf::Color(end_color.r, end_color.g, end_color.b, end_color.a);
     target.draw(a);
 }
 
-void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, sf::Color color)
+void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, glm::u8vec4 color)
 {
     sf::VertexArray a(sf::LinesStrip, points.size());
     int n=0;
@@ -82,13 +82,13 @@ void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, sf::C
     {
         a[n].position.x = point.x;
         a[n].position.y = point.y;
-        a[n].color = color;
+        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
         n++;
     }
     target.draw(a);
 }
 
-void RenderTarget::drawLine(const std::vector<glm::vec2> points, sf::Color color)
+void RenderTarget::drawLine(const std::vector<glm::vec2> points, glm::u8vec4 color)
 {
     sf::VertexArray a(sf::LinesStrip, points.size());
     int n=0;
@@ -96,13 +96,13 @@ void RenderTarget::drawLine(const std::vector<glm::vec2> points, sf::Color color
     {
         a[n].position.x = point.x;
         a[n].position.y = point.y;
-        a[n].color = color;
+        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
         n++;
     }
     target.draw(a);
 }
 
-void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2> points, sf::Color color)
+void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2> points, glm::u8vec4 color)
 {
     sf::VertexArray a(sf::LinesStrip, points.size());
     int n=0;
@@ -110,28 +110,28 @@ void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2> points, sf::Col
     {
         a[n].position.x = point.x;
         a[n].position.y = point.y;
-        a[n].color = color;
+        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
         n++;
     }
     target.draw(a, sf::RenderStates(sf::BlendAdd));
 }
 
-void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, sf::Color color)
+void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color)
 {
     sf::RectangleShape overlay(sf::Vector2f(rect.size.x, rect.size.y));
     overlay.setPosition(rect.position.x, rect.position.y);
-    overlay.setFillColor(color);
+    overlay.setFillColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(overlay, sf::BlendMultiply);
 }
 
-void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, sf::Color color)
+void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color)
 {
     sf::CircleShape circle(radius - thickness, 50);
     circle.setOrigin(radius - thickness, radius - thickness);
     circle.setPosition(center.x, center.y);
     circle.setFillColor(sf::Color::Transparent);
     circle.setOutlineThickness(thickness);
-    circle.setOutlineColor(color);
+    circle.setOutlineColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(circle);
 }
 
@@ -146,7 +146,7 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
     target.draw(overlay);
 }
 
-void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& points, sf::Color color)
+void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
 {
     sf::VertexArray a(sf::TrianglesStrip, points.size());
     int n=0;
@@ -154,13 +154,13 @@ void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& poi
     {
         a[n].position.x = point.x;
         a[n].position.y = point.y;
-        a[n].color = color;
+        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
         n++;
     }
     target.draw(a);
 }
 
-void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, sf::Color color)
+void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
     sf::VertexArray a(sf::TrianglesStrip, points.size());
     int n=0;
@@ -168,26 +168,26 @@ void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, sf::C
     {
         a[n].position.x = point.x;
         a[n].position.y = point.y;
-        a[n].color = color;
+        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
         n++;
     }
     target.draw(a);
 }
 
-void RenderTarget::fillCircle(glm::vec2 center, float radius, sf::Color color)
+void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
 {
     sf::CircleShape circle(radius, 50);
     circle.setOrigin(radius, radius);
     circle.setPosition(center.x, center.y);
-    circle.setFillColor(color);
+    circle.setFillColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(circle);
 }
 
-void RenderTarget::fillRect(const sp::Rect& rect, sf::Color color)
+void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
 {
     sf::RectangleShape shape(sf::Vector2f(rect.size.x, rect.size.y));
     shape.setPosition(rect.position.x, rect.position.y);
-    shape.setFillColor(color);
+    shape.setFillColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(shape);
 }
 
@@ -195,7 +195,7 @@ void RenderTarget::fillRect(const sp::Rect& rect, sf::Color color)
 void RenderTarget::drawTexturedQuad(std::string_view texture,
     glm::vec2 p0, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3,
     glm::vec2 uv0, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3,
-    sf::Color color)
+    glm::u8vec4 color)
 {
     auto tex = textureManager.getTexture(texture);
 
@@ -208,14 +208,14 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
     a[1].texCoords = sf::Vector2f(uv1.x * tex->getSize().x, uv1.y * tex->getSize().y);
     a[2].texCoords = sf::Vector2f(uv2.x * tex->getSize().x, uv2.y * tex->getSize().y);
     a[3].texCoords = sf::Vector2f(uv3.x * tex->getSize().x, uv3.y * tex->getSize().y);
-    a[0].color = color;
-    a[1].color = color;
-    a[2].color = color;
-    a[3].color = color;
+    a[0].color = sf::Color(color.r, color.g, color.b, color.a);
+    a[1].color = sf::Color(color.r, color.g, color.b, color.a);
+    a[2].color = sf::Color(color.r, color.g, color.b, color.a);
+    a[3].color = sf::Color(color.r, color.g, color.b, color.a);
     target.draw(a, tex);
 }
 
-void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sf::Font* font, sf::Color color)
+void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sf::Font* font, glm::u8vec4 color)
 {
     if (!font)
         font = default_font;
@@ -264,11 +264,11 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
         break;
     }
     textElement.setPosition(x, y);
-    textElement.setColor(color);
+    textElement.setColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(textElement);
 }
 
-void RenderTarget::drawVerticalText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sf::Font* font, sf::Color color)
+void RenderTarget::drawVerticalText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sf::Font* font, glm::u8vec4 color)
 {
     if (!font)
         font = default_font;
@@ -297,11 +297,11 @@ void RenderTarget::drawVerticalText(sp::Rect rect, std::string_view text, Alignm
         break;
     }
     textElement.setPosition(x, y);
-    textElement.setColor(color);
+    textElement.setColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(textElement);
 }
 
-void RenderTarget::draw9Cut(sp::Rect rect, std::string_view texture, sf::Color color, float width_factor)
+void RenderTarget::draw9Cut(sp::Rect rect, std::string_view texture, glm::u8vec4 color, float width_factor)
 {
     sf::Sprite sprite;
     textureManager.setTexture(sprite, texture);
@@ -321,7 +321,7 @@ void RenderTarget::draw9Cut(sp::Rect rect, std::string_view texture, sf::Color c
         cornerSizeR *= scale;
     }
 
-    sprite.setColor(color);
+    sprite.setColor(sf::Color(color.r, color.g, color.b, color.a));
     sprite.setOrigin(0, 0);
 
     float w = 1.0;
@@ -400,7 +400,7 @@ void RenderTarget::draw9Cut(sp::Rect rect, std::string_view texture, sf::Color c
     }
 }
 
-void RenderTarget::draw9CutV(sp::Rect rect, std::string_view texture, sf::Color color, float height_factor)
+void RenderTarget::draw9CutV(sp::Rect rect, std::string_view texture, glm::u8vec4 color, float height_factor)
 {
     sf::Sprite sprite;
     textureManager.setTexture(sprite, texture);
@@ -420,7 +420,7 @@ void RenderTarget::draw9CutV(sp::Rect rect, std::string_view texture, sf::Color 
         cornerSizeR *= scale;
     }
 
-    sprite.setColor(color);
+    sprite.setColor(sf::Color(color.r, color.g, color.b, color.a));
     sprite.setOrigin(0, 0);
 
     float h = 1.0;
@@ -501,7 +501,7 @@ void RenderTarget::draw9CutV(sp::Rect rect, std::string_view texture, sf::Color 
     }
 }
 
-void RenderTarget::drawStretched(sp::Rect rect, std::string_view texture, sf::Color color)
+void RenderTarget::drawStretched(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
     if (rect.size.x >= rect.size.y)
     {
@@ -511,7 +511,7 @@ void RenderTarget::drawStretched(sp::Rect rect, std::string_view texture, sf::Co
     }
 }
 
-void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, sf::Color color)
+void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
     sf::Texture* texture_ptr = textureManager.getTexture(texture);
     sf::Vector2f texture_size = sf::Vector2f(texture_ptr->getSize());
@@ -539,12 +539,12 @@ void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, sf::C
     a[7].texCoords = sf::Vector2f(texture_size.x, texture_size.y);
 
     for(int n=0; n<8; n++)
-        a[n].color = color;
+        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
 
     target.draw(a, texture_ptr);
 }
 
-void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, sf::Color color)
+void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
     sf::Texture* texture_ptr = textureManager.getTexture(texture);
     sf::Vector2f texture_size = sf::Vector2f(texture_ptr->getSize());
@@ -572,19 +572,19 @@ void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, sf::C
     a[7].texCoords = sf::Vector2f(texture_size.x, texture_size.y);
 
     for(int n=0; n<8; n++)
-        a[n].color = color;
+        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
 
     target.draw(a, texture_ptr);
 }
 
-void RenderTarget::drawStretchedHV(sp::Rect rect, float corner_size, std::string_view texture, sf::Color color)
+void RenderTarget::drawStretchedHV(sp::Rect rect, float corner_size, std::string_view texture, glm::u8vec4 color)
 {
     sf::Texture* texture_ptr = textureManager.getTexture(texture);
     sf::Vector2f texture_size = sf::Vector2f(texture_ptr->getSize());
     sf::VertexArray a(sf::TrianglesStrip, 8);
 
     for(int n=0; n<8; n++)
-        a[n].color = color;
+        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
 
     corner_size = std::min(corner_size, rect.size.y / 2.0f);
     corner_size = std::min(corner_size, rect.size.x / 2.0f);

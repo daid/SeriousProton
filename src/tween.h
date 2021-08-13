@@ -1,7 +1,7 @@
 #ifndef TWEEN_H
 #define TWEEN_H
 
-#include <SFML/Graphics/Color.hpp>
+#include <glm/gtc/type_precision.hpp>
 /**
 Tweening functions. Allows for none-linear effects and stuff.
  */
@@ -46,6 +46,6 @@ T Tween<T>::tweenApply(float f, const T& value0, const T& value1)
     return value0 + (value1 - value0) * f;
 }
 
-template<> sf::Color Tween<sf::Color>::tweenApply(float f, const sf::Color& value0, const sf::Color& value1);
+template<> glm::u8vec4 Tween<glm::u8vec4>::tweenApply(float f, const glm::u8vec4& value0, const glm::u8vec4& value1);
 
 #endif//TWEEN_H

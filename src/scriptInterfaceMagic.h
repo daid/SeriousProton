@@ -10,7 +10,7 @@
 #include "P.h"
 #include "stringImproved.h"
 #include "lua/lua.hpp"
-#include <SFML/Graphics/Color.hpp>
+#include "glm/gtc/type_precision.hpp"
 #include <typeinfo>
 #include <optional>
 
@@ -222,7 +222,7 @@ template<> void convert<string>::param(lua_State* L, int& idx, string& str);
 
 template<> void convert<bool>::param(lua_State* L, int& idx, bool& b);
 
-template<> void convert<sf::Color>::param(lua_State* L, int& idx, sf::Color& color);
+template<> void convert<glm::u8vec4>::param(lua_State* L, int& idx, glm::u8vec4& color);
 
 /* Convert parameters to sf::Vector2 objects. */
 template<typename T>
