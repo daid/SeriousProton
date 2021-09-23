@@ -3,6 +3,20 @@
 
 #include <cstring>
 
+#define STB_VORBIS_NO_STDIO
+#define STB_VORBIS_NO_PUSHDATA_API
+#define STB_VORBIS_HEADER_ONLY
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#pragma GCC diagnostic ignored "-Wshadow-compatible-local"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif//__GNUC__
+#include "stb/stb_vorbis.h"
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif//__GNUC__
+
 namespace sp {
 namespace audio {
 
@@ -84,6 +98,27 @@ Sound::Sound(const string& resource_name)
     auto stream = getResourceStream(resource_name);
     if (!stream)
         return;
+    
+    if (resource_name.endswith(".ogg"))
+    {
+        std::vector<uint8_t> data;
+        data.resize(stream->getSize());
+        stream->read(data.data(), data.size());
+        short* buffer = nullptr;
+        auto len = stb_vorbis_decode_memory(data.data(), data.size(), &channels, &samplerate, &buffer);
+        if (len >= 0)
+        {
+            samples.resize(len);
+            memcpy(samples.data(), buffer, sizeof(short) * len);
+            free(buffer);
+        }
+        else
+        {
+            channels = 0;
+        }
+        return;
+    }
+    
     char chunk_id[4];
     uint32_t chunk_size;
 
