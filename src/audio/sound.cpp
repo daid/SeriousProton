@@ -106,10 +106,10 @@ Sound::Sound(const string& resource_name)
         stream->read(data.data(), data.size());
         short* buffer = nullptr;
         auto len = stb_vorbis_decode_memory(data.data(), data.size(), &channels, &samplerate, &buffer);
-        if (len >= 0)
+        if (len >= 0 && channels > 0)
         {
-            samples.resize(len);
-            memcpy(samples.data(), buffer, sizeof(short) * len);
+            samples.resize(len * channels);
+            memcpy(samples.data(), buffer, sizeof(short) * samples.size());
             free(buffer);
         }
         else
