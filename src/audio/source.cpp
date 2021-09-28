@@ -5,8 +5,6 @@
 #include <array>
 #include <string.h>
 
-#include <SFML/Audio/SoundStream.hpp>
-
 namespace sp {
 namespace audio {
 
@@ -14,6 +12,7 @@ namespace audio {
 static std::recursive_mutex source_list_mutex;
 static Source* source_list_start = nullptr;
 
+/*
 class MySFMLStream : public sf::SoundStream
 {
 public:
@@ -38,7 +37,7 @@ private:
     std::array<int16_t, 1024> buffer;
 };
 static MySFMLStream* sfml_stream;
-
+*/
 
 Source::~Source()
 {
@@ -87,8 +86,9 @@ void Source::stop()
 
 void Source::startAudioSystem()
 {
-    sfml_stream = new MySFMLStream();
-    sfml_stream->play();
+#warning SDL2 TODO
+    //sfml_stream = new MySFMLStream();
+    //sfml_stream->play();
 }
 
 void Source::onAudioCallback(int16_t* stream, int sample_count)

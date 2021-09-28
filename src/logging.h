@@ -2,7 +2,6 @@
 #define LOGGING_H
 #include <string_view>
 
-#include <SFML/Graphics/Rect.hpp>
 #include <glm/vec2.hpp>
 #include "nonCopyable.h"
 #include "stringImproved.h"
@@ -55,8 +54,6 @@ inline const Logging& operator<<(const Logging& log, const unsigned long i) { re
 inline const Logging& operator<<(const Logging& log, const float f) { return log << string(f).c_str(); }
 inline const Logging& operator<<(const Logging& log, const double f) { return log << string(f, 2).c_str(); }
 inline const Logging& operator<<(const Logging& log, const unsigned long long i) { return log << string(int(i)).c_str(); }
-template<typename T> inline const Logging& operator<<(const Logging& log, const sf::Vector2<T> v) { return log << v.x << "," << v.y; }
-template<typename T> inline const Logging& operator<<(const Logging& log, const sf::Rect<T> v) { return log << v.left << "," << v.top << ":" << v.width << "x" << v.height; }
 template<typename T, glm::qualifier Q> inline const Logging& operator<<(const Logging& log, const glm::vec<2, T, Q> v) { return log << v.x << "," << v.y; }
 
 #endif//LOGGING_H

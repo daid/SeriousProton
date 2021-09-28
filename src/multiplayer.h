@@ -2,7 +2,6 @@
 #define MULTIPLAYER_H
 
 #include <io/dataBuffer.h>
-#include <SFML/Graphics/Color.hpp>
 #include <stdint.h>
 #include "Updatable.h"
 #include "stringImproved.h"
@@ -32,14 +31,6 @@ template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operato
 template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::vec<3, T, Q>& v)
 {
     return packet >> v.x >> v.y >> v.z;
-}
-template<typename T> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sf::Vector2<T>& v)
-{
-    return packet << v.x << v.y;
-}
-template<typename T> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sf::Vector2<T>& v)
-{
-    return packet >> v.x >> v.y;
 }
 template<typename T1, typename T2> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const std::pair<T1, T2>& pair)
 {

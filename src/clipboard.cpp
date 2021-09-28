@@ -9,6 +9,9 @@
 
 string Clipboard::readClipboard()
 {
+#warning TODO SDL2
+    return "";
+    /*
 #ifdef _WIN32
     P<WindowManager> windowManager = engine->getObject("windowManager");
     if (!OpenClipboard(windowManager->window.getSystemHandle()))
@@ -55,10 +58,12 @@ string Clipboard::readClipboard()
     pclose(pipe);
     return result;
 #endif//__linux__ || __APPLE__
+*/
 }
 
 void Clipboard::setClipboard(string value)
 {
+    /*
 #ifdef _WIN32
     P<WindowManager> windowManager = engine->getObject("windowManager");
     if (!OpenClipboard(windowManager->window.getSystemHandle()))
@@ -105,4 +110,5 @@ void Clipboard::setClipboard(string value)
     fwrite(value.c_str(), value.size(), 1, pipe);
     pclose(pipe);
 #endif//__linux__ || __APPLE__
+*/
 }

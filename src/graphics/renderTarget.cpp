@@ -1,57 +1,178 @@
 #include "graphics/renderTarget.h"
-#include <SFML/Graphics.hpp>
+#include "graphics/textureAtlas.h"
 #include "textureManager.h"
 #include "windowManager.h"
 #include "engine.h"
 
+#include "GL/glew.h"
+#include <glm/gtc/type_ptr.hpp>
+
 
 namespace sp {
 
-static sf::Font* default_font;
+static sp::Font* default_font = nullptr;
 
-RenderTarget::RenderTarget(sf::RenderTarget& target)
-: target(target)
+static sp::Shader* shader = nullptr;
+static unsigned int vertices_vbo = 0;
+static unsigned int indices_vbo = 0;
+
+struct VertexData
 {
+    glm::vec2 position;
+    glm::u8vec4 color;
+    glm::vec2 uv;
+};
+static std::vector<VertexData> vertex_data;
+static std::vector<uint16_t> index_data;
+
+static sp::AtlasTexture* atlas_texture;
+static std::unordered_map<string, Rect> atlas_images;
+static std::unordered_map<sp::Font*, std::unordered_map<int, Rect>> atlas_glyphs;
+
+static Rect getFromAtlas(std::string_view texture)
+{
+    auto it = atlas_images.find(texture);
+    if (it != atlas_images.end())
+        return it->second;
+    Image image;
+    auto stream = getResourceStream(texture);
+    if (!stream)
+        stream = getResourceStream(string(texture) + ".png");
+    image.loadFromStream(stream);
+    Rect uv_rect = atlas_texture->add(std::move(image), 1);
+    atlas_images[texture] = uv_rect;
+    LOG(Info, "Added ", string(texture), " to atlas@", uv_rect.position, " ", uv_rect.size, "  ", atlas_texture->usageRate() * 100.0f, "%");
+    return uv_rect;
 }
 
-void RenderTarget::setDefaultFont(sf::Font* font)
+RenderTarget::RenderTarget(glm::vec2 virtual_size, glm::ivec2 physical_size)
+: virtual_size(virtual_size), physical_size(physical_size)
+{
+    if (!shader)
+        shader = new sp::Shader(R"(
+#version 120
+uniform mat3 u_projection;
+
+attribute vec2 a_position;
+attribute vec2 a_texcoords;
+attribute vec4 a_color;
+
+varying vec2 v_texcoords;
+varying vec4 v_color;
+
+void main()
+{
+    v_texcoords = a_texcoords;
+    v_color = a_color;
+    gl_Position = vec4(u_projection * vec3(a_position, 1.0), 1.0);
+}
+)", R"(
+#version 120
+uniform sampler2D u_texture;
+
+varying vec2 v_texcoords;
+varying vec4 v_color;
+
+void main()
+{
+    gl_FragColor = texture2D(u_texture, v_texcoords) * v_color;
+    gl_FragColor.rgb *= v_color.a;
+}
+)");
+    if (!vertices_vbo)
+    {
+        glGenBuffers(1, &vertices_vbo);
+        glGenBuffers(1, &indices_vbo);
+    }
+    shader->bind();
+
+    glm::mat3 project_matrix{1.0f};
+    project_matrix[0][0] = 2.0f / float(virtual_size.x);
+    project_matrix[1][1] = -2.0f / float(virtual_size.y);
+    project_matrix[2][0] = -1.0f;
+    project_matrix[2][1] = 1.0f;
+    glUniformMatrix3fv(shader->getUniformLocation("u_projection"), 1, GL_FALSE, glm::value_ptr(project_matrix));
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    if (!atlas_texture)
+        atlas_texture = new AtlasTexture({4096, 4096});
+}
+
+void RenderTarget::setDefaultFont(sp::Font* font)
 {
     default_font = font;
 }
 
 void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color)
 {
-    sf::Sprite sprite;
-    textureManager.setTexture(sprite, texture);
-    sprite.setPosition(sf::Vector2f(center.x, center.y));
-    sprite.setScale(size / sprite.getTextureRect().height, size / sprite.getTextureRect().height);
-    sprite.setColor(sf::Color(color.r, color.g, color.b, color.a));
-    target.draw(sprite);
+    sp::Rect uv_rect = getFromAtlas(texture);
+
+    int n = vertex_data.size();
+    index_data.insert(index_data.end(), {
+        n + 0, n + 1, n + 2,
+        n + 1, n + 3, n + 2,
+    });
+    size *= 0.5f;
+    glm::vec2 offset{size / uv_rect.size.y * uv_rect.size.x, size};
+    vertex_data.push_back({
+        {center.x - offset.x, center.y - offset.y},
+        color, {uv_rect.position.x, uv_rect.position.y}});
+    vertex_data.push_back({
+        {center.x - offset.x, center.y + offset.y},
+        color, {uv_rect.position.x, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {center.x + offset.x, center.y - offset.y},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y}});
+    vertex_data.push_back({
+        {center.x + offset.x, center.y + offset.y},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
 }
 
 void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center, float size, float rotation, glm::u8vec4 color)
 {
-    sf::Sprite sprite;
-    textureManager.setTexture(sprite, texture);
-    sprite.setPosition(sf::Vector2f(center.x, center.y));
-    sprite.setScale(size / sprite.getTextureRect().height, size / sprite.getTextureRect().height);
-    sprite.setColor(sf::Color(color.r, color.g, color.b, color.a));
-    sprite.setRotation(rotation);
-    target.draw(sprite);
+    if (rotation == 0)
+        return drawSprite(texture, center, size, color);
+    sp::Rect uv_rect = getFromAtlas(texture);
+
+    int n = vertex_data.size();
+    index_data.insert(index_data.end(), {
+        n + 0, n + 1, n + 2,
+        n + 1, n + 3, n + 2,
+    });
+    size *= 0.5f;
+    glm::vec2 offset0 = rotateVec2({size / uv_rect.size.y * uv_rect.size.x, size}, rotation);
+    glm::vec2 offset1{offset0.y, -offset0.x};
+    vertex_data.push_back({
+        center - offset0,
+        color, {uv_rect.position.x, uv_rect.position.y}});
+    vertex_data.push_back({
+        center - offset1,
+        color, {uv_rect.position.x, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        center + offset1,
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y}});
+    vertex_data.push_back({
+        center + offset0,
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
 }
 
 void RenderTarget::drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2 center, float size, float rotation)
 {
+    /*
     sf::Sprite sprite;
     textureManager.setTexture(sprite, texture);
     sprite.setPosition(sf::Vector2f(center.x, center.y));
     sprite.setScale(size / sprite.getTextureRect().height, size / sprite.getTextureRect().height);
     sprite.setRotation(rotation);
     target.draw(sprite, sf::BlendAdd);
+    */
 }
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 {
+    /*
     sf::VertexArray a(sf::LinesStrip, 2);
     a[0].position.x = start.x;
     a[0].position.y = start.y;
@@ -60,10 +181,12 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
     a[0].color = sf::Color(color.r, color.g, color.b, color.a);
     a[1].color = sf::Color(color.r, color.g, color.b, color.a);
     target.draw(a);
+    */
 }
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color)
 {
+    /*
     sf::VertexArray a(sf::LinesStrip, 2);
     a[0].position.x = start.x;
     a[0].position.y = start.y;
@@ -72,10 +195,12 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_co
     a[0].color = sf::Color(start_color.r, start_color.g, start_color.b, start_color.a);
     a[1].color = sf::Color(end_color.r, end_color.g, end_color.b, end_color.a);
     target.draw(a);
+    */
 }
 
 void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, glm::u8vec4 color)
 {
+    /*
     sf::VertexArray a(sf::LinesStrip, points.size());
     int n=0;
     for(auto point : points)
@@ -86,10 +211,12 @@ void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, glm::
         n++;
     }
     target.draw(a);
+    */
 }
 
 void RenderTarget::drawLine(const std::vector<glm::vec2> points, glm::u8vec4 color)
 {
+    /*
     sf::VertexArray a(sf::LinesStrip, points.size());
     int n=0;
     for(auto point : points)
@@ -100,10 +227,12 @@ void RenderTarget::drawLine(const std::vector<glm::vec2> points, glm::u8vec4 col
         n++;
     }
     target.draw(a);
+    */
 }
 
 void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2> points, glm::u8vec4 color)
 {
+    /*
     sf::VertexArray a(sf::LinesStrip, points.size());
     int n=0;
     for(auto point : points)
@@ -114,27 +243,33 @@ void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2> points, glm::u8
         n++;
     }
     target.draw(a, sf::RenderStates(sf::BlendAdd));
+    */
 }
 
 void RenderTarget::drawPoint(glm::vec2 position, glm::u8vec4 color)
 {
+    /*
     sf::VertexArray a(sf::Points, 1);
     a[0].position.x = position.x;
     a[0].position.y = position.y;
     a[0].color = sf::Color(color.r, color.g, color.b, color.a);
     target.draw(a);
+    */
 }
 
 void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color)
 {
+    /*
     sf::RectangleShape overlay(sf::Vector2f(rect.size.x, rect.size.y));
     overlay.setPosition(rect.position.x, rect.position.y);
     overlay.setFillColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(overlay, sf::BlendMultiply);
+    */
 }
 
 void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color)
 {
+    /*
     sf::CircleShape circle(radius - thickness, 50);
     circle.setOrigin(radius - thickness, radius - thickness);
     circle.setPosition(center.x, center.y);
@@ -142,10 +277,12 @@ void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thick
     circle.setOutlineThickness(thickness);
     circle.setOutlineColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(circle);
+    */
 }
 
 void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
 {
+    /*
     sf::RectangleShape overlay(sf::Vector2f(rect.size.x, rect.size.y));
     overlay.setPosition(rect.position.x, rect.position.y);
     overlay.setTexture(textureManager.getTexture(texture));
@@ -153,10 +290,12 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
     sf::Vector2i texture_size = window_manager->mapCoordsToPixel(sf::Vector2f(rect.size.x, rect.size.y)) - window_manager->mapCoordsToPixel(sf::Vector2f(0, 0));
     overlay.setTextureRect(sf::IntRect(0, 0, texture_size.x, texture_size.y));
     target.draw(overlay);
+    */
 }
 
 void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
 {
+    /*
     sf::VertexArray a(sf::TrianglesStrip, points.size());
     int n=0;
     for(auto point : points)
@@ -167,10 +306,12 @@ void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& poi
         n++;
     }
     target.draw(a);
+    */
 }
 
 void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
+    /*
     sf::VertexArray a(sf::TrianglesStrip, points.size());
     int n=0;
     for(auto point : points)
@@ -181,23 +322,28 @@ void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::
         n++;
     }
     target.draw(a);
+    */
 }
 
 void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
 {
+    /*
     sf::CircleShape circle(radius, 50);
     circle.setOrigin(radius, radius);
     circle.setPosition(center.x, center.y);
     circle.setFillColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(circle);
+    */
 }
 
 void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
 {
+    /*
     sf::RectangleShape shape(sf::Vector2f(rect.size.x, rect.size.y));
     shape.setPosition(rect.position.x, rect.position.y);
     shape.setFillColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(shape);
+    */
 }
 
 
@@ -206,8 +352,8 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
     glm::vec2 uv0, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3,
     glm::u8vec4 color)
 {
+    /*
     auto tex = textureManager.getTexture(texture);
-
     sf::VertexArray a(sf::TrianglesFan, 4);
     a[0].position = sf::Vector2f(p0.x, p0.y);
     a[1].position = sf::Vector2f(p1.x, p1.y);
@@ -222,12 +368,112 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
     a[2].color = sf::Color(color.r, color.g, color.b, color.a);
     a[3].color = sf::Color(color.r, color.g, color.b, color.a);
     target.draw(a, tex);
+    */
 }
 
-void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sf::Font* font, glm::u8vec4 color)
+void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sp::Font* font, glm::u8vec4 color)
 {
     if (!font)
         font = default_font;
+    auto& ags = atlas_glyphs[font];
+    auto prepared = font->prepare(text, 32, font_size, rect.size, align);
+    int flags = 0;
+
+    float size_scale = font_size / 32.0f;
+    for(auto gd : prepared.data)
+    {
+        Font::GlyphInfo glyph;
+        if (gd.char_code == 0 || !font->getGlyphInfo(gd.char_code, 32, glyph))
+        {
+            glyph.advance = 0.0f;
+            glyph.bounds.size.x = 0.0f;
+        }
+
+        if (glyph.bounds.size.x > 0.0f)
+        {
+            Rect uv_rect;
+            auto it = ags.find(gd.char_code);
+            if (it == ags.end())
+            {
+                uv_rect = atlas_texture->add(std::move(font->drawGlyph(gd.char_code, 32)), 1);
+                ags[gd.char_code] = uv_rect;
+                LOG(Info, "Added glyph '", char(gd.char_code), "' to atlas@", uv_rect.position, " ", uv_rect.size, "  ", atlas_texture->usageRate() * 100.0f, "%");
+            }
+            else
+            {
+                uv_rect = it->second;
+            }
+
+            float u0 = uv_rect.position.x;
+            float v0 = uv_rect.position.y;
+            float u1 = uv_rect.position.x + uv_rect.size.x;
+            float v1 = uv_rect.position.y + uv_rect.size.y;
+            
+            float left = gd.position.x + glyph.bounds.position.x * size_scale;
+            float right = left + glyph.bounds.size.x * size_scale;
+            float top = gd.position.y - glyph.bounds.position.y * size_scale;
+            float bottom = top + glyph.bounds.size.y * size_scale;
+            
+            if (flags & Font::FlagClip)
+            {
+                if (right < 0)
+                    continue;
+                if (left < 0)
+                {
+                    u0 = u1 - uv_rect.size.x * (0 - right) / (left - right);
+                    left = 0;
+                }
+
+                if (left > rect.size.x)
+                    continue;
+                if (right > rect.size.x)
+                {
+                    u1 = u0 + uv_rect.size.x * (rect.size.x - left) / (right - left);
+                    right = rect.size.x;
+                }
+
+                if (top < 0)
+                    continue;
+                if (bottom < 0)
+                {
+                    v1 = v0 + uv_rect.size.y * (0 - top) / (bottom - top);
+                    bottom = 0;
+                }
+
+                if (bottom > rect.size.y)
+                    continue;
+                if (top > rect.size.y)
+                {
+                    v0 = v1 - uv_rect.size.y * (rect.size.y - bottom) / (top - bottom);
+                    top = rect.size.y;
+                }
+            }
+
+            left += rect.position.x;
+            right += rect.position.x;
+            top += rect.position.y;
+            bottom += rect.position.y;
+
+            int n = vertex_data.size();
+            index_data.insert(index_data.end(), {
+                n + 0, n + 1, n + 2,
+                n + 1, n + 3, n + 2,
+            });
+            vertex_data.push_back({
+                {left, top},
+                color, {u0, v0}});
+            vertex_data.push_back({
+                {left, bottom},
+                color, {u0, v1}});
+            vertex_data.push_back({
+                {right, top},
+                color, {u1, v0}});
+            vertex_data.push_back({
+                {right, bottom},
+                color, {u1, v1}});
+        }
+    }
+    /*
     sf::Text textElement(sf::String::fromUtf8(std::begin(text), std::end(text)), *font, font_size);
     float y = 0;
     float x = 0;
@@ -275,13 +521,15 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
     textElement.setPosition(x, y);
     textElement.setColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(textElement);
+    */
 }
 
-void RenderTarget::drawVerticalText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sf::Font* font, glm::u8vec4 color)
+void RenderTarget::drawVerticalText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sp::Font* font, glm::u8vec4 color)
 {
     if (!font)
         font = default_font;
 
+    /*
     sf::Text textElement(sf::String::fromUtf8(std::begin(text), std::end(text)), *font, font_size);
     textElement.setRotation(-90);
     float x = 0;
@@ -308,206 +556,7 @@ void RenderTarget::drawVerticalText(sp::Rect rect, std::string_view text, Alignm
     textElement.setPosition(x, y);
     textElement.setColor(sf::Color(color.r, color.g, color.b, color.a));
     target.draw(textElement);
-}
-
-void RenderTarget::draw9Cut(sp::Rect rect, std::string_view texture, glm::u8vec4 color, float width_factor)
-{
-    sf::Sprite sprite;
-    textureManager.setTexture(sprite, texture);
-    sf::IntRect textureSize = sprite.getTextureRect();
-    int cornerSizeT = textureSize.height / 3;
-    float cornerSizeR = cornerSizeT;
-    float scale = 1.0;
-    if (cornerSizeT > rect.size.y / 2)
-    {
-        scale = float(rect.size.y / 2) / cornerSizeR;
-        sprite.setScale(scale, scale);
-        cornerSizeR *= scale;
-    }else if (cornerSizeT > rect.size.x / 2)
-    {
-        scale = float(rect.size.x / 2) / cornerSizeR;
-        sprite.setScale(scale, scale);
-        cornerSizeR *= scale;
-    }
-
-    sprite.setColor(sf::Color(color.r, color.g, color.b, color.a));
-    sprite.setOrigin(0, 0);
-
-    float w = 1.0;
-    if (cornerSizeR > rect.size.x * width_factor)
-        w = rect.size.x * width_factor / cornerSizeR;
-
-    //TopLeft
-    sprite.setPosition(rect.position.x, rect.position.y);
-    sprite.setTextureRect(sf::IntRect(0, 0, cornerSizeT * w, cornerSizeT));
-    target.draw(sprite);
-    //BottomLeft
-    sprite.setPosition(rect.position.x, rect.position.y + rect.size.y - cornerSizeR);
-    sprite.setTextureRect(sf::IntRect(0, textureSize.height - cornerSizeT, cornerSizeT * w, cornerSizeT));
-    target.draw(sprite);
-
-    if (rect.size.y > cornerSizeR * 2)
-    {
-        //left
-        sprite.setPosition(rect.position.x, rect.position.y + cornerSizeR);
-        sprite.setTextureRect(sf::IntRect(0, cornerSizeT, cornerSizeT * w, 1));
-        sprite.setScale(scale, rect.size.y - cornerSizeR*2);
-        target.draw(sprite);
-        sprite.setScale(scale, scale);
-    }
-    if (w < 1.0)
-        return;
-
-    if (rect.size.x - cornerSizeR > rect.size.x * width_factor)
-        w = (width_factor - cornerSizeR / rect.size.x) * (rect.size.x / (rect.size.x - cornerSizeR * 2));
-
-    if (rect.size.x > cornerSizeR * 2)
-    {
-        //Top
-        sprite.setPosition(rect.position.x + cornerSizeR, rect.position.y);
-        sprite.setTextureRect(sf::IntRect(cornerSizeT, 0, textureSize.width - cornerSizeT * 2, cornerSizeT));
-        sprite.setScale((rect.size.x - cornerSizeR*2) / float(textureSize.width - cornerSizeT * 2) * w, scale);
-        target.draw(sprite);
-        //Bottom
-        sprite.setPosition(rect.position.x + cornerSizeR, rect.position.y + rect.size.y - cornerSizeR);
-        sprite.setTextureRect(sf::IntRect(cornerSizeT, textureSize.height - cornerSizeT, textureSize.width - cornerSizeT * 2, cornerSizeT));
-        sprite.setScale((rect.size.x - cornerSizeR*2) / float(textureSize.width - cornerSizeT * 2) * w, scale);
-        target.draw(sprite);
-        sprite.setScale(scale, scale);
-    }
-
-    if (rect.size.x > cornerSizeR * 2 && rect.size.y > cornerSizeR * 2)
-    {
-        //Center
-        sprite.setPosition(rect.position.x + cornerSizeR, rect.position.y + cornerSizeR);
-        sprite.setTextureRect(sf::IntRect(cornerSizeT, cornerSizeT, 1, 1));
-        sprite.setScale((rect.size.x - cornerSizeR*2) * w, rect.size.y - cornerSizeR*2);
-        target.draw(sprite);
-        sprite.setScale(scale, scale);
-    }
-    if (w < 1.0)
-        return;
-    if (width_factor < 1.0)
-        w = (width_factor - (rect.size.x - cornerSizeR) / rect.size.x) * (rect.size.x / cornerSizeR);
-
-    //TopRight
-    sprite.setPosition(rect.position.x + rect.size.x - cornerSizeR, rect.position.y);
-    sprite.setTextureRect(sf::IntRect(textureSize.width - cornerSizeT, 0, cornerSizeT * w, cornerSizeT));
-    target.draw(sprite);
-    //BottomRight
-    sprite.setPosition(rect.position.x + rect.size.x - cornerSizeR, rect.position.y + rect.size.y - cornerSizeR);
-    sprite.setTextureRect(sf::IntRect(textureSize.width - cornerSizeT, textureSize.height - cornerSizeT, cornerSizeT * w, cornerSizeT));
-    target.draw(sprite);
-
-    if (rect.size.y > cornerSizeR * 2)
-    {
-        //Right
-        sprite.setPosition(rect.position.x + rect.size.x - cornerSizeR, rect.position.y + cornerSizeR);
-        sprite.setTextureRect(sf::IntRect(textureSize.width - cornerSizeT, cornerSizeT, cornerSizeT * w, 1));
-        sprite.setScale(scale, rect.size.y - cornerSizeR*2);
-        target.draw(sprite);
-    }
-}
-
-void RenderTarget::draw9CutV(sp::Rect rect, std::string_view texture, glm::u8vec4 color, float height_factor)
-{
-    sf::Sprite sprite;
-    textureManager.setTexture(sprite, texture);
-    sf::IntRect textureSize = sprite.getTextureRect();
-    int cornerSizeT = textureSize.height / 3;
-    float cornerSizeR = cornerSizeT;
-    float scale = 1.0;
-    if (cornerSizeT > rect.size.y / 2)
-    {
-        scale = float(rect.size.y / 2) / cornerSizeR;
-        sprite.setScale(scale, scale);
-        cornerSizeR *= scale;
-    }else if (cornerSizeT > rect.size.x / 2)
-    {
-        scale = float(rect.size.x / 2) / cornerSizeR;
-        sprite.setScale(scale, scale);
-        cornerSizeR *= scale;
-    }
-
-    sprite.setColor(sf::Color(color.r, color.g, color.b, color.a));
-    sprite.setOrigin(0, 0);
-
-    float h = 1.0;
-    if (cornerSizeR > rect.size.y * height_factor)
-        h = rect.size.y * height_factor / cornerSizeR;
-
-    //BottomLeft
-    sprite.setPosition(rect.position.x, rect.position.y + rect.size.y - cornerSizeR * h);
-    sprite.setTextureRect(sf::IntRect(0, textureSize.height - cornerSizeT * h, cornerSizeT, cornerSizeT * h));
-    target.draw(sprite);
-    //BottomRight
-    sprite.setPosition(rect.position.x + rect.size.x - cornerSizeR, rect.position.y + rect.size.y - cornerSizeR * h);
-    sprite.setTextureRect(sf::IntRect(textureSize.width - cornerSizeT, textureSize.height - cornerSizeT * h, cornerSizeT, cornerSizeT * h));
-    target.draw(sprite);
-
-    if (rect.size.x > cornerSizeR * 2)
-    {
-        //Bottom
-        sprite.setPosition(rect.position.x + cornerSizeR, rect.position.y + rect.size.y - cornerSizeR * h);
-        sprite.setTextureRect(sf::IntRect(cornerSizeT, textureSize.height - cornerSizeT * h, textureSize.width - cornerSizeT * 2, cornerSizeT * h));
-        sprite.setScale((rect.size.x - cornerSizeR*2) / float(textureSize.width - cornerSizeT * 2), scale);
-        target.draw(sprite);
-        sprite.setScale(scale, scale);
-    }
-
-    if (h < 1.0)
-        return;
-
-    if (rect.size.y - cornerSizeR > rect.size.y * height_factor)
-        h = (height_factor - cornerSizeR / rect.size.y) * (rect.size.y / (rect.size.y - cornerSizeR * 2));
-
-    if (rect.size.y > cornerSizeR * 2)
-    {
-        //left
-        sprite.setPosition(rect.position.x, rect.position.y + cornerSizeR + (rect.size.y - cornerSizeR * 2) * (1.0f - h));
-        sprite.setTextureRect(sf::IntRect(0, cornerSizeT, cornerSizeT, 1));
-        sprite.setScale(scale, (rect.size.y - cornerSizeR*2) * h);
-        target.draw(sprite);
-        sprite.setScale(scale, scale);
-        //Right
-        sprite.setPosition(rect.position.x + rect.size.x - cornerSizeR, rect.position.y + cornerSizeR + (rect.size.y - cornerSizeR * 2) * (1.0f - h));
-        sprite.setTextureRect(sf::IntRect(textureSize.width - cornerSizeT, cornerSizeT, cornerSizeT, 1));
-        sprite.setScale(scale, (rect.size.y - cornerSizeR*2) * h);
-        target.draw(sprite);
-    }
-
-    if (rect.size.x > cornerSizeR * 2 && rect.size.y > cornerSizeR * 2)
-    {
-        //Center
-        sprite.setPosition(rect.position.x + cornerSizeR, rect.position.y + cornerSizeR + (rect.size.y - cornerSizeR * 2) * (1.0f - h));
-        sprite.setTextureRect(sf::IntRect(cornerSizeT, cornerSizeT, 1, 1));
-        sprite.setScale(rect.size.x - cornerSizeR*2, (rect.size.y - cornerSizeR*2) * h);
-        target.draw(sprite);
-        sprite.setScale(scale, scale);
-    }
-
-    if (h < 1.0)
-        return;
-    if (height_factor < 1.0)
-        h = (height_factor - (rect.size.y - cornerSizeR) / rect.size.y) * (rect.size.y / cornerSizeR);
-
-    //TopLeft
-    sprite.setPosition(rect.position.x, rect.position.y + cornerSizeR * (1.0 - h));
-    sprite.setTextureRect(sf::IntRect(0, cornerSizeT * (1.0 - h), cornerSizeT, cornerSizeT * h));
-    target.draw(sprite);
-    //TopRight
-    sprite.setPosition(rect.position.x + rect.size.x - cornerSizeR, rect.position.y + cornerSizeR * (1.0 - h));
-    sprite.setTextureRect(sf::IntRect(textureSize.width - cornerSizeT, cornerSizeT * (1.0 - h), cornerSizeT, cornerSizeT * h));
-    target.draw(sprite);
-
-    if (rect.size.y > cornerSizeR * 2)
-    {
-        //Top
-        sprite.setPosition(rect.position.x + cornerSizeR, rect.position.y + cornerSizeR * (1.0 - h));
-        sprite.setTextureRect(sf::IntRect(cornerSizeT, cornerSizeT * (1.0 - h), 1, cornerSizeT * h));
-        sprite.setScale(rect.size.x - cornerSizeR*2, scale);
-        target.draw(sprite);
-    }
+    */
 }
 
 void RenderTarget::drawStretched(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
@@ -522,125 +571,217 @@ void RenderTarget::drawStretched(sp::Rect rect, std::string_view texture, glm::u
 
 void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
-    sf::Texture* texture_ptr = textureManager.getTexture(texture);
-    sf::Vector2f texture_size = sf::Vector2f(texture_ptr->getSize());
-    sf::VertexArray a(sf::TrianglesStrip, 8);
+    sp::Rect uv_rect = getFromAtlas(texture);
 
     float w = rect.size.y / 2.0f;
     if (w * 2 > rect.size.x)
         w = rect.size.x / 2.0f;
-    a[0].position = sf::Vector2f(rect.position.x, rect.position.y);
-    a[1].position = sf::Vector2f(rect.position.x, rect.position.y + rect.size.y);
-    a[2].position = sf::Vector2f(rect.position.x + w, rect.position.y);
-    a[3].position = sf::Vector2f(rect.position.x + w, rect.position.y + rect.size.y);
-    a[4].position = sf::Vector2f(rect.position.x + rect.size.x - w, rect.position.y);
-    a[5].position = sf::Vector2f(rect.position.x + rect.size.x - w, rect.position.y + rect.size.y);
-    a[6].position = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y);
-    a[7].position = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y + rect.size.y);
-
-    a[0].texCoords = sf::Vector2f(0, 0);
-    a[1].texCoords = sf::Vector2f(0, texture_size.y);
-    a[2].texCoords = sf::Vector2f(texture_size.x / 2, 0);
-    a[3].texCoords = sf::Vector2f(texture_size.x / 2, texture_size.y);
-    a[4].texCoords = sf::Vector2f(texture_size.x / 2, 0);
-    a[5].texCoords = sf::Vector2f(texture_size.x / 2, texture_size.y);
-    a[6].texCoords = sf::Vector2f(texture_size.x, 0);
-    a[7].texCoords = sf::Vector2f(texture_size.x, texture_size.y);
-
-    for(int n=0; n<8; n++)
-        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
-
-    target.draw(a, texture_ptr);
+    
+    int n = vertex_data.size();
+    index_data.insert(index_data.end(), {
+        n + 0, n + 1, n + 2,
+        n + 1, n + 3, n + 2,
+        n + 2, n + 3, n + 4,
+        n + 3, n + 5, n + 4,
+        n + 4, n + 5, n + 6,
+        n + 5, n + 7, n + 6,
+    });
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y},
+        color, {uv_rect.position.x, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {rect.position.x + w, rect.position.y},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + w, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x - w, rect.position.y},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x - w, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
 }
 
 void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
-    sf::Texture* texture_ptr = textureManager.getTexture(texture);
-    sf::Vector2f texture_size = sf::Vector2f(texture_ptr->getSize());
-    sf::VertexArray a(sf::TrianglesStrip, 8);
+    sp::Rect uv_rect = getFromAtlas(texture);
 
     float h = rect.size.x / 2.0;
     if (h * 2 > rect.size.y)
         h = rect.size.y / 2.0f;
-    a[0].position = sf::Vector2f(rect.position.x, rect.position.y);
-    a[1].position = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y);
-    a[2].position = sf::Vector2f(rect.position.x, rect.position.y + h);
-    a[3].position = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y + h);
-    a[4].position = sf::Vector2f(rect.position.x, rect.position.y + rect.size.y - h);
-    a[5].position = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y + rect.size.y - h);
-    a[6].position = sf::Vector2f(rect.position.x, rect.position.y + rect.size.y);
-    a[7].position = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y + rect.size.y);
-
-    a[0].texCoords = sf::Vector2f(0, 0);
-    a[1].texCoords = sf::Vector2f(0, texture_size.y);
-    a[2].texCoords = sf::Vector2f(texture_size.x / 2, 0);
-    a[3].texCoords = sf::Vector2f(texture_size.x / 2, texture_size.y);
-    a[4].texCoords = sf::Vector2f(texture_size.x / 2, 0);
-    a[5].texCoords = sf::Vector2f(texture_size.x / 2, texture_size.y);
-    a[6].texCoords = sf::Vector2f(texture_size.x, 0);
-    a[7].texCoords = sf::Vector2f(texture_size.x, texture_size.y);
-
-    for(int n=0; n<8; n++)
-        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
-
-    target.draw(a, texture_ptr);
+    
+    int n = vertex_data.size();
+    index_data.insert(index_data.end(), {
+        n + 0, n + 1, n + 2,
+        n + 1, n + 3, n + 2,
+        n + 2, n + 3, n + 4,
+        n + 3, n + 5, n + 4,
+        n + 4, n + 5, n + 6,
+        n + 5, n + 7, n + 6,
+    });
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y},
+        color, {uv_rect.position.x, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y},
+        color, {uv_rect.position.x, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y + h},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y + h},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y + rect.size.y - h},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y + rect.size.y - h},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
 }
 
 void RenderTarget::drawStretchedHV(sp::Rect rect, float corner_size, std::string_view texture, glm::u8vec4 color)
 {
-    sf::Texture* texture_ptr = textureManager.getTexture(texture);
-    sf::Vector2f texture_size = sf::Vector2f(texture_ptr->getSize());
-    sf::VertexArray a(sf::TrianglesStrip, 8);
-
-    for(int n=0; n<8; n++)
-        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
+    sp::Rect uv_rect = getFromAtlas(texture);
 
     corner_size = std::min(corner_size, rect.size.y / 2.0f);
     corner_size = std::min(corner_size, rect.size.x / 2.0f);
 
-    a[0].position = sf::Vector2f(rect.position.x, rect.position.y);
-    a[1].position = sf::Vector2f(rect.position.x, rect.position.y + corner_size);
-    a[2].position = sf::Vector2f(rect.position.x + corner_size, rect.position.y);
-    a[3].position = sf::Vector2f(rect.position.x + corner_size, rect.position.y + corner_size);
-    a[4].position = sf::Vector2f(rect.position.x + rect.size.x - corner_size, rect.position.y);
-    a[5].position = sf::Vector2f(rect.position.x + rect.size.x - corner_size, rect.position.y + corner_size);
-    a[6].position = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y);
-    a[7].position = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y + corner_size);
+    int n = vertex_data.size();
+    index_data.insert(index_data.end(), {
+        n + 0, n + 4, n + 1,
+        n + 1, n + 4, n + 5,
+        n + 1, n + 5, n + 2,
+        n + 2, n + 5, n + 6,
+        n + 2, n + 6, n + 3,
+        n + 3, n + 6, n + 7,
 
-    a[0].texCoords = sf::Vector2f(0, 0);
-    a[1].texCoords = sf::Vector2f(0, texture_size.y / 2.0);
-    a[2].texCoords = sf::Vector2f(texture_size.x / 2, 0);
-    a[3].texCoords = sf::Vector2f(texture_size.x / 2, texture_size.y / 2.0);
-    a[4].texCoords = sf::Vector2f(texture_size.x / 2, 0);
-    a[5].texCoords = sf::Vector2f(texture_size.x / 2, texture_size.y / 2.0);
-    a[6].texCoords = sf::Vector2f(texture_size.x, 0);
-    a[7].texCoords = sf::Vector2f(texture_size.x, texture_size.y / 2.0);
+        n + 4, n + 8, n + 5,
+        n + 5, n + 8, n + 9,
+        n + 5, n + 9, n + 6,
+        n + 6, n + 9, n + 10,
+        n + 6, n + 10, n + 7,
+        n + 7, n + 10, n + 11,
 
-    target.draw(a, texture_ptr);
+        n + 8, n + 12, n + 9,
+        n + 9, n + 12, n + 13,
+        n + 9, n + 13, n + 10,
+        n + 10, n + 13, n + 14,
+        n + 10, n + 14, n + 11,
+        n + 11, n + 14, n + 15,
+    });
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y},
+        color, {uv_rect.position.x, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + corner_size, rect.position.y},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x - corner_size, rect.position.y},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y}});
 
-    a[0].position.y = rect.position.y + rect.size.y - corner_size;
-    a[2].position.y = rect.position.y + rect.size.y - corner_size;
-    a[4].position.y = rect.position.y + rect.size.y - corner_size;
-    a[6].position.y = rect.position.y + rect.size.y - corner_size;
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y + corner_size},
+        color, {uv_rect.position.x, uv_rect.position.y + uv_rect.size.y * 0.5f}});
+    vertex_data.push_back({
+        {rect.position.x + corner_size, rect.position.y + corner_size},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y * 0.5f}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x - corner_size, rect.position.y + corner_size},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y * 0.5f}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y + corner_size},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y * 0.5f}});
 
-    a[0].texCoords.y = texture_size.y / 2.0;
-    a[2].texCoords.y = texture_size.y / 2.0;
-    a[4].texCoords.y = texture_size.y / 2.0;
-    a[6].texCoords.y = texture_size.y / 2.0;
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y + rect.size.y - corner_size},
+        color, {uv_rect.position.x, uv_rect.position.y + uv_rect.size.y * 0.5f}});
+    vertex_data.push_back({
+        {rect.position.x + corner_size, rect.position.y + rect.size.y - corner_size},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y * 0.5f}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x - corner_size, rect.position.y + rect.size.y - corner_size},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y * 0.5f}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y + rect.size.y - corner_size},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y * 0.5f}});
 
-    target.draw(a, texture_ptr);
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {rect.position.x + corner_size, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x - corner_size, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x + uv_rect.size.x * 0.5f, uv_rect.position.y + uv_rect.size.y}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y + rect.size.y},
+        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
+}
 
-    a[1].position.y = rect.position.y + rect.size.y;
-    a[3].position.y = rect.position.y + rect.size.y;
-    a[5].position.y = rect.position.y + rect.size.y;
-    a[7].position.y = rect.position.y + rect.size.y;
+void RenderTarget::finish()
+{
+    if (index_data.size())
+    {
+        shader->bind();
+        glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);
 
-    a[1].texCoords.y = texture_size.y;
-    a[3].texCoords.y = texture_size.y;
-    a[5].texCoords.y = texture_size.y;
-    a[7].texCoords.y = texture_size.y;
+        glUniform1i(shader->getUniformLocation("u_texture"), 0);
+        glActiveTexture(GL_TEXTURE0);
+        atlas_texture->bind();
 
-    target.draw(a, texture_ptr);
+        glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(VertexData) * vertex_data.size(), vertex_data.data(), GL_DYNAMIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * index_data.size(), index_data.data(), GL_DYNAMIC_DRAW);
+
+        glVertexAttribPointer(shader->getAttributeLocation("a_position"), 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)0);
+        glEnableVertexAttribArray(shader->getAttributeLocation("a_position"));
+        glVertexAttribPointer(shader->getAttributeLocation("a_color"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VertexData), (void*)offsetof(VertexData, color));
+        glEnableVertexAttribArray(shader->getAttributeLocation("a_color"));
+        glVertexAttribPointer(shader->getAttributeLocation("a_texcoords"), 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, uv));
+        glEnableVertexAttribArray(shader->getAttributeLocation("a_texcoords"));
+
+        glDrawElements(GL_TRIANGLES, index_data.size(), GL_UNSIGNED_SHORT, nullptr);
+
+        vertex_data.clear();
+        index_data.clear();
+    }
+}
+
+glm::vec2 RenderTarget::getVirtualSize()
+{
+    return virtual_size;
+}
+
+glm::ivec2 RenderTarget::getPhysicalSize()
+{
+    return physical_size;
+}
+
+glm::ivec2 RenderTarget::virtualToPixelPosition(glm::vec2)
+{
+    return {1,1};
 }
 
 }

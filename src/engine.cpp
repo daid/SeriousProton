@@ -5,6 +5,7 @@
 #include "collisionable.h"
 #include "audio/source.h"
 
+#include <SDL.h>
 
 #ifdef DEBUG
 #include <typeinfo>
@@ -48,6 +49,9 @@ Engine::Engine()
         }
     } 
 #endif // WIN32
+
+    SDL_Init(SDL_INIT_EVERYTHING);
+    atexit(SDL_Quit);
 
     initRandom();
     windowManager = nullptr;
@@ -102,7 +106,6 @@ void Engine::runMainLoop()
                 delta = 0.001f;
             delta *= gameSpeed;
 
-            entityList.update();
             foreach(Updatable, u, updatableList)
                 u->update(delta);
             elapsedTime += delta;
@@ -119,23 +122,20 @@ void Engine::runMainLoop()
         sp::SystemTimer debug_output_timer;
         debug_output_timer.repeat(5);
 #endif
-        while(running && windowManager->window.isOpen())
+        while(running)
         {
             InputHandler::preEventsUpdate();
             // Handle events
-            sf::Event event;
-            while (windowManager->window.pollEvent(event))
+            SDL_Event event;
+            while (SDL_PollEvent(&event))
             {
                 handleEvent(event);
             }
             InputHandler::postEventsUpdate();
 
 #ifdef DEBUG
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && windowManager->hasFocus())
-                running = false;
-
             if (debug_output_timer.isExpired())
-                printf("Object count: %4d %4zd %4zd\n", DEBUG_PobjCount, updatableList.size(), entityList.size());
+                printf("Object count: %4d %4zd\n", DEBUG_PobjCount, updatableList.size());
 #endif
 
             float delta = frame_timer.restart();
@@ -145,15 +145,17 @@ void Engine::runMainLoop()
                 delta = 0.001f;
             delta *= gameSpeed;
 #ifdef DEBUG
+#warning TODO SDL2
+/*
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tab))
                 delta /= 5.f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tilde))
                 delta *= 5.f;
+*/
 #endif
             EngineTiming engine_timing;
             
             sp::SystemStopwatch engine_timing_stopwatch;
-            entityList.update();
             foreach(Updatable, u, updatableList) {
                 u->update(delta);
             }
@@ -177,17 +179,19 @@ void Engine::runMainLoop()
     }
 }
 
-void Engine::handleEvent(sf::Event& event)
+void Engine::handleEvent(SDL_Event& event)
 {
     // Window closed: exit
-    if (event.type == sf::Event::Closed)
+    if (event.type == SDL_QUIT)
         running = false;
-    if (event.type == sf::Event::GainedFocus)
+    if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
         windowManager->windowHasFocus = true;
-    if (event.type == sf::Event::LostFocus)
+    if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
         windowManager->windowHasFocus = false;
 #ifdef DEBUG
-    if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L))
+    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
+        running = false;
+    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_l)
     {
         int n = 0;
         printf("------------------------\n");
@@ -212,7 +216,7 @@ void Engine::handleEvent(sf::Event& event)
     }
 #endif
     InputHandler::handleEvent(event);
-    if (event.type == sf::Event::Resized)
+    if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED)
         windowManager->setupView();
 #ifdef __ANDROID__
     //Focus lost and focus gained events are used when the application window is created and destroyed.

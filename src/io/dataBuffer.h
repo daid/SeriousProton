@@ -111,12 +111,6 @@ public:
         appendRaw(&f, sizeof(f));
     }
 
-    template<typename T> void write(const sf::Vector2<T>& v)
-    {
-        write(v.x);
-        write(v.y);
-    }
-
     void write(std::string_view s)
     {
         write(static_cast<uint32_t>(s.length()));
@@ -186,12 +180,6 @@ public:
         if (read_index + sizeof(f) > buffer.size()) { f = 0; return; }
         memcpy(&f, &buffer[read_index], sizeof(f));
         read_index += sizeof(f);
-    }
-
-    template<typename T> void read(sf::Vector2<T>& v)
-    {
-        read(v.x);
-        read(v.y);
     }
 
     void read(string& s)

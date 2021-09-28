@@ -3,14 +3,18 @@
 
 #include "stringImproved.h"
 #include "P.h"
-#include <SFML/System/InputStream.hpp>
 
 
-class ResourceStream : public virtual PObject, public sf::InputStream
+class ResourceStream : public virtual PObject
 {
 public:
     virtual ~ResourceStream() {}
     
+    virtual size_t read(void* ptr, size_t amount) = 0;
+    virtual size_t seek(size_t offset) = 0;
+    virtual size_t tell() = 0;
+    virtual size_t getSize() = 0;
+
     string readLine();
 };
 

@@ -6,7 +6,9 @@
 #include "postProcessManager.h"
 #include "input.h"
 
+#include <glm/gtc/type_ptr.hpp>
 #include <cmath>
+#include <SDL.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -43,25 +45,35 @@ WindowManager::~WindowManager()
 
 void WindowManager::render()
 {
+#warning SDL2 TODO
+/*
     if (InputHandler::keyboardIsPressed(sf::Keyboard::Return) && (sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt) || sf::Keyboard::isKeyPressed(sf::Keyboard::RAlt)))
     {
         setFullscreen(!isFullscreen());
     }
+*/
 
     // Clear the window
-    window.clear(sf::Color(20, 20, 20));
+    glClearColor(0.1, 0.1, 0.1, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glLoadIdentity();
+    glLoadMatrixf(glm::value_ptr(viewport_matrix));
+
+    int w, h;
+    SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);
 
     //Call the first item of the rendering chain.
-    sp::RenderTarget target(window);
+    sp::RenderTarget target{virtualSize, {w, h}};
     renderChain->render(target);
+    target.finish();
 
     // Display things on screen
-    window.display();
+    SDL_GL_SwapWindow(static_cast<SDL_Window*>(window));
 }
 
 void WindowManager::close()
 {
-    window.close();
+#warning SDL2 TODO
 }
 
 void WindowManager::setFullscreen(bool new_fullscreen)
@@ -79,57 +91,81 @@ void WindowManager::setFSAA(int new_fsaa)
     create();
 }
 
-sf::Vector2f WindowManager::mapPixelToCoords(const sf::Vector2i& point) const
+void WindowManager::setFrameLimit(int limit)
 {
-    return window.mapPixelToCoords(point);
+    //TODO
 }
 
-sf::Vector2i WindowManager::mapCoordsToPixel(const sf::Vector2f& point) const
+void WindowManager::setTitle(string title)
 {
-    return window.mapCoordsToPixel(point);
+    SDL_SetWindowTitle(static_cast<SDL_Window*>(window), title.c_str());
+}
+
+glm::vec2 WindowManager::mapPixelToCoords(const glm::ivec2 point) const
+{
+    int w, h;
+    SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);
+    float x = float(point.x) / float(w) * float(virtualSize.x);
+    float y = float(point.y) / float(h) * float(virtualSize.y);
+    return glm::vec2(x, y);
+}
+
+glm::ivec2 WindowManager::mapCoordsToPixel(const glm::vec2 point) const
+{
+#warning SDL2 TODO
+    return glm::ivec2(0, 0);
 }
 
 void WindowManager::create()
 {
+    if (window) return;
+
     // Create the window of the application
     int windowWidth = virtualSize.x;
     int windowHeight = virtualSize.y;
 
-    sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+    SDL_Rect rect;
+    SDL_GetDisplayBounds(0, &rect);
     if (fullscreen)
     {
-        windowWidth = desktop.width;
-        windowHeight = desktop.height;
+        windowWidth = rect.w;
+        windowHeight = rect.h;
     }else{
         unsigned int scale = 2;
-        while(windowWidth * scale < desktop.width && windowHeight * scale < desktop.height)
+        while(windowWidth * scale < int(rect.w) && windowHeight * scale < int(rect.h))
             scale += 1;
         windowWidth *= scale - 1;
         windowHeight *= scale - 1;
 
-        while(windowWidth >= int(desktop.width) || windowHeight >= int(desktop.height) - 100)
+        while(windowWidth >= int(rect.w) || windowHeight >= int(rect.h) - 100)
         {
             windowWidth = static_cast<int>(std::floor(windowWidth * 0.9f));
             windowHeight = static_cast<int>(std::floor(windowHeight * 0.9f));
         }
     }
 
-    sf::ContextSettings context_settings(24, 8, fsaa, 2, 0);
+    int flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
     if (fullscreen)
-        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "", sf::Style::Fullscreen, context_settings);
-    else
-        window.create(sf::VideoMode(windowWidth, windowHeight, 32), "", sf::Style::Default, context_settings);
-    sf::ContextSettings settings = window.getSettings();
-    LOG(INFO) << "OpenGL version: " << settings.majorVersion << "." << settings.minorVersion;
-    window.setVerticalSyncEnabled(false);
-    window.setFramerateLimit(60);
-    window.setMouseCursorVisible(false);
+        flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, flags);
+
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 2);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    context = SDL_GL_CreateContext(static_cast<SDL_Window*>(window));
+    if (SDL_GL_SetSwapInterval(-1))
+        SDL_GL_SetSwapInterval(1);
     setupView();
 }
 
 void WindowManager::setupView()
 {
-    sf::Vector2f window_size = sf::Vector2f(window.getSize());
+    int w, h;
+    SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);
+    glm::vec2 window_size{w, h};
     if (window_size.x / window_size.y > min_aspect_ratio)
     {
         if (allow_virtual_resize)
@@ -137,16 +173,13 @@ void WindowManager::setupView()
 
         float aspect = window_size.y * float(virtualSize.x) / float(virtualSize.y) / window_size.x;
         float offset = 0;//0.5 - 0.5 * aspect;
-        sf::View view(sf::Vector2f(virtualSize.x / 2.f, virtualSize.y / 2.f), sf::Vector2f{virtualSize});
-        view.setViewport(sf::FloatRect(offset, 0, aspect, 1));
-        window.setView(view);
     }else{
         virtualSize.x = static_cast<int32_t>(virtualSize.y * min_aspect_ratio);
 
         float aspect = window_size.x / window_size.y * float(virtualSize.y) / float(virtualSize.x);
         float offset = 0.5f - 0.5f * aspect;
-        sf::View view(sf::Vector2f(virtualSize.x / 2.f, virtualSize.y / 2.f), sf::Vector2f{ virtualSize });
-        view.setViewport(sf::FloatRect(0, offset, 1, aspect));
-        window.setView(view);
+        //TODO: Build viewport matrix
     }
+
+    viewport_matrix = glm::orthoLH(0.0f, float(virtualSize.x), float(virtualSize.y), 0.0f, 0.0f, 1.0f);
 }

@@ -2,23 +2,19 @@
 #include "resources.h"
 #include "logging.h"
 
-std::map<string, ShaderInfo> ShaderManager::shaders;
+std::map<string, sp::Shader*> ShaderManager::shaders;
 
-sf::Shader* ShaderManager::getShader(string name)
+sp::Shader* ShaderManager::getShader(string name)
 {
-    if (!sf::Shader::isAvailable())
-        return nullptr;
-    
     auto it = shaders.find(name);
     if (it == shaders.end())
     {
-        sf::Shader* shader = new sf::Shader();
-        shaders[name].shader = shader;
+        LOG(INFO) << "Loading shader: " << name;
         P<ResourceStream> vertexStream = getResourceStream(name + ".vert");
         P<ResourceStream> fragmentStream = getResourceStream(name + ".frag");
-        LOG(INFO) << "Loading shader: " << name;
-        shader->loadFromStream(**vertexStream, **fragmentStream);
+        sp::Shader* shader = new sp::Shader(vertexStream, fragmentStream);
+        shaders[name] = shader;
         return shader;
     }
-    return it->second.shader;
+    return it->second;
 }

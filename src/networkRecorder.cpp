@@ -12,13 +12,14 @@
 
 NetworkAudioRecorder::NetworkAudioRecorder()
 {
-    LOG(INFO) << "Using \"" << getDefaultDevice() << "\" for voice communication";
-    setProcessingInterval(sf::milliseconds(10));
+#warning SDL2 TODO
+    //LOG(INFO) << "Using \"" << getDefaultDevice() << "\" for voice communication";
+    //setProcessingInterval(sf::milliseconds(10));
 }
 
 NetworkAudioRecorder::~NetworkAudioRecorder()
 {
-    stop();
+    //stop();
 
     if (encoder)
     {
@@ -26,12 +27,12 @@ NetworkAudioRecorder::~NetworkAudioRecorder()
     }
 }
 
-void NetworkAudioRecorder::addKeyActivation(sf::Keyboard::Key key, int target_identifier)
+void NetworkAudioRecorder::addKeyActivation(int key, int target_identifier)
 {
     keys.push_back({key, target_identifier});
 }
 
-
+/*
 /// Called from a seperate thread, be sure to watch for thread safety!
 bool NetworkAudioRecorder::onProcessSamples(const sf::Int16* samples, std::size_t sample_count)
 {
@@ -43,6 +44,7 @@ bool NetworkAudioRecorder::onProcessSamples(const sf::Int16* samples, std::size_
     sample_buffer_mutex.unlock();
     return true;
 }
+*/
 
 void NetworkAudioRecorder::update(float /*delta*/)
 {
@@ -54,7 +56,7 @@ void NetworkAudioRecorder::update(float /*delta*/)
             {
                 samples_till_stop = -1;
                 active_key_index = static_cast<int>(idx);
-                start(44100);
+                //start(44100);
                 startSending();
             } else if (idx == size_t(active_key_index))
             {
@@ -74,7 +76,7 @@ void NetworkAudioRecorder::update(float /*delta*/)
     }
     if (samples_till_stop == 0)
     {
-        stop();
+        //stop();
         finishSending();
         active_key_index = -1;
         samples_till_stop = -1;

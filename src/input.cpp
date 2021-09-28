@@ -3,25 +3,26 @@
 
 P<WindowManager> InputHandler::windowManager;
 bool InputHandler::touch_screen = false;
-sf::Transform InputHandler::mouse_transform;
+glm::mat3x3 InputHandler::mouse_transform;
 PVector<InputEventHandler> InputHandler::input_event_handlers;
 PVector<JoystickEventHandler> InputHandler::joystick_event_handlers;
 
-bool InputHandler::keyboard_button_down[sf::Keyboard::KeyCount];
-bool InputHandler::keyboard_button_pressed[sf::Keyboard::KeyCount];
-bool InputHandler::keyboard_button_released[sf::Keyboard::KeyCount];
-sf::Event::KeyEvent InputHandler::last_key_press;
+#warning TODO SDL2 this no longer works, SDLK_Keycode will be out of range. Port SP2 keybindings.
+bool InputHandler::keyboard_button_down[256];
+bool InputHandler::keyboard_button_pressed[256];
+bool InputHandler::keyboard_button_released[256];
+SDL_KeyboardEvent InputHandler::last_key_press;
 
 glm::vec2 InputHandler::mouse_position;
 float InputHandler::mouse_wheel_delta;
-bool InputHandler::mouse_button_down[sf::Mouse::ButtonCount];
-bool InputHandler::mouse_button_pressed[sf::Mouse::ButtonCount];
-bool InputHandler::mouse_button_released[sf::Mouse::ButtonCount];
+bool InputHandler::mouse_button_down[5];
+bool InputHandler::mouse_button_pressed[5];
+bool InputHandler::mouse_button_released[5];
 
-float InputHandler::joystick_axis_pos[sf::Joystick::Count][sf::Joystick::AxisCount];
-float InputHandler::joystick_axis_changed[sf::Joystick::Count][sf::Joystick::AxisCount];
-bool InputHandler::joystick_button_down[sf::Joystick::Count][sf::Joystick::ButtonCount];
-bool InputHandler::joystick_button_changed[sf::Joystick::Count][sf::Joystick::ButtonCount];
+float InputHandler::joystick_axis_pos[4][4];
+float InputHandler::joystick_axis_changed[4][4];
+bool InputHandler::joystick_button_down[4][4];
+bool InputHandler::joystick_button_changed[4][4];
 
 InputEventHandler::InputEventHandler()
 {
@@ -49,7 +50,7 @@ void InputHandler::initialize()
 #ifdef __ANDROID__
     touch_screen = true;
 #endif
-    last_key_press.code = sf::Keyboard::Unknown;
+    last_key_press.keysym.sym = SDLK_UNKNOWN;
 }
 
 void InputHandler::preEventsUpdate()
@@ -57,27 +58,27 @@ void InputHandler::preEventsUpdate()
     if (!windowManager)
         windowManager = engine->getObject("windowManager");
 
-    for(unsigned int n=0; n<sf::Keyboard::KeyCount; n++)
+    for(unsigned int n=0; n<256; n++)
     {
         if (keyboard_button_pressed[n])
             keyboard_button_pressed[n] = false;
         else
             keyboard_button_released[n] = false;
     }
-    for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
+    for(unsigned int n=0; n<256; n++)
     {
         if (mouse_button_pressed[n])
             mouse_button_pressed[n] = false;
         else
             mouse_button_released[n] = false;
     }
-    for(unsigned int i=0; i<sf::Joystick::Count; i++)
+    for(unsigned int i=0; i<4; i++)
     {
-        for(unsigned int n=0; n<sf::Joystick::AxisCount; n++)
+        for(unsigned int n=0; n<4; n++)
         {
             joystick_axis_changed[i][n] = false;
         }
-        for(unsigned int n=0; n<sf::Joystick::ButtonCount; n++)
+        for(unsigned int n=0; n<4; n++)
         {
             joystick_button_changed[i][n] = false;
         }
@@ -85,62 +86,63 @@ void InputHandler::preEventsUpdate()
     mouse_wheel_delta = 0;
 }
 
-void InputHandler::handleEvent(sf::Event& event)
+void InputHandler::handleEvent(const SDL_Event& event)
 {
-    if (event.type == sf::Event::KeyPressed)
+    if (event.type == SDL_KEYDOWN)
     {
-        if (event.key.code > sf::Keyboard::Unknown && event.key.code < sf::Keyboard::KeyCount)
+        if (event.key.keysym.sym > -1 && event.key.keysym.sym < 256)
         {
-            keyboard_button_down[event.key.code] = true;
-            keyboard_button_pressed[event.key.code] = true;
+            keyboard_button_down[event.key.keysym.sym] = true;
+            keyboard_button_pressed[event.key.keysym.sym] = true;
         }
         last_key_press = event.key;
     }
-	else if (event.type == sf::Event::KeyReleased)
+	else if (event.type == SDL_KEYUP)
 	{
-        if (event.key.code > sf::Keyboard::Unknown && event.key.code < sf::Keyboard::KeyCount)
+        if (event.key.keysym.sym > -1 && event.key.keysym.sym < 256)
         {
-            keyboard_button_down[event.key.code] = false;
-            keyboard_button_released[event.key.code] = true;
+            keyboard_button_down[event.key.keysym.sym] = false;
+            keyboard_button_released[event.key.keysym.sym] = true;
         }
 	}
-    else if (event.type == sf::Event::TextEntered && event.text.unicode > 31 && event.text.unicode < 128)
+    else if (event.type == SDL_TEXTINPUT && event.text.text[0] > 31 && event.text.text[0] < 128)
     {
-        if (last_key_press.code != sf::Keyboard::Unknown)
+        if (last_key_press.keysym.sym != SDLK_UNKNOWN)
         {
-            fireKeyEvent(last_key_press, event.text.unicode);
-            last_key_press.code = sf::Keyboard::Unknown;
+            fireKeyEvent(last_key_press, event.text.text[0]);
+            last_key_press.keysym.sym = SDLK_UNKNOWN;
         }
     }
-    else if (event.type == sf::Event::MouseWheelMoved)
-        mouse_wheel_delta += event.mouseWheel.delta;
-    if (event.type == sf::Event::MouseButtonPressed)
+    else if (event.type == SDL_MOUSEWHEEL)
+        mouse_wheel_delta += event.wheel.y;
+    if (event.type == SDL_MOUSEBUTTONDOWN)
     {
-        mouse_button_down[event.mouseButton.button] = true;
-        mouse_button_pressed[event.mouseButton.button] = true;
+        mouse_button_down[event.button.button] = true;
+        mouse_button_pressed[event.button.button] = true;
     }
-    else if (event.type == sf::Event::MouseButtonReleased)
+    else if (event.type == SDL_MOUSEBUTTONUP)
     {
-        mouse_button_down[event.mouseButton.button] = false;
-        mouse_button_released[event.mouseButton.button] = true;
+        mouse_button_down[event.button.button] = false;
+        mouse_button_released[event.button.button] = true;
     }
-    else if (event.type == sf::Event::JoystickMoved)
+    /*
+    else if (event.type == SDL_JOYAXISMOTION)
     {
         static constexpr float scale_factor = 100.f / (100.f - joystick_axis_snap_to_0_range);
 
         float axis_pos = 0.f;
         
-        if (event.joystickMove.position > joystick_axis_snap_to_0_range) {
-            axis_pos = (event.joystickMove.position - joystick_axis_snap_to_0_range) * scale_factor;
-        } else if (event.joystickMove.position < -joystick_axis_snap_to_0_range) {
-            axis_pos = (event.joystickMove.position + joystick_axis_snap_to_0_range) * scale_factor;
+        if (event.jaxis.value > joystick_axis_snap_to_0_range) {
+            axis_pos = (event.jaxis.value - joystick_axis_snap_to_0_range) * scale_factor;
+        } else if (event.jaxis.value < -joystick_axis_snap_to_0_range) {
+            axis_pos = (event.jaxis.value + joystick_axis_snap_to_0_range) * scale_factor;
         }
 
         // Clamp axis_pos within SFML range.
         axis_pos = std::min(std::max(-100.f, axis_pos), 100.f);
 
-        if (joystick_axis_pos[event.joystickMove.joystickId][event.joystickMove.axis] != axis_pos){
-            joystick_axis_changed[event.joystickMove.joystickId][event.joystickMove.axis] = true;
+        if (joystick_axis_pos[event.jaxis.which][event.jaxis.axis] != axis_pos){
+            joystick_axis_changed[event.jaxis.which][event.jaxis.axis] = true;
         }
         joystick_axis_pos[event.joystickMove.joystickId][event.joystickMove.axis] = axis_pos;
     }
@@ -161,6 +163,7 @@ void InputHandler::handleEvent(sf::Event& event)
             keyboard_button_down[n] = false;
         }
     }
+    */
 }
 
 void InputHandler::postEventsUpdate()
@@ -168,10 +171,10 @@ void InputHandler::postEventsUpdate()
     input_event_handlers.update();
     joystick_event_handlers.update();
 
-    if (last_key_press.code != sf::Keyboard::Unknown)
+    if (last_key_press.keysym.sym != SDLK_UNKNOWN)
     {
         InputHandler::fireKeyEvent(last_key_press, -1);
-        last_key_press.code = sf::Keyboard::Unknown;
+        last_key_press.keysym.sym = SDLK_UNKNOWN;
     }
 
 #ifdef __ANDROID__
@@ -187,15 +190,17 @@ void InputHandler::postEventsUpdate()
         mouse_button_down[sf::Mouse::Left] = false;
     }
 #else
-    mouse_position = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
+    int x, y;
+    SDL_GetMouseState(&x, &y);
+    mouse_position = realWindowPosToVirtual({x, y});
 #endif
-    mouse_position.x = mouse_transform.transformPoint(sf::Vector2f(mouse_position.x, mouse_position.y)).x;
-    mouse_position.y = mouse_transform.transformPoint(sf::Vector2f(mouse_position.x, mouse_position.y)).y;
+#warning SDL2 TODO
+    //mouse_position = mouse_transform * mouse_position;
     
     if (touch_screen)
     {
         bool any_button_down = false;
-        for(unsigned int n=0; n<sf::Mouse::ButtonCount; n++)
+        for(unsigned int n=0; n<5; n++)
             if (mouse_button_down[n] || mouse_button_released[n])
                 any_button_down = true;
         if (!any_button_down)
@@ -203,19 +208,19 @@ void InputHandler::postEventsUpdate()
             mouse_position = {-1, -1};
         }
     }
-    for(unsigned int i=0; i<sf::Joystick::Count; i++)
+    for(unsigned int i=0; i<4; i++)
     {
-        for(unsigned int n=0; n<sf::Joystick::AxisCount; n++)
+        for(unsigned int n=0; n<4; n++)
         {
             if(joystick_axis_changed[i][n])
             {
                 foreach(JoystickEventHandler, e, joystick_event_handlers)
                 {
-                    e->handleJoystickAxis(i, (sf::Joystick::Axis) n, joystick_axis_pos[i][n]);
+                    e->handleJoystickAxis(i, n, joystick_axis_pos[i][n]);
                 }
             }
         }
-        for(unsigned int n=0; n<sf::Joystick::ButtonCount; n++)
+        for(unsigned int n=0; n<4; n++)
         {
             if(joystick_button_changed[i][n])
             {
@@ -233,11 +238,11 @@ void InputHandler::setMousePos(glm::vec2 position)
     if (!windowManager)
         windowManager = engine->getObject("windowManager");
 
-    sf::Mouse::setPosition(virtualWindowPosToReal(position), windowManager->window);
-    mouse_position = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
+    //sf::Mouse::setPosition(virtualWindowPosToReal(position), windowManager->window);
+    //mouse_position = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
 }
 
-void InputHandler::fireKeyEvent(sf::Event::KeyEvent key, int unicode)
+void InputHandler::fireKeyEvent(const SDL_KeyboardEvent& key, int unicode)
 {
     foreach(InputEventHandler, e, input_event_handlers)
     {
@@ -245,26 +250,12 @@ void InputHandler::fireKeyEvent(sf::Event::KeyEvent key, int unicode)
     }
 }
 
-glm::vec2 InputHandler::realWindowPosToVirtual(sf::Vector2i position)
+glm::vec2 InputHandler::realWindowPosToVirtual(glm::ivec2 position)
 {
-    sf::FloatRect viewport = windowManager->window.getView().getViewport();
-    glm::vec2 pos = glm::vec2(position.x, position.y);
-    
-    pos.x -= viewport.left * float(windowManager->window.getSize().x);
-    pos.y -= viewport.top * float(windowManager->window.getSize().y);
-    pos.x *= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x) / viewport.width;
-    pos.y *= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y) / viewport.height;
-    return pos;
+    return windowManager->mapPixelToCoords(position);
 }
 
-sf::Vector2i InputHandler::virtualWindowPosToReal(glm::vec2 position)
+glm::ivec2 InputHandler::virtualWindowPosToReal(glm::vec2 position)
 {
-    sf::FloatRect viewport = windowManager->window.getView().getViewport();
-
-    position.x /= float(windowManager->virtualSize.x) / float(windowManager->window.getSize().x) / viewport.width;
-    position.y /= float(windowManager->virtualSize.y) / float(windowManager->window.getSize().y) / viewport.height;
-    
-    position.x += viewport.left * float(windowManager->window.getSize().x);
-    position.y += viewport.top * float(windowManager->window.getSize().y);
-    return sf::Vector2i(position.x, position.y);
+    return windowManager->mapCoordsToPixel(position);
 }

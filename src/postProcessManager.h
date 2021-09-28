@@ -1,8 +1,7 @@
 #ifndef POST_PROCESS_MANAGER_H
 #define POST_PROCESS_MANAGER_H
 
-#include <SFML/Graphics.hpp>
-
+#include "graphics/shader.h"
 #include "stringImproved.h"
 #include "Updatable.h"
 #include "Renderable.h"
@@ -10,9 +9,9 @@
 class PostProcessor : public RenderChain
 {
 private:
-    sf::Shader shader;
-    sf::RenderTexture renderTexture;
-    sf::Vector2u size;
+    //sf::Shader shader;
+    //sf::RenderTexture renderTexture;
+    //sf::Vector2u size;
     
     RenderChain* chain;
     

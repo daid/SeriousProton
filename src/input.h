@@ -3,6 +3,8 @@
 
 #include "windowManager.h"
 #include "Updatable.h"
+#include <SDL.h>
+
 
 class InputEventHandler: public virtual PObject
 {
@@ -10,7 +12,7 @@ public:
     InputEventHandler();
     virtual ~InputEventHandler();
     
-    virtual void handleKeyPress(sf::Event::KeyEvent key, int unicode) = 0;
+    virtual void handleKeyPress(const SDL_KeyboardEvent& key, int unicode) = 0;
 protected:
 private:
 };
@@ -21,7 +23,7 @@ public:
     JoystickEventHandler();
     virtual ~JoystickEventHandler();
     
-    virtual void handleJoystickAxis(unsigned int joystick, sf::Joystick::Axis axis, float position) = 0;
+    virtual void handleJoystickAxis(unsigned int joystick, int axis, float position) = 0;
     virtual void handleJoystickButton(unsigned int joystick, unsigned int button, bool state) = 0;
 protected:
 private:
@@ -31,27 +33,27 @@ class InputHandler
 {
 public:
     static bool touch_screen;
-    static sf::Transform mouse_transform;
+    static glm::mat3x3 mouse_transform;
 
     static PVector<InputEventHandler> input_event_handlers;
     static PVector<JoystickEventHandler> joystick_event_handlers;
 
-    static bool keyboardIsDown(sf::Keyboard::Key key) { return keyboard_button_down[key]; }
-    static bool keyboardIsPressed(sf::Keyboard::Key key) { return keyboard_button_pressed[key]; }
-    static bool keyboardIsReleased(sf::Keyboard::Key key) { return !keyboard_button_pressed[key] && keyboard_button_released[key]; }
+    static bool keyboardIsDown(SDL_Keycode key) { return keyboard_button_down[key]; }
+    static bool keyboardIsPressed(SDL_Keycode key) { return keyboard_button_pressed[key]; }
+    static bool keyboardIsReleased(SDL_Keycode key) { return !keyboard_button_pressed[key] && keyboard_button_released[key]; }
 
     static glm::vec2 getMousePos() { return mouse_position; }
     static void setMousePos(glm::vec2 position);
-    static bool mouseIsDown(sf::Mouse::Button button) { return mouse_button_down[button]; }
-    static bool mouseIsPressed(sf::Mouse::Button button) { return mouse_button_pressed[button]; }
-    static bool mouseIsReleased(sf::Mouse::Button button) { return !mouse_button_pressed[button] && mouse_button_released[button]; }
+    static bool mouseIsDown(int button) { return mouse_button_down[button]; }
+    static bool mouseIsPressed(int button) { return mouse_button_pressed[button]; }
+    static bool mouseIsReleased(int button) { return !mouse_button_pressed[button] && mouse_button_released[button]; }
     static float getMouseWheelDelta() { return mouse_wheel_delta; }
     
-    static glm::vec2    getJoysticXYPos() { return glm::vec2(joystick_axis_pos[0][sf::Joystick::X], joystick_axis_pos[0][sf::Joystick::Y]); }
-    static float        getJoysticZPos()  { return joystick_axis_pos[0][sf::Joystick::Z]; }
-    static float        getJoysticRPos()  { return joystick_axis_pos[0][sf::Joystick::R]; }
+    static glm::vec2    getJoysticXYPos() { return glm::vec2(joystick_axis_pos[0][0], joystick_axis_pos[0][1]); }
+    static float        getJoysticZPos()  { return joystick_axis_pos[0][2]; }
+    static float        getJoysticRPos()  { return joystick_axis_pos[0][3]; }
 
-    static float getJoysticAxisPos(unsigned int joystickId, sf::Joystick::Axis axis){ return joystick_axis_pos[joystickId][axis];}
+    static float getJoysticAxisPos(unsigned int joystickId, int axis){ return joystick_axis_pos[joystickId][axis];}
     static bool getJoysticButtonState(unsigned int joystickId, unsigned int button){ return joystick_button_down[joystickId][button];}
 
 private:
@@ -59,29 +61,30 @@ private:
 
     static glm::vec2 mouse_position;
     static float mouse_wheel_delta;
-    static bool keyboard_button_down[sf::Keyboard::KeyCount];
-    static bool keyboard_button_pressed[sf::Keyboard::KeyCount];
-    static bool keyboard_button_released[sf::Keyboard::KeyCount];
-    static sf::Event::KeyEvent last_key_press;
 
-    static bool mouse_button_down[sf::Mouse::ButtonCount];
-    static bool mouse_button_pressed[sf::Mouse::ButtonCount];
-    static bool mouse_button_released[sf::Mouse::ButtonCount];
+    static bool keyboard_button_down[256];
+    static bool keyboard_button_pressed[256];
+    static bool keyboard_button_released[256];
+    static SDL_KeyboardEvent last_key_press;
+
+    static bool mouse_button_down[5];
+    static bool mouse_button_pressed[5];
+    static bool mouse_button_released[5];
     
-    static float joystick_axis_pos[sf::Joystick::Count][sf::Joystick::AxisCount];
-    static float joystick_axis_changed[sf::Joystick::Count][sf::Joystick::AxisCount];
-    static bool joystick_button_down[sf::Joystick::Count][sf::Joystick::ButtonCount];
-    static bool joystick_button_changed[sf::Joystick::Count][sf::Joystick::ButtonCount];
+    static float joystick_axis_pos[4][4];
+    static float joystick_axis_changed[4][4];
+    static bool joystick_button_down[4][4];
+    static bool joystick_button_changed[4][4];
     constexpr static float joystick_axis_snap_to_0_range = 5;
 
     static void initialize();
     static void preEventsUpdate();
     static void postEventsUpdate();
-    static void handleEvent(sf::Event& event);
+    static void handleEvent(const SDL_Event& event);
     
-    static void fireKeyEvent(sf::Event::KeyEvent key, int unicode);
-    static glm::vec2 realWindowPosToVirtual(sf::Vector2i position);
-    static sf::Vector2i virtualWindowPosToReal(glm::vec2 position);
+    static void fireKeyEvent(const SDL_KeyboardEvent& key, int unicode);
+    static glm::vec2 realWindowPosToVirtual(glm::ivec2 position);
+    static glm::ivec2 virtualWindowPosToReal(glm::vec2 position);
 
     friend class Engine;
 };

@@ -1,6 +1,5 @@
 #include "resources.h"
 
-#include <SFML/System.hpp>
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -9,9 +8,9 @@
 #endif
 #include <cstdio>
 #include <filesystem>
+#include <SDL.h>
 
 #if defined(ANDROID)
-#include <SFML/System/NativeActivity.hpp>
 #include <android/native_activity.h>
 #include <android/asset_manager.h>
 #endif
@@ -58,7 +57,8 @@ string ResourceStream::readLine()
 
 class FileResourceStream : public ResourceStream
 {
-    sf::FileInputStream stream;
+    SDL_RWops *io;
+    size_t size = 0;
     bool open_success;
 public:
     FileResourceStream(string filename)
@@ -69,39 +69,47 @@ public:
         {
             //Error code "no such file or directory" thrown really often, so no trace here
             //not to spam the log
-            open_success = false;
+            io = nullptr;
         }
         else
-            open_success = stream.open(filename);
+            io = SDL_RWFromFile(filename.c_str(), "rb");
 #else
        //Android reads from the assets bundle, so we cannot check if the file exists and is a regular file
-       open_success = stream.open(filename);
+       io = SDL_RWFromFile(filename.c_str(), "rb");
 #endif
     }
+
     virtual ~FileResourceStream()
     {
+        if (io)
+            io->close(io);
     }
     
     bool isOpen()
     {
-        return open_success;
+        return io != nullptr;
     }
     
-    virtual sf::Int64 read(void* data, sf::Int64 size)
+    virtual size_t read(void* data, size_t size) override
     {
-        return stream.read(data, size);
+        return io->read(io, data, 1, size);
     }
-    virtual sf::Int64 seek(sf::Int64 position)
+    virtual size_t seek(size_t position) override
     {
-        return stream.seek(position);
+        return io->seek(io, position, RW_SEEK_SET);
     }
-    virtual sf::Int64 tell()
+    virtual size_t tell() override
     {
-        return stream.tell();
+        return io->seek(io, 0, RW_SEEK_CUR);
     }
-    virtual sf::Int64 getSize()
+    virtual size_t getSize() override
     {
-        return stream.getSize();
+        if (size == 0) {
+            size_t cur = tell();
+            size = io->seek(io, 0, RW_SEEK_END);
+            seek(cur);
+        }
+        return size;
     }
 };
 

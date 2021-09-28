@@ -64,7 +64,7 @@ public:
     void runMainLoop();
     void shutdown();
 private:
-    void handleEvent(sf::Event& event);
+    void handleEvent(SDL_Event& event);
 };
 
 #endif//ENGINE_H
