@@ -28,6 +28,7 @@ static std::vector<uint16_t> index_data;
 static sp::AtlasTexture* atlas_texture;
 static std::unordered_map<string, Rect> atlas_images;
 static std::unordered_map<sp::Font*, std::unordered_map<int, Rect>> atlas_glyphs;
+static constexpr glm::vec2 atlas_white_pixel = {4095.5f/4096.0f, 4095.5f/4096.0f};
 
 static Rect getFromAtlas(std::string_view texture)
 {
@@ -297,7 +298,7 @@ void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& poi
 {
     int n = vertex_data.size();
     for(auto& p : points)
-        vertex_data.push_back({p, color, {1, 1}});
+        vertex_data.push_back({p, color, atlas_white_pixel});
     for(unsigned int idx=0; idx<points.size() - 2;idx++)
     {
         index_data.insert(index_data.end(), {
@@ -310,7 +311,7 @@ void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::
 {
     int n = vertex_data.size();
     for(auto& p : points)
-        vertex_data.push_back({p, color, {1, 1}});
+        vertex_data.push_back({p, color, atlas_white_pixel});
     for(unsigned int idx=0; idx<points.size() - 2;idx++)
     {
         index_data.insert(index_data.end(), {
@@ -327,7 +328,7 @@ void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
     for(int idx=0; idx<point_count;idx++)
     {
         float f = float(idx) / float(point_count) * M_PI * 2.0f;
-        vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, {1, 1}});
+        vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, atlas_white_pixel});
     }
     for(int idx=2; idx<point_count;idx++)
     {
@@ -345,13 +346,13 @@ void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
         n + 1, n + 3, n + 2,
     });
     vertex_data.push_back({
-        {rect.position.x, rect.position.y}, color, {1, 1}});
+        {rect.position.x, rect.position.y}, color, atlas_white_pixel});
     vertex_data.push_back({
-        {rect.position.x, rect.position.y + rect.size.y}, color, {1, 1}});
+        {rect.position.x, rect.position.y + rect.size.y}, color, atlas_white_pixel});
     vertex_data.push_back({
-        {rect.position.x + rect.size.x, rect.position.y}, color, {1, 1}});
+        {rect.position.x + rect.size.x, rect.position.y}, color, atlas_white_pixel});
     vertex_data.push_back({
-        {rect.position.x + rect.size.x, rect.position.y + rect.size.y}, color, {1, 1}});
+        {rect.position.x + rect.size.x, rect.position.y + rect.size.y}, color, atlas_white_pixel});
 }
 
 
