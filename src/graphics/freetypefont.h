@@ -3,6 +3,8 @@
 
 #include "graphics/font.h"
 #include "resources.h"
+#include <unordered_map>
+
 
 namespace sp {
 
