@@ -371,13 +371,12 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
     */
 }
 
-void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sp::Font* font, glm::u8vec4 color)
+void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sp::Font* font, glm::u8vec4 color, int flags)
 {
     if (!font)
         font = default_font;
     auto& ags = atlas_glyphs[font];
-    auto prepared = font->prepare(text, 32, font_size, rect.size, align);
-    int flags = 0;
+    auto prepared = font->prepare(text, 32, font_size, rect.size, align, flags);
 
     float size_scale = font_size / 32.0f;
     for(auto gd : prepared.data)
@@ -413,7 +412,7 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
             float right = left + glyph.bounds.size.x * size_scale;
             float top = gd.position.y - glyph.bounds.position.y * size_scale;
             float bottom = top + glyph.bounds.size.y * size_scale;
-            
+
             if (flags & Font::FlagClip)
             {
                 if (right < 0)
@@ -449,10 +448,23 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
                 }
             }
 
-            left += rect.position.x;
-            right += rect.position.x;
-            top += rect.position.y;
-            bottom += rect.position.y;
+            glm::vec2 p0{left, top};
+            glm::vec2 p1{right, top};
+            glm::vec2 p2{left, bottom};
+            glm::vec2 p3{right, bottom};
+
+            if (flags & Font::FlagVertical)
+            {
+                p0 = {p0.y, rect.size.y - p0.x};
+                p1 = {p1.y, rect.size.y - p1.x};
+                p2 = {p2.y, rect.size.y - p2.x};
+                p3 = {p3.y, rect.size.y - p3.x};
+            }
+
+            p0 += rect.position;
+            p1 += rect.position;
+            p2 += rect.position;
+            p3 += rect.position;
 
             int n = vertex_data.size();
             index_data.insert(index_data.end(), {
@@ -460,103 +472,15 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
                 n + 1, n + 3, n + 2,
             });
             vertex_data.push_back({
-                {left, top},
-                color, {u0, v0}});
+                p0, color, {u0, v0}});
             vertex_data.push_back({
-                {left, bottom},
-                color, {u0, v1}});
+                p2, color, {u0, v1}});
             vertex_data.push_back({
-                {right, top},
-                color, {u1, v0}});
+                p1, color, {u1, v0}});
             vertex_data.push_back({
-                {right, bottom},
-                color, {u1, v1}});
+                p3, color, {u1, v1}});
         }
     }
-    /*
-    sf::Text textElement(sf::String::fromUtf8(std::begin(text), std::end(text)), *font, font_size);
-    float y = 0;
-    float x = 0;
-
-    //The "base line" of the text draw is the "Y position where the text is drawn" + font_size.
-    //The height of normal text is 70% of the font_size.
-    //So use those properties to align the text. Depending on the localbounds does not work.
-    switch(align)
-    {
-    case Alignment::TopLeft:
-    case Alignment::TopRight:
-    case Alignment::TopCenter:
-        y = rect.position.y - 0.3 * font_size;
-        break;
-    case Alignment::BottomLeft:
-    case Alignment::BottomRight:
-    case Alignment::BottomCenter:
-        y = rect.position.y + rect.size.y - font_size;
-        break;
-    case Alignment::CenterLeft:
-    case Alignment::CenterRight:
-    case Alignment::Center:
-        y = rect.position.y + rect.size.y / 2.0 - font_size + font_size * 0.35;
-        break;
-    }
-
-    switch(align)
-    {
-    case Alignment::TopLeft:
-    case Alignment::BottomLeft:
-    case Alignment::CenterLeft:
-        x = rect.position.x - textElement.getLocalBounds().left;
-        break;
-    case Alignment::TopRight:
-    case Alignment::BottomRight:
-    case Alignment::CenterRight:
-        x = rect.position.x + rect.size.x - textElement.getLocalBounds().width - textElement.getLocalBounds().left;
-        break;
-    case Alignment::TopCenter:
-    case Alignment::BottomCenter:
-    case Alignment::Center:
-        x = rect.position.x + rect.size.x / 2.0 - textElement.getLocalBounds().width / 2.0 - textElement.getLocalBounds().left;
-        break;
-    }
-    textElement.setPosition(x, y);
-    textElement.setColor(sf::Color(color.r, color.g, color.b, color.a));
-    target.draw(textElement);
-    */
-}
-
-void RenderTarget::drawVerticalText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sp::Font* font, glm::u8vec4 color)
-{
-    if (!font)
-        font = default_font;
-
-    /*
-    sf::Text textElement(sf::String::fromUtf8(std::begin(text), std::end(text)), *font, font_size);
-    textElement.setRotation(-90);
-    float x = 0;
-    float y = 0;
-    x = rect.position.x + rect.size.x / 2.0 - textElement.getLocalBounds().height / 2.0 - textElement.getLocalBounds().top;
-    switch(align)
-    {
-    case Alignment::TopLeft:
-    case Alignment::BottomLeft:
-    case Alignment::CenterLeft:
-        y = rect.position.y + rect.size.y;
-        break;
-    case Alignment::TopRight:
-    case Alignment::BottomRight:
-    case Alignment::CenterRight:
-        y = rect.position.y + textElement.getLocalBounds().left + textElement.getLocalBounds().width;
-        break;
-    case Alignment::TopCenter:
-    case Alignment::BottomCenter:
-    case Alignment::Center:
-        y = rect.position.y + rect.size.y / 2.0 + textElement.getLocalBounds().width / 2.0 + textElement.getLocalBounds().left;
-        break;
-    }
-    textElement.setPosition(x, y);
-    textElement.setColor(sf::Color(color.r, color.g, color.b, color.a));
-    target.draw(textElement);
-    */
 }
 
 void RenderTarget::drawStretched(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
