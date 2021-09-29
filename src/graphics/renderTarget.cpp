@@ -295,34 +295,28 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
 
 void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
 {
-    /*
-    sf::VertexArray a(sf::TrianglesStrip, points.size());
-    int n=0;
-    for(auto point : points)
+    int n = vertex_data.size();
+    for(auto& p : points)
+        vertex_data.push_back({p, color, {1, 1}});
+    for(unsigned int idx=0; idx<points.size() - 2;idx++)
     {
-        a[n].position.x = point.x;
-        a[n].position.y = point.y;
-        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
-        n++;
+        index_data.insert(index_data.end(), {
+            n + idx, n + idx + 1, n + idx + 2,
+        });
     }
-    target.draw(a);
-    */
 }
 
 void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
-    /*
-    sf::VertexArray a(sf::TrianglesStrip, points.size());
-    int n=0;
-    for(auto point : points)
+    int n = vertex_data.size();
+    for(auto& p : points)
+        vertex_data.push_back({p, color, {1, 1}});
+    for(unsigned int idx=0; idx<points.size() - 2;idx++)
     {
-        a[n].position.x = point.x;
-        a[n].position.y = point.y;
-        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
-        n++;
+        index_data.insert(index_data.end(), {
+            n + idx, n + idx + 1, n + idx + 2,
+        });
     }
-    target.draw(a);
-    */
 }
 
 void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
