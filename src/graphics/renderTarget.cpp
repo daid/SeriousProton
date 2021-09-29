@@ -327,23 +327,37 @@ void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::
 
 void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
 {
-    /*
-    sf::CircleShape circle(radius, 50);
-    circle.setOrigin(radius, radius);
-    circle.setPosition(center.x, center.y);
-    circle.setFillColor(sf::Color(color.r, color.g, color.b, color.a));
-    target.draw(circle);
-    */
+    const int point_count = 50;
+
+    int n = vertex_data.size();
+    for(int idx=0; idx<point_count;idx++)
+    {
+        float f = float(idx) / float(point_count) * M_PI * 2.0f;
+        vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, {1, 1}});
+    }
+    for(int idx=2; idx<point_count;idx++)
+    {
+        index_data.insert(index_data.end(), {
+            n, n + idx - 1, n + idx,
+        });
+    }
 }
 
 void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
 {
-    /*
-    sf::RectangleShape shape(sf::Vector2f(rect.size.x, rect.size.y));
-    shape.setPosition(rect.position.x, rect.position.y);
-    shape.setFillColor(sf::Color(color.r, color.g, color.b, color.a));
-    target.draw(shape);
-    */
+    int n = vertex_data.size();
+    index_data.insert(index_data.end(), {
+        n + 0, n + 1, n + 2,
+        n + 1, n + 3, n + 2,
+    });
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y}, color, {1, 1}});
+    vertex_data.push_back({
+        {rect.position.x, rect.position.y + rect.size.y}, color, {1, 1}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y}, color, {1, 1}});
+    vertex_data.push_back({
+        {rect.position.x + rect.size.x, rect.position.y + rect.size.y}, color, {1, 1}});
 }
 
 
@@ -352,23 +366,25 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
     glm::vec2 uv0, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3,
     glm::u8vec4 color)
 {
-    /*
-    auto tex = textureManager.getTexture(texture);
-    sf::VertexArray a(sf::TrianglesFan, 4);
-    a[0].position = sf::Vector2f(p0.x, p0.y);
-    a[1].position = sf::Vector2f(p1.x, p1.y);
-    a[2].position = sf::Vector2f(p2.x, p2.y);
-    a[3].position = sf::Vector2f(p3.x, p3.y);
-    a[0].texCoords = sf::Vector2f(uv0.x * tex->getSize().x, uv0.y * tex->getSize().y);
-    a[1].texCoords = sf::Vector2f(uv1.x * tex->getSize().x, uv1.y * tex->getSize().y);
-    a[2].texCoords = sf::Vector2f(uv2.x * tex->getSize().x, uv2.y * tex->getSize().y);
-    a[3].texCoords = sf::Vector2f(uv3.x * tex->getSize().x, uv3.y * tex->getSize().y);
-    a[0].color = sf::Color(color.r, color.g, color.b, color.a);
-    a[1].color = sf::Color(color.r, color.g, color.b, color.a);
-    a[2].color = sf::Color(color.r, color.g, color.b, color.a);
-    a[3].color = sf::Color(color.r, color.g, color.b, color.a);
-    target.draw(a, tex);
-    */
+    sp::Rect uv_rect = getFromAtlas(texture);
+
+    int n = vertex_data.size();
+    index_data.insert(index_data.end(), {
+        n + 0, n + 1, n + 2,
+        n + 1, n + 3, n + 2,
+    });
+    uv0.x = uv_rect.position.x + uv_rect.size.x * uv0.x;
+    uv0.y = uv_rect.position.y + uv_rect.size.y * uv0.y;
+    uv1.x = uv_rect.position.x + uv_rect.size.x * uv1.x;
+    uv1.y = uv_rect.position.y + uv_rect.size.y * uv1.y;
+    uv2.x = uv_rect.position.x + uv_rect.size.x * uv2.x;
+    uv2.y = uv_rect.position.y + uv_rect.size.y * uv2.y;
+    uv3.x = uv_rect.position.x + uv_rect.size.x * uv3.x;
+    uv3.y = uv_rect.position.y + uv_rect.size.y * uv3.y;
+    vertex_data.push_back({p0, color, uv0});
+    vertex_data.push_back({p1, color, uv1});
+    vertex_data.push_back({p3, color, uv3});
+    vertex_data.push_back({p2, color, uv2});
 }
 
 void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sp::Font* font, glm::u8vec4 color, int flags)
@@ -703,9 +719,9 @@ glm::ivec2 RenderTarget::getPhysicalSize()
     return physical_size;
 }
 
-glm::ivec2 RenderTarget::virtualToPixelPosition(glm::vec2)
+glm::ivec2 RenderTarget::virtualToPixelPosition(glm::vec2 v)
 {
-    return {1,1};
+    return {v.x * physical_size.x / virtual_size.x, v.y * physical_size.y / virtual_size.y};
 }
 
 }
