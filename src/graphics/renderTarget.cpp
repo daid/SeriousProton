@@ -112,8 +112,8 @@ void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float 
 
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        n + 0, n + 1, n + 2,
-        n + 1, n + 3, n + 2,
+        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
     });
     size *= 0.5f;
     glm::vec2 offset{size / uv_rect.size.y * uv_rect.size.x, size};
@@ -139,8 +139,8 @@ void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center,
 
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        n + 0, n + 1, n + 2,
-        n + 1, n + 3, n + 2,
+        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
     });
     size *= 0.5f;
     glm::vec2 offset0 = rotateVec2({size / uv_rect.size.y * uv_rect.size.x, size}, rotation);
@@ -302,7 +302,7 @@ void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& poi
     for(unsigned int idx=0; idx<points.size() - 2;idx++)
     {
         index_data.insert(index_data.end(), {
-            n + idx, n + idx + 1, n + idx + 2,
+            uint16_t(n + idx), uint16_t(n + idx + 1), uint16_t(n + idx + 2),
         });
     }
 }
@@ -315,7 +315,7 @@ void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::
     for(unsigned int idx=0; idx<points.size() - 2;idx++)
     {
         index_data.insert(index_data.end(), {
-            n + idx, n + idx + 1, n + idx + 2,
+            uint16_t(n + idx), uint16_t(n + idx + 1), uint16_t(n + idx + 2),
         });
     }
 }
@@ -333,7 +333,7 @@ void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
     for(int idx=2; idx<point_count;idx++)
     {
         index_data.insert(index_data.end(), {
-            n, n + idx - 1, n + idx,
+            uint16_t(n), uint16_t(n + idx - 1), uint16_t(n + idx),
         });
     }
 }
@@ -342,8 +342,8 @@ void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
 {
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        n + 0, n + 1, n + 2,
-        n + 1, n + 3, n + 2,
+        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
     });
     vertex_data.push_back({
         {rect.position.x, rect.position.y}, color, atlas_white_pixel});
@@ -365,8 +365,8 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
 
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        n + 0, n + 1, n + 2,
-        n + 1, n + 3, n + 2,
+        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
     });
     uv0.x = uv_rect.position.x + uv_rect.size.x * uv0.x;
     uv0.y = uv_rect.position.y + uv_rect.size.y * uv0.y;
@@ -479,8 +479,8 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
 
             int n = vertex_data.size();
             index_data.insert(index_data.end(), {
-                n + 0, n + 1, n + 2,
-                n + 1, n + 3, n + 2,
+                uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+                uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
             });
             vertex_data.push_back({
                 p0, color, {u0, v0}});
@@ -514,12 +514,12 @@ void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, glm::
     
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        n + 0, n + 1, n + 2,
-        n + 1, n + 3, n + 2,
-        n + 2, n + 3, n + 4,
-        n + 3, n + 5, n + 4,
-        n + 4, n + 5, n + 6,
-        n + 5, n + 7, n + 6,
+        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
+        uint16_t(n + 2), uint16_t(n + 3), uint16_t(n + 4),
+        uint16_t(n + 3), uint16_t(n + 5), uint16_t(n + 4),
+        uint16_t(n + 4), uint16_t(n + 5), uint16_t(n + 6),
+        uint16_t(n + 5), uint16_t(n + 7), uint16_t(n + 6),
     });
     vertex_data.push_back({
         {rect.position.x, rect.position.y},
@@ -557,12 +557,12 @@ void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, glm::
     
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        n + 0, n + 1, n + 2,
-        n + 1, n + 3, n + 2,
-        n + 2, n + 3, n + 4,
-        n + 3, n + 5, n + 4,
-        n + 4, n + 5, n + 6,
-        n + 5, n + 7, n + 6,
+        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
+        uint16_t(n + 2), uint16_t(n + 3), uint16_t(n + 4),
+        uint16_t(n + 3), uint16_t(n + 5), uint16_t(n + 4),
+        uint16_t(n + 4), uint16_t(n + 5), uint16_t(n + 6),
+        uint16_t(n + 5), uint16_t(n + 7), uint16_t(n + 6),
     });
     vertex_data.push_back({
         {rect.position.x, rect.position.y},
@@ -599,26 +599,26 @@ void RenderTarget::drawStretchedHV(sp::Rect rect, float corner_size, std::string
 
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        n + 0, n + 4, n + 1,
-        n + 1, n + 4, n + 5,
-        n + 1, n + 5, n + 2,
-        n + 2, n + 5, n + 6,
-        n + 2, n + 6, n + 3,
-        n + 3, n + 6, n + 7,
+        uint16_t(n + 0), uint16_t(n + 4), uint16_t(n + 1),
+        uint16_t(n + 1), uint16_t(n + 4), uint16_t(n + 5),
+        uint16_t(n + 1), uint16_t(n + 5), uint16_t(n + 2),
+        uint16_t(n + 2), uint16_t(n + 5), uint16_t(n + 6),
+        uint16_t(n + 2), uint16_t(n + 6), uint16_t(n + 3),
+        uint16_t(n + 3), uint16_t(n + 6), uint16_t(n + 7),
 
-        n + 4, n + 8, n + 5,
-        n + 5, n + 8, n + 9,
-        n + 5, n + 9, n + 6,
-        n + 6, n + 9, n + 10,
-        n + 6, n + 10, n + 7,
-        n + 7, n + 10, n + 11,
+        uint16_t(n + 4), uint16_t(n + 8), uint16_t(n + 5),
+        uint16_t(n + 5), uint16_t(n + 8), uint16_t(n + 9),
+        uint16_t(n + 5), uint16_t(n + 9), uint16_t(n + 6),
+        uint16_t(n + 6), uint16_t(n + 9), uint16_t(n + 10),
+        uint16_t(n + 6), uint16_t(n + 10), uint16_t(n + 7),
+        uint16_t(n + 7), uint16_t(n + 10), uint16_t(n + 11),
 
-        n + 8, n + 12, n + 9,
-        n + 9, n + 12, n + 13,
-        n + 9, n + 13, n + 10,
-        n + 10, n + 13, n + 14,
-        n + 10, n + 14, n + 11,
-        n + 11, n + 14, n + 15,
+        uint16_t(n + 8), uint16_t(n + 12), uint16_t(n + 9),
+        uint16_t(n + 9), uint16_t(n + 12), uint16_t(n + 13),
+        uint16_t(n + 9), uint16_t(n + 13), uint16_t(n + 10),
+        uint16_t(n + 10), uint16_t(n + 13), uint16_t(n + 14),
+        uint16_t(n + 10), uint16_t(n + 14), uint16_t(n + 11),
+        uint16_t(n + 11), uint16_t(n + 14), uint16_t(n + 15),
     });
     vertex_data.push_back({
         {rect.position.x, rect.position.y},
