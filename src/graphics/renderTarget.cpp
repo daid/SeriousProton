@@ -4,7 +4,7 @@
 #include "windowManager.h"
 #include "engine.h"
 
-#include "GL/glew.h"
+#include "graphics/opengl.h"
 #include <glm/gtc/type_ptr.hpp>
 
 

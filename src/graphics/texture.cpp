@@ -1,5 +1,5 @@
 #include "graphics/texture.h"
-#include "GL/glew.h"
+#include "graphics/opengl.h"
 
 
 namespace sp {

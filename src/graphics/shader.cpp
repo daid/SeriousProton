@@ -1,5 +1,5 @@
 #include "graphics/shader.h"
-#include "GL/glew.h"
+#include "graphics/opengl.h"
 #include <limits>
 
 namespace sp {

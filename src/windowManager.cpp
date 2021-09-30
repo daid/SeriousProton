@@ -1,5 +1,5 @@
-#include <GL/glew.h>
 #include "windowManager.h"
+#include "graphics/opengl.h"
 #include "Updatable.h"
 #include "Renderable.h"
 #include "collisionable.h"
@@ -36,7 +36,7 @@ WindowManager::WindowManager(int virtualWidth, int virtualHeight, bool fullscree
 #endif
 
     create();
-    glewInit();
+    sp::initOpenGL();
 }
 
 WindowManager::~WindowManager()
@@ -56,8 +56,6 @@ void WindowManager::render()
     // Clear the window
     glClearColor(0.1, 0.1, 0.1, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLoadIdentity();
-    glLoadMatrixf(glm::value_ptr(viewport_matrix));
 
     int w, h;
     SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);

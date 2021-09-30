@@ -358,6 +358,7 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/texture.cpp
     src/graphics/textureAtlas.cpp
     src/graphics/shader.cpp
+    src/graphics/opengl.cpp
     src/i18n.cpp
     src/input.cpp
     src/logging.cpp
@@ -520,7 +521,7 @@ target_compile_options(seriousproton_deps
 
 target_link_libraries(seriousproton_deps
     INTERFACE 
-        box2d lua glew ${SDL2_LIBRARIES} glm::glm Threads::Threads spfreetype2
+        box2d lua ${SDL2_LIBRARIES} glm::glm Threads::Threads spfreetype2
         $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"

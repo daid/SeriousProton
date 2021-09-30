@@ -1,6 +1,6 @@
 #include "graphics/textureAtlas.h"
+#include "graphics/opengl.h"
 #include "textureManager.h"
-#include "GL/glew.h"
 #include <algorithm>
 
 
