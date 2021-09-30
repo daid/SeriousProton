@@ -92,7 +92,6 @@ endif()
 
 add_subdirectory(libs/Box2D)
 add_subdirectory(libs/lua)
-add_subdirectory(libs/GL)
 
 # json11
 if(SERIOUSPROTON_WITH_JSON)
