@@ -250,25 +250,33 @@ void RenderTarget::drawPoint(glm::vec2 position, glm::u8vec4 color)
 
 void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color)
 {
-    /*
-    sf::RectangleShape overlay(sf::Vector2f(rect.size.x, rect.size.y));
-    overlay.setPosition(rect.position.x, rect.position.y);
-    overlay.setFillColor(sf::Color(color.r, color.g, color.b, color.a));
-    target.draw(overlay, sf::BlendMultiply);
-    */
+    finish();
+    glBlendFunc(GL_DST_COLOR, GL_ZERO);
+    fillRect(rect, color);
+    finish();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color)
 {
-    /*
-    sf::CircleShape circle(radius - thickness, 50);
-    circle.setOrigin(radius - thickness, radius - thickness);
-    circle.setPosition(center.x, center.y);
-    circle.setFillColor(sf::Color::Transparent);
-    circle.setOutlineThickness(thickness);
-    circle.setOutlineColor(sf::Color(color.r, color.g, color.b, color.a));
-    target.draw(circle);
-    */
+    const int point_count = 50;
+
+    int n = vertex_data.size();
+    for(int idx=0; idx<point_count;idx++)
+    {
+        float f = float(idx) / float(point_count) * M_PI * 2.0f;
+        vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, atlas_white_pixel});
+        vertex_data.push_back({center + glm::vec2{std::sin(f) * (radius - thickness), std::cos(f) * (radius - thickness)}, color, atlas_white_pixel});
+    }
+    for(int idx=0; idx<point_count;idx++)
+    {
+        int n0 = n + idx * 2;
+        int n1 = n + ((idx + 1) % point_count) * 2;
+        index_data.insert(index_data.end(), {
+            uint16_t(n0 + 0), uint16_t(n0 + 1), uint16_t(n1 + 0),
+            uint16_t(n0 + 1), uint16_t(n1 + 1), uint16_t(n1 + 0),
+        });
+    }
 }
 
 void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
