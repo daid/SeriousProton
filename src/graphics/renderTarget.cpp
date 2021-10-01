@@ -50,7 +50,7 @@ RenderTarget::RenderTarget(glm::vec2 virtual_size, glm::ivec2 physical_size)
 : virtual_size(virtual_size), physical_size(physical_size)
 {
     if (!shader)
-        shader = new sp::Shader(R"(
+        shader = new sp::Shader("rendertargetshader", R"(
 #version 120
 uniform mat3 u_projection;
 

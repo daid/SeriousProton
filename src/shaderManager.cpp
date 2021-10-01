@@ -12,7 +12,7 @@ sp::Shader* ShaderManager::getShader(string name)
         LOG(INFO) << "Loading shader: " << name;
         P<ResourceStream> vertexStream = getResourceStream(name + ".vert");
         P<ResourceStream> fragmentStream = getResourceStream(name + ".frag");
-        sp::Shader* shader = new sp::Shader(vertexStream, fragmentStream);
+        sp::Shader* shader = new sp::Shader(name, vertexStream, fragmentStream);
         shaders[name] = shader;
         return shader;
     }

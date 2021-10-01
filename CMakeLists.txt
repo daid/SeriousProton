@@ -413,6 +413,9 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/texture.h
     src/graphics/textureAtlas.h
     src/graphics/shader.h
+    src/graphics/opengl.h
+    src/graphics/openglDesktop.h
+    src/graphics/opengles2.h
     src/i18n.h
     src/input.h
     src/io/dataBuffer.h

@@ -15,7 +15,9 @@ void initOpenGL();
 }//namespace sp
 
 
+#ifdef DEBUG
 #define SP_ENABLE_OPENGL_TRACING
+#endif
 #ifdef SP_ENABLE_OPENGL_TRACING
 #include <stringImproved.h>
 namespace sp {
