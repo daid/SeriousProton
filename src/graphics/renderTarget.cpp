@@ -25,6 +25,9 @@ struct VertexData
 static std::vector<VertexData> vertex_data;
 static std::vector<uint16_t> index_data;
 
+static std::vector<VertexData> lines_vertex_data;
+static std::vector<uint16_t> lines_index_data;
+
 static sp::AtlasTexture* atlas_texture;
 static std::unordered_map<string, Rect> atlas_images;
 static std::unordered_map<sp::Font*, std::unordered_map<int, Rect>> atlas_glyphs;
@@ -173,78 +176,65 @@ void RenderTarget::drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 {
-    /*
-    sf::VertexArray a(sf::LinesStrip, 2);
-    a[0].position.x = start.x;
-    a[0].position.y = start.y;
-    a[1].position.x = end.x;
-    a[1].position.y = end.y;
-    a[0].color = sf::Color(color.r, color.g, color.b, color.a);
-    a[1].color = sf::Color(color.r, color.g, color.b, color.a);
-    target.draw(a);
-    */
+    int n = lines_vertex_data.size();
+    lines_vertex_data.push_back({start, color, atlas_white_pixel});
+    lines_vertex_data.push_back({end, color, atlas_white_pixel});
+    lines_index_data.insert(lines_index_data.end(), {
+        uint16_t(n), uint16_t(n + 1),
+    });
 }
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color)
 {
-    /*
-    sf::VertexArray a(sf::LinesStrip, 2);
-    a[0].position.x = start.x;
-    a[0].position.y = start.y;
-    a[1].position.x = end.x;
-    a[1].position.y = end.y;
-    a[0].color = sf::Color(start_color.r, start_color.g, start_color.b, start_color.a);
-    a[1].color = sf::Color(end_color.r, end_color.g, end_color.b, end_color.a);
-    target.draw(a);
-    */
+    int n = lines_vertex_data.size();
+    lines_vertex_data.push_back({start, start_color, atlas_white_pixel});
+    lines_vertex_data.push_back({end, end_color, atlas_white_pixel});
+    lines_index_data.insert(lines_index_data.end(), {
+        uint16_t(n), uint16_t(n + 1),
+    });
 }
 
 void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, glm::u8vec4 color)
 {
-    /*
-    sf::VertexArray a(sf::LinesStrip, points.size());
-    int n=0;
-    for(auto point : points)
+    int n = lines_vertex_data.size();
+    for(auto& p : points)
+        lines_vertex_data.push_back({p, color, atlas_white_pixel});
+    for(unsigned int idx=0; idx<points.size() - 1;idx++)
     {
-        a[n].position.x = point.x;
-        a[n].position.y = point.y;
-        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
-        n++;
+        lines_index_data.insert(lines_index_data.end(), {
+            uint16_t(n + idx), uint16_t(n + idx + 1),
+        });
     }
-    target.draw(a);
-    */
 }
 
 void RenderTarget::drawLine(const std::vector<glm::vec2> points, glm::u8vec4 color)
 {
-    /*
-    sf::VertexArray a(sf::LinesStrip, points.size());
-    int n=0;
-    for(auto point : points)
+    int n = lines_vertex_data.size();
+    for(auto& p : points)
+        lines_vertex_data.push_back({p, color, atlas_white_pixel});
+    for(unsigned int idx=0; idx<points.size() - 1;idx++)
     {
-        a[n].position.x = point.x;
-        a[n].position.y = point.y;
-        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
-        n++;
+        lines_index_data.insert(lines_index_data.end(), {
+            uint16_t(n + idx), uint16_t(n + idx + 1),
+        });
     }
-    target.draw(a);
-    */
 }
 
 void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2> points, glm::u8vec4 color)
 {
-    /*
-    sf::VertexArray a(sf::LinesStrip, points.size());
-    int n=0;
-    for(auto point : points)
+    finish();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    int n = lines_vertex_data.size();
+    for(auto& p : points)
+        lines_vertex_data.push_back({p, color, atlas_white_pixel});
+    for(unsigned int idx=0; idx<points.size() - 1;idx++)
     {
-        a[n].position.x = point.x;
-        a[n].position.y = point.y;
-        a[n].color = sf::Color(color.r, color.g, color.b, color.a);
-        n++;
+        lines_index_data.insert(lines_index_data.end(), {
+            uint16_t(n + idx), uint16_t(n + idx + 1),
+        });
     }
-    target.draw(a, sf::RenderStates(sf::BlendAdd));
-    */
+    finish();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void RenderTarget::drawPoint(glm::vec2 position, glm::u8vec4 color)
@@ -701,6 +691,33 @@ void RenderTarget::finish()
 
         vertex_data.clear();
         index_data.clear();
+    }
+    if (lines_index_data.size())
+    {
+        shader->bind();
+        glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);
+
+        glUniform1i(shader->getUniformLocation("u_texture"), 0);
+        glActiveTexture(GL_TEXTURE0);
+        atlas_texture->bind();
+
+        glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(VertexData) * lines_vertex_data.size(), lines_vertex_data.data(), GL_DYNAMIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * lines_index_data.size(), lines_index_data.data(), GL_DYNAMIC_DRAW);
+
+        glVertexAttribPointer(shader->getAttributeLocation("a_position"), 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)0);
+        glEnableVertexAttribArray(shader->getAttributeLocation("a_position"));
+        glVertexAttribPointer(shader->getAttributeLocation("a_color"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VertexData), (void*)offsetof(VertexData, color));
+        glEnableVertexAttribArray(shader->getAttributeLocation("a_color"));
+        glVertexAttribPointer(shader->getAttributeLocation("a_texcoords"), 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, uv));
+        glEnableVertexAttribArray(shader->getAttributeLocation("a_texcoords"));
+
+        glDrawElements(GL_LINES, lines_index_data.size(), GL_UNSIGNED_SHORT, nullptr);
+
+        lines_vertex_data.clear();
+        lines_index_data.clear();
     }
 }
 
