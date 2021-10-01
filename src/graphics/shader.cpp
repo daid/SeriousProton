@@ -4,6 +4,8 @@
 
 namespace sp {
 
+static Shader* current_shader = nullptr;
+
 Shader::Shader(string name, string vertex_code, string fragment_code)
 : name(name), vertex_code(vertex_code), fragment_code(fragment_code)
 {
@@ -89,6 +91,7 @@ void Shader::bind()
     {
         compileShader();
     }
+    current_shader = this;
     if (!program)
         return;
     glUseProgram(program);
@@ -96,6 +99,7 @@ void Shader::bind()
 
 int Shader::getUniformLocation(const string& name)
 {
+    assert(current_shader == this);
     auto it = uniform_mapping.find(name);
     if (it != uniform_mapping.end())
         return it->second;
@@ -109,13 +113,14 @@ int Shader::getUniformLocation(const string& name)
 
 int Shader::getAttributeLocation(const string& name)
 {
+    assert(current_shader == this);
     auto it = attribute_mapping.find(name);
     if (it != attribute_mapping.end())
         return it->second;
         
     int location = glGetAttribLocation(program, name.c_str());
     if (location == -1)
-        LOG(Debug, "Failed to find uniform:", name, " in ", this->name);
+        LOG(Debug, "Failed to find attribute:", name, " in ", this->name);
     attribute_mapping[name] = location;
     return location;
 }
