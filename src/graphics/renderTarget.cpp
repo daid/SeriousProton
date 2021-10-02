@@ -164,14 +164,11 @@ void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center,
 
 void RenderTarget::drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2 center, float size, float rotation)
 {
-    /*
-    sf::Sprite sprite;
-    textureManager.setTexture(sprite, texture);
-    sprite.setPosition(sf::Vector2f(center.x, center.y));
-    sprite.setScale(size / sprite.getTextureRect().height, size / sprite.getTextureRect().height);
-    sprite.setRotation(rotation);
-    target.draw(sprite, sf::BlendAdd);
-    */
+    finish();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    drawRotatedSprite(texture, center, size, rotation);
+    finish();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
