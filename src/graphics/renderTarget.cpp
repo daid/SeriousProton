@@ -31,7 +31,8 @@ static std::vector<uint16_t> lines_index_data;
 static sp::AtlasTexture* atlas_texture;
 static std::unordered_map<string, Rect> atlas_images;
 static std::unordered_map<sp::Font*, std::unordered_map<int, Rect>> atlas_glyphs;
-static constexpr glm::vec2 atlas_white_pixel = {4095.5f/4096.0f, 4095.5f/4096.0f};
+static constexpr glm::ivec2 atlas_size = {2048, 2048};
+static constexpr glm::vec2 atlas_white_pixel = {(float(atlas_size.x)-0.5f)/float(atlas_size.x), (float(atlas_size.y)-0.5f)/float(atlas_size.y)};
 
 static Rect getFromAtlas(std::string_view texture)
 {
@@ -101,7 +102,7 @@ void main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     if (!atlas_texture)
-        atlas_texture = new AtlasTexture({4096, 4096});
+        atlas_texture = new AtlasTexture(atlas_size);
 }
 
 void RenderTarget::setDefaultFont(sp::Font* font)
