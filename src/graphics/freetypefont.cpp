@@ -95,9 +95,32 @@ FreetypeFont::~FreetypeFont()
 Font::CharacterInfo FreetypeFont::getCharacterInfo(const char* str)
 {
     Font::CharacterInfo info;
-    //TODO: UTF8 support info.code = stringutil::utf8::decodeSingle(str, &info.consumed_bytes);
     info.code = *str;
     info.consumed_bytes = 1;
+    if ((str[0] & 0xe0) == 0xc0)
+    {
+        if ((str[1] & 0xc0) == 0x80)
+        {
+            info.consumed_bytes = 2;
+            info.code = ((str[0] & 0x1f) << 6) | (str[1] & 0x3f);
+        }
+    }
+    else if ((str[0] & 0xf0) == 0xe0)
+    {
+        if ((str[1] & 0xc0) == 0x80 && (str[2] & 0xc0) == 0x80)
+        {
+            info.consumed_bytes = 3;
+            info.code = ((str[0] & 0x0f) << 12) | ((str[1] & 0x3f) << 6) | (str[2] & 0x3f);
+        }
+    }
+    else if ((str[0] & 0xf8) == 0xf0)
+    {
+        if ((str[1] & 0xc0) == 0x80 && (str[2] & 0xc0) == 0x80 && (str[3] & 0xc0) == 0x80)
+        {
+            info.consumed_bytes = 4;
+            info.code = ((str[0] & 0x0f) << 18) | ((str[1] & 0x3f) << 12) | ((str[2] & 0x3f) << 6) | (str[3] & 0x3f);
+        }
+    }
     return info;
 }
 
