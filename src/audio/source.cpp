@@ -1,6 +1,7 @@
 #include "audio/source.h"
 #include "logging.h"
 
+#include <SDL.h>
 #include <mutex>
 #include <array>
 #include <string.h>
@@ -12,32 +13,15 @@ namespace audio {
 static std::recursive_mutex source_list_mutex;
 static Source* source_list_start = nullptr;
 
-/*
-class MySFMLStream : public sf::SoundStream
-{
+static SDL_AudioDeviceID audio_device;
+
+class MySDLAudioInterface {
 public:
-    MySFMLStream()
+    static void Callback(void* userdata, uint8_t* stream, int len)
     {
-        initialize(2, 44100);
+        Source::onAudioCallback(reinterpret_cast<int16_t*>(stream), len/2);
     }
-
-    virtual bool onGetData(Chunk& data) override
-    {
-        data.samples = buffer.data();
-        data.sampleCount = buffer.size();
-        std::lock_guard<std::recursive_mutex> guard(source_list_mutex);
-        Source::onAudioCallback(buffer.data(), buffer.size());
-        return true;
-    }
-
-    virtual void onSeek(sf::Time timeOffset) override
-    {
-    }
-private:
-    std::array<int16_t, 1024> buffer;
 };
-static MySFMLStream* sfml_stream;
-*/
 
 Source::~Source()
 {
@@ -68,7 +52,7 @@ void Source::stop()
     std::lock_guard<std::recursive_mutex> guard(source_list_mutex);
     if (!active)
         return;
-    
+
     active = false;
     if (source_list_start == this)
     {
@@ -86,9 +70,20 @@ void Source::stop()
 
 void Source::startAudioSystem()
 {
-#warning SDL2 TODO
-    //sfml_stream = new MySFMLStream();
-    //sfml_stream->play();
+    SDL_AudioSpec want, have;
+    memset(&want, 0, sizeof(want));
+    want.freq = 44100;
+    want.format = AUDIO_S16SYS;
+    want.channels = 2;
+    want.samples = 2048;
+    want.callback = &MySDLAudioInterface::Callback;
+    audio_device = SDL_OpenAudioDevice(nullptr, 0, &want, &have, 0);
+    if (audio_device == 0)
+    {
+        LOG(Error, "Failed to open audio device: ", SDL_GetError());
+    } else {
+        SDL_PauseAudioDevice(audio_device, 0);
+    }
 }
 
 void Source::onAudioCallback(int16_t* stream, int sample_count)

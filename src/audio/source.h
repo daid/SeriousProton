@@ -41,7 +41,7 @@ private:
     static void onAudioCallback(int16_t* stream, int sample_count);
     
     friend class ::Engine;
-    friend class MySFMLStream;
+    friend class MySDLAudioInterface;
 };
 
 }//namespace audio
