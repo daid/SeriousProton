@@ -65,7 +65,7 @@ void InputHandler::preEventsUpdate()
         else
             keyboard_button_released[n] = false;
     }
-    for(unsigned int n=0; n<256; n++)
+    for(unsigned int n=0; n<5; n++)
     {
         if (mouse_button_pressed[n])
             mouse_button_pressed[n] = false;
