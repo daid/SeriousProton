@@ -5,11 +5,40 @@
 namespace sp {
 
 static Shader* current_shader = nullptr;
+static const char* shader_header = "#version 120\n";
 
-Shader::Shader(string name, string vertex_code, string fragment_code)
-: name(name), vertex_code(vertex_code), fragment_code(fragment_code)
+Shader::Shader(string name, string code, const std::vector<string>& defines)
+: name(name), vertex_code(shader_header), fragment_code(shader_header)
 {
+    for(auto str : defines)
+    {
+        vertex_code += "#define " + string(str) + " 1\n";
+        fragment_code += "#define " + string(str) + " 1\n";
+    }
+
     program = std::numeric_limits<unsigned int>::max();
+    int mode = -1;
+    int line_nr = 1;
+    for(auto line : code.split("\n"))
+    {
+        if (line.strip().lower() == "[vertex]") {
+            mode = 0;
+            vertex_code += "#line " + string(line_nr) + "\n";
+        } else if (line.strip().lower() == "[fragment]") {
+            mode = 1;
+            fragment_code += "#line " + string(line_nr) + "\n";
+        } else if (mode == 0) {
+            vertex_code += line + "\n";
+        } else if (mode == 1) {
+            fragment_code += line + "\n";
+        }
+        line_nr++;
+    }
+}
+
+Shader::Shader(string name, P<ResourceStream> code_stream, const std::vector<string>& defines)
+: Shader(name, code_stream->readAll(), defines)
+{
 }
 
 Shader::Shader(string name, P<ResourceStream> vertexStream, P<ResourceStream> fragmentStream)

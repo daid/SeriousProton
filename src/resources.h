@@ -16,6 +16,7 @@ public:
     virtual size_t getSize() = 0;
 
     string readLine();
+    string readAll();
 };
 
 class ResourceProvider : public virtual PObject

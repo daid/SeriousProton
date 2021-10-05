@@ -55,6 +55,14 @@ string ResourceStream::readLine()
     }
 }
 
+string ResourceStream::readAll()
+{
+    string result;
+    result.resize(getSize());
+    read(result.data(), result.size());
+    return result;
+}
+
 class FileResourceStream : public ResourceStream
 {
     SDL_RWops *io;

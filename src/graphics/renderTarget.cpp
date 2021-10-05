@@ -54,8 +54,8 @@ RenderTarget::RenderTarget(glm::vec2 virtual_size, glm::ivec2 physical_size)
 : virtual_size(virtual_size), physical_size(physical_size)
 {
     if (!shader)
-        shader = new sp::Shader("rendertargetshader", R"(
-#version 120
+        shader = new Shader("rendertargetshader", R"(
+[vertex]
 uniform mat3 u_projection;
 
 attribute vec2 a_position;
@@ -71,8 +71,8 @@ void main()
     v_color = a_color;
     gl_Position = vec4(u_projection * vec3(a_position, 1.0), 1.0);
 }
-)", R"(
-#version 120
+
+[fragment]
 uniform sampler2D u_texture;
 
 varying vec2 v_texcoords;
