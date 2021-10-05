@@ -54,6 +54,7 @@ public:
      * \param color Color of text
      */
     void drawText(sp::Rect rect, std::string_view text, Alignment align = Alignment::TopLeft, float text_size = 30, sp::Font* font = nullptr, glm::u8vec4 color={255,255,255,255}, int flags=0);
+    void drawText(sp::Rect rect, const sp::Font::PreparedFontString& prepared, float font_size = 30, glm::u8vec4 color={255,255,255,255}, int flags=0);
 
     void drawStretched(sp::Rect rect, std::string_view texture, glm::u8vec4 color={255,255,255,255});
     void drawStretchedH(sp::Rect rect, std::string_view texture, glm::u8vec4 color={255,255,255,255});

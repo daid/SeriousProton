@@ -30,8 +30,8 @@ public:
         };
         std::vector<GlyphData> data;
 
-        //std::shared_ptr<MeshData> create();
         glm::vec2 getUsedAreaSize() const;
+        Font* getFont() const;
 
     private:
         Font* font = nullptr;

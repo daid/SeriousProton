@@ -382,14 +382,18 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
 {
     if (!font)
         font = default_font;
-    auto& ags = atlas_glyphs[font];
     auto prepared = font->prepare(text, 32, font_size, rect.size, align, flags);
+    drawText(rect, prepared, font_size, color, flags);
+}
 
+void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& prepared, float font_size, glm::u8vec4 color, int flags)
+{
+    auto& ags = atlas_glyphs[prepared.getFont()];
     float size_scale = font_size / 32.0f;
     for(auto gd : prepared.data)
     {
         Font::GlyphInfo glyph;
-        if (gd.char_code == 0 || !font->getGlyphInfo(gd.char_code, 32, glyph))
+        if (gd.char_code == 0 || !prepared.getFont()->getGlyphInfo(gd.char_code, 32, glyph))
         {
             glyph.advance = 0.0f;
             glyph.bounds.size.x = 0.0f;
@@ -401,7 +405,7 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
             auto it = ags.find(gd.char_code);
             if (it == ags.end())
             {
-                uv_rect = atlas_texture->add(std::move(font->drawGlyph(gd.char_code, 32)), 1);
+                uv_rect = atlas_texture->add(std::move(prepared.getFont()->drawGlyph(gd.char_code, 32)), 1);
                 ags[gd.char_code] = uv_rect;
                 LOG(Info, "Added glyph '", char(gd.char_code), "' to atlas@", uv_rect.position, " ", uv_rect.size, "  ", atlas_texture->usageRate() * 100.0f, "%");
             }
@@ -438,20 +442,20 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
                     right = rect.size.x;
                 }
 
-                if (top < 0)
-                    continue;
                 if (bottom < 0)
+                    continue;
+                if (top < 0)
                 {
-                    v1 = v0 + uv_rect.size.y * (0 - top) / (bottom - top);
-                    bottom = 0;
+                    v0 = v1 - uv_rect.size.y * (0 - bottom) / (top - bottom);
+                    top = 0;
                 }
 
-                if (bottom > rect.size.y)
-                    continue;
                 if (top > rect.size.y)
+                    continue;
+                if (bottom > rect.size.y)
                 {
-                    v0 = v1 - uv_rect.size.y * (rect.size.y - bottom) / (top - bottom);
-                    top = rect.size.y;
+                    v1 = v0 + uv_rect.size.y * (rect.size.y - top) / (bottom - top);
+                    bottom = rect.size.y;
                 }
             }
 

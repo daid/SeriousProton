@@ -181,6 +181,11 @@ glm::vec2 Font::PreparedFontString::getUsedAreaSize() const
     return result;
 }
 
+Font* Font::PreparedFontString::getFont() const
+{
+    return font;
+}
+
 float Font::PreparedFontString::getMaxLineWidth() const
 {
     float max_x = 0.0f;
