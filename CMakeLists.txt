@@ -584,16 +584,17 @@ install(
 )
 
 if(WIN32)
-    install(
-        FILES
-            "${SFML_ROOT}/bin/OpenAL32.dll"
-            "${SFML_ROOT}/bin/sfml-audio-2.dll"
-            "${SFML_ROOT}/bin/sfml-graphics-2.dll"
-            "${SFML_ROOT}/bin/sfml-system-2.dll"
-            "${SFML_ROOT}/bin/sfml-window-2.dll"
-        DESTINATION .
-        COMPONENT runtime
-    )
+    message(WARNING "SDL2.dll install missing for package")
+    #install(
+    #    FILES
+    #        "${SFML_ROOT}/bin/OpenAL32.dll"
+    #        "${SFML_ROOT}/bin/sfml-audio-2.dll"
+    #        "${SFML_ROOT}/bin/sfml-graphics-2.dll"
+    #        "${SFML_ROOT}/bin/sfml-system-2.dll"
+    #        "${SFML_ROOT}/bin/sfml-window-2.dll"
+    #    DESTINATION .
+    #    COMPONENT runtime
+    #)
 
     if (MINGW)
         macro(get_mingw_dll dll location)
