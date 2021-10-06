@@ -54,7 +54,7 @@ Engine::Engine()
     atexit(SDL_Quit);
 
     initRandom();
-    windowManager = nullptr;
+    window = nullptr;
     CollisionManager::initialize();
     InputHandler::initialize();
     gameSpeed = 1.0;
@@ -65,8 +65,6 @@ Engine::Engine()
 
 Engine::~Engine()
 {
-    if (windowManager)
-        windowManager->close();
     delete soundManager;
     soundManager = nullptr;
 
@@ -93,8 +91,8 @@ P<PObject> Engine::getObject(string name)
 
 void Engine::runMainLoop()
 {
-    windowManager = dynamic_cast<WindowManager*>(*getObject("windowManager"));
-    if (!windowManager)
+    window = dynamic_cast<Window*>(*getObject("window"));
+    if (!window)
     {
         sp::SystemStopwatch frame_timer;
         while(running)
@@ -167,7 +165,7 @@ void Engine::runMainLoop()
             soundManager->updateTick();
 
             // Clear the window
-            windowManager->render();
+            window->render();
             engine_timing.render = engine_timing_stopwatch.restart();
             engine_timing.server_update = 0.0f;
             if (game_server)
@@ -184,10 +182,6 @@ void Engine::handleEvent(SDL_Event& event)
     // Window closed: exit
     if (event.type == SDL_QUIT)
         running = false;
-    if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
-        windowManager->windowHasFocus = true;
-    if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
-        windowManager->windowHasFocus = false;
 #ifdef DEBUG
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
         running = false;
@@ -217,7 +211,7 @@ void Engine::handleEvent(SDL_Event& event)
 #endif
     InputHandler::handleEvent(event);
     if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED)
-        windowManager->setupView();
+        window->setupView();
 }
 
 void Engine::setGameSpeed(float speed)

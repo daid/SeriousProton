@@ -57,7 +57,7 @@ public:
     static bool getJoysticButtonState(unsigned int joystickId, unsigned int button){ return joystick_button_down[joystickId][button];}
 
 private:
-    static P<WindowManager> windowManager;
+    static P<Window> window;
 
     static glm::vec2 mouse_position;
     static float mouse_wheel_delta;

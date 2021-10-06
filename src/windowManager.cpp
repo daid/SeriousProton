@@ -14,13 +14,10 @@
 #include <windows.h>
 #endif
 
-WindowManager::WindowManager(int virtualWidth, int virtualHeight, bool fullscreen, RenderChain* renderChain, int fsaa)
-: virtualSize(virtualWidth, virtualHeight), renderChain(renderChain), fullscreen(fullscreen), fsaa(fsaa)
+Window::Window(glm::vec2 virtual_size, bool fullscreen, RenderChain* renderChain, int fsaa)
+: minimal_virtual_size(virtual_size), current_virtual_size(virtual_size), renderChain(renderChain), fullscreen(fullscreen), fsaa(fsaa)
 {
     srand(static_cast<int32_t>(time(nullptr)));
-    windowHasFocus = true;
-    min_aspect_ratio = float(virtualWidth) / float(virtualHeight);
-    allow_virtual_resize = false;
 
 #ifdef _WIN32
     //On Vista or newer windows, let the OS know we are DPI aware, so we won't have odd scaling issues.
@@ -39,11 +36,11 @@ WindowManager::WindowManager(int virtualWidth, int virtualHeight, bool fullscree
     sp::initOpenGL();
 }
 
-WindowManager::~WindowManager()
+Window::~Window()
 {
 }
 
-void WindowManager::render()
+void Window::render()
 {
 #warning SDL2 TODO
 /*
@@ -59,9 +56,10 @@ void WindowManager::render()
 
     int w, h;
     SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);
+    glViewport(0, 0, w, h);
 
     //Call the first item of the rendering chain.
-    sp::RenderTarget target{virtualSize, {w, h}};
+    sp::RenderTarget target{current_virtual_size, {w, h}};
     renderChain->render(target);
     target.finish();
 
@@ -69,19 +67,14 @@ void WindowManager::render()
     SDL_GL_SwapWindow(static_cast<SDL_Window*>(window));
 }
 
-void WindowManager::close()
-{
-#warning SDL2 TODO
-}
-
-void WindowManager::setFullscreen(bool new_fullscreen)
+void Window::setFullscreen(bool new_fullscreen)
 {
     if (fullscreen == new_fullscreen)
         return;
     fullscreen = new_fullscreen;
     create();
 }
-void WindowManager::setFSAA(int new_fsaa)
+void Window::setFSAA(int new_fsaa)
 {
     if (fsaa == new_fsaa)
         return;
@@ -89,38 +82,36 @@ void WindowManager::setFSAA(int new_fsaa)
     create();
 }
 
-void WindowManager::setFrameLimit(int limit)
-{
-    //TODO
-}
-
-void WindowManager::setTitle(string title)
+void Window::setTitle(string title)
 {
     SDL_SetWindowTitle(static_cast<SDL_Window*>(window), title.c_str());
 }
 
-glm::vec2 WindowManager::mapPixelToCoords(const glm::ivec2 point) const
+glm::vec2 Window::mapPixelToCoords(const glm::ivec2 point) const
 {
     int w, h;
     SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);
-    float x = float(point.x) / float(w) * float(virtualSize.x);
-    float y = float(point.y) / float(h) * float(virtualSize.y);
+    float x = float(point.x) / float(w) * float(current_virtual_size.x);
+    float y = float(point.y) / float(h) * float(current_virtual_size.y);
     return glm::vec2(x, y);
 }
 
-glm::ivec2 WindowManager::mapCoordsToPixel(const glm::vec2 point) const
+glm::ivec2 Window::mapCoordsToPixel(const glm::vec2 point) const
 {
-#warning SDL2 TODO
-    return glm::ivec2(0, 0);
+    int w, h;
+    SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);
+    float x = float(point.x) * float(w) / float(current_virtual_size.x);
+    float y = float(point.y) * float(h) / float(current_virtual_size.y);
+    return glm::ivec2(x, y);
 }
 
-void WindowManager::create()
+void Window::create()
 {
     if (window) return;
 
     // Create the window of the application
-    int windowWidth = virtualSize.x;
-    int windowHeight = virtualSize.y;
+    int windowWidth = minimal_virtual_size.x;
+    int windowHeight = minimal_virtual_size.y;
 
     SDL_Rect rect;
     SDL_GetDisplayBounds(0, &rect);
@@ -129,7 +120,7 @@ void WindowManager::create()
         windowWidth = rect.w;
         windowHeight = rect.h;
     }else{
-        unsigned int scale = 2;
+        int scale = 2;
         while(windowWidth * scale < int(rect.w) && windowHeight * scale < int(rect.h))
             scale += 1;
         windowWidth *= scale - 1;
@@ -159,25 +150,20 @@ void WindowManager::create()
     setupView();
 }
 
-void WindowManager::setupView()
+void Window::setupView()
 {
     int w, h;
     SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);
     glm::vec2 window_size{w, h};
-    if (window_size.x / window_size.y > min_aspect_ratio)
+
+    current_virtual_size = minimal_virtual_size;
+
+    if (window_size.x / window_size.y > current_virtual_size.x / current_virtual_size.y)
     {
-        if (allow_virtual_resize)
-            virtualSize.x = static_cast<int32_t>(virtualSize.y * (window_size.x / window_size.y));
-
-        float aspect = window_size.y * float(virtualSize.x) / float(virtualSize.y) / window_size.x;
-        float offset = 0;//0.5 - 0.5 * aspect;
+        current_virtual_size.x = current_virtual_size.y / window_size.y * window_size.x;
     }else{
-        virtualSize.x = static_cast<int32_t>(virtualSize.y * min_aspect_ratio);
-
-        float aspect = window_size.x / window_size.y * float(virtualSize.y) / float(virtualSize.x);
-        float offset = 0.5f - 0.5f * aspect;
-        //TODO: Build viewport matrix
+        current_virtual_size.y = current_virtual_size.x / window_size.x * window_size.y;
     }
-
-    viewport_matrix = glm::orthoLH(0.0f, float(virtualSize.x), float(virtualSize.y), 0.0f, 0.0f, 1.0f);
+    LOG(Debug, window_size.x / window_size.y, " ", current_virtual_size.x / current_virtual_size.y);
+    LOG(Debug, window_size.x, " ", window_size.y, " ",current_virtual_size.x, " ", current_virtual_size.y);
 }
