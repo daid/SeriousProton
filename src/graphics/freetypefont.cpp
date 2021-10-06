@@ -136,7 +136,7 @@ bool FreetypeFont::getGlyphInfo(int char_code, int pixel_size, Font::GlyphInfo& 
         info.advance = 0;
         
         int glyph_index = FT_Get_Char_Index(face, char_code);
-        if (glyph_index == 0 || FT_Load_Glyph(face, glyph_index, FT_LOAD_TARGET_NORMAL | FT_LOAD_FORCE_AUTOHINT) != 0)
+        if (glyph_index == 0 || FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT) != 0)
         {
             LOG(Warning, "Failed to find glyph in font:", "0x" + string::hex(char_code));
         }
@@ -166,7 +166,7 @@ Image FreetypeFont::drawGlyph(int char_code, int pixel_size)
     FT_Face face = static_cast<FT_Face>(ft_face);
     
     int glyph_index = FT_Get_Char_Index(face, char_code);
-    if (glyph_index != 0 && FT_Load_Glyph(face, glyph_index, FT_LOAD_TARGET_NORMAL | FT_LOAD_FORCE_AUTOHINT) == 0)
+    if (glyph_index != 0 && FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT) == 0)
     {
         FT_Glyph glyph;
         if (FT_Get_Glyph(face->glyph, &glyph) == 0)
