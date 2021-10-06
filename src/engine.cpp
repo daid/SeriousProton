@@ -218,24 +218,6 @@ void Engine::handleEvent(SDL_Event& event)
     InputHandler::handleEvent(event);
     if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED)
         windowManager->setupView();
-#ifdef __ANDROID__
-    //Focus lost and focus gained events are used when the application window is created and destroyed.
-    if (event.type == sf::Event::LostFocus)
-        running = false;
-    
-    //The MouseEntered and MouseLeft events are received when the activity needs to pause or resume.
-    if (event.type == sf::Event::MouseLeft)
-    {
-        //Pause is when a small popup is on top of the window. So keep running.
-        while(windowManager->window.isOpen() && windowManager->window.waitEvent(event))
-        {
-            if (event.type != sf::Event::MouseLeft)
-                handleEvent(event);
-            if (event.type == sf::Event::MouseEntered)
-                break;
-        }
-    }
-#endif//__ANDROID__
 }
 
 void Engine::setGameSpeed(float speed)
