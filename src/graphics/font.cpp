@@ -43,9 +43,9 @@ Font::PreparedFontString Font::prepare(std::string_view s, int pixel_size, float
             position.x += getKerning(previous_char_code, char_info.code) * size_scale;
         }
         result.data.push_back({
-            .position = position,
-            .char_code = char_info.code,
-            .string_offset = int(index),
+            /*.position =*/ position,
+            /*.char_code =*/ char_info.code,
+            /*.string_offset =*/ int(index),
         });
         previous_char_code = char_info.code;
         index += char_info.consumed_bytes;
@@ -98,9 +98,9 @@ Font::PreparedFontString Font::prepare(std::string_view s, int pixel_size, float
         }
     }
     result.data.push_back({
-        .position = position,
-        .char_code = 0,
-        .string_offset = int(s.size()),
+        /*.position =*/ position,
+        /*.char_code =*/ 0,
+        /*.string_offset =*/ int(s.size()),
     });
 
     result.alignAll();
