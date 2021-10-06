@@ -10,7 +10,13 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+using ssize_t = SSIZE_T;
+#else
 #include <unistd.h>
+#endif
 
 /*
  * This document is licensed under the SGI Free Software B License Version
