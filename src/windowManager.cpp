@@ -45,7 +45,11 @@ WindowManager::~WindowManager()
 
 void WindowManager::render()
 {
+#ifndef _MSC_VER
 #warning SDL2 TODO
+#else
+#pragma message("SDL2 TODO")
+#endif
 /*
     if (InputHandler::keyboardIsPressed(sf::Keyboard::Return) && (sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt) || sf::Keyboard::isKeyPressed(sf::Keyboard::RAlt)))
     {
@@ -71,7 +75,11 @@ void WindowManager::render()
 
 void WindowManager::close()
 {
+#ifndef _MSC_VER
 #warning SDL2 TODO
+#else
+#pragma message("SDL2 TODO")
+#endif
 }
 
 void WindowManager::setFullscreen(bool new_fullscreen)
@@ -110,7 +118,11 @@ glm::vec2 WindowManager::mapPixelToCoords(const glm::ivec2 point) const
 
 glm::ivec2 WindowManager::mapCoordsToPixel(const glm::vec2 point) const
 {
+#ifndef _MSC_VER
 #warning SDL2 TODO
+#else
+#pragma message("SDL2 TODO")
+#endif
     return glm::ivec2(0, 0);
 }
 

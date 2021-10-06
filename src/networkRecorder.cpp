@@ -12,7 +12,11 @@
 
 NetworkAudioRecorder::NetworkAudioRecorder()
 {
+#ifndef _MSC_VER
 #warning SDL2 TODO
+#else
+#pragma message("SDL2 TODO")
+#endif
     //LOG(INFO) << "Using \"" << getDefaultDevice() << "\" for voice communication";
     //setProcessingInterval(sf::milliseconds(10));
 }
