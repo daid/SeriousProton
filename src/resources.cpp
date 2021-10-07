@@ -10,9 +10,11 @@
 #include <filesystem>
 #include <SDL.h>
 
-#if defined(ANDROID)
-#include <android/native_activity.h>
+#ifdef ANDROID
+#include <SDL.h>
+#include <jni.h>
 #include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 #endif
 
 PVector<ResourceProvider> resourceProviders;
@@ -142,13 +144,21 @@ std::vector<string> DirectoryResourceProvider::findResources(string searchPatter
     //Limitation : 
     //As far as I know, Android NDK won't provide a way to list subdirectories
     //So we will only list files in the first level directory 
-    ANativeActivity *nactivity {sf::getNativeActivity()};
-   
-    AAssetManager *asset_manager{nullptr};
-    if(nactivity)
+    static jobject asset_manager_jobject;
+    static AAssetManager* asset_manager = nullptr;
+    if (!asset_manager)
     {
-        asset_manager = nactivity->assetManager;
+        JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+        jobject activity = (jobject)SDL_AndroidGetActivity();
+        jclass clazz(env->GetObjectClass(activity));
+        jmethodID method_id = env->GetMethodID(clazz, "getAssets", "()Landroid/content/res/AssetManager;");
+        asset_manager_jobject = env->CallObjectMethod(activity, method_id);
+        asset_manager = AAssetManager_fromJava(env, asset_manager_jobject);
+
+        env->DeleteLocalRef(activity);
+        env->DeleteLocalRef(clazz);
     }
+
     if(asset_manager)
     {
         int idx = searchPattern.rfind("/");
