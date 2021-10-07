@@ -246,7 +246,7 @@ add_library(spfreetype2 STATIC
         #libs/freetype2/src/gxvalid/gxvopbd.c
         #libs/freetype2/src/gxvalid/gxvprop.c
         #libs/freetype2/src/gxvalid/gxvtrak.c
-    libs/freetype2/src/gxvalid/gxvfgen.c
+    #libs/freetype2/src/gxvalid/gxvfgen.c
     libs/freetype2/src/gzip/ftgzip.c
         #libs/freetype2/src/gzip/adler32.c
         #libs/freetype2/src/gzip/infblock.c
