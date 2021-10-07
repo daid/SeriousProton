@@ -8,7 +8,7 @@
 #include "input.h"
 #include "logging.h"
 
-#include <SDL.h>
+#include "SDL.h"
 #include <opus.h>
 
 static SDL_AudioDeviceID record_device_id;

@@ -1,7 +1,7 @@
 #include "audio/source.h"
 #include "logging.h"
 
-#include <SDL.h>
+#include "SDL.h"
 #include <mutex>
 #include <array>
 #include <string.h>

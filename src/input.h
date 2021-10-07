@@ -3,7 +3,7 @@
 
 #include "windowManager.h"
 #include "Updatable.h"
-#include <SDL.h>
+#include "SDL.h"
 
 
 class InputEventHandler: public virtual PObject

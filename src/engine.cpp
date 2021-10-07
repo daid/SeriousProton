@@ -5,7 +5,7 @@
 #include "collisionable.h"
 #include "audio/source.h"
 
-#include <SDL.h>
+#include "SDL.h"
 
 #ifdef DEBUG
 #include <typeinfo>

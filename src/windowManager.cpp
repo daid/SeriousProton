@@ -8,7 +8,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
-#include <SDL.h>
+#include "SDL.h"
 
 #ifdef _WIN32
 #include <windows.h>

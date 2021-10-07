@@ -1,5 +1,5 @@
 #include "engine.h"
-#include <SDL.h>
+#include "SDL.h"
 
 
 string Clipboard::readClipboard()

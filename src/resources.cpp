@@ -8,7 +8,7 @@
 #endif
 #include <cstdio>
 #include <filesystem>
-#include <SDL.h>
+#include "SDL.h"
 
 #if defined(ANDROID)
 #include <android/native_activity.h>
