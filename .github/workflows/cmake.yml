@@ -75,7 +75,7 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $env:GITHUB_WORKSPACE -G "Visual Studio 16 2019" -A Win32 -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DSDL2_DIR="$env:GITHUB_WORKSPACE/externals"
+      run: cmake $env:GITHUB_WORKSPACE -G "Visual Studio 16 2019" -A Win32 -DCMAKE_BUILD_TYPE:STRING=${{ matrix.build_type }} -DSDL2_DIR:PATH="$env:GITHUB_WORKSPACE/externals"
     - name: Configure CMake (unix-like)
       if: ${{ !startsWith(matrix.os, 'windows') }}
       # Use a bash shell so we can use the same syntax for environment variable
