@@ -42,7 +42,7 @@ public:
     };
 private:
     bool running;
-    WindowManager* windowManager;
+    Window* window;
     
     std::unordered_map<string, P<PObject> > objectMap;
     float elapsedTime;

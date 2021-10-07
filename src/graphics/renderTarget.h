@@ -11,7 +11,7 @@
 #include "graphics/alignment.h"
 
 
-class WindowManager;
+class Window;
 namespace sp {
 
 class RenderTarget : sp::NonCopyable
@@ -19,7 +19,7 @@ class RenderTarget : sp::NonCopyable
 private:
     RenderTarget(glm::vec2 virtual_size, glm::ivec2 physical_size);
 
-    friend class ::WindowManager;
+    friend class ::Window;
 public:
     static void setDefaultFont(sp::Font* font);
 

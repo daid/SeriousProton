@@ -33,6 +33,8 @@ public:
     virtual void update(float delta) override;
 
 private:
+    static void SDLCallback(void* userdata, uint8_t* stream, int len);
+    void onProcessSamples(const int16_t* samples, std::size_t sample_count);
     static constexpr int frame_size = 2880;
 
     void startSending();

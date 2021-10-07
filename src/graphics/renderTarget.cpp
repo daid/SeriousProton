@@ -405,7 +405,7 @@ void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& p
             auto it = ags.find(gd.char_code);
             if (it == ags.end())
             {
-                uv_rect = atlas_texture->add(std::move(prepared.getFont()->drawGlyph(gd.char_code, 32)), 1);
+                uv_rect = atlas_texture->add(prepared.getFont()->drawGlyph(gd.char_code, 32), 1);
                 ags[gd.char_code] = uv_rect;
                 LOG(Info, "Added glyph '", char(gd.char_code), "' to atlas@", uv_rect.position, " ", uv_rect.size, "  ", atlas_texture->usageRate() * 100.0f, "%");
             }

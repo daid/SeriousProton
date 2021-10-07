@@ -1,7 +1,7 @@
 #include "input.h"
 #include "engine.h"
 
-P<WindowManager> InputHandler::windowManager;
+P<Window> InputHandler::window;
 bool InputHandler::touch_screen = false;
 glm::mat3x3 InputHandler::mouse_transform;
 PVector<InputEventHandler> InputHandler::input_event_handlers;
@@ -60,8 +60,8 @@ void InputHandler::initialize()
 
 void InputHandler::preEventsUpdate()
 {
-    if (!windowManager)
-        windowManager = engine->getObject("windowManager");
+    if (!window)
+        window = engine->getObject("window");
 
     for(unsigned int n=0; n<256; n++)
     {
@@ -245,8 +245,8 @@ void InputHandler::postEventsUpdate()
 
 void InputHandler::setMousePos(glm::vec2 position)
 {
-    if (!windowManager)
-        windowManager = engine->getObject("windowManager");
+    if (!window)
+        window = engine->getObject("window");
 
     //sf::Mouse::setPosition(virtualWindowPosToReal(position), windowManager->window);
     //mouse_position = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
@@ -262,10 +262,10 @@ void InputHandler::fireKeyEvent(const SDL_KeyboardEvent& key, int unicode)
 
 glm::vec2 InputHandler::realWindowPosToVirtual(glm::ivec2 position)
 {
-    return windowManager->mapPixelToCoords(position);
+    return window->mapPixelToCoords(position);
 }
 
 glm::ivec2 InputHandler::virtualWindowPosToReal(glm::vec2 position)
 {
-    return windowManager->mapCoordsToPixel(position);
+    return window->mapCoordsToPixel(position);
 }

@@ -84,9 +84,9 @@ static int stream_eof(void *user)
 }
 
 static stbi_io_callbacks stream_callbacks{
-    .read = stream_read,
-    .skip = stream_skip,
-    .eof = stream_eof,
+    /*.read =*/ stream_read,
+    /*.skip =*/ stream_skip,
+    /*.eof =*/ stream_eof,
 };
 
 bool Image::loadFromStream(P<ResourceStream> stream)
