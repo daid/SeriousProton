@@ -177,26 +177,12 @@ void InputHandler::postEventsUpdate()
         last_key_press.keysym.sym = SDLK_UNKNOWN;
     }
 
-#ifdef __ANDROID__
-    if (sf::Touch::isDown(0))
-    {
-        mouse_position = realWindowPosToVirtual(sf::Touch::getPosition(0));
-        if (!mouse_button_down[sf::Mouse::Left])
-            mouse_button_pressed[sf::Mouse::Left] = true;
-        mouse_button_down[sf::Mouse::Left] = true;
-    }else{
-        if (mouse_button_down[sf::Mouse::Left])
-            mouse_button_released[sf::Mouse::Left] = true;
-        mouse_button_down[sf::Mouse::Left] = false;
-    }
-#else
     int x, y;
     SDL_GetMouseState(&x, &y);
     mouse_position = realWindowPosToVirtual({x, y});
-#endif
 #warning SDL2 TODO
     //mouse_position = mouse_transform * mouse_position;
-    
+
     if (touch_screen)
     {
         bool any_button_down = false;
