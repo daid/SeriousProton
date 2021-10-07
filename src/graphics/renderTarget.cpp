@@ -6,6 +6,7 @@
 
 #include "graphics/opengl.h"
 #include <glm/gtc/type_ptr.hpp>
+#include <variant>
 
 
 namespace sp {
@@ -28,26 +29,42 @@ static std::vector<uint16_t> index_data;
 static std::vector<VertexData> lines_vertex_data;
 static std::vector<uint16_t> lines_index_data;
 
+struct ImageInfo
+{
+    Texture* texture;
+    glm::ivec2 size;
+    Rect uv_rect;
+};
 static sp::AtlasTexture* atlas_texture;
-static std::unordered_map<string, Rect> atlas_images;
+static std::unordered_map<string, ImageInfo> image_info;
 static std::unordered_map<sp::Font*, std::unordered_map<int, Rect>> atlas_glyphs;
 static constexpr glm::ivec2 atlas_size = {2048, 2048};
 static constexpr glm::vec2 atlas_white_pixel = {(float(atlas_size.x)-0.5f)/float(atlas_size.x), (float(atlas_size.y)-0.5f)/float(atlas_size.y)};
 
-static Rect getFromAtlas(std::string_view texture)
+
+static ImageInfo getTextureInfo(std::string_view texture)
 {
-    auto it = atlas_images.find(texture);
-    if (it != atlas_images.end())
+    auto it = image_info.find(texture);
+    if (it != image_info.end())
         return it->second;
     Image image;
     auto stream = getResourceStream(texture);
     if (!stream)
         stream = getResourceStream(string(texture) + ".png");
     image.loadFromStream(stream);
+    auto size = image.getSize();
+    if (size.x > 128 || size.y > 128)
+    {
+        LOG(Info, "Loaded ", string(texture));
+        auto gltexture = new sp::BasicTexture();
+        gltexture->loadFromImage(std::move(image));
+        image_info[texture] = {gltexture, size, {0.0f, 0.0f, 1.0f, 1.0f}};
+        return {gltexture, size, {0.0f, 0.0f, 1.0f, 1.0f}};
+    }
     Rect uv_rect = atlas_texture->add(std::move(image), 1);
-    atlas_images[texture] = uv_rect;
+    image_info[texture] = {nullptr, size, uv_rect};
     LOG(Info, "Added ", string(texture), " to atlas@", uv_rect.position, " ", uv_rect.size, "  ", atlas_texture->usageRate() * 100.0f, "%");
-    return uv_rect;
+    return {nullptr, size, uv_rect};
 }
 
 RenderTarget::RenderTarget(glm::vec2 virtual_size, glm::ivec2 physical_size)
@@ -112,34 +129,42 @@ void RenderTarget::setDefaultFont(sp::Font* font)
 
 void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color)
 {
-    sp::Rect uv_rect = getFromAtlas(texture);
-
+    auto info = getTextureInfo(texture);
+    if (info.texture)
+        finish();
+    
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
         uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
     });
     size *= 0.5f;
-    glm::vec2 offset{size / uv_rect.size.y * uv_rect.size.x, size};
+    glm::vec2 offset{size / float(info.size.y) * float(info.size.x), size};
     vertex_data.push_back({
         {center.x - offset.x, center.y - offset.y},
-        color, {uv_rect.position.x, uv_rect.position.y}});
+        color, {info.uv_rect.position.x, info.uv_rect.position.y}});
     vertex_data.push_back({
         {center.x - offset.x, center.y + offset.y},
-        color, {uv_rect.position.x, uv_rect.position.y + uv_rect.size.y}});
+        color, {info.uv_rect.position.x, info.uv_rect.position.y + info.uv_rect.size.y}});
     vertex_data.push_back({
         {center.x + offset.x, center.y - offset.y},
-        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y}});
+        color, {info.uv_rect.position.x + info.uv_rect.size.x, info.uv_rect.position.y}});
     vertex_data.push_back({
         {center.x + offset.x, center.y + offset.y},
-        color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
+        color, {info.uv_rect.position.x + info.uv_rect.size.x, info.uv_rect.position.y + info.uv_rect.size.y}});
+
+    if (info.texture)
+        finish(info.texture);
 }
 
 void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center, float size, float rotation, glm::u8vec4 color)
 {
     if (rotation == 0)
         return drawSprite(texture, center, size, color);
-    sp::Rect uv_rect = getFromAtlas(texture);
+    auto info = getTextureInfo(texture);
+    if (info.texture)
+        finish();
+    auto& uv_rect = info.uv_rect;
 
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
@@ -161,6 +186,9 @@ void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center,
     vertex_data.push_back({
         center + offset0,
         color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
+    
+    if (info.texture)
+        finish(info.texture);
 }
 
 void RenderTarget::drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2 center, float size, float rotation)
@@ -357,7 +385,10 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
     glm::vec2 uv0, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3,
     glm::u8vec4 color)
 {
-    sp::Rect uv_rect = getFromAtlas(texture);
+    auto info = getTextureInfo(texture);
+    if (info.texture)
+        finish();
+    auto& uv_rect = info.uv_rect;
 
     int n = vertex_data.size();
     index_data.insert(index_data.end(), {
@@ -376,6 +407,9 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
     vertex_data.push_back({p1, color, uv1});
     vertex_data.push_back({p3, color, uv3});
     vertex_data.push_back({p2, color, uv2});
+
+    if (info.texture)
+        finish(info.texture);
 }
 
 void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sp::Font* font, glm::u8vec4 color, int flags)
@@ -574,7 +608,10 @@ void RenderTarget::drawStretched(sp::Rect rect, std::string_view texture, glm::u
 
 void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
-    sp::Rect uv_rect = getFromAtlas(texture);
+    auto info = getTextureInfo(texture);
+    if (info.texture)
+        finish();
+    auto& uv_rect = info.uv_rect;
 
     float w = rect.size.y / 2.0f;
     if (w * 2 > rect.size.x)
@@ -613,11 +650,17 @@ void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, glm::
     vertex_data.push_back({
         {rect.position.x + rect.size.x, rect.position.y + rect.size.y},
         color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
+
+    if (info.texture)
+        finish(info.texture);
 }
 
 void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
-    sp::Rect uv_rect = getFromAtlas(texture);
+    auto info = getTextureInfo(texture);
+    if (info.texture)
+        finish();
+    auto& uv_rect = info.uv_rect;
 
     float h = rect.size.x / 2.0;
     if (h * 2 > rect.size.y)
@@ -656,11 +699,17 @@ void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, glm::
     vertex_data.push_back({
         {rect.position.x + rect.size.x, rect.position.y + rect.size.y},
         color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
+
+    if (info.texture)
+        finish(info.texture);
 }
 
 void RenderTarget::drawStretchedHV(sp::Rect rect, float corner_size, std::string_view texture, glm::u8vec4 color)
 {
-    sp::Rect uv_rect = getFromAtlas(texture);
+    auto info = getTextureInfo(texture);
+    if (info.texture)
+        finish();
+    auto& uv_rect = info.uv_rect;
 
     corner_size = std::min(corner_size, rect.size.y / 2.0f);
     corner_size = std::min(corner_size, rect.size.x / 2.0f);
@@ -739,9 +788,17 @@ void RenderTarget::drawStretchedHV(sp::Rect rect, float corner_size, std::string
     vertex_data.push_back({
         {rect.position.x + rect.size.x, rect.position.y + rect.size.y},
         color, {uv_rect.position.x + uv_rect.size.x, uv_rect.position.y + uv_rect.size.y}});
+
+    if (info.texture)
+        finish(info.texture);
 }
 
 void RenderTarget::finish()
+{
+    finish(atlas_texture);
+}
+
+void RenderTarget::finish(sp::Texture* texture)
 {
     if (index_data.size())
     {
@@ -751,7 +808,7 @@ void RenderTarget::finish()
 
         glUniform1i(shader->getUniformLocation("u_texture"), 0);
         glActiveTexture(GL_TEXTURE0);
-        atlas_texture->bind();
+        texture->bind();
 
         glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);

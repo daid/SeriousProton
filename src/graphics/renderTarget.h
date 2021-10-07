@@ -13,11 +13,13 @@
 
 class Window;
 namespace sp {
+class Texture;
 
 class RenderTarget : sp::NonCopyable
 {
 private:
     RenderTarget(glm::vec2 virtual_size, glm::ivec2 physical_size);
+    void finish(sp::Texture* texture);
 
     friend class ::Window;
 public:
