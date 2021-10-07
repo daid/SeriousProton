@@ -59,6 +59,7 @@ jobs:
         target_link_libraries(SDL2::SDL2 INTERFACE SDL2::SDL2main)
         "@
         Set-Content -Path "$env:GITHUB_WORKSPACE/externals/sdl2-config.cmake" -Value $sdl_config
+        Get-Content "$env:GITHUB_WORKSPACE/externals/sdl2-config.cmake"
     
     
     - name: Create Build Environment
