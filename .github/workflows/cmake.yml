@@ -25,18 +25,40 @@ jobs:
       if: ${{ startsWith(matrix.os, 'ubuntu') }}
       run: |
         sudo apt update -qq
-        sudo apt install git build-essential cmake ninja-build zip unzip libsfml-dev
+        sudo apt install git build-essential cmake ninja-build zip unzip libsdl2-dev
     - name: Setup (brew)
       if: ${{ startsWith(matrix.os, 'macos') }}
-      run: brew install cmake sfml ninja
+      run: brew install cmake sdl2 ninja
     - name: Setup (windows)
       if: ${{ startsWith(matrix.os, 'windows') }}
       run: |
-        $sfml_link = “https://www.sfml-dev.org/files/SFML-2.5.1-windows-vc15-32-bit.zip”
-        $sfml_zip = “$env:GITHUB_WORKSPACE/sfml-dev.zip”
-        (new-object System.Net.WebClient).DownloadFile($sfml_link, $sfml_zip)
-        Expand-Archive -LiteralPath $sfml_zip -DestinationPath "$env:GITHUB_WORKSPACE/externals"
+        $sdl_version = "2.0.16"
+        $sdl_link = “https://libsdl.org/release/SDL2-devel-$sdl_version-VC.zip”
+        $sdl_zip = “$env:GITHUB_WORKSPACE/sdl-dev.zip”
+        (new-object System.Net.WebClient).DownloadFile($sdl_link, $sdl_zip)
+        Expand-Archive -LiteralPath $sdl_zip -DestinationPath "$env:GITHUB_WORKSPACE/externals"
+        $sdl_config = @"
+        set(flavor x86)
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(flavor x64)
+        endif()
+        set(_SDL2_prefix "${CMAKE_CURRENT_LIST_DIR}/SDL-$sdl_version")
 
+        add_library(SDL2::SDL2main STATIC IMPORTED)
+        set_target_properties(SDL2::SDL2main PROPERTIES
+        IMPORTED_LOCATION "${_SDL2_prefix}/lib/${flavor}/SDL2main.lib"
+        )
+
+        add_library(SDL2::SDL2 SHARED IMPORTED)
+        set_target_properties(SDL2::SDL2 PROPERTIES
+        IMPORTED_LOCATION "${_SDL2_prefix}/lib/${flavor}/SDL2.dll"
+        IMPORTED_IMPLIB "${_SDL2_prefix}/lib/${flavor}/SDL2.lib"
+        INTERFACE_INCLUDE_DIRECTORIES "${_SDL2_prefix}/include"
+        )
+
+        target_link_libraries(SDL2::SDL2 INTERFACE SDL2::SDL2main)
+        "@
+        Set-Content -Path "$env:GITHUB_WORKSPACE/externals/sdl2-config.cmake" -Value $sdl_config
     
     
     - name: Create Build Environment
@@ -52,7 +74,7 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $env:GITHUB_WORKSPACE -G "Visual Studio 16 2019" -A Win32 -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DSFML_ROOT="$env:GITHUB_WORKSPACE/externals/SFML-2.5.1"
+      run: cmake $env:GITHUB_WORKSPACE -G "Visual Studio 16 2019" -A Win32 -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DSDL2_DIR="$env:GITHUB_WORKSPACE/externals"
     - name: Configure CMake (unix-like)
       if: ${{ !startsWith(matrix.os, 'windows') }}
       # Use a bash shell so we can use the same syntax for environment variable
