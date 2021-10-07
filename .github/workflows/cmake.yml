@@ -17,6 +17,7 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
         build_type: [Debug, RelWithDebInfo, Release]
+      fail-fast: false
 
     steps:
     - name: Checkout
