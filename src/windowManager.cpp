@@ -44,8 +44,6 @@ void Window::render()
 {
 #ifndef _MSC_VER
 #warning SDL2 TODO
-#else
-#pragma message("SDL2 TODO")
 #endif
 /*
     if (InputHandler::keyboardIsPressed(sf::Keyboard::Return) && (sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt) || sf::Keyboard::isKeyPressed(sf::Keyboard::RAlt)))

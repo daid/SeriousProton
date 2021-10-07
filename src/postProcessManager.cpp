@@ -7,10 +7,8 @@ bool PostProcessor::global_post_processor_enabled = true;
 PostProcessor::PostProcessor(string name, RenderChain* chain)
 : chain(chain), enabled{false}
 {
-#ifndef _MSVC_VER
+#ifndef _MSC_VER
 #warning SDL2 TODO post processors not implemented, might remove them ?
-#else
-#pragma message("SDL2 TODO post processors not implemented, might remove them?")
 #endif
     /*
     if (sf::Shader::isAvailable())

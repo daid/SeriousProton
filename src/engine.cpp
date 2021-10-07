@@ -143,7 +143,9 @@ void Engine::runMainLoop()
                 delta = 0.001f;
             delta *= gameSpeed;
 #ifdef DEBUG
+#ifndef _MSC_VER
 #warning TODO SDL2
+#endif
 /*
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tab))
                 delta /= 5.f;

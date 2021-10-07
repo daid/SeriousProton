@@ -7,10 +7,8 @@ glm::mat3x3 InputHandler::mouse_transform;
 PVector<InputEventHandler> InputHandler::input_event_handlers;
 PVector<JoystickEventHandler> InputHandler::joystick_event_handlers;
 
-#ifndef _MSVC_VER
+#ifndef _MSC_VER
 #warning TODO SDL2 this no longer works, SDLK_Keycode will be out of range.Port SP2 keybindings.
-#else
-#pragma message("TODO SDL2 this no longer works, SDLK_Keycode will be out of range.Port SP2 keybindings.")
 #endif
 
 bool InputHandler::keyboard_button_down[256];
