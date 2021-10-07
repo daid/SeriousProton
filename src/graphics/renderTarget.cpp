@@ -494,6 +494,74 @@ void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& p
     }
 }
 
+void RenderTarget::drawRotatedText(glm::vec2 center, float rotation, std::string_view text, float font_size, sp::Font* font, glm::u8vec4 color)
+{
+    if (!font)
+        font = default_font;
+    auto prepared = font->prepare(text, 32, font_size, {0.0f, 0.0f}, sp::Alignment::Center, 0);
+
+    auto sin = std::sin(-glm::radians(rotation));
+    auto cos = std::cos(-glm::radians(rotation));
+    glm::mat2 mat{cos, -sin, sin, cos};
+
+    auto& ags = atlas_glyphs[prepared.getFont()];
+    float size_scale = font_size / 32.0f;
+    for(auto gd : prepared.data)
+    {
+        Font::GlyphInfo glyph;
+        if (gd.char_code == 0 || !prepared.getFont()->getGlyphInfo(gd.char_code, 32, glyph))
+        {
+            glyph.advance = 0.0f;
+            glyph.bounds.size.x = 0.0f;
+        }
+
+        if (glyph.bounds.size.x > 0.0f)
+        {
+            Rect uv_rect;
+            auto it = ags.find(gd.char_code);
+            if (it == ags.end())
+            {
+                uv_rect = atlas_texture->add(prepared.getFont()->drawGlyph(gd.char_code, 32), 1);
+                ags[gd.char_code] = uv_rect;
+                LOG(Info, "Added glyph '", char(gd.char_code), "' to atlas@", uv_rect.position, " ", uv_rect.size, "  ", atlas_texture->usageRate() * 100.0f, "%");
+            }
+            else
+            {
+                uv_rect = it->second;
+            }
+
+            float u0 = uv_rect.position.x;
+            float v0 = uv_rect.position.y;
+            float u1 = uv_rect.position.x + uv_rect.size.x;
+            float v1 = uv_rect.position.y + uv_rect.size.y;
+            
+            float left = gd.position.x + glyph.bounds.position.x * size_scale;
+            float right = left + glyph.bounds.size.x * size_scale;
+            float top = gd.position.y - glyph.bounds.position.y * size_scale;
+            float bottom = top + glyph.bounds.size.y * size_scale;
+
+            glm::vec2 p0 = mat * glm::vec2{left, top} + center;
+            glm::vec2 p1 = mat * glm::vec2{right, top} + center;
+            glm::vec2 p2 = mat * glm::vec2{left, bottom} + center;
+            glm::vec2 p3 = mat * glm::vec2{right, bottom} + center;
+
+            int n = vertex_data.size();
+            index_data.insert(index_data.end(), {
+                uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+                uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
+            });
+            vertex_data.push_back({
+                p0, color, {u0, v0}});
+            vertex_data.push_back({
+                p2, color, {u0, v1}});
+            vertex_data.push_back({
+                p1, color, {u1, v0}});
+            vertex_data.push_back({
+                p3, color, {u1, v1}});
+        }
+    }
+}
+
 void RenderTarget::drawStretched(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
     if (rect.size.x >= rect.size.y)
