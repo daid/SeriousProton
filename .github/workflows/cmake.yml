@@ -33,8 +33,8 @@ jobs:
       if: ${{ startsWith(matrix.os, 'windows') }}
       run: |
         $sdl_version = "2.0.16"
-        $sdl_link = “https://libsdl.org/release/SDL2-devel-$sdl_version-VC.zip”
-        $sdl_zip = “$env:GITHUB_WORKSPACE/sdl-dev.zip”
+        $sdl_link = "https://libsdl.org/release/SDL2-devel-$sdl_version-VC.zip"
+        $sdl_zip = "$env:GITHUB_WORKSPACE/sdl-dev.zip"
         (new-object System.Net.WebClient).DownloadFile($sdl_link, $sdl_zip)
         Expand-Archive -LiteralPath $sdl_zip -DestinationPath "$env:GITHUB_WORKSPACE/externals"
         $sdl_config = @"
@@ -42,18 +42,18 @@ jobs:
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
             set(flavor x64)
         endif()
-        set(_SDL2_prefix "${CMAKE_CURRENT_LIST_DIR}/SDL-$sdl_version")
+        set(_SDL2_prefix "`${CMAKE_CURRENT_LIST_DIR}/SDL-$sdl_version")
 
         add_library(SDL2::SDL2main STATIC IMPORTED)
         set_target_properties(SDL2::SDL2main PROPERTIES
-        IMPORTED_LOCATION "${_SDL2_prefix}/lib/${flavor}/SDL2main.lib"
+        IMPORTED_LOCATION "`${_SDL2_prefix}/lib/`${flavor}/SDL2main.lib"
         )
 
         add_library(SDL2::SDL2 SHARED IMPORTED)
         set_target_properties(SDL2::SDL2 PROPERTIES
-        IMPORTED_LOCATION "${_SDL2_prefix}/lib/${flavor}/SDL2.dll"
-        IMPORTED_IMPLIB "${_SDL2_prefix}/lib/${flavor}/SDL2.lib"
-        INTERFACE_INCLUDE_DIRECTORIES "${_SDL2_prefix}/include"
+        IMPORTED_LOCATION "`${_SDL2_prefix}/lib/`${flavor}/SDL2.dll"
+        IMPORTED_IMPLIB "`${_SDL2_prefix}/lib/`${flavor}/SDL2.lib"
+        INTERFACE_INCLUDE_DIRECTORIES "`${_SDL2_prefix}/include"
         )
 
         target_link_libraries(SDL2::SDL2 INTERFACE SDL2::SDL2main)
