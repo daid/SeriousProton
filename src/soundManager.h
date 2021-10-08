@@ -16,8 +16,8 @@ extern SoundManager* soundManager;
 class SoundManager
 {
 private:
-    static constexpr float fade_music_time = 1.0;
-    static constexpr float fade_sound_time = 0.3;
+    static constexpr float fade_music_time = 1.0f;
+    static constexpr float fade_sound_time = 0.3f;
 
     enum FadeMode
     {

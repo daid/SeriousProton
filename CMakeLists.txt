@@ -538,7 +538,8 @@ target_compile_options(seriousproton_deps
         "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:RelWithDebInfo>>:-g1>"
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
         "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Wextra;-Woverloaded-virtual;-Werror=return-type;-Wno-unused-parameter;-Wno-unused-but-set-parameter>"
-        "$<$<BOOL:${WARNING_IS_ERROR}>:-Werror>"
+        "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<BOOL:${WARNING_IS_ERROR}>>:-Werror>"
+        "$<$<AND:$<BOOL:${MSVC}>,$<BOOL:${WARNING_IS_ERROR}>>:/WX>"
         "$<$<BOOL:${MSVC}>:/MP;/permissive->"
 )
 
