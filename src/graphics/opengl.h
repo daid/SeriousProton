@@ -24,9 +24,10 @@ namespace sp {
 void traceOpenGLCall(const char* function_name, const char* source_file, const char* source_function, int source_line_number, const string& parameters);
 static inline string traceOpenGLCallParams() { return ""; }
 static inline string traceOpenGLCallParam(int n) { return string(n); }
+static inline string traceOpenGLCallParam(size_t n) { return traceOpenGLCallParam(static_cast<int>(n)); }
 static inline string traceOpenGLCallParam(const void* ptr) { return "[ptr]"; }
-template<typename A1> string traceOpenGLCallParams(const A1& a) { return traceOpenGLCallParam(a); }
-template<typename A1, typename... ARGS> string traceOpenGLCallParams(const A1& a, const ARGS&... args) { return traceOpenGLCallParam(a) + ", " + traceOpenGLCallParams(args...); }
+template<typename A1> string traceOpenGLCallParams(A1&& a) { return traceOpenGLCallParam(std::forward<A1>(a)); }
+template<typename A1, typename... ARGS> string traceOpenGLCallParams(A1&& a, ARGS&&... args) { return traceOpenGLCallParam(std::forward<A1>(a)) + ", " + traceOpenGLCallParams(std::forward<ARGS>(args)...); }
 }//namespace sp
 
 #ifdef _MSC_VER
