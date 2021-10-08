@@ -42,7 +42,7 @@ Window::~Window()
 
 void Window::render()
 {
-#warning SDL2 TODO
+//#warning SDL2 TODO
 /*
     if (InputHandler::keyboardIsPressed(sf::Keyboard::Return) && (sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt) || sf::Keyboard::isKeyPressed(sf::Keyboard::RAlt)))
     {

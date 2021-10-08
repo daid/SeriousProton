@@ -15,7 +15,7 @@
 static unsigned long ft_stream_read(FT_Stream rec, unsigned long offset, unsigned char* buffer, unsigned long count)
 {
     ResourceStream* stream = static_cast<ResourceStream*>(rec->descriptor.pointer);
-    if (stream->seek(offset) == int64_t(offset))
+    if (stream->seek(offset) == offset)
     {
         if (count > 0)
             return stream->read(reinterpret_cast<char*>(buffer), count);

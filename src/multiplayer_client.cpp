@@ -36,7 +36,7 @@ void GameClient::update(float /*delta*/)
     if (status == ReadyToConnect)
     {
         status = Connecting;
-        connect_thread = std::move(std::thread(&GameClient::runConnect, this));
+        connect_thread = std::thread(&GameClient::runConnect, this);
     }
     if (status == Disconnected || status == Connecting)
         return;

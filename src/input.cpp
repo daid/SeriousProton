@@ -7,7 +7,7 @@ glm::mat3x3 InputHandler::mouse_transform;
 PVector<InputEventHandler> InputHandler::input_event_handlers;
 PVector<JoystickEventHandler> InputHandler::joystick_event_handlers;
 
-#warning TODO SDL2 this no longer works, SDLK_Keycode will be out of range. Port SP2 keybindings.
+//#warning TODO SDL2 this no longer works, SDLK_Keycode will be out of range. Port SP2 keybindings.
 bool InputHandler::keyboard_button_down[256];
 bool InputHandler::keyboard_button_pressed[256];
 bool InputHandler::keyboard_button_released[256];
@@ -105,7 +105,7 @@ void InputHandler::handleEvent(const SDL_Event& event)
             keyboard_button_released[event.key.keysym.sym] = true;
         }
 	}
-    else if (event.type == SDL_TEXTINPUT && event.text.text[0] > 31 && event.text.text[0] < 128)
+    else if (event.type == SDL_TEXTINPUT && event.text.text[0] > 31)
     {
         if (last_key_press.keysym.sym != SDLK_UNKNOWN)
         {
@@ -180,7 +180,7 @@ void InputHandler::postEventsUpdate()
     int x, y;
     SDL_GetMouseState(&x, &y);
     mouse_position = realWindowPosToVirtual({x, y});
-#warning SDL2 TODO
+//#warning SDL2 TODO
     //mouse_position = mouse_transform * mouse_position;
 
     if (touch_screen)

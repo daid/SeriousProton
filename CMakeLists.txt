@@ -14,6 +14,7 @@ endif()
 
 # User-settings
 option(SERIOUSPROTON_WITH_JSON "Use json library." OFF)
+option(WARNING_IS_ERROR OFF)
 
 #
 set(EXTERNALS_DIR "${PROJECT_BINARY_DIR}/externals")
@@ -536,7 +537,8 @@ target_compile_options(seriousproton_deps
     INTERFACE
         "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:RelWithDebInfo>>:-g1>"
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
-        "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Werror=return-type>"
+        "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Wextra;-Werror=return-type;-Wno-unused-parameter>"
+        "$<$<BOOL:${WARNING_IS_ERROR}>:-Werror>"
         "$<$<BOOL:${MSVC}>:/MP;/permissive->"
 )
 
