@@ -26,9 +26,9 @@ public:
     string getError();
     bool callFunction(string name);
     void setMaxRunCycles(int count);
-    virtual void update(float delta);
+    virtual void update(float delta) override;
 
-    virtual void destroy();
+    virtual void destroy() override;
 
     static void clearDestroyedObjects();
 private:

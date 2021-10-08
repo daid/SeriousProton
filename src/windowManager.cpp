@@ -11,6 +11,7 @@
 #include <SDL.h>
 
 #ifdef _WIN32
+#include "dynamicLibrary.h"
 #include <windows.h>
 #endif
 
@@ -21,15 +22,13 @@ Window::Window(glm::vec2 virtual_size, bool fullscreen, RenderChain* renderChain
 
 #ifdef _WIN32
     //On Vista or newer windows, let the OS know we are DPI aware, so we won't have odd scaling issues.
-    HINSTANCE user_dll = LoadLibrary("USER32.DLL");
-    if (user_dll)
+    auto user32 = DynamicLibrary::open("USER32.DLL");
+    if (user32)
     {
-        BOOL(WINAPI *SetProcessDPIAware)(void);
-        SetProcessDPIAware = reinterpret_cast<BOOL(WINAPI *)(void)>(GetProcAddress(user_dll, "SetProcessDPIAware"));
+        auto SetProcessDPIAware = user32->getFunction<BOOL(WINAPI *)(void)>("SetProcessDPIAware");
         if (SetProcessDPIAware)
             SetProcessDPIAware();
     }
-    FreeLibrary(user_dll);
 #endif
 
     create();
