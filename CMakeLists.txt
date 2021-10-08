@@ -537,7 +537,7 @@ target_compile_options(seriousproton_deps
     INTERFACE
         "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:RelWithDebInfo>>:-g1>"
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
-        "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Wextra;-Werror=return-type;-Wno-unused-parameter>"
+        "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Wextra;-Woverloaded-virtual;-Werror=return-type;-Wno-unused-parameter;-Wno-unused-but-set-parameter>"
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<BOOL:${WARNING_IS_ERROR}>>:-Werror>"
         "$<$<AND:$<BOOL:${MSVC}>,$<BOOL:${WARNING_IS_ERROR}>>:/WX>"
         "$<$<BOOL:${MSVC}>:/MP;/permissive->"
@@ -606,17 +606,7 @@ install(
 )
 
 if(WIN32)
-    message(WARNING "SDL2.dll install missing for package")
-    #install(
-    #    FILES
-    #        "${SFML_ROOT}/bin/OpenAL32.dll"
-    #        "${SFML_ROOT}/bin/sfml-audio-2.dll"
-    #        "${SFML_ROOT}/bin/sfml-graphics-2.dll"
-    #        "${SFML_ROOT}/bin/sfml-system-2.dll"
-    #        "${SFML_ROOT}/bin/sfml-window-2.dll"
-    #    DESTINATION .
-    #    COMPONENT runtime
-    #)
+    install(FILES "${SDL2_PREFIX}/bin/SDL2.dll" DESTINATION . COMPONENT runtime)
 
     if (MINGW)
         macro(get_mingw_dll dll location)

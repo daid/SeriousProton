@@ -36,8 +36,8 @@ class DirectoryResourceProvider : public ResourceProvider
 public:
     DirectoryResourceProvider(const string basepath);
     
-    virtual P<ResourceStream> getResourceStream(const string filename);
-    virtual std::vector<string> findResources(const string searchPattern);
+    virtual P<ResourceStream> getResourceStream(const string filename) override;
+    virtual std::vector<string> findResources(const string searchPattern) override;
 private:
     void findResources(std::vector<string>& paths, const string basepath, const string searchPattern);
 };
