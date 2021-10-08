@@ -307,15 +307,40 @@ void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thick
 
 void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
 {
-    /*
-    sf::RectangleShape overlay(sf::Vector2f(rect.size.x, rect.size.y));
-    overlay.setPosition(rect.position.x, rect.position.y);
-    overlay.setTexture(textureManager.getTexture(texture));
-    P<WindowManager> window_manager = engine->getObject("windowManager");
-    sf::Vector2i texture_size = window_manager->mapCoordsToPixel(sf::Vector2f(rect.size.x, rect.size.y)) - window_manager->mapCoordsToPixel(sf::Vector2f(0, 0));
-    overlay.setTextureRect(sf::IntRect(0, 0, texture_size.x, texture_size.y));
-    target.draw(overlay);
-    */
+    auto info = getTextureInfo(texture);
+    if (info.texture)
+        finish();
+
+    glm::vec2 increment = info.size;
+    glm::ivec2 tile_count{int(rect.size.x / increment.x) + 1, int(rect.size.y / increment.y) + 1};
+    for(int x=0; x<tile_count.x; x++)
+    {
+        for(int y=0; y<tile_count.y; y++)
+        {
+            int n = vertex_data.size();
+            index_data.insert(index_data.end(), {
+                uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+                uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
+            });
+            glm::vec2 p0 = rect.position + glm::vec2(increment.x * x, increment.y * y);
+            glm::vec2 p1 = rect.position + glm::vec2(increment.x * (x + 1), increment.y * (y + 1));
+            vertex_data.push_back({
+                p1, {255, 255, 255, 255},
+                {info.uv_rect.position.x, info.uv_rect.position.y}});
+            vertex_data.push_back({
+                {p0.x, p1.y}, {255, 255, 255, 255},
+                {info.uv_rect.position.x, info.uv_rect.position.y + info.uv_rect.size.y}});
+            vertex_data.push_back({
+                {p1.x, p0.y}, {255, 255, 255, 255},
+                {info.uv_rect.position.x + info.uv_rect.size.x, info.uv_rect.position.y}});
+            vertex_data.push_back({
+                p1, {255, 255, 255, 255},
+                {info.uv_rect.position.x + info.uv_rect.size.x, info.uv_rect.position.y + info.uv_rect.size.y}});
+        }
+    }
+    
+    if (info.texture)
+        finish(info.texture);
 }
 
 void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
