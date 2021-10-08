@@ -451,7 +451,7 @@ public:
         {
             return {*this, ""};
         }
-        return {substr(0, index), substr(index + sep.length())};
+        return {substr(0, index), substr(index + static_cast<int>(sep.length()))};
     }
 
     /*
