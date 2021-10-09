@@ -69,7 +69,7 @@ Font::PreparedFontString Font::prepare(std::string_view s, int pixel_size, float
         if ((flags & FlagLineWrap) && position.x > area_size.x)
         {
             //Try to wrap the line by going back to the last space character and replace that with a newline.
-            for(int n=result.data.size()-2; (n > 0) && (result.data[n].char_code != 0); n--)
+            for(int n=static_cast<int>(result.data.size())-2; (n > 0) && (result.data[n].char_code != 0); n--)
             {
                 if (result.data[n].char_code == ' ')
                 {
@@ -203,9 +203,9 @@ int Font::PreparedFontString::getLineCount() const
     return count;
 }
 
-int Font::PreparedFontString::lastLineCharacterCount() const
+size_t Font::PreparedFontString::lastLineCharacterCount() const
 {
-    for(int n=data.size()-1; n >= 0; n--)
+    for(int n=static_cast<int>(data.size())-1; n >= 0; n--)
     {
         if (data[n].char_code == 0)
             return data.size() - n - 1;

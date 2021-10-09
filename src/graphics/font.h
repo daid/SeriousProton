@@ -43,7 +43,7 @@ public:
 
         float getMaxLineWidth() const;
         int getLineCount() const;
-        int lastLineCharacterCount() const;
+        size_t lastLineCharacterCount() const;
 
         void alignAll();
 
