@@ -606,7 +606,7 @@ install(
 )
 
 if(WIN32)
-    install(FILES "${SDL2_PREFIX}/bin/SDL2.dll" DESTINATION . COMPONENT runtime)
+    install(PROGRAMS "$<TARGET_PROPERTY:SDL2::SDL2,IMPORTED_LOCATION>" DESTINATION . COMPONENT runtime)
 
     if (MINGW)
         macro(get_mingw_dll dll location)
