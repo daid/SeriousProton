@@ -108,8 +108,8 @@ bool TcpListener::accept(TcpSocket& socket)
     if (!isListening())
         return false;
     
-    int result = ::accept(handle, nullptr, nullptr);
-    if (result < 0)
+    auto result = ::accept(handle, nullptr, nullptr);
+    if (result == INVALID_SOCKET)
     {
         if (!isLastErrorNonBlocking())
             close();
