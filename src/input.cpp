@@ -24,6 +24,37 @@ float InputHandler::joystick_axis_changed[4][4];
 bool InputHandler::joystick_button_down[4][4];
 bool InputHandler::joystick_button_changed[4][4];
 
+namespace
+{
+    constexpr size_t sdl_mouse_button_cast(Uint8 sdl_button)
+    {
+        auto button = InputHandler::MouseButton::Left;
+        switch (sdl_button)
+        {
+        case SDL_BUTTON_LEFT:
+            break;
+        case SDL_BUTTON_RIGHT:
+            button = InputHandler::MouseButton::Right;
+            break;
+        case SDL_BUTTON_MIDDLE:
+            button = InputHandler::MouseButton::Middle;
+            break;
+        case SDL_BUTTON_X1:
+            button = InputHandler::MouseButton::X1;
+            break;
+        case SDL_BUTTON_X2:
+            button = InputHandler::MouseButton::X2;
+            break;
+        default:
+            SDL_assert(false); // Shouldn't reach there!
+            // Map any remaining button to the left one.
+        }
+
+        
+        return static_cast<std::underlying_type_t<InputHandler::MouseButton>>(button);
+    }
+}
+
 InputEventHandler::InputEventHandler()
 {
     InputHandler::input_event_handlers.push_back(this);
@@ -117,13 +148,13 @@ void InputHandler::handleEvent(const SDL_Event& event)
         mouse_wheel_delta += event.wheel.y;
     if (event.type == SDL_MOUSEBUTTONDOWN)
     {
-        mouse_button_down[event.button.button] = true;
-        mouse_button_pressed[event.button.button] = true;
+        mouse_button_down[sdl_mouse_button_cast(event.button.button)] = true;
+        mouse_button_pressed[sdl_mouse_button_cast(event.button.button)] = true;
     }
     else if (event.type == SDL_MOUSEBUTTONUP)
     {
-        mouse_button_down[event.button.button] = false;
-        mouse_button_released[event.button.button] = true;
+        mouse_button_down[sdl_mouse_button_cast(event.button.button)] = false;
+        mouse_button_released[sdl_mouse_button_cast(event.button.button)] = true;
     }
     /*
     else if (event.type == SDL_JOYAXISMOTION)

@@ -5,6 +5,8 @@
 #include "Updatable.h"
 #include <SDL.h>
 
+#include <type_traits>
+
 
 class InputEventHandler: public virtual PObject
 {
@@ -32,6 +34,15 @@ private:
 class InputHandler
 {
 public:
+    enum class MouseButton : uint8_t
+    {
+        Left = 0,
+        Right,
+        Middle,
+        X1,
+        X2
+    };
+
     static bool touch_screen;
     static glm::mat3x3 mouse_transform;
 
@@ -44,9 +55,13 @@ public:
 
     static glm::vec2 getMousePos() { return mouse_position; }
     static void setMousePos(glm::vec2 position);
-    static bool mouseIsDown(int button) { return mouse_button_down[button]; }
-    static bool mouseIsPressed(int button) { return mouse_button_pressed[button]; }
-    static bool mouseIsReleased(int button) { return !mouse_button_pressed[button] && mouse_button_released[button]; }
+    static bool mouseIsDown(MouseButton button) { return mouse_button_down[static_cast<std::underlying_type_t<MouseButton>>(button)]; }
+    static bool mouseIsPressed(MouseButton button) { return mouse_button_pressed[static_cast<std::underlying_type_t<MouseButton>>(button)]; }
+    static bool mouseIsReleased(MouseButton button) { return !mouse_button_pressed[static_cast<std::underlying_type_t<MouseButton>>(button)] && mouse_button_released[static_cast<std::underlying_type_t<MouseButton>>(button)]; }
+
+    static [[deprecated("Use mouseIsDown(MouseButton)")]] bool mouseIsDown(uint8_t button) { return mouseIsDown(MouseButton{ button }); }
+    static [[deprecated("Use mouseIsPressed(MouseButton)")]] bool mouseIsPressed(uint8_t button) { return mouseIsPressed(MouseButton{ button }); }
+    static [[deprecated("Use mouseIsReleased(MouseButton)")]] bool mouseIsReleased(uint8_t button) { return mouseIsReleased(MouseButton{ button }); }
     static float getMouseWheelDelta() { return mouse_wheel_delta; }
     
     static glm::vec2    getJoysticXYPos() { return glm::vec2(joystick_axis_pos[0][0], joystick_axis_pos[0][1]); }
