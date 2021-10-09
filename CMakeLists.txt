@@ -606,7 +606,14 @@ install(
 )
 
 if(WIN32)
-    install(PROGRAMS "$<TARGET_PROPERTY:SDL2::SDL2,IMPORTED_LOCATION>" DESTINATION . COMPONENT runtime)
+    if(MINGW)
+        # For the MinGW library, the 'imported location' looks at the dll in the wrong folder (lib instead of bin)
+        # So we have to get it by hand.
+        # Also covers backwards compatibility with SDL version < 2.0.12.
+        install(FILES "${SDL2_PREFIX}/bin/SDL2.dll" DESTINATION . COMPONENT runtime)
+    else()
+        install(PROGRAMS "$<TARGET_PROPERTY:SDL2::SDL2,IMPORTED_LOCATION>" DESTINATION . COMPONENT runtime)
+    endif()
 
     if (MINGW)
         macro(get_mingw_dll dll location)
