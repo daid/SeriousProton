@@ -5,6 +5,16 @@
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 static constexpr int flags = 0;
+
+static inline int recvfrom(SOCKET s, void* buf, size_t len, int flags, struct sockaddr* from, socklen_t* fromlen)
+{
+    return recvfrom(s, static_cast<char*>(buf), static_cast<int>(len), flags, from, fromlen);
+}
+
+static inline int sendto(SOCKET s, const void* msg, size_t len, int flags, const struct sockaddr* to, socklen_t tolen)
+{
+    return sendto(s, static_cast<const char*>(msg), static_cast<int>(len), flags, to, tolen);
+}
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -169,7 +179,7 @@ bool UdpSocket::send(const void* data, size_t size, const Address& address, int 
             server_addr.sin6_family = AF_INET6;
             server_addr.sin6_port = htons(port);
 
-            int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
+            int result = ::sendto(handle, data, size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
             return result == int(size);
         }
     }
@@ -192,7 +202,7 @@ bool UdpSocket::send(const void* data, size_t size, const Address& address, int 
         server_addr.sin_family = AF_INET;
         server_addr.sin_port = htons(port);
 
-        int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
+        int result = ::sendto(handle, data, size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
         return result == int(size);
     }
     return false;
@@ -209,7 +219,7 @@ size_t UdpSocket::receive(void* data, size_t size, Address& address, int& port)
         struct sockaddr_in6 from_addr;
         memset(&from_addr, 0, sizeof(from_addr));
         socklen_t from_addr_len = sizeof(from_addr);
-        int result = ::recvfrom(handle, static_cast<char*>(data), size, flags, reinterpret_cast<sockaddr*>(&from_addr), &from_addr_len);
+        int result = ::recvfrom(handle, data, size, flags, reinterpret_cast<sockaddr*>(&from_addr), &from_addr_len);
         if (result >= 0)
         {
             if (from_addr_len == sizeof(from_addr))
@@ -234,7 +244,7 @@ size_t UdpSocket::receive(void* data, size_t size, Address& address, int& port)
         struct sockaddr_in from_addr;
         memset(&from_addr, 0, sizeof(from_addr));
         socklen_t from_addr_len = sizeof(from_addr);
-        int result = ::recvfrom(handle, static_cast<char*>(data), size, flags, reinterpret_cast<sockaddr*>(&from_addr), &from_addr_len);
+        int result = ::recvfrom(handle, data, size, flags, reinterpret_cast<sockaddr*>(&from_addr), &from_addr_len);
         if (result >= 0)
         {
             if (from_addr_len == sizeof(from_addr))
@@ -290,7 +300,7 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
             server_addr.sin_family = AF_INET;
             server_addr.sin_port = htons(port);
 
-            int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
+            int result = ::sendto(handle, data, size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
             if (result == int(size))
                 success = true;
         }
@@ -309,7 +319,7 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
             server_addr.sin6_family = AF_INET6;
             server_addr.sin6_port = htons(port);
 
-            int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
+            int result = ::sendto(handle, data, size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
             if (result == int(size))
                 success = true;
         }
@@ -348,7 +358,7 @@ bool UdpSocket::sendBroadcast(const void* data, size_t size, int port)
                 s.sin_family = AF_INET;
                 s.sin_port = htons(port);
                 s.sin_addr.s_addr = (pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask;
-                if (::sendto(handle, (const char*)data, size, 0, (struct sockaddr*)&s, sizeof(struct sockaddr_in)) >= 0)
+                if (::sendto(handle, data, size, 0, (struct sockaddr*)&s, sizeof(struct sockaddr_in)) >= 0)
                     success = true;
             }
         }
