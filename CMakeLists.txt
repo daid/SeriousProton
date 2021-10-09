@@ -527,7 +527,7 @@ find_package(Threads REQUIRED)
 
 target_compile_definitions(seriousproton_deps
     INTERFACE
-        $<$<BOOL:${MSVC}>:NOMINMAX>
+        $<$<BOOL:${MSVC}>:NOMINMAX;_CRT_SECURE_NO_WARNINGS>
         $<$<CONFIG:Debug>:DEBUG>
         # Windows: Backwards compatibility with Win7 SP1: https://docs.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt
         $<$<BOOL:${WIN32}>:WINVER=0x0601;_WIN32_WINNT=0x0601>
