@@ -18,7 +18,7 @@ static unsigned long ft_stream_read(FT_Stream rec, unsigned long offset, unsigne
     if (stream->seek(offset) == offset)
     {
         if (count > 0)
-            return stream->read(reinterpret_cast<char*>(buffer), count);
+            return static_cast<unsigned long>(stream->read(reinterpret_cast<char*>(buffer), count));
         else
             return 0;
     }
@@ -50,7 +50,7 @@ FreetypeFont::FreetypeFont(P<ResourceStream> stream)
     FT_StreamRec* stream_rec = new FT_StreamRec;
     memset(stream_rec, 0, sizeof(FT_StreamRec));
     stream_rec->base = nullptr;
-    stream_rec->size = stream->getSize();
+    stream_rec->size = static_cast<unsigned long>(stream->getSize());
     stream_rec->pos = 0;
     stream_rec->descriptor.pointer = *font_resource_stream;
     stream_rec->read = &ft_stream_read;
@@ -214,7 +214,7 @@ float FreetypeFont::getLineSpacing(int pixel_size)
 
 float FreetypeFont::getBaseline(int pixel_size)
 {
-    return getLineSpacing(pixel_size) * 0.6;
+    return getLineSpacing(pixel_size) * 0.6f;
 }
 
 float FreetypeFont::getKerning(int previous_char_code, int current_char_code)

@@ -416,7 +416,7 @@ void Websocket::updateReceiveBuffer()
 
     if (state == State::Connecting)
     {
-        string buffer_str = string(reinterpret_cast<const char*>(buffer.data()), buffer.size());
+        string buffer_str = string(reinterpret_cast<const char*>(buffer.data()), static_cast<int>(buffer.size()));
         int headers_end = buffer_str.find("\r\n\r\n");
         if (headers_end > -1)
         {

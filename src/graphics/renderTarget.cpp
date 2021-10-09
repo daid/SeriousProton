@@ -133,7 +133,7 @@ void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float 
     if (info.texture)
         finish();
     
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
         uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
@@ -166,7 +166,7 @@ void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center,
         finish();
     auto& uv_rect = info.uv_rect;
 
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
         uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
@@ -202,7 +202,7 @@ void RenderTarget::drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 {
-    int n = lines_vertex_data.size();
+    auto n = lines_vertex_data.size();
     lines_vertex_data.push_back({start, color, atlas_white_pixel});
     lines_vertex_data.push_back({end, color, atlas_white_pixel});
     lines_index_data.insert(lines_index_data.end(), {
@@ -212,7 +212,7 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color)
 {
-    int n = lines_vertex_data.size();
+    auto n = lines_vertex_data.size();
     lines_vertex_data.push_back({start, start_color, atlas_white_pixel});
     lines_vertex_data.push_back({end, end_color, atlas_white_pixel});
     lines_index_data.insert(lines_index_data.end(), {
@@ -222,7 +222,7 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_co
 
 void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, glm::u8vec4 color)
 {
-    int n = lines_vertex_data.size();
+    auto n = lines_vertex_data.size();
     for(auto& p : points)
         lines_vertex_data.push_back({p, color, atlas_white_pixel});
     for(unsigned int idx=0; idx<points.size() - 1;idx++)
@@ -235,7 +235,7 @@ void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, glm::
 
 void RenderTarget::drawLine(const std::vector<glm::vec2> points, glm::u8vec4 color)
 {
-    int n = lines_vertex_data.size();
+    auto n = lines_vertex_data.size();
     for(auto& p : points)
         lines_vertex_data.push_back({p, color, atlas_white_pixel});
     for(unsigned int idx=0; idx<points.size() - 1;idx++)
@@ -250,7 +250,7 @@ void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2> points, glm::u8
 {
     finish();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    int n = lines_vertex_data.size();
+    auto n = lines_vertex_data.size();
     for(auto& p : points)
         lines_vertex_data.push_back({p, color, atlas_white_pixel});
     for(unsigned int idx=0; idx<points.size() - 1;idx++)
@@ -285,19 +285,19 @@ void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color
 
 void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color)
 {
-    const int point_count = 50;
+    constexpr size_t point_count = 50;
 
-    int n = vertex_data.size();
-    for(int idx=0; idx<point_count;idx++)
+    auto n = vertex_data.size();
+    for(auto idx=0; idx<point_count;idx++)
     {
-        float f = float(idx) / float(point_count) * M_PI * 2.0f;
+        float f = float(idx) / float(point_count) * static_cast<float>(M_PI) * 2.0f;
         vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, atlas_white_pixel});
         vertex_data.push_back({center + glm::vec2{std::sin(f) * (radius - thickness), std::cos(f) * (radius - thickness)}, color, atlas_white_pixel});
     }
-    for(int idx=0; idx<point_count;idx++)
+    for(auto idx=0; idx<point_count;idx++)
     {
-        int n0 = n + idx * 2;
-        int n1 = n + ((idx + 1) % point_count) * 2;
+        auto n0 = n + idx * 2;
+        auto n1 = n + ((idx + 1) % point_count) * 2;
         index_data.insert(index_data.end(), {
             uint16_t(n0 + 0), uint16_t(n0 + 1), uint16_t(n1 + 0),
             uint16_t(n0 + 1), uint16_t(n1 + 1), uint16_t(n1 + 0),
@@ -317,7 +317,7 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
     {
         for(int y=0; y<tile_count.y; y++)
         {
-            int n = vertex_data.size();
+            auto n = vertex_data.size();
             index_data.insert(index_data.end(), {
                 uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
                 uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
@@ -345,7 +345,7 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
 
 void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
 {
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     for(auto& p : points)
         vertex_data.push_back({p, color, atlas_white_pixel});
     for(unsigned int idx=0; idx<points.size() - 2;idx++)
@@ -358,7 +358,7 @@ void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& poi
 
 void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     for(auto& p : points)
         vertex_data.push_back({p, color, atlas_white_pixel});
     for(unsigned int idx=0; idx<points.size() - 2;idx++)
@@ -373,10 +373,10 @@ void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
 {
     const int point_count = 50;
 
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     for(int idx=0; idx<point_count;idx++)
     {
-        float f = float(idx) / float(point_count) * M_PI * 2.0f;
+        float f = float(idx) / float(point_count) * static_cast<float>(M_PI) * 2.0f;
         vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, atlas_white_pixel});
     }
     for(int idx=2; idx<point_count;idx++)
@@ -389,7 +389,7 @@ void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
 
 void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
 {
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
         uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
@@ -415,7 +415,7 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
         finish();
     auto& uv_rect = info.uv_rect;
 
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
         uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
@@ -536,7 +536,7 @@ void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& p
             p2 += rect.position;
             p3 += rect.position;
 
-            int n = vertex_data.size();
+            auto n = vertex_data.size();
             index_data.insert(index_data.end(), {
                 uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
                 uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
@@ -604,7 +604,7 @@ void RenderTarget::drawRotatedText(glm::vec2 center, float rotation, std::string
             glm::vec2 p2 = mat * glm::vec2{left, bottom} + center;
             glm::vec2 p3 = mat * glm::vec2{right, bottom} + center;
 
-            int n = vertex_data.size();
+            auto n = vertex_data.size();
             index_data.insert(index_data.end(), {
                 uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
                 uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
@@ -642,7 +642,7 @@ void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, glm::
     if (w * 2 > rect.size.x)
         w = rect.size.x / 2.0f;
     
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
         uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
@@ -687,11 +687,11 @@ void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, glm::
         finish();
     auto& uv_rect = info.uv_rect;
 
-    float h = rect.size.x / 2.0;
+    float h = rect.size.x / 2.0f;
     if (h * 2 > rect.size.y)
         h = rect.size.y / 2.0f;
     
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
         uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
@@ -739,7 +739,7 @@ void RenderTarget::drawStretchedHV(sp::Rect rect, float corner_size, std::string
     corner_size = std::min(corner_size, rect.size.y / 2.0f);
     corner_size = std::min(corner_size, rect.size.x / 2.0f);
 
-    int n = vertex_data.size();
+    auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
         uint16_t(n + 0), uint16_t(n + 4), uint16_t(n + 1),
         uint16_t(n + 1), uint16_t(n + 4), uint16_t(n + 5),
@@ -847,7 +847,7 @@ void RenderTarget::finish(sp::Texture* texture)
         glVertexAttribPointer(shader->getAttributeLocation("a_texcoords"), 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, uv));
         glEnableVertexAttribArray(shader->getAttributeLocation("a_texcoords"));
 
-        glDrawElements(GL_TRIANGLES, index_data.size(), GL_UNSIGNED_SHORT, nullptr);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(index_data.size()), GL_UNSIGNED_SHORT, nullptr);
 
         vertex_data.clear();
         index_data.clear();
@@ -874,7 +874,7 @@ void RenderTarget::finish(sp::Texture* texture)
         glVertexAttribPointer(shader->getAttributeLocation("a_texcoords"), 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, uv));
         glEnableVertexAttribArray(shader->getAttributeLocation("a_texcoords"));
 
-        glDrawElements(GL_LINES, lines_index_data.size(), GL_UNSIGNED_SHORT, nullptr);
+        glDrawElements(GL_LINES, static_cast<GLsizei>(lines_index_data.size()), GL_UNSIGNED_SHORT, nullptr);
 
         lines_vertex_data.clear();
         lines_index_data.clear();

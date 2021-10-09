@@ -504,7 +504,7 @@ void Server::Connection::handleRequest(const Request& request)
             if (n < 1)
                 break;
 
-            string chunk_len_string = string::hex(n) + "\r\n";
+            string chunk_len_string = string::hex(static_cast<int>(n)) + "\r\n";
             socket.send(chunk_len_string.c_str(), chunk_len_string.size());
             socket.send(buffer, n);
             socket.send("\r\n", 2);
@@ -534,7 +534,7 @@ void Server::Connection::startHttpReply(int reply_code, const string& mimetype)
 
 void Server::Connection::httpChunk(const string& data)
 {
-    string chunk_len_string = string::hex(data.size()) + "\r\n";
+    string chunk_len_string = string::hex(static_cast<int>(data.size())) + "\r\n";
     socket.send(chunk_len_string.c_str(), chunk_len_string.size());
     if (data.size() > 0)
         socket.send(data.data(), data.size());

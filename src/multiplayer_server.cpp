@@ -259,7 +259,7 @@ void GameServer::update(float /*gameDelta*/)
                         break;
                     case CMD_ALIVE_RESP:
                         {
-                            clientList[n].ping = clientList[n].round_trip_start_time.get() * 1000.0f;
+                            clientList[n].ping = static_cast<int32_t>(clientList[n].round_trip_start_time.get() * 1000.0f);
                         }
                         break;
                     default:
@@ -368,7 +368,7 @@ void GameServer::update(float /*gameDelta*/)
                         break;
                     case CMD_ALIVE_RESP:
                         {
-                            clientList[n].ping = clientList[n].round_trip_start_time.get() * 1000.0f;
+                            clientList[n].ping = static_cast<int32_t>(clientList[n].round_trip_start_time.get() * 1000.0f);
                         }
                     break;
                     default:

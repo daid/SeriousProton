@@ -40,7 +40,7 @@ Address::Address(const string& hostname)
             continue;
 
         char buffer[128];
-        ::getnameinfo(data->ai_addr, data->ai_addrlen, buffer, sizeof(buffer), nullptr, 0, NI_NUMERICHOST);
+        ::getnameinfo(data->ai_addr, static_cast<socklen_t>(data->ai_addrlen), buffer, sizeof(buffer), nullptr, 0, NI_NUMERICHOST);
 
         addr_info.emplace_back(data->ai_family, buffer, data->ai_addr, data->ai_addrlen);
     }

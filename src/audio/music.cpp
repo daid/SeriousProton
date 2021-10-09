@@ -36,7 +36,7 @@ bool Music::open(const string& resource_name, bool loop)
     file_data.resize(stream->getSize());
     stream->read(file_data.data(), file_data.size());
     int error = 0;
-    vorbis = stb_vorbis_open_memory(file_data.data(), file_data.size(), &error, nullptr);
+    vorbis = stb_vorbis_open_memory(file_data.data(), static_cast<int>(file_data.size()), &error, nullptr);
     if (!vorbis)
     {
         LOG(Error, "Failed to read music file", resource_name, "error:", error);
