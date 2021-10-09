@@ -26,7 +26,7 @@ bool InputHandler::joystick_button_changed[4][4];
 
 namespace
 {
-    constexpr size_t sdl_mouse_button_cast(Uint8 sdl_button)
+    size_t sdl_mouse_button_cast(Uint8 sdl_button)
     {
         auto button = InputHandler::MouseButton::Left;
         switch (sdl_button)
