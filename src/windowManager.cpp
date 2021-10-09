@@ -50,7 +50,7 @@ void Window::render()
 */
 
     // Clear the window
-    glClearColor(0.1, 0.1, 0.1, 0.0);
+    glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int w, h;
@@ -109,8 +109,8 @@ void Window::create()
     if (window) return;
 
     // Create the window of the application
-    int windowWidth = minimal_virtual_size.x;
-    int windowHeight = minimal_virtual_size.y;
+    auto windowWidth = static_cast<int>(minimal_virtual_size.x);
+    auto windowHeight = static_cast<int>(minimal_virtual_size.y);
 
     SDL_Rect rect;
     SDL_GetDisplayBounds(0, &rect);

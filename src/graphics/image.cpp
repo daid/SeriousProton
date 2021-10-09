@@ -68,7 +68,7 @@ void Image::update(glm::ivec2 size, const glm::u8vec4* ptr, int pitch)
 static int stream_read(void *user, char *data, int size)
 {
     ResourceStream* stream = static_cast<ResourceStream*>(user);
-    return stream->read(data, size);
+    return static_cast<int>(stream->read(data, size));
 }
 
 static void stream_skip(void *user, int n)

@@ -60,7 +60,7 @@ void SoundPlayback::onMixSamples(int16_t* stream, int sample_count)
                 }
             }
 
-            int sample = float(sound->samples[int(index)]) * volume;
+            auto sample = static_cast<int>(float(sound->samples[int(index)]) * volume);
             mix(stream[idx+0], sample);
             mix(stream[idx+1], sample);
 
@@ -83,8 +83,8 @@ void SoundPlayback::onMixSamples(int16_t* stream, int sample_count)
                 }
             }
 
-            int sample_left = float(sound->samples[int(index) * 2]) * volume;
-            int sample_right = float(sound->samples[int(index) * 2 + 1]) * volume;
+            auto sample_left = static_cast<int>(float(sound->samples[int(index) * 2]) * volume);
+            auto sample_right = static_cast<int>(float(sound->samples[int(index) * 2 + 1]) * volume);
             mix(stream[idx+0], sample_left);
             mix(stream[idx+1], sample_right);
 
@@ -105,7 +105,7 @@ Sound::Sound(const string& resource_name)
         data.resize(stream->getSize());
         stream->read(data.data(), data.size());
         short* buffer = nullptr;
-        auto len = stb_vorbis_decode_memory(data.data(), data.size(), &channels, &samplerate, &buffer);
+        auto len = stb_vorbis_decode_memory(data.data(), static_cast<int>(data.size()), &channels, &samplerate, &buffer);
         if (len >= 0 && channels > 0)
         {
             samples.resize(len * channels);

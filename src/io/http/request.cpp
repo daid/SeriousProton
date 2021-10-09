@@ -101,12 +101,12 @@ Request::Response Request::request(const string& method, const string& path, con
         socket.send(data.data(), data.length());
 
     char receive_buffer[4096];
-    int received_size = socket.receive(receive_buffer, sizeof(receive_buffer));
-    string received_data(receive_buffer, received_size);
+    auto received_size = socket.receive(receive_buffer, sizeof(receive_buffer));
+    string received_data(receive_buffer, static_cast<int>(received_size));
     while(received_data.find("\r\n\r\n") < 0)
     {
         received_size = socket.receive(receive_buffer, sizeof(receive_buffer));
-        received_data += string(receive_buffer, received_size);
+        received_data += string(receive_buffer, static_cast<int>(received_size));
         if (received_size == 0)
             return response;
     }
@@ -132,7 +132,7 @@ Request::Response Request::request(const string& method, const string& path, con
         while(int(response.body.length()) < content_length)
         {
             received_size = socket.receive(receive_buffer, sizeof(receive_buffer));
-            response.body += string(receive_buffer, received_size);
+            response.body += string(receive_buffer, static_cast<int>(received_size));
             if (received_size == 0)
                 return response;
         }
@@ -145,7 +145,7 @@ Request::Response Request::request(const string& method, const string& path, con
             while(received_data.find("\r\n") < 0)
             {
                 received_size = socket.receive(receive_buffer, sizeof(receive_buffer));
-                received_data += string(receive_buffer, received_size);
+                received_data += string(receive_buffer, static_cast<int>(received_size));
                 if (received_size == 0)
                     return response;
             }
@@ -154,7 +154,7 @@ Request::Response Request::request(const string& method, const string& path, con
             while(int(received_data.length()) < chunk_size + 2)
             {
                 received_size = socket.receive(receive_buffer, sizeof(receive_buffer));
-                received_data += string(receive_buffer, received_size);
+                received_data += string(receive_buffer, static_cast<int>(received_size));
                 if (received_size == 0)
                     return response;
             }

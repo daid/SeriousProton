@@ -80,7 +80,7 @@ void Selector::remove(SocketBase& socket)
 void Selector::wait(int timeout_ms)
 {
 #ifdef _WIN32
-    WSAPoll(data->fds.data(), data->fds.size(), timeout_ms);
+    WSAPoll(data->fds.data(), static_cast<ULONG>(data->fds.size()), timeout_ms);
 #else
     poll(data->fds.data(), data->fds.size(), timeout_ms);
 #endif
