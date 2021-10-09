@@ -59,9 +59,9 @@ public:
     static bool mouseIsPressed(MouseButton button) { return mouse_button_pressed[static_cast<std::underlying_type_t<MouseButton>>(button)]; }
     static bool mouseIsReleased(MouseButton button) { return !mouse_button_pressed[static_cast<std::underlying_type_t<MouseButton>>(button)] && mouse_button_released[static_cast<std::underlying_type_t<MouseButton>>(button)]; }
 
-    static [[deprecated("Use mouseIsDown(MouseButton)")]] bool mouseIsDown(uint8_t button) { return mouseIsDown(MouseButton{ button }); }
-    static [[deprecated("Use mouseIsPressed(MouseButton)")]] bool mouseIsPressed(uint8_t button) { return mouseIsPressed(MouseButton{ button }); }
-    static [[deprecated("Use mouseIsReleased(MouseButton)")]] bool mouseIsReleased(uint8_t button) { return mouseIsReleased(MouseButton{ button }); }
+    [[deprecated("Use mouseIsDown(MouseButton)")]] static bool mouseIsDown(uint8_t button) { return mouseIsDown(MouseButton{ button }); }
+    [[deprecated("Use mouseIsPressed(MouseButton)")]] static bool mouseIsPressed(uint8_t button) { return mouseIsPressed(MouseButton{ button }); }
+    [[deprecated("Use mouseIsReleased(MouseButton)")]] static bool mouseIsReleased(uint8_t button) { return mouseIsReleased(MouseButton{ button }); }
     static float getMouseWheelDelta() { return mouse_wheel_delta; }
     
     static glm::vec2    getJoysticXYPos() { return glm::vec2(joystick_axis_pos[0][0], joystick_axis_pos[0][1]); }
