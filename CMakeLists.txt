@@ -129,29 +129,26 @@ endif()
 # FreeType 2
 set(WITH_FREETYPE2 "auto" CACHE STRING "Which FreeType2 to use (possible values are 'bundled', 'system' or 'auto')")
 
-# Find arguments to target the bundled version.
-set(freetype2_bundled_find_args REQUIRED PATHS libs/cmake NO_DEFAULT_PATH)
+if(NOT WITH_FREETYPE2 STREQUAL "bundled")
 
-# Set find arguments based on selection (assumes 'auto' by default)
-set(freetype2_find_args QUIET)
+    set(freetype2_find_args QUIET)
 
-if(WITH_FREETYPE2 STREQUAL "system")
-    set(freetype2_find_args REQUIRED)
-elseif(WITH_FREETYPE2 STREQUAL "bundled")
-    set(freetype2_find_args ${freetype2_bundled_find_args})
+    if(WITH_FREETYPE2 STREQUAL "system")
+       set(freetype2_find_args REQUIRED)
+    endif()
+
+    # Not bundled - attempt to find system package first.
+    find_package(Freetype 2 ${freetype2_find_args})
 endif()
 
-find_package(Freetype 2 ${freetype2_find_args})
-
-if(NOT Freetype_FOUND)
-    # We can only be coming here from 'auto', since the other two are 'required'
-    find_package(Freetype 2 ${freetype2_bundled_find_args})
-endif()
-
-if(FREETYPE_BUNDLED)
-    message(STATUS "Freetype 2 version used: BUNDLED")
-else
+if(Freetype_FOUND)
     message(STATUS "Freetype 2 version used: SYSTEM")
+else()
+    # We can only be coming here from:
+    #    * 'auto', if we failed to find a suitable system package,
+    #    * 'bundled'
+    find_package(Freetype 2 REQUIRED PATHS libs/cmake NO_DEFAULT_PATH)
+    message(STATUS "Freetype 2 version used: BUNDLED")
 endif()
 
 #---------------------------------File lists-----------------------------------
