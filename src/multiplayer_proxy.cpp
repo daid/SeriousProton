@@ -304,11 +304,11 @@ void GameServerProxy::handleBroadcastUDPSocket(float delta)
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(serverVersion) << proxyName;
         broadcast_listen_socket.send(sendPacket, recvAddress, recvPort);
     }
-    if (boardcastServerDelay > 0.0)
+    if (boardcastServerDelay > 0.0f)
     {
         boardcastServerDelay -= delta;
     }else{
-        boardcastServerDelay = 5.0;
+        boardcastServerDelay = 5.0f;
 
         sp::io::DataBuffer sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(serverVersion) << proxyName;

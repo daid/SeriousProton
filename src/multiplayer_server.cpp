@@ -155,7 +155,7 @@ void GameServer::update(float /*gameDelta*/)
             int cnt = 0;
             for(unsigned int n=0; n<obj->memberReplicationInfo.size(); n++)
             {
-                if (obj->memberReplicationInfo[n].update_timeout > 0.0)
+                if (obj->memberReplicationInfo[n].update_timeout > 0.0f)
                 {
                     obj->memberReplicationInfo[n].update_timeout -= delta;
                 }else{
@@ -500,7 +500,7 @@ void GameServer::handleBroadcastUDPSocket(float delta)
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
         broadcast_listen_socket.send(sendPacket, recvAddress, recvPort);
     }
-    if (boardcastServerDelay > 0.0)
+    if (boardcastServerDelay > 0.0f)
     {
         boardcastServerDelay -= delta;
     }else{
