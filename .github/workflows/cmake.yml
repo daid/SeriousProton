@@ -26,7 +26,7 @@ jobs:
       if: ${{ startsWith(matrix.os, 'ubuntu') }}
       run: |
         sudo apt update -qq
-        sudo apt install git build-essential cmake ninja-build zip unzip libsdl2-dev
+        sudo apt install git build-essential cmake ninja-build zip unzip libsdl2-dev libfreetype-dev
     - name: Setup (brew)
       if: ${{ startsWith(matrix.os, 'macos') }}
       run: brew install cmake sdl2 ninja
