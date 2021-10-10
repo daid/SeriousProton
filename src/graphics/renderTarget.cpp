@@ -288,13 +288,13 @@ void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thick
     constexpr size_t point_count = 50;
 
     auto n = vertex_data.size();
-    for(auto idx=0; idx<point_count;idx++)
+    for(auto idx=0u; idx<point_count;idx++)
     {
         float f = float(idx) / float(point_count) * static_cast<float>(M_PI) * 2.0f;
         vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, atlas_white_pixel});
         vertex_data.push_back({center + glm::vec2{std::sin(f) * (radius - thickness), std::cos(f) * (radius - thickness)}, color, atlas_white_pixel});
     }
-    for(auto idx=0; idx<point_count;idx++)
+    for(auto idx=0u; idx<point_count;idx++)
     {
         auto n0 = n + idx * 2;
         auto n1 = n + ((idx + 1) % point_count) * 2;
