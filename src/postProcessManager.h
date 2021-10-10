@@ -23,7 +23,15 @@ public:
     virtual ~PostProcessor() {}
     
     virtual void render(sp::RenderTarget& target) override;
-    
+
+    virtual bool onPointerMove(glm::vec2 position, int id) override;
+    virtual void onPointerLeave(int id) override;
+    virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id) override;
+    virtual void onPointerDrag(glm::vec2 position, int id) override;
+    virtual void onPointerUp(glm::vec2 position, int id) override;
+    virtual void onTextInput(const string& text) override;
+    virtual void onTextInput(sp::TextInputEvent e) override;
+
     void setUniform(string name, float value);
     
     static void setEnable(bool enable) { global_post_processor_enabled = enable; }

@@ -3,7 +3,6 @@
 
 P<Window> InputHandler::window;
 bool InputHandler::touch_screen = false;
-glm::mat3x3 InputHandler::mouse_transform;
 PVector<InputEventHandler> InputHandler::input_event_handlers;
 PVector<JoystickEventHandler> InputHandler::joystick_event_handlers;
 
@@ -217,15 +216,6 @@ void InputHandler::postEventsUpdate()
             }
         }
     }
-}
-
-void InputHandler::setMousePos(glm::vec2 position)
-{
-    if (!window)
-        window = engine->getObject("window");
-
-    //sf::Mouse::setPosition(virtualWindowPosToReal(position), windowManager->window);
-    //mouse_position = realWindowPosToVirtual(sf::Mouse::getPosition(windowManager->window));
 }
 
 void InputHandler::fireKeyEvent(const SDL_KeyboardEvent& key, int unicode)

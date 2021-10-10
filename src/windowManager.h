@@ -4,14 +4,18 @@
 #include "P.h"
 #include "Renderable.h"
 
+union SDL_Event;
 class Window : public virtual PObject
 {
 private:
+    static PVector<Window> all_windows;
+
     glm::vec2 minimal_virtual_size;
     glm::vec2 current_virtual_size;
     void* window = nullptr;
     void* context = nullptr;
-    RenderChain* renderChain;
+    RenderChain* render_chain;
+    int mouse_button_down_mask = 0;
     bool fullscreen;
     int fsaa;
 
@@ -35,6 +39,7 @@ public:
     friend class InputHandler;
     friend class Engine;
 private:
+    void handleEvent(const SDL_Event& event);
     void create();
     void setupView();
 };

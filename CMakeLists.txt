@@ -439,6 +439,8 @@ set(source_files #All SeriousProton's objects to compile
     src/i18n.h
     src/input.h
     src/io/dataBuffer.h
+    src/io/pointer.h
+    src/io/textinput.h
     src/io/http/request.h
     src/io/http/server.h
     src/io/http/websocket.h

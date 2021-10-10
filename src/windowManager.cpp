@@ -15,8 +15,10 @@
 #include <windows.h>
 #endif
 
-Window::Window(glm::vec2 virtual_size, bool fullscreen, RenderChain* renderChain, int fsaa)
-: minimal_virtual_size(virtual_size), current_virtual_size(virtual_size), renderChain(renderChain), fullscreen(fullscreen), fsaa(fsaa)
+PVector<Window> Window::all_windows;
+
+Window::Window(glm::vec2 virtual_size, bool fullscreen, RenderChain* render_chain, int fsaa)
+: minimal_virtual_size(virtual_size), current_virtual_size(virtual_size), render_chain(render_chain), fullscreen(fullscreen), fsaa(fsaa)
 {
     srand(static_cast<int32_t>(time(nullptr)));
 
@@ -33,6 +35,8 @@ Window::Window(glm::vec2 virtual_size, bool fullscreen, RenderChain* renderChain
 
     create();
     sp::initOpenGL();
+
+    all_windows.push_back(this);
 }
 
 Window::~Window()
@@ -59,7 +63,7 @@ void Window::render()
 
     //Call the first item of the rendering chain.
     sp::RenderTarget target{current_virtual_size, {w, h}};
-    renderChain->render(target);
+    render_chain->render(target);
     target.finish();
 
     // Display things on screen
@@ -150,6 +154,193 @@ void Window::create()
     if (SDL_GL_SetSwapInterval(-1))
         SDL_GL_SetSwapInterval(1);
     setupView();
+}
+
+void Window::handleEvent(const SDL_Event& event)
+{
+    switch(event.type)
+    {
+    case SDL_MOUSEBUTTONDOWN:
+        {
+            sp::io::Pointer::Button button = sp::io::Pointer::Button::Unknown;
+            switch(event.button.button)
+            {
+            case SDL_BUTTON_LEFT: button = sp::io::Pointer::Button::Left; break;
+            case SDL_BUTTON_MIDDLE: button = sp::io::Pointer::Button::Middle; break;
+            case SDL_BUTTON_RIGHT: button = sp::io::Pointer::Button::Right; break;
+            default: break;
+            }
+            mouse_button_down_mask |= 1 << int(event.button.button);
+            render_chain->onPointerDown(button, mapPixelToCoords({event.button.x, event.button.y}), -1);
+        }
+        break;
+    case SDL_MOUSEMOTION:
+        if (mouse_button_down_mask)
+            render_chain->onPointerDrag(mapPixelToCoords({event.motion.x, event.motion.y}), -1);
+        else
+            render_chain->onPointerMove(mapPixelToCoords({event.motion.x, event.motion.y}), -1);
+        break;
+    case SDL_MOUSEBUTTONUP:
+        mouse_button_down_mask &=~(1 << int(event.button.button));
+        if (!mouse_button_down_mask)
+        {
+            render_chain->onPointerUp(mapPixelToCoords({event.button.x, event.button.y}), -1);
+            render_chain->onPointerMove(mapPixelToCoords({event.button.x, event.button.y}), -1);
+        }
+        break;
+    case SDL_FINGERDOWN:
+        render_chain->onPointerDown(sp::io::Pointer::Button::Touch, {event.tfinger.x * current_virtual_size.x, event.tfinger.y * current_virtual_size.y}, event.tfinger.fingerId);
+        break;
+    case SDL_FINGERMOTION:
+        render_chain->onPointerDrag({event.tfinger.x * current_virtual_size.x, event.tfinger.y * current_virtual_size.y}, event.tfinger.fingerId);
+        break;
+    case SDL_FINGERUP:
+        render_chain->onPointerUp({event.tfinger.x * current_virtual_size.x, event.tfinger.y * current_virtual_size.y}, event.tfinger.fingerId);
+        break;
+    case SDL_TEXTINPUT:
+        render_chain->onTextInput(event.text.text);
+        break;
+    case SDL_KEYDOWN:
+        switch(event.key.keysym.sym)
+        {
+        case SDLK_KP_4:
+            if (event.key.keysym.mod & KMOD_NUM)
+                break;
+            //fallthrough
+        case SDLK_LEFT:
+            if (event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::WordLeftWithSelection);
+            else if (event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::WordLeft);
+            else if (event.key.keysym.mod & KMOD_SHIFT)
+                render_chain->onTextInput(sp::TextInputEvent::LeftWithSelection);
+            else
+                render_chain->onTextInput(sp::TextInputEvent::Left);
+            break;
+        case SDLK_KP_6:
+            if (event.key.keysym.mod & KMOD_NUM)
+                break;
+            //fallthrough
+        case SDLK_RIGHT:
+            if (event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::WordRightWithSelection);
+            else if (event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::WordRight);
+            else if (event.key.keysym.mod & KMOD_SHIFT)
+                render_chain->onTextInput(sp::TextInputEvent::RightWithSelection);
+            else
+                render_chain->onTextInput(sp::TextInputEvent::Right);
+            break;
+        case SDLK_KP_8:
+            if (event.key.keysym.mod & KMOD_NUM)
+                break;
+            //fallthrough
+        case SDLK_UP:
+            if (event.key.keysym.mod & KMOD_SHIFT)
+                render_chain->onTextInput(sp::TextInputEvent::UpWithSelection);
+            else
+                render_chain->onTextInput(sp::TextInputEvent::Up);
+            break;
+        case SDLK_KP_2:
+            if (event.key.keysym.mod & KMOD_NUM)
+                break;
+            //fallthrough
+        case SDLK_DOWN:
+            if (event.key.keysym.mod & KMOD_SHIFT)
+                render_chain->onTextInput(sp::TextInputEvent::DownWithSelection);
+            else
+                render_chain->onTextInput(sp::TextInputEvent::Down);
+            break;
+        case SDLK_KP_7:
+            if (event.key.keysym.mod & KMOD_NUM)
+                break;
+            //fallthrough
+        case SDLK_HOME:
+            if (event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::TextStartWithSelection);
+            else if (event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::TextStart);
+            else if (event.key.keysym.mod & KMOD_SHIFT)
+                render_chain->onTextInput(sp::TextInputEvent::LineStartWithSelection);
+            else
+                render_chain->onTextInput(sp::TextInputEvent::LineStart);
+            break;
+        case SDLK_KP_1:
+            if (event.key.keysym.mod & KMOD_NUM)
+                break;
+            //fallthrough
+        case SDLK_END:
+            if (event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::TextEndWithSelection);
+            else if (event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::TextEnd);
+            else if (event.key.keysym.mod & KMOD_SHIFT)
+                render_chain->onTextInput(sp::TextInputEvent::LineEndWithSelection);
+            else
+                render_chain->onTextInput(sp::TextInputEvent::LineEnd);
+            break;
+        case SDLK_KP_PERIOD:
+            if (event.key.keysym.mod & KMOD_NUM)
+                break;
+            //fallthrough
+        case SDLK_DELETE:
+            render_chain->onTextInput(sp::TextInputEvent::Delete);
+            break;
+        case SDLK_BACKSPACE:
+            render_chain->onTextInput(sp::TextInputEvent::Backspace);
+            break;
+        case SDLK_KP_ENTER:
+        case SDLK_RETURN:
+            render_chain->onTextInput(sp::TextInputEvent::Return);
+            break;
+        case SDLK_TAB:
+        case SDLK_KP_TAB:
+            if (event.key.keysym.mod & KMOD_SHIFT)
+                render_chain->onTextInput(sp::TextInputEvent::Unindent);
+            else
+                render_chain->onTextInput(sp::TextInputEvent::Indent);
+            break;
+        case SDLK_a:
+            if (event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::SelectAll);
+            break;
+        case SDLK_c:
+            if (event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::Copy);
+            break;
+        case SDLK_v:
+            if (event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::Paste);
+            break;
+        case SDLK_x:
+            if (event.key.keysym.mod & KMOD_CTRL)
+                render_chain->onTextInput(sp::TextInputEvent::Cut);
+            break;
+        }
+        break;
+    case SDL_WINDOWEVENT:
+        switch(event.window.event)
+        {
+        case SDL_WINDOWEVENT_LEAVE:
+            if (!SDL_GetMouseState(nullptr, nullptr))
+            {
+                render_chain->onPointerLeave(-1);
+            }
+            break;
+        case SDL_WINDOWEVENT_CLOSE:
+            //close();
+            break;
+        case SDL_WINDOWEVENT_RESIZED:
+            setupView();
+            break;
+        }
+        break;
+    case SDL_QUIT:
+        //close();
+        break;
+    default:
+        break;
+    }
 }
 
 void Window::setupView()

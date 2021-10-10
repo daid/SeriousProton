@@ -51,6 +51,7 @@ Engine::Engine()
 #endif // WIN32
 
     SDL_Init(SDL_INIT_EVERYTHING);
+    SDL_ShowCursor(false);
     atexit(SDL_Quit);
 
     initRandom();
@@ -179,7 +180,6 @@ void Engine::runMainLoop()
 
 void Engine::handleEvent(SDL_Event& event)
 {
-    // Window closed: exit
     if (event.type == SDL_QUIT)
         running = false;
 #ifdef DEBUG
@@ -209,9 +209,60 @@ void Engine::handleEvent(SDL_Event& event)
         printf("------------------------\n");
     }
 #endif
+
+    unsigned int window_id = 0;
+    switch(event.type)
+    {
+    case SDL_KEYDOWN:
+#ifdef __EMSCRIPTEN__
+        if (!audio_started)
+        {
+            audio::AudioSource::startAudioSystem();
+            audio_started = true;
+        }
+#endif
+    case SDL_KEYUP:
+        window_id = event.key.windowID;
+        break;
+    case SDL_MOUSEMOTION:
+        window_id = event.motion.windowID;
+        break;
+    case SDL_MOUSEBUTTONDOWN:
+#ifdef __EMSCRIPTEN__
+        if (!audio_started)
+        {
+            audio::AudioSource::startAudioSystem();
+            audio_started = true;
+        }
+#endif
+    case SDL_MOUSEBUTTONUP:
+        window_id = event.button.windowID;
+        break;
+    case SDL_MOUSEWHEEL:
+        window_id = event.wheel.windowID;
+        break;
+    case SDL_WINDOWEVENT:
+        window_id = event.window.windowID;
+        break;
+    case SDL_FINGERDOWN:
+    case SDL_FINGERUP:
+    case SDL_FINGERMOTION:
+        window_id = SDL_GetWindowID(SDL_GetMouseFocus());
+        break;
+    case SDL_TEXTEDITING:
+        window_id = event.edit.windowID;
+        break;
+    case SDL_TEXTINPUT:
+        window_id = event.text.windowID;
+        break;
+    }
+    if (window_id != 0)
+    {
+        foreach(Window, window, Window::all_windows)
+            if (window->window && SDL_GetWindowID(static_cast<SDL_Window*>(window->window)) == window_id)
+                window->handleEvent(event);
+    }
     InputHandler::handleEvent(event);
-    if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED)
-        window->setupView();
 }
 
 void Engine::setGameSpeed(float speed)

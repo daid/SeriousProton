@@ -96,3 +96,38 @@ void PostProcessor::setUniform(string name, float value)
         shader.setUniform(name, value);
         */
 }
+
+bool PostProcessor::onPointerMove(glm::vec2 position, int id)
+{
+    return chain->onPointerMove(position, id);
+}
+
+void PostProcessor::onPointerLeave(int id)
+{
+    chain->onPointerLeave(id);
+}
+
+bool PostProcessor::onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id)
+{
+    return chain->onPointerDown(button, position, id);
+}
+
+void PostProcessor::onPointerDrag(glm::vec2 position, int id)
+{
+    chain->onPointerDrag(position, id);
+}
+
+void PostProcessor::onPointerUp(glm::vec2 position, int id)
+{
+    chain->onPointerUp(position, id);
+}
+
+void PostProcessor::onTextInput(const string& text)
+{
+    chain->onTextInput(text);
+}
+
+void PostProcessor::onTextInput(sp::TextInputEvent e)
+{
+    chain->onTextInput(e);
+}

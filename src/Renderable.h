@@ -2,6 +2,8 @@
 #define RENDERABLE_H
 
 #include "graphics/renderTarget.h"
+#include "io/pointer.h"
+#include "io/textinput.h"
 #include "P.h"
 
 class Renderable;
@@ -12,6 +14,14 @@ class RenderChain : sp::NonCopyable
 {
 public:
     virtual void render(sp::RenderTarget& window) = 0;
+
+    virtual bool onPointerMove(glm::vec2 position, int id) { return false; }
+    virtual void onPointerLeave(int id) {}
+    virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id) { return false; }
+    virtual void onPointerDrag(glm::vec2 position, int id) {}
+    virtual void onPointerUp(glm::vec2 position, int id) {}
+    virtual void onTextInput(const string& text) {}
+    virtual void onTextInput(sp::TextInputEvent e) {}
 };
 
 class RenderLayer : public RenderChain
@@ -27,7 +37,15 @@ public:
     RenderLayer(RenderChain* link);
     
     virtual void render(sp::RenderTarget& target) override;
-    
+
+    virtual bool onPointerMove(glm::vec2 position, int id) override;
+    virtual void onPointerLeave(int id) override;
+    virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id) override;
+    virtual void onPointerDrag(glm::vec2 position, int id) override;
+    virtual void onPointerUp(glm::vec2 position, int id) override;
+    virtual void onTextInput(const string& text) override;
+    virtual void onTextInput(sp::TextInputEvent e) override;
+
     friend class Renderable;
 };
 
@@ -39,8 +57,16 @@ class Renderable: public virtual PObject
         Renderable(RenderLayer* renderLayer);
         virtual ~Renderable();
         virtual void render(sp::RenderTarget& target) = 0;
-        
         void moveToRenderLayer(RenderLayer* renderLayer);
+        
+        //Anything that can be rendered can process input.
+        virtual bool onPointerMove(glm::vec2 position, int id) { return false; }
+        virtual void onPointerLeave(int id) {}
+        virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id) { return false; }
+        virtual void onPointerDrag(glm::vec2 position, int id) {}
+        virtual void onPointerUp(glm::vec2 position, int id) {}
+        virtual void onTextInput(const string& text) {}
+        virtual void onTextInput(sp::TextInputEvent e) {}
     protected:
     private:
         RenderLayer* layer;
