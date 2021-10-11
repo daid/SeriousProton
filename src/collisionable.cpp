@@ -65,7 +65,7 @@ public:
 
 void CollisionManager::handleCollisions(float delta)
 {
-    if (delta <= 0.0)
+    if (delta <= 0.0f)
         return;
 
     Collisionable* destroy = NULL;
@@ -287,8 +287,8 @@ void Collisionable::createBody(b2Shape* shape)
 
     b2FixtureDef shapeDef;
     shapeDef.shape = shape;
-    shapeDef.density = 1.0;
-    shapeDef.friction = 0.0;
+    shapeDef.density = 1.0f;
+    shapeDef.friction = 0.0f;
     shapeDef.isSensor = !enable_physics;
     body->CreateFixture(&shapeDef);
 }

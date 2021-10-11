@@ -19,7 +19,7 @@ GameServerProxy::GameServerProxy(sp::io::network::Address hostname, int hostPort
     newSocket = std::make_unique<sp::io::network::TcpSocket>();
     newSocket->setBlocking(false);
 
-    boardcastServerDelay = 0.0;
+    boardcastServerDelay = 0.0f;
     if (proxyName != "")
     {
         if (!broadcast_listen_socket.bind(static_cast<uint16_t>(listenPort)))
@@ -46,7 +46,7 @@ GameServerProxy::GameServerProxy(string password, int listenPort, string proxyNa
     newSocket = std::make_unique<sp::io::network::TcpSocket>();
     newSocket->setBlocking(false);
 
-    boardcastServerDelay = 0.0;
+    boardcastServerDelay = 0.0f;
     if (proxyName != "")
     {
         if (!broadcast_listen_socket.bind(static_cast<uint16_t>(listenPort)))

@@ -35,9 +35,9 @@ private:
     struct SoundChannel
     {
         bool positional = false;
-        float min_distance = 1.0;
-        float attenuation = 30.0;
-        float volume = 1.0;
+        float min_distance = 1.0f;
+        float attenuation = 30.0f;
+        float volume = 1.0f;
         glm::vec2 position;
         sp::audio::SoundPlayback playback;
     };
@@ -77,7 +77,7 @@ public:
     void setMasterSoundVolume(float volume); // Valid values 0.0f-100.0f
     float getMasterSoundVolume();
     void setSoundVolume(int index, float volume); // Valid values 0.0f-100.0f
-    void setSoundPitch(int index, float volume); // Valid values 0.0f+; 1.0 = default
+    void setSoundPitch(int index, float volume); // Valid values 0.0f+; 1.0f = default
 
 private:
     int playSoundData(sp::audio::Sound* data, float pitch, float volume, bool loop = false);
