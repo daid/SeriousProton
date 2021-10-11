@@ -65,17 +65,23 @@ endif()
 # GLM - OpenGL Mathematic library
 SET(WITH_GLM "auto" CACHE STRING "Which GLM to use (possible values are 'bundled', 'system' or 'auto')")
 
-if(WITH_GLM STREQUAL "system" OR WITH_GLM STREQUAL "auto")
-    find_package(glm QUIET)
+if(NOT WITH_GLM STREQUAL "bundled")
+    set(glm_find_args QUIET)
 
-    if(glm_FOUND)
-        message(STATUS "GLM version used: SYSTEM")
-    elseif(WITH_GLM STREQUAL "system")
-        message(FATAL_ERROR "GLM: system package is not found or is unusable")
+    if(WITH_GLM STREQUAL "system")
+       set(glm_find_args REQUIRED)
     endif()
+
+    # Not bundled - attempt to find system package first.
+    find_package(glm ${glm_find_args})
 endif()
 
-if(WITH_GLM STREQUAL "bundled" OR (WITH_GLM STREQUAL "auto" AND NOT glm_FOUND))
+if(glm_FOUND)
+    message(STATUS "GLM version used: SYSTEM")
+else()
+    # We can only be coming here from:
+    #    * 'auto', if we failed to find a suitable system package,
+    #    * 'bundled'
     message(STATUS "GLM version used: BUNDLED")
 
     set(GLM_BASE_PATH "${EXTERNALS_DIR}")
@@ -99,12 +105,8 @@ if(SERIOUSPROTON_WITH_JSON)
     SET(WITH_JSON "bundled" CACHE STRING "Which json11 to use (possible values are 'bundled' or 'system')")
 
     if(WITH_JSON STREQUAL "system")
-        find_package(json11 QUIET)
-        if(json11_FOUND)
-            message(STATUS "json11 version used: SYSTEM")
-        else()
-            message(FATAL_ERROR "json11: system package is not found or is unusable")
-        endif()
+        find_package(json11 REQUIRED)
+        message(STATUS "json11 version used: SYSTEM")
     elseif(WITH_JSON STREQUAL "bundled")
         message(STATUS "json11 version used: BUNDLED")
         add_subdirectory(libs/json11)
