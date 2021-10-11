@@ -7,6 +7,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wshadow-compatible-local"
+#pragma GCC diagnostic ignored "-Wdouble-promotion"
 #endif//__GNUC__
 #include "stb/stb_image.h"
 

@@ -319,13 +319,13 @@ glm::vec2 Collisionable::getPosition() const
 void Collisionable::setRotation(float angle)
 {
     if (body == NULL) return;
-    body->SetTransform(body->GetPosition(), angle / 180.f * M_PI);
+    body->SetTransform(body->GetPosition(), glm::radians(angle));
 }
 
 float Collisionable::getRotation() const
 {
     if (body == NULL) return 0;
-    return body->GetAngle() / M_PI * 180.f;
+    return glm::degrees(body->GetAngle());
 }
 
 void Collisionable::setVelocity(glm::vec2 velocity)
@@ -342,12 +342,12 @@ glm::vec2 Collisionable::getVelocity() const
 void Collisionable::setAngularVelocity(float velocity)
 {
     if (body == NULL) return;
-    body->SetAngularVelocity(velocity / 180.f * M_PI);
+    body->SetAngularVelocity(glm::radians(velocity));
 }
 float Collisionable::getAngularVelocity() const
 {
     if (body == NULL) return 0;
-    return body->GetAngularVelocity() / M_PI * 180.f;
+    return glm::degrees(body->GetAngularVelocity());
 }
 
 void Collisionable::applyImpulse(glm::vec2 position, glm::vec2 impulse)
@@ -380,7 +380,7 @@ std::vector<glm::vec2> Collisionable::getCollisionShape() const
             b2CircleShape* cs = static_cast<b2CircleShape*>(s);
             float radius = cs->m_radius * BOX2D_SCALE;
             for(int n=0; n<32; n++)
-                ret.push_back(glm::vec2(sin(float(n)/32.f*M_PI*2) * radius, cos(float(n)/32.f*M_PI*2) * radius));
+                ret.push_back(glm::vec2(sin(float(n)/32.f*float(M_PI)*2) * radius, cos(float(n)/32.f*float(M_PI)*2) * radius));
         }
         break;
     case b2Shape::e_polygon:

@@ -11,6 +11,7 @@
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #pragma GCC diagnostic ignored "-Wshadow-compatible-local"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wdouble-promotion"
 #endif//__GNUC__
 #include "stb/stb_vorbis.h"
 #if defined(__GNUC__) && !defined(__clang__)

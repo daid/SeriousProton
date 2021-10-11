@@ -149,7 +149,8 @@ else()
     # We can only be coming here from:
     #    * 'auto', if we failed to find a suitable system package,
     #    * 'bundled'
-    find_package(Freetype 2 REQUIRED PATHS libs/cmake NO_DEFAULT_PATH)
+    set(Freetype_DIR libs/cmake)
+    find_package(Freetype 2 REQUIRED NO_DEFAULT_PATH)
     message(STATUS "Freetype 2 version used: BUNDLED")
 endif()
 
@@ -332,7 +333,7 @@ target_compile_options(seriousproton_deps
     INTERFACE
         "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:RelWithDebInfo>>:-g1>"
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
-        "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Wextra;-Woverloaded-virtual;-Werror=return-type;-Wno-unused-parameter;-Wno-unused-but-set-parameter>"
+        "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Wextra;-Woverloaded-virtual;-Wdouble-promotion;-Werror=return-type;-Wno-unused-parameter;-Wno-unused-but-set-parameter>"
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<BOOL:${WARNING_IS_ERROR}>>:-Werror>"
         "$<$<AND:$<BOOL:${MSVC}>,$<BOOL:${WARNING_IS_ERROR}>>:/WX>"
         "$<$<BOOL:${MSVC}>:/MP;/permissive->"
