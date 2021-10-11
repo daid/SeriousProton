@@ -147,7 +147,7 @@ void Font::PreparedFontString::alignAll()
         }
     }
 
-    float offset = 0.0;
+    float offset = 0.0f;
     switch(alignment)
     {
     case Alignment::TopLeft:
@@ -175,7 +175,7 @@ void Font::PreparedFontString::alignAll()
 
 glm::vec2 Font::PreparedFontString::getUsedAreaSize() const
 {
-    glm::vec2 result(getMaxLineWidth(), (float(getLineCount()) + 0.3) * font->getLineSpacing(pixel_size) * text_size / float(pixel_size));
+    glm::vec2 result(getMaxLineWidth(), (float(getLineCount()) + 0.3f) * font->getLineSpacing(pixel_size) * text_size / float(pixel_size));
     if (flags & FlagVertical)
         std::swap(result.x, result.y);
     return result;

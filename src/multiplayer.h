@@ -165,7 +165,7 @@ public:
 #define registerMemberReplication(member, ...) registerMemberReplication_(member , ## __VA_ARGS__ )
 #define F_PARAM
 #endif
-    template <typename T> void registerMemberReplication_(F_PARAM T* member, float update_delay = 0.0)
+    template <typename T> void registerMemberReplication_(F_PARAM T* member, float update_delay = 0.0f)
     {
         assert(!replicated);
         assert(memberReplicationInfo.size() < 0xFFFF);
@@ -185,7 +185,7 @@ public:
         );
         init_prev_data<T>(info);
         info.update_delay = update_delay;
-        info.update_timeout = 0.0;
+        info.update_timeout = 0.0f;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChanged;
         info.sendFunction = &multiplayerReplicationFunctions<T>::sendData;
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveData;
@@ -198,7 +198,7 @@ public:
 #endif
     }
 
-    template <typename T> void registerMemberReplication_(F_PARAM std::vector<T>* member, float update_delay = 0.0)
+    template <typename T> void registerMemberReplication_(F_PARAM std::vector<T>* member, float update_delay = 0.0f)
     {
         assert(!replicated);
         assert(memberReplicationInfo.size() < 0xFFFF);
@@ -209,7 +209,7 @@ public:
         info.ptr = member;
         info.prev_data = reinterpret_cast<std::uint64_t>(new std::vector<T>);
         info.update_delay = update_delay;
-        info.update_timeout = 0.0;
+        info.update_timeout = 0.0f;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChangedVector;
         info.sendFunction = &multiplayerReplicationFunctions<T>::sendDataVector;
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveDataVector;
@@ -217,7 +217,7 @@ public:
         memberReplicationInfo.push_back(info);
     }
 
-    void registerMemberReplication_(F_PARAM glm::vec3* member, float update_delay = 0.0)
+    void registerMemberReplication_(F_PARAM glm::vec3* member, float update_delay = 0.0f)
     {
         registerMemberReplication(&member->x, update_delay);
         registerMemberReplication(&member->y, update_delay);
@@ -235,7 +235,7 @@ public:
     {
         for(unsigned int n=0; n<memberReplicationInfo.size(); n++)
             if (memberReplicationInfo[n].ptr == data)
-                memberReplicationInfo[n].update_timeout = 0.0;
+                memberReplicationInfo[n].update_timeout = 0.0f;
     }
 
     void registerCollisionableReplication(float object_significant_range = -1);

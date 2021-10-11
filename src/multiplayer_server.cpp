@@ -24,9 +24,9 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     assert(!game_client);
     game_server = this;
     lastGameSpeed = engine->getGameSpeed();
-    sendDataRate = 0.0;
-    sendDataRatePerClient = 0.0;
-    boardcastServerDelay = 0.0;
+    sendDataRate = 0.0f;
+    sendDataRatePerClient = 0.0f;
+    boardcastServerDelay = 0.0f;
     keep_alive_send_timer.repeat(10);;
 
     nextObjectId = 1;
@@ -504,7 +504,7 @@ void GameServer::handleBroadcastUDPSocket(float delta)
     {
         boardcastServerDelay -= delta;
     }else{
-        boardcastServerDelay = 5.0;
+        boardcastServerDelay = 5.0f;
 
         sp::io::DataBuffer sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;

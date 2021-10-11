@@ -58,9 +58,9 @@ Engine::Engine()
     window = nullptr;
     CollisionManager::initialize();
     InputHandler::initialize();
-    gameSpeed = 1.0;
+    gameSpeed = 1.0f;
     running = true;
-    elapsedTime = 0.0;
+    elapsedTime = 0.0f;
     soundManager = new SoundManager();
 }
 
