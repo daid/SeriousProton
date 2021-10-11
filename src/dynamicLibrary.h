@@ -1,10 +1,6 @@
 #ifndef SP_DYNAMIC_LIBRARY_H
 #define SP_DYNAMIC_LIBRARY_H
 
-#ifdef __ANDROID__
-#error Unsupported
-#endif
-
 #include <memory>
 #include <filesystem>
 
