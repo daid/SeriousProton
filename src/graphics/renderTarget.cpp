@@ -879,6 +879,9 @@ void RenderTarget::finish(sp::Texture* texture)
         lines_vertex_data.clear();
         lines_index_data.clear();
     }
+
+    glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_NONE);
 }
 
 glm::vec2 RenderTarget::getVirtualSize()
