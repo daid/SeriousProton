@@ -207,13 +207,3 @@ void InputHandler::fireKeyEvent(const SDL_KeyboardEvent& key, int unicode)
         e->handleKeyPress(key, unicode);
     }
 }
-
-glm::vec2 InputHandler::realWindowPosToVirtual(glm::ivec2 position)
-{
-    return window->mapPixelToCoords(position);
-}
-
-glm::ivec2 InputHandler::virtualWindowPosToReal(glm::vec2 position)
-{
-    return window->mapCoordsToPixel(position);
-}

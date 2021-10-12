@@ -76,8 +76,6 @@ private:
     static void handleEvent(const SDL_Event& event);
     
     static void fireKeyEvent(const SDL_KeyboardEvent& key, int unicode);
-    static glm::vec2 realWindowPosToVirtual(glm::ivec2 position);
-    static glm::ivec2 virtualWindowPosToReal(glm::vec2 position);
 
     friend class Engine;
 };
