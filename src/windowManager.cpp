@@ -138,11 +138,11 @@ void Window::create()
 
 #if defined(ANDROID)
     constexpr auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_ES;
-    constexpr auto context_profile_minor_version = 1;
+    constexpr auto context_profile_minor_version = 0;
 
 #else
     constexpr auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_CORE;
-    constexpr auto context_profile_minor_version = 0;
+    constexpr auto context_profile_minor_version = 1;
 #endif
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, context_profile_mask);
