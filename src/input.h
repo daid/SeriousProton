@@ -53,7 +53,6 @@ public:
 private:
     static P<Window> window;
 
-    static glm::vec2 mouse_position;
     static float mouse_wheel_delta;
 
     static bool keyboard_button_down[256];
