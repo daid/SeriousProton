@@ -41,7 +41,6 @@ public:
     static bool keyboardIsPressed(SDL_Keycode key) { return keyboard_button_pressed[key]; }
     static bool keyboardIsReleased(SDL_Keycode key) { return !keyboard_button_pressed[key] && keyboard_button_released[key]; }
 
-    static glm::vec2 getMousePos() { return mouse_position; }
     static float getMouseWheelDelta() { return mouse_wheel_delta; }
     
     static glm::vec2    getJoysticXYPos() { return glm::vec2(joystick_axis_pos[0][0], joystick_axis_pos[0][1]); }

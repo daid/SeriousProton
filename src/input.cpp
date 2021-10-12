@@ -12,7 +12,6 @@ bool InputHandler::keyboard_button_pressed[256];
 bool InputHandler::keyboard_button_released[256];
 SDL_KeyboardEvent InputHandler::last_key_press;
 
-glm::vec2 InputHandler::mouse_position;
 float InputHandler::mouse_wheel_delta;
 bool InputHandler::mouse_button_down[5];
 bool InputHandler::mouse_button_pressed[5];
@@ -176,23 +175,6 @@ void InputHandler::postEventsUpdate()
         last_key_press.keysym.sym = SDLK_UNKNOWN;
     }
 
-    int x, y;
-    SDL_GetMouseState(&x, &y);
-    mouse_position = realWindowPosToVirtual({x, y});
-//#warning SDL2 TODO
-    //mouse_position = mouse_transform * mouse_position;
-
-    if (touch_screen)
-    {
-        bool any_button_down = false;
-        for(unsigned int n=0; n<5; n++)
-            if (mouse_button_down[n] || mouse_button_released[n])
-                any_button_down = true;
-        if (!any_button_down)
-        {
-            mouse_position = {-1, -1};
-        }
-    }
     for(unsigned int i=0; i<4; i++)
     {
         for(unsigned int n=0; n<4; n++)
