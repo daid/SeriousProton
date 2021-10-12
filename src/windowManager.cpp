@@ -136,12 +136,21 @@ void Window::create()
         }
     }
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#if defined(ANDROID)
+    constexpr auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_ES;
+    constexpr auto context_profile_minor_version = 1;
+
+#else
+    constexpr auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_CORE;
+    constexpr auto context_profile_minor_version = 0;
+#endif
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, context_profile_mask);
 #if defined(DEBUG)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, context_profile_minor_version);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
