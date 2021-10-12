@@ -357,6 +357,4 @@ void Window::setupView()
     }else{
         current_virtual_size.y = current_virtual_size.x / window_size.x * window_size.y;
     }
-    LOG(Debug, window_size.x / window_size.y, " ", current_virtual_size.x / current_virtual_size.y);
-    LOG(Debug, window_size.x, " ", window_size.y, " ",current_virtual_size.x, " ", current_virtual_size.y);
 }

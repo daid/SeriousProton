@@ -41,7 +41,7 @@ NetworkAudioRecorder::~NetworkAudioRecorder()
     active_recorder = nullptr;
 }
 
-void NetworkAudioRecorder::addKeyActivation(int key, int target_identifier)
+void NetworkAudioRecorder::addKeyActivation(sp::io::Keybinding* key, int target_identifier)
 {
     keys.push_back({key, target_identifier});
 }
@@ -66,7 +66,7 @@ void NetworkAudioRecorder::update(float /*delta*/)
 {
     for(size_t idx=0; idx<keys.size(); idx++)
     {
-        if (InputHandler::keyboardIsPressed(keys[idx].key) && active_key_index == -1)
+        if (keys[idx].key->getDown() && active_key_index == -1)
         {
             if (active_key_index == -1)
             {
@@ -85,7 +85,7 @@ void NetworkAudioRecorder::update(float /*delta*/)
     }
     if (active_key_index != -1)
     {
-        if (InputHandler::keyboardIsReleased(keys[active_key_index].key))
+        if (keys[active_key_index].key->getUp())
         {
             samples_till_stop = 44100 / 2;
         }

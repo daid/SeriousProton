@@ -37,12 +37,6 @@ public:
     static PVector<InputEventHandler> input_event_handlers;
     static PVector<JoystickEventHandler> joystick_event_handlers;
 
-    static bool keyboardIsDown(SDL_Keycode key) { return keyboard_button_down[key]; }
-    static bool keyboardIsPressed(SDL_Keycode key) { return keyboard_button_pressed[key]; }
-    static bool keyboardIsReleased(SDL_Keycode key) { return !keyboard_button_pressed[key] && keyboard_button_released[key]; }
-
-    static float getMouseWheelDelta() { return mouse_wheel_delta; }
-    
     static glm::vec2    getJoysticXYPos() { return glm::vec2(joystick_axis_pos[0][0], joystick_axis_pos[0][1]); }
     static float        getJoysticZPos()  { return joystick_axis_pos[0][2]; }
     static float        getJoysticRPos()  { return joystick_axis_pos[0][3]; }
@@ -53,17 +47,11 @@ public:
 private:
     static P<Window> window;
 
-    static float mouse_wheel_delta;
-
     static bool keyboard_button_down[256];
     static bool keyboard_button_pressed[256];
     static bool keyboard_button_released[256];
     static SDL_KeyboardEvent last_key_press;
 
-    static bool mouse_button_down[5];
-    static bool mouse_button_pressed[5];
-    static bool mouse_button_released[5];
-    
     static float joystick_axis_pos[4][4];
     static float joystick_axis_changed[4][4];
     static bool joystick_button_down[4][4];

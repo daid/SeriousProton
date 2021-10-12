@@ -4,6 +4,7 @@
 #include "Updatable.h"
 #include "collisionable.h"
 #include "audio/source.h"
+#include "io/keybinding.h"
 
 #include <SDL.h>
 
@@ -173,6 +174,8 @@ void Engine::runMainLoop()
                 engine_timing.server_update = game_server->getUpdateTime();
             
             last_engine_timing = engine_timing;
+
+            sp::io::Keybinding::allPostUpdate();
         }
         soundManager->stopMusic();
     }
@@ -263,6 +266,7 @@ void Engine::handleEvent(SDL_Event& event)
                 window->handleEvent(event);
     }
     InputHandler::handleEvent(event);
+    sp::io::Keybinding::handleEvent(event);
 }
 
 void Engine::setGameSpeed(float speed)

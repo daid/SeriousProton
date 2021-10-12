@@ -12,11 +12,6 @@ bool InputHandler::keyboard_button_pressed[256];
 bool InputHandler::keyboard_button_released[256];
 SDL_KeyboardEvent InputHandler::last_key_press;
 
-float InputHandler::mouse_wheel_delta;
-bool InputHandler::mouse_button_down[5];
-bool InputHandler::mouse_button_pressed[5];
-bool InputHandler::mouse_button_released[5];
-
 float InputHandler::joystick_axis_pos[4][4];
 float InputHandler::joystick_axis_changed[4][4];
 bool InputHandler::joystick_button_down[4][4];
@@ -42,7 +37,6 @@ JoystickEventHandler::~JoystickEventHandler()
 
 void InputHandler::initialize()
 {
-    memset(mouse_button_down, 0, sizeof(mouse_button_down));
     memset(keyboard_button_down, 0, sizeof(keyboard_button_down));
     memset(joystick_axis_pos, 0, sizeof(joystick_axis_pos));
 #ifdef __ANDROID__
@@ -63,13 +57,6 @@ void InputHandler::preEventsUpdate()
         else
             keyboard_button_released[n] = false;
     }
-    for(unsigned int n=0; n<5; n++)
-    {
-        if (mouse_button_pressed[n])
-            mouse_button_pressed[n] = false;
-        else
-            mouse_button_released[n] = false;
-    }
     for(unsigned int i=0; i<4; i++)
     {
         for(unsigned int n=0; n<4; n++)
@@ -81,7 +68,6 @@ void InputHandler::preEventsUpdate()
             joystick_button_changed[i][n] = false;
         }
     }
-    mouse_wheel_delta = 0;
 }
 
 void InputHandler::handleEvent(const SDL_Event& event)
@@ -110,18 +96,6 @@ void InputHandler::handleEvent(const SDL_Event& event)
             fireKeyEvent(last_key_press, event.text.text[0]);
             last_key_press.keysym.sym = SDLK_UNKNOWN;
         }
-    }
-    else if (event.type == SDL_MOUSEWHEEL)
-        mouse_wheel_delta += event.wheel.y;
-    if (event.type == SDL_MOUSEBUTTONDOWN)
-    {
-        mouse_button_down[event.button.button] = true;
-        mouse_button_pressed[event.button.button] = true;
-    }
-    else if (event.type == SDL_MOUSEBUTTONUP)
-    {
-        mouse_button_down[event.button.button] = false;
-        mouse_button_released[event.button.button] = true;
     }
     /*
     else if (event.type == SDL_JOYAXISMOTION)

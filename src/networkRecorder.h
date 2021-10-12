@@ -6,6 +6,7 @@
 #include <mutex>
 
 #include "Updatable.h"
+#include "io/keybinding.h"
 
 
 struct OpusEncoder;
@@ -14,7 +15,7 @@ class NetworkAudioRecorder : public Updatable
 private:
     struct KeyConfig
     {
-        int key;
+        sp::io::Keybinding* key;
         int target_identifier;
     };
     std::vector<KeyConfig> keys;
@@ -27,7 +28,7 @@ public:
     NetworkAudioRecorder();
     virtual ~NetworkAudioRecorder();
 
-    void addKeyActivation(int key, int target_identifier);
+    void addKeyActivation(sp::io::Keybinding* key, int target_identifier);
 
 public:
     virtual void update(float delta) override;

@@ -200,6 +200,7 @@ set(source_files #All SeriousProton's objects to compile
     src/tween.cpp
     src/Updatable.cpp
     src/windowManager.cpp
+    src/io/keybinding.cpp
     src/io/network/address.cpp
     src/io/network/selector.cpp
     src/io/network/socketBase.cpp
@@ -232,6 +233,7 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/opengles2.h
     src/i18n.h
     src/input.h
+    src/io/keybinding.h
     src/io/dataBuffer.h
     src/io/pointer.h
     src/io/textinput.h
