@@ -135,7 +135,7 @@ void Engine::runMainLoop()
 
 #ifdef DEBUG
             if (debug_output_timer.isExpired())
-                printf("Object count: %4d %4zd\n", DEBUG_PobjCount, updatableList.size());
+                LOG(DEBUG) << "Object count: " << DEBUG_PobjCount << " " << updatableList.size();
 #endif
 
             float delta = frame_timer.restart();
