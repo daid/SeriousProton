@@ -8,14 +8,16 @@ namespace sp {
 static Shader* current_shader = nullptr;
 
 #if defined(ANDROID)
-static const char* shader_header = "#version 100\nprecision mediump float;\n";
+static const char* vertex_shader_header = "#version 100\nprecision highp float;\n";
+static const char* fragment_shader_header = "#version 100\nprecision mediump float;\n";
 #else
-static const char* shader_header = "#version 120\n";
+static const char* vertex_shader_header = "#version 120\n";
+static const char* fragment_shader_header = "#version 120\n";
 #endif
 
 
 Shader::Shader(string name, string code, const std::vector<string>& defines)
-: name(name), vertex_code(shader_header), fragment_code(shader_header)
+: name(name), vertex_code(vertex_shader_header), fragment_code(fragment_shader_header)
 {
     for(auto str : defines)
     {
