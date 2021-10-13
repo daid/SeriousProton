@@ -48,21 +48,6 @@ Shader::Shader(string name, P<ResourceStream> code_stream, const std::vector<str
 {
 }
 
-Shader::Shader(string name, P<ResourceStream> vertexStream, P<ResourceStream> fragmentStream)
-: name(name)
-{
-    if (!vertexStream || !fragmentStream)
-    {
-        LOG(Error, "Missing input streams for shader:", name);
-        return;
-    }
-    vertex_code.resize(vertexStream->getSize());
-    vertexStream->read(vertex_code.data(), vertex_code.size());
-    fragment_code.resize(fragmentStream->getSize());
-    fragmentStream->read(fragment_code.data(), fragment_code.size());
-    program = std::numeric_limits<unsigned int>::max();
-}
-
 static unsigned int compileShader(const string& name, const char* code, int type)
 {
     int success;

@@ -13,7 +13,6 @@ class Shader : sp::NonCopyable
 public:
     Shader(string name, string code, const std::vector<string>& defines={});
     Shader(string name, P<ResourceStream> code_stream, const std::vector<string>& defines={});
-    Shader(string name, P<ResourceStream> vertexStream, P<ResourceStream> fragmentStream);
 
     void bind();
     int getUniformLocation(const string& name);
