@@ -1,7 +1,7 @@
 #ifndef SP_IO_POINTER_H
 #define SP_IO_POINTER_H
 
-#include "stringImproved.h"
+#include <cstdint>
 
 namespace sp {
 namespace io {
@@ -9,6 +9,7 @@ namespace io {
 class Pointer
 {
 public:
+    using ID = int64_t;
     enum class Button
     {
         Touch,
