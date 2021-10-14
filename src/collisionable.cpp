@@ -37,7 +37,7 @@ public:
 
 	/// Called for each fixture found in the query AABB.
 	/// @return false to terminate the query.
-	virtual bool ReportFixture(b2Fixture* fixture)
+	virtual bool ReportFixture(b2Fixture* fixture) override
 	{
         P<Collisionable> ptr = (Collisionable*)fixture->GetBody()->GetUserData();
         if (ptr)
