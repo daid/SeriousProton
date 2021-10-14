@@ -106,17 +106,23 @@ public:
     }
     virtual size_t seek(size_t position) override
     {
-        return io->seek(io, position, RW_SEEK_SET);
+        auto offset = io->seek(io, position, RW_SEEK_SET);
+        SDL_assert(offset != -1);
+        return static_cast<size_t>(offset);
     }
     virtual size_t tell() override
     {
-        return io->seek(io, 0, RW_SEEK_CUR);
+        auto offset = io->seek(io, 0, RW_SEEK_CUR);
+        SDL_assert(offset != -1);
+        return static_cast<size_t>(offset);
     }
     virtual size_t getSize() override
     {
         if (size == 0) {
             size_t cur = tell();
-            size = io->seek(io, 0, RW_SEEK_END);
+            auto end_offset = io->seek(io, 0, RW_SEEK_END);
+            SDL_assert(end_offset != -1);
+            size = static_cast<size_t>(end_offset);
             seek(cur);
         }
         return size;
