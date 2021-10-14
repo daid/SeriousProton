@@ -10,6 +10,10 @@
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
 #endif//__GNUC__
 #include "stb/stb_image.h"
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif//__GNUC__
+
 
 namespace sp {
 

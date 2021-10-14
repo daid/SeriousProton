@@ -3,7 +3,15 @@
 #include "collisionable.h"
 #include "Renderable.h"
 #include "vectorUtils.h"
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#endif//__GNUC__
 #include "Box2D/Box2D.h"
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif//__GNUC__
+
 
 #define BOX2D_SCALE 20.0f
 static inline glm::vec2 b2v(b2Vec2 v)
