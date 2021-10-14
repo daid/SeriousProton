@@ -40,7 +40,7 @@ public:
     ServerScanner(int version_number, int server_port = defaultServerPort);
     virtual ~ServerScanner();
 
-    virtual void update(float delta);
+    virtual void update(float delta) override;
     void addCallbacks(std::function<void(sp::io::network::Address, string)> newServerCallback, std::function<void(sp::io::network::Address)> removedServerCallback);
     
     void scanLocalNetwork();

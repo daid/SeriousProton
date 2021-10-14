@@ -2,7 +2,10 @@
 #define COLLISIONABLE_H
 
 #include "P.h"
-#include "Box2D/Box2D.h"
+
+class b2World;
+class b2Body;
+class b2Shape;
 
 class Collisionable;
 class CollisionManager

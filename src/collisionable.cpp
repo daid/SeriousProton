@@ -3,6 +3,7 @@
 #include "collisionable.h"
 #include "Renderable.h"
 #include "vectorUtils.h"
+#include "Box2D/Box2D.h"
 
 #define BOX2D_SCALE 20.0f
 static inline glm::vec2 b2v(b2Vec2 v)

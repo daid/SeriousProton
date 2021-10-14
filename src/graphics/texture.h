@@ -21,7 +21,7 @@ public:
     
     void loadFromImage(Image&& image);
 
-    virtual void bind();
+    virtual void bind() override;
 
 private:
     bool smooth = false;
