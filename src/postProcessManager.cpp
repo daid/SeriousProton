@@ -97,27 +97,27 @@ void PostProcessor::setUniform(string name, float value)
         */
 }
 
-bool PostProcessor::onPointerMove(glm::vec2 position, int id)
+bool PostProcessor::onPointerMove(glm::vec2 position, sp::io::Pointer::ID id)
 {
     return chain->onPointerMove(position, id);
 }
 
-void PostProcessor::onPointerLeave(int id)
+void PostProcessor::onPointerLeave(sp::io::Pointer::ID id)
 {
     chain->onPointerLeave(id);
 }
 
-bool PostProcessor::onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id)
+bool PostProcessor::onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id)
 {
     return chain->onPointerDown(button, position, id);
 }
 
-void PostProcessor::onPointerDrag(glm::vec2 position, int id)
+void PostProcessor::onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id)
 {
     chain->onPointerDrag(position, id);
 }
 
-void PostProcessor::onPointerUp(glm::vec2 position, int id)
+void PostProcessor::onPointerUp(glm::vec2 position, sp::io::Pointer::ID id)
 {
     chain->onPointerUp(position, id);
 }

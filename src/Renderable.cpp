@@ -21,7 +21,7 @@ void RenderLayer::render(sp::RenderTarget& target)
             r->render(target);
 }
 
-bool RenderLayer::onPointerMove(glm::vec2 position, int id)
+bool RenderLayer::onPointerMove(glm::vec2 position, sp::io::Pointer::ID id)
 {
     if (active)
         foreach(Renderable, r, renderableList)
@@ -31,7 +31,7 @@ bool RenderLayer::onPointerMove(glm::vec2 position, int id)
     return false;
 }
 
-void RenderLayer::onPointerLeave(int id)
+void RenderLayer::onPointerLeave(sp::io::Pointer::ID id)
 {
     if (active)
         foreach(Renderable, r, renderableList)
@@ -40,7 +40,7 @@ void RenderLayer::onPointerLeave(int id)
         link->onPointerLeave(id);
 }
 
-bool RenderLayer::onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id)
+bool RenderLayer::onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id)
 {
     if (active)
         foreach(Renderable, r, renderableList)
@@ -50,7 +50,7 @@ bool RenderLayer::onPointerDown(sp::io::Pointer::Button button, glm::vec2 positi
     return false;
 }
 
-void RenderLayer::onPointerDrag(glm::vec2 position, int id)
+void RenderLayer::onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id)
 {
     if (active)
         foreach(Renderable, r, renderableList)
@@ -59,7 +59,7 @@ void RenderLayer::onPointerDrag(glm::vec2 position, int id)
         link->onPointerDrag(position, id);
 }
 
-void RenderLayer::onPointerUp(glm::vec2 position, int id)
+void RenderLayer::onPointerUp(glm::vec2 position, sp::io::Pointer::ID id)
 {
     if (active)
         foreach(Renderable, r, renderableList)

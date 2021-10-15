@@ -180,21 +180,21 @@ void Window::handleEvent(const SDL_Event& event)
             default: break;
             }
             mouse_button_down_mask |= 1 << int(event.button.button);
-            render_chain->onPointerDown(button, mapPixelToCoords({event.button.x, event.button.y}), -1);
+            render_chain->onPointerDown(button, mapPixelToCoords({event.button.x, event.button.y}), sp::io::Pointer::mouse);
         }
         break;
     case SDL_MOUSEMOTION:
         if (mouse_button_down_mask)
-            render_chain->onPointerDrag(mapPixelToCoords({event.motion.x, event.motion.y}), -1);
+            render_chain->onPointerDrag(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
         else
-            render_chain->onPointerMove(mapPixelToCoords({event.motion.x, event.motion.y}), -1);
+            render_chain->onPointerMove(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
         break;
     case SDL_MOUSEBUTTONUP:
         mouse_button_down_mask &=~(1 << int(event.button.button));
         if (!mouse_button_down_mask)
         {
-            render_chain->onPointerUp(mapPixelToCoords({event.button.x, event.button.y}), -1);
-            render_chain->onPointerMove(mapPixelToCoords({event.button.x, event.button.y}), -1);
+            render_chain->onPointerUp(mapPixelToCoords({event.button.x, event.button.y}), sp::io::Pointer::mouse);
+            render_chain->onPointerMove(mapPixelToCoords({event.button.x, event.button.y}), sp::io::Pointer::mouse);
         }
         break;
     case SDL_FINGERDOWN:

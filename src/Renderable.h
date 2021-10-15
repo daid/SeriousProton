@@ -15,11 +15,11 @@ class RenderChain : sp::NonCopyable
 public:
     virtual void render(sp::RenderTarget& window) = 0;
 
-    virtual bool onPointerMove(glm::vec2 position, int id) { return false; }
-    virtual void onPointerLeave(int id) {}
-    virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id) { return false; }
-    virtual void onPointerDrag(glm::vec2 position, int id) {}
-    virtual void onPointerUp(glm::vec2 position, int id) {}
+    virtual bool onPointerMove(glm::vec2 position, sp::io::Pointer::ID id) { return false; }
+    virtual void onPointerLeave(sp::io::Pointer::ID id) {}
+    virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id) { return false; }
+    virtual void onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id) {}
+    virtual void onPointerUp(glm::vec2 position, sp::io::Pointer::ID id) {}
     virtual void onTextInput(const string& text) {}
     virtual void onTextInput(sp::TextInputEvent e) {}
 };
@@ -38,11 +38,11 @@ public:
     
     virtual void render(sp::RenderTarget& target) override;
 
-    virtual bool onPointerMove(glm::vec2 position, int id) override;
-    virtual void onPointerLeave(int id) override;
-    virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id) override;
-    virtual void onPointerDrag(glm::vec2 position, int id) override;
-    virtual void onPointerUp(glm::vec2 position, int id) override;
+    virtual bool onPointerMove(glm::vec2 position, sp::io::Pointer::ID id) override;
+    virtual void onPointerLeave(sp::io::Pointer::ID id) override;
+    virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id) override;
+    virtual void onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id) override;
+    virtual void onPointerUp(glm::vec2 position, sp::io::Pointer::ID id) override;
     virtual void onTextInput(const string& text) override;
     virtual void onTextInput(sp::TextInputEvent e) override;
 
@@ -60,11 +60,11 @@ class Renderable: public virtual PObject
         void moveToRenderLayer(RenderLayer* renderLayer);
         
         //Anything that can be rendered can process input.
-        virtual bool onPointerMove(glm::vec2 position, int id) { return false; }
-        virtual void onPointerLeave(int id) {}
-        virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, int id) { return false; }
-        virtual void onPointerDrag(glm::vec2 position, int id) {}
-        virtual void onPointerUp(glm::vec2 position, int id) {}
+        virtual bool onPointerMove(glm::vec2 position, sp::io::Pointer::ID id) { return false; }
+        virtual void onPointerLeave(sp::io::Pointer::ID id) {}
+        virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id) { return false; }
+        virtual void onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id) {}
+        virtual void onPointerUp(glm::vec2 position, sp::io::Pointer::ID id) {}
         virtual void onTextInput(const string& text) {}
         virtual void onTextInput(sp::TextInputEvent e) {}
     protected:
