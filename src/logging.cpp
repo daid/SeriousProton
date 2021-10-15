@@ -50,6 +50,8 @@ namespace
         case SDL_LOG_PRIORITY_CRITICAL:
             write("[CRITICAL]: ", 12, 1);
             break;
+        default:
+            write("[???]: ", 7, 1); 
         }
         write(message, SDL_strlen(message), 1);
         write("\n", 1, 1);
