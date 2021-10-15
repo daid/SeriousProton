@@ -10,6 +10,7 @@ class Pointer
 {
 public:
     using ID = int64_t;
+    static constexpr ID mouse = -1;
     enum class Button
     {
         Touch,
