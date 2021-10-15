@@ -325,7 +325,7 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
             glm::vec2 p0 = rect.position + glm::vec2(increment.x * x, increment.y * y);
             glm::vec2 p1 = rect.position + glm::vec2(increment.x * (x + 1), increment.y * (y + 1));
             vertex_data.push_back({
-                p1, {255, 255, 255, 255},
+                p0, {255, 255, 255, 255},
                 {info.uv_rect.position.x, info.uv_rect.position.y}});
             vertex_data.push_back({
                 {p0.x, p1.y}, {255, 255, 255, 255},
