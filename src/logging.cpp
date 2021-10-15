@@ -1,8 +1,22 @@
 #include "logging.h"
 
 #include <SDL_log.h>
+#include <array>
+#include <string>
 
 #ifdef WIN32
+// Windows/SDL quirk (2.0.14):
+//  On Win32 write access is exclusive with SDL's implementation:
+//  https://github.com/libsdl-org/SDL/blob/4cd981609b50ed273d80c635c1ca4c1e5518fb21/src/file/SDL_rwops.c#L122
+//  And by default (ie - public binaries) the STDIO interface is compiled out on win32.
+//  Since this prevents someone to `tail` the log while the game is running,
+//  fallback on cstdio on windows.
+#define SP_LOGGING_FALLBACK_STDIO 1
+#else
+#define SP_LOGGING_FALLBACK_STDIO 0
+#endif
+
+#if SP_LOGGING_FALLBACK_STDIO
 #include <cstdio>
 #else
 #include <SDL_rwops.h>
@@ -10,9 +24,18 @@
 
 namespace
 {
+    const std::array<std::string, SDL_NUM_LOG_PRIORITIES - 1> priority_labels{
+        "[VERBOSE ]: ",
+        "[DEBUG   ]: ",
+        "[INFO    ]: ",
+        "[WARNING ]: ",
+        "[ERROR   ]: ",
+        "[CRITICAL]: "
+    };
+
     void sdlCallback(void* userdata, int /*category*/, SDL_LogPriority priority, const char* message)
     {
-#ifdef WIN32
+#if SP_LOGGING_FALLBACK_STDIO
         auto stream = static_cast<FILE*>(userdata);
         auto write = [stream](const void* buffer, size_t size, size_t num)
         {
@@ -25,37 +48,11 @@ namespace
             return SDL_RWwrite(stream, buffer, size, num);
         };
 #endif
-        switch (priority)
-        {
-        case SDL_LOG_PRIORITY_VERBOSE:
-            write("[VERBOSE]: ", 12, 1);
-            break;
-
-        case SDL_LOG_PRIORITY_DEBUG:
-            write("[DEBUG]: ", 9, 1);
-            break;
-
-        case SDL_LOG_PRIORITY_INFO:
-            write("[INFO]: ", 8, 1);
-            break;
-
-        case SDL_LOG_PRIORITY_WARN:
-            write("[WARN]: ", 8, 1);
-            break;
-
-        case SDL_LOG_PRIORITY_ERROR:
-            write("[ERROR]: ", 9, 1);
-            break;
-
-        case SDL_LOG_PRIORITY_CRITICAL:
-            write("[CRITICAL]: ", 12, 1);
-            break;
-        default:
-            write("[???]: ", 7, 1); 
-        }
+        const auto& label = priority_labels[priority];
+        write(label.data(), label.size(), 1);
         write(message, SDL_strlen(message), 1);
         write("\n", 1, 1);
-#ifdef WIN32
+#if SP_LOGGING_FALLBACK_STDIO
         fflush(stream);
 #endif
     }
@@ -132,19 +129,12 @@ void Logging::setLogLevel(ELogLevel level)
 
 void Logging::setLogFile(std::string_view filename)
 {
-    // Windows/SDL quirk (2.0.14):
-    //  On Win32 write access is exclusive with SDL's implementation:
-    //  https://github.com/libsdl-org/SDL/blob/4cd981609b50ed273d80c635c1ca4c1e5518fb21/src/file/SDL_rwops.c#L122
-    //  And by default (ie - public binaries) the STDIO interface is compiled out on win32.
-    //  Since this prevents someone to `tail` the log while the game is running,
-    //  fallback on cstdio on windows.
-
     SDL_LogOutputFunction current = nullptr;
     void* current_data = nullptr;
     SDL_LogGetOutputFunction(&current, &current_data);
     if (current == &sdlCallback)
     {
-#ifdef WIN32
+#if SP_LOGGING_FALLBACK_STDIO
         auto stream = static_cast<FILE*>(current_data);
         fclose(stream);
 #else
@@ -153,7 +143,7 @@ void Logging::setLogFile(std::string_view filename)
 #endif
     }
 
-#ifdef WIN32
+#if SP_LOGGING_FALLBACK_STDIO
     auto handle = fopen(filename.data(), "wt");
 #else
     auto handle = SDL_RWFromFile(filename.data(), "wt");
