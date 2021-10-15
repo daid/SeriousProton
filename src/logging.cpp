@@ -86,7 +86,7 @@ ELogLevel Logging::global_level = LOGLEVEL_ERROR;
 #define print_func(str) stream << str
 
 Logging::Logging(ELogLevel in_level, std::string_view file, int /*line*/, std::string_view function_name)
-    :level{in_level}, do_logging{in_level >= global_level}
+    :do_logging{in_level >= global_level}, level{in_level}
 {
 }
 
