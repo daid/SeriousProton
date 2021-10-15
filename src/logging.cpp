@@ -1,41 +1,61 @@
 #include "logging.h"
 
 #include <SDL_log.h>
+
+#ifdef WIN32
+#include <cstdio>
+#else
 #include <SDL_rwops.h>
+#endif
 
 namespace
 {
     void sdlCallback(void* userdata, int /*category*/, SDL_LogPriority priority, const char* message)
     {
-        auto data = static_cast<SDL_RWops*>(userdata);
+#ifdef WIN32
+        auto stream = static_cast<FILE*>(userdata);
+        auto write = [stream](const void* buffer, size_t size, size_t num)
+        {
+            return fwrite(buffer, size, num, stream);
+        };
+#else
+        auto stream = static_cast<SDL_RWops*>(userdata);
+        auto write = [stream](const void* buffer, size_t size, size_t num)
+        {
+            return SDL_RWwrite(stream, buffer, size, num);
+        };
+#endif
         switch (priority)
         {
         case SDL_LOG_PRIORITY_VERBOSE:
-            SDL_RWwrite(data, "[VERBOSE]: ", 12, 1);
+            write("[VERBOSE]: ", 12, 1);
             break;
 
         case SDL_LOG_PRIORITY_DEBUG:
-            SDL_RWwrite(data, "[DEBUG]: ", 9, 1);
+            write("[DEBUG]: ", 9, 1);
             break;
 
         case SDL_LOG_PRIORITY_INFO:
-            SDL_RWwrite(data, "[INFO]: ", 8, 1);
+            write("[INFO]: ", 8, 1);
             break;
 
         case SDL_LOG_PRIORITY_WARN:
-            SDL_RWwrite(data, "[WARN]: ", 8, 1);
+            write("[WARN]: ", 8, 1);
             break;
 
         case SDL_LOG_PRIORITY_ERROR:
-            SDL_RWwrite(data, "[ERROR]: ", 9, 1);
+            write("[ERROR]: ", 9, 1);
             break;
 
         case SDL_LOG_PRIORITY_CRITICAL:
-            SDL_RWwrite(data, "[CRITICAL]: ", 12, 1);
+            write("[CRITICAL]: ", 12, 1);
             break;
         }
-        SDL_RWwrite(data, message, SDL_strlen(message), 1);
-        SDL_RWwrite(data, "\n", 1, 1);
+        write(message, SDL_strlen(message), 1);
+        write("\n", 1, 1);
+#ifdef WIN32
+        fflush(stream);
+#endif
     }
 
     constexpr SDL_LogPriority asSDLPriority(ELogLevel level)
@@ -110,15 +130,32 @@ void Logging::setLogLevel(ELogLevel level)
 
 void Logging::setLogFile(std::string_view filename)
 {
+    // Windows/SDL quirk (2.0.14):
+    //  On Win32 write access is exclusive with SDL's implementation:
+    //  https://github.com/libsdl-org/SDL/blob/4cd981609b50ed273d80c635c1ca4c1e5518fb21/src/file/SDL_rwops.c#L122
+    //  And by default (ie - public binaries) the STDIO interface is compiled out on win32.
+    //  Since this prevents someone to `tail` the log while the game is running,
+    //  fallback on cstdio on windows.
+
     SDL_LogOutputFunction current = nullptr;
     void* current_data = nullptr;
     SDL_LogGetOutputFunction(&current, &current_data);
     if (current == &sdlCallback)
     {
+#ifdef WIN32
+        auto stream = static_cast<FILE*>(current_data);
+        fclose(stream);
+#else
         auto stream = static_cast<SDL_RWops*>(current_data);
         SDL_RWclose(stream);
-        SDL_FreeRW(stream);
+#endif
     }
 
-    SDL_LogSetOutputFunction(&sdlCallback, SDL_RWFromFile(filename.data(), "wt"));
+#ifdef WIN32
+    auto handle = fopen(filename.data(), "wt");
+#else
+    auto handle = SDL_RWFromFile(filename.data(), "wt");
+#endif
+
+    SDL_LogSetOutputFunction(&sdlCallback, handle);
 }
