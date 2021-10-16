@@ -685,5 +685,10 @@ bool operator&(const Keybinding::Type a, const Keybinding::Type b)
     return static_cast<int>(a) & static_cast<int>(b);
 }
 
+Keybinding::Type operator|(const Keybinding::Type a, const Keybinding::Type b)
+{
+    return static_cast<Keybinding::Type>(static_cast<int>(a) | static_cast<int>(b));
+}
+
 }//namespace io
 }//namespace sp

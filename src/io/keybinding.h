@@ -139,6 +139,7 @@ private:
 };
 
 bool operator&(const Keybinding::Type a, const Keybinding::Type b);
+Keybinding::Type operator|(const Keybinding::Type a, const Keybinding::Type b);
 
 }//namespace io
 }//namespace sp
