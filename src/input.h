@@ -6,17 +6,6 @@
 #include <SDL.h>
 
 
-class InputEventHandler: public virtual PObject
-{
-public:
-    InputEventHandler();
-    virtual ~InputEventHandler();
-    
-    virtual void handleKeyPress(const SDL_KeyboardEvent& key, int unicode) = 0;
-protected:
-private:
-};
-
 class JoystickEventHandler: public virtual PObject
 {
 public:
@@ -34,7 +23,6 @@ class InputHandler
 public:
     static bool touch_screen;
 
-    static PVector<InputEventHandler> input_event_handlers;
     static PVector<JoystickEventHandler> joystick_event_handlers;
 
     static glm::vec2    getJoysticXYPos() { return glm::vec2(joystick_axis_pos[0][0], joystick_axis_pos[0][1]); }
@@ -47,11 +35,6 @@ public:
 private:
     static P<Window> window;
 
-    static bool keyboard_button_down[256];
-    static bool keyboard_button_pressed[256];
-    static bool keyboard_button_released[256];
-    static SDL_KeyboardEvent last_key_press;
-
     static float joystick_axis_pos[4][4];
     static float joystick_axis_changed[4][4];
     static bool joystick_button_down[4][4];
@@ -63,8 +46,6 @@ private:
     static void postEventsUpdate();
     static void handleEvent(const SDL_Event& event);
     
-    static void fireKeyEvent(const SDL_KeyboardEvent& key, int unicode);
-
     friend class Engine;
 };
 
