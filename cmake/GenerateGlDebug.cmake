@@ -17,7 +17,7 @@ file(STRINGS "${glad_h}" glad_gl_functions REGEX "^#define gl.+ glad_.+$")
 # Replace the functions with our own wrapper.
 set(gl_functions)
 foreach(entry IN LISTS glad_gl_functions)
-	string(REGEX REPLACE "#define (gl.+) (glad_.+)" "#undef \\1\n#define \\1(...) SP_TRACE_OPENGL_CALL(\"\\1\", \\2, __VA_ARGS__)" traced ${entry})
+	string(REGEX REPLACE "#define (gl.+) (glad_.+)" "#undef \\1\n#define \\1(...) SP_TRACE_OPENGL_CALL(\"\\1\", \\2,##__VA_ARGS__)" traced ${entry})
 	list(APPEND gl_functions "${traced}")
 endforeach()
 string(REPLACE ";" "\n" gl_functions "${gl_functions}")

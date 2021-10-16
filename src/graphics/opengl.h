@@ -58,7 +58,7 @@ namespace sp {
 #define SP_PRETTY_FUNCTION __PRETTY_FUNCTION__
 #endif
 
-#define SP_TRACE_OPENGL_CALL(name, function, ...) sp::glWrapper(name, __FILE__, SP_PRETTY_FUNCTION, __LINE__, sp::details::traceOpenGLCallParams(__VA_ARGS__), function, __VA_ARGS__)
+#define SP_TRACE_OPENGL_CALL(name, function, ...) sp::glWrapper(name, __FILE__, SP_PRETTY_FUNCTION, __LINE__, sp::details::traceOpenGLCallParams(__VA_ARGS__), function,##__VA_ARGS__)
 
 #include "graphics/glDebug.inl"
 #endif // SP_ENABLE_OPENGL_TRACING
