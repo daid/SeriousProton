@@ -9,11 +9,11 @@ class Window : public virtual PObject
 {
 private:
     static PVector<Window> all_windows;
+    static void* gl_context;
 
     glm::vec2 minimal_virtual_size;
     glm::vec2 current_virtual_size;
     void* window = nullptr;
-    void* context = nullptr;
     RenderChain* render_chain;
     int mouse_button_down_mask = 0;
     bool fullscreen;

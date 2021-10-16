@@ -19,6 +19,7 @@
 #include <SDL.h>
 
 PVector<Window> Window::all_windows;
+void* Window::gl_context = nullptr;
 
 Window::Window(glm::vec2 virtual_size, bool fullscreen, RenderChain* render_chain, int fsaa)
 : minimal_virtual_size(virtual_size), current_virtual_size(virtual_size), render_chain(render_chain), fullscreen(fullscreen), fsaa(fsaa)
@@ -55,14 +56,15 @@ void Window::render()
         setFullscreen(!isFullscreen());
     }
 */
+    SDL_GL_MakeCurrent(static_cast<SDL_Window*>(window), gl_context);
+
+    int w, h;
+    SDL_GL_GetDrawableSize(static_cast<SDL_Window*>(window), &w, &h);
+    glViewport(0, 0, w, h);
 
     // Clear the window
     glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    int w, h;
-    SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);
-    glViewport(0, 0, w, h);
 
     //Call the first item of the rendering chain.
     sp::RenderTarget target{current_virtual_size, {w, h}};
@@ -162,7 +164,8 @@ void Window::create()
     if (fullscreen)
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, flags);
-    context = SDL_GL_CreateContext(static_cast<SDL_Window*>(window));
+    if (!gl_context)
+        gl_context = SDL_GL_CreateContext(static_cast<SDL_Window*>(window));
     if (SDL_GL_SetSwapInterval(-1))
         SDL_GL_SetSwapInterval(1);
     setupView();
