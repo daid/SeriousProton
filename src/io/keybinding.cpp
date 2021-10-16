@@ -23,8 +23,11 @@ Keybinding::Keybinding(const string& name)
 
     for(auto other = keybindings; other; other = other->next)
         assert(other->name != name);//"Duplicate keybinding name"
-    next = keybindings;
-    keybindings = this;
+
+    auto ptr = &keybindings;
+    while(*ptr)
+        ptr = &((*ptr)->next);
+    *ptr = this;
 }
 
 Keybinding::Keybinding(const string& name, const string& default_key)
@@ -412,6 +415,31 @@ Keybinding* Keybinding::getByName(const string& name)
         if (keybinding->name == name)
             return keybinding;
     return nullptr;
+}
+
+std::vector<string> Keybinding::getCategories()
+{
+    std::vector<string> result;
+    std::unordered_set<string> found;
+    for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
+    {
+        if (found.find(keybinding->getCategory()) != found.end())
+            continue;
+        found.insert(keybinding->getCategory());
+        result.push_back(keybinding->getCategory());
+    }
+    return result;
+}
+
+std::vector<Keybinding*> Keybinding::listAllByCategory(const string& category)
+{
+    std::vector<Keybinding*> result;
+    for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
+    {
+        if (keybinding->getCategory() == category)
+            result.push_back(keybinding);
+    }
+    return result;
 }
 
 void Keybinding::setVirtualKey(int index, float value)

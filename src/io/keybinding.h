@@ -89,6 +89,9 @@ public:
 
     static Keybinding* getByName(const string& name);
 
+    static std::vector<string> getCategories();
+    static std::vector<Keybinding*> listAllByCategory(const string& category);
+
     static void setVirtualKey(int index, float value);
 private:
     string name;
