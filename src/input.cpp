@@ -1,7 +1,6 @@
 #include "input.h"
 #include "engine.h"
 
-P<Window> InputHandler::window;
 bool InputHandler::touch_screen = false;
 PVector<JoystickEventHandler> InputHandler::joystick_event_handlers;
 
@@ -30,9 +29,6 @@ void InputHandler::initialize()
 
 void InputHandler::preEventsUpdate()
 {
-    if (!window)
-        window = engine->getObject("window");
-
     for(unsigned int i=0; i<4; i++)
     {
         for(unsigned int n=0; n<4; n++)

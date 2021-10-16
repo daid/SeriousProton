@@ -42,7 +42,6 @@ public:
     };
 private:
     bool running;
-    Window* window;
     
     std::unordered_map<string, P<PObject> > objectMap;
     float elapsedTime;

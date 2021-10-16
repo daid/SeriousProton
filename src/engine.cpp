@@ -56,7 +56,6 @@ Engine::Engine()
     atexit(SDL_Quit);
 
     initRandom();
-    window = nullptr;
     CollisionManager::initialize();
     InputHandler::initialize();
     gameSpeed = 1.0f;
@@ -93,8 +92,7 @@ P<PObject> Engine::getObject(string name)
 
 void Engine::runMainLoop()
 {
-    window = dynamic_cast<Window*>(*getObject("window"));
-    if (!window)
+    if (Window::all_windows.size() == 0)
     {
         sp::SystemStopwatch frame_timer;
         while(running)
@@ -167,7 +165,8 @@ void Engine::runMainLoop()
             soundManager->updateTick();
 
             // Clear the window
-            window->render();
+            for(auto window : Window::all_windows)
+                window->render();
             engine_timing.render = engine_timing_stopwatch.restart();
             engine_timing.server_update = 0.0f;
             if (game_server)
