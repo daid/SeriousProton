@@ -60,7 +60,7 @@ static unsigned int compileShader(const string& name, const char* code, int type
     if (!success)
     {
         char log[1024];
-        glGetShaderInfoLog(shader_handle, sizeof(log), nullptr, log);
+        glGetShaderInfoLog(shader_handle, static_cast<GLsizei>(sizeof(log)), nullptr, log);
         LOG(Error, "Compile error in shader:", name, ":", log);
         glDeleteShader(shader_handle);
 #ifdef ANDROID
@@ -92,7 +92,7 @@ bool Shader::compileShader()
     if (!success)
     {
         char log[1024];
-        glGetProgramInfoLog(program, sizeof(log), nullptr, log);
+        glGetProgramInfoLog(program, static_cast<GLsizei>(sizeof(log)), nullptr, log);
         LOG(Error, "Link error in shader:", name, log);
         glDeleteProgram(program);
         glDeleteShader(vertex_shader_handle);
