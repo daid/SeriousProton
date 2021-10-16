@@ -1,0 +1,15 @@
+#ifndef SERIOUSPROTON_GLDEBUG_H
+#define SERIOUSPROTON_GLDEBUG_H
+
+// This file is auto-generated - local modifications may be overwritten!!!
+
+#if !defined(SP_TRACE_OPENGL_CALL)
+// SP_TRACE_OPENGL_CALL(name, function, ...)
+// name: gl function name
+// function: glad function pointer
+// VA_ARGS: arguments to be forward to function.
+#error "trace function not defined!"
+#endif
+
+${gl_functions}
+#endif // SERIOUSPROTON_GLDEBUG_H

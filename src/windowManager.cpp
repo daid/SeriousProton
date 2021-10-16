@@ -1,4 +1,12 @@
 #include "windowManager.h"
+
+#ifdef WIN32
+#include "dynamicLibrary.h"
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include "graphics/opengl.h"
 #include "Updatable.h"
 #include "Renderable.h"
@@ -9,11 +17,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
 #include <SDL.h>
-
-#ifdef _WIN32
-#include "dynamicLibrary.h"
-#include <windows.h>
-#endif
 
 PVector<Window> Window::all_windows;
 

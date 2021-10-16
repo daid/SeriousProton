@@ -98,6 +98,22 @@ else()
 endif()
 
 add_subdirectory(libs/Box2D)
+add_subdirectory(libs/glad)
+
+# See cmake/GenerateGlDebug.cmake for details.
+get_target_property(glad_source_dir glad SOURCE_DIR)
+set(glDebug_inl "${CMAKE_CURRENT_BINARY_DIR}/include/graphics/glDebug.inl")
+add_custom_command(
+    OUTPUT "${glDebug_inl}"
+    COMMAND ${CMAKE_COMMAND} -Dglad_h="${glad_source_dir}/glad/glad.h" -DglDebug_inl="${glDebug_inl}" -P cmake/GenerateGlDebug.cmake
+    MAIN_DEPENDENCY "${glad_h}"
+    DEPENDS cmake/glDebug.inl.in cmake/GenerateGlDebug.cmake
+    COMMENT "Generating glDebug.inl"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+set_source_files_properties("${glDebug_inl}" PROPERTIES GENERATED TRUE)
+
 add_subdirectory(libs/lua)
 
 # json11
@@ -229,8 +245,6 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/textureAtlas.h
     src/graphics/shader.h
     src/graphics/opengl.h
-    src/graphics/openglDesktop.h
-    src/graphics/opengles2.h
     src/i18n.h
     src/input.h
     src/io/keybinding.h
@@ -276,6 +290,9 @@ set(source_files #All SeriousProton's objects to compile
     src/Updatable.h
     src/vectorUtils.h
     src/windowManager.h
+
+    cmake/glDebug.inl.in
+    "${glDebug_inl}"
 )
 
 if(NOT ANDROID)
@@ -317,7 +334,7 @@ add_library(seriousproton_deps INTERFACE)
 
 target_include_directories(seriousproton_deps
     INTERFACE
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src;${SDL2_INCLUDE_DIRS};${FREETYPE_INCLUDE_DIRS}>"
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src;${CMAKE_CURRENT_BINARY_DIR}/include;${SDL2_INCLUDE_DIRS};${FREETYPE_INCLUDE_DIRS}>"
 )
 target_compile_features(seriousproton_deps INTERFACE cxx_std_17)
 
@@ -343,7 +360,7 @@ target_compile_options(seriousproton_deps
 
 target_link_libraries(seriousproton_deps
     INTERFACE 
-        box2d lua ${SDL2_LIBRARIES} glm::glm Threads::Threads ${FREETYPE_LIBRARIES}
+        box2d glad lua ${SDL2_LIBRARIES} glm::glm Threads::Threads ${FREETYPE_LIBRARIES}
         $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
