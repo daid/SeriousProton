@@ -42,7 +42,9 @@ public:
 
     const string& getName() const { return name; }
     const string& getLabel() const { return label; }
+    const string& getCategory() const { return category; }
     void setLabel(const string& label) { this->label = label; }
+    void setLabel(const string& category, const string& label) { this->category = category; this->label = label; }
 
     //Set/get/add bound keys to the keybinding.
     //  Key name should be one of the following:
@@ -90,6 +92,7 @@ public:
     static void setVirtualKey(int index, float value);
 private:
     string name;
+    string category;
     string label;
 
     struct Binding
