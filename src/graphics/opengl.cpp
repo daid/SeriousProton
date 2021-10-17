@@ -5,6 +5,80 @@
 #include <SDL_video.h>
 #include <SDL_assert.h>
 
+
+#include "stringImproved.h"
+
+namespace {
+
+    const char* debugTypeLabel(GLenum type)
+    {
+        switch (type)
+        {
+        case GL_DEBUG_TYPE_ERROR:
+            return "[Error] ";
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+            return "[Deprecated] ";
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+            return "[Undefined] ";
+        case GL_DEBUG_TYPE_PORTABILITY:
+            return "[Portability] ";
+        case GL_DEBUG_TYPE_PERFORMANCE:
+            return "[Performance] ";
+        case GL_DEBUG_TYPE_OTHER:
+            return "[Other] ";
+        case GL_DEBUG_TYPE_MARKER:
+            return "[Marker] ";
+        default:
+            return "[Unknown] ";
+        }
+    }
+
+    const char* sourceLabel(GLenum source)
+    {
+        switch (source)
+        {
+            case GL_DEBUG_SOURCE_API:
+                return "[API] ";
+            case GL_DEBUG_SOURCE_WINDOW_SYSTEM:  
+                return "[WindowSystem] ";
+            case GL_DEBUG_SOURCE_SHADER_COMPILER:
+                return "[ShaderCompiler] ";
+            case GL_DEBUG_SOURCE_THIRD_PARTY:
+                return "[ThirdParty] ";
+            case GL_DEBUG_SOURCE_APPLICATION:
+                return "[Application] ";
+            case GL_DEBUG_SOURCE_OTHER:
+                return "[Other] ";
+            default:
+                SDL_assert(false);
+                return "[Unknown] ";
+        }
+    }
+    ELogLevel severityCast(GLenum severity)
+    {
+        switch (severity)
+        {
+        case GL_DEBUG_SEVERITY_HIGH:
+            return LOGLEVEL_ERROR;
+        case GL_DEBUG_SEVERITY_MEDIUM:
+            return LOGLEVEL_WARNING;
+        case GL_DEBUG_SEVERITY_LOW:
+            return LOGLEVEL_INFO;
+        default:
+            SDL_assert(false);
+            [[fallthrough]];
+        case GL_DEBUG_SEVERITY_NOTIFICATION:
+            return LOGLEVEL_DEBUG;
+        }
+    }
+
+    void APIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*user*/)
+    {
+        Logging entry(severityCast(severity), __FILE__, __LINE__, "", "[GL] ", sourceLabel(source), debugTypeLabel(type), string(id) + " ", message);
+    }
+}
+
+
 namespace sp {
 
 void initOpenGL()
@@ -27,7 +101,26 @@ void initOpenGL()
         if (!gladLoadGLLoader(&SDL_GL_GetProcAddress))
             exit(1);
     }
+
     SDL_assert_always(glGetError() == GL_NO_ERROR);
+}
+
+namespace gl {
+    bool enableDebugOutput(bool synchronous)
+    {
+        if (GLAD_GL_KHR_debug)
+        {
+            glDebugMessageCallback(debugCallback, nullptr);
+            glDebugMessageControl(
+                GL_DONT_CARE /* any source */,
+                GL_DONT_CARE /* any type */,
+                GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+            glEnable(synchronous ? GL_DEBUG_OUTPUT_SYNCHRONOUS : GL_DEBUG_OUTPUT);
+            return true;
+        }
+
+        return false;
+    }
 }
 
 #ifdef SP_ENABLE_OPENGL_TRACING
