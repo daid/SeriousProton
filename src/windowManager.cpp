@@ -80,8 +80,10 @@ void Window::setFullscreen(bool new_fullscreen)
     if (fullscreen == new_fullscreen)
         return;
     fullscreen = new_fullscreen;
-    create();
+    SDL_SetWindowFullscreen(static_cast<SDL_Window*>(window), fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+    setupView();
 }
+
 void Window::setFSAA(int new_fsaa)
 {
     if (fsaa == new_fsaa)
@@ -117,28 +119,35 @@ void Window::create()
 {
     if (window) return;
 
+    int display_nr = 0;
+    for(auto w : all_windows)
+    {
+        if (w == this)
+            break;
+        display_nr ++;
+    }
+
     // Create the window of the application
     auto windowWidth = static_cast<int>(minimal_virtual_size.x);
     auto windowHeight = static_cast<int>(minimal_virtual_size.y);
 
     SDL_Rect rect;
-    SDL_GetDisplayBounds(0, &rect);
-    if (fullscreen)
+    if (SDL_GetDisplayBounds(display_nr, &rect))
     {
-        windowWidth = rect.w;
-        windowHeight = rect.h;
-    }else{
-        int scale = 2;
-        while(windowWidth * scale < int(rect.w) && windowHeight * scale < int(rect.h))
-            scale += 1;
-        windowWidth *= scale - 1;
-        windowHeight *= scale - 1;
+        display_nr = 0;
+        SDL_GetDisplayBounds(display_nr, &rect);
+    }
 
-        while(windowWidth >= int(rect.w) || windowHeight >= int(rect.h) - 100)
-        {
-            windowWidth = static_cast<int>(std::floor(windowWidth * 0.9f));
-            windowHeight = static_cast<int>(std::floor(windowHeight * 0.9f));
-        }
+    int scale = 2;
+    while(windowWidth * scale < int(rect.w) && windowHeight * scale < int(rect.h))
+        scale += 1;
+    windowWidth *= scale - 1;
+    windowHeight *= scale - 1;
+
+    while(windowWidth >= int(rect.w) || windowHeight >= int(rect.h) - 100)
+    {
+        windowWidth = static_cast<int>(std::floor(windowWidth * 0.9f));
+        windowHeight = static_cast<int>(std::floor(windowHeight * 0.9f));
     }
 
 #if defined(ANDROID)
@@ -163,7 +172,7 @@ void Window::create()
     int flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
     if (fullscreen)
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-    window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, flags);
+    window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), windowWidth, windowHeight, flags);
     if (!gl_context)
         gl_context = SDL_GL_CreateContext(static_cast<SDL_Window*>(window));
     if (SDL_GL_SetSwapInterval(-1))
