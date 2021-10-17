@@ -179,7 +179,6 @@ set(source_files #All SeriousProton's objects to compile
     src/collisionable.cpp
     src/engine.cpp
     src/event.cpp
-    src/gameEntity.cpp
     src/graphics/font.cpp
     src/graphics/freetypefont.cpp
     src/graphics/image.cpp
@@ -235,7 +234,6 @@ set(source_files #All SeriousProton's objects to compile
     src/dynamicLibrary.h
     src/engine.h
     src/event.h
-    src/gameEntity.h
     src/graphics/alignment.h
     src/graphics/font.h
     src/graphics/freetypefont.h

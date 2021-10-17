@@ -5,28 +5,9 @@
 #include "stringImproved.h"
 #include "P.h"
 
-#include "input.h"
-#include "windowManager.h"
-#include "postProcessManager.h"
-#include "shaderManager.h"
-#include "scriptInterface.h"
-#include "resources.h"
-#include "soundManager.h"
-#include "textureManager.h"
-#include "gameEntity.h"
-#include "collisionable.h"
-#include "random.h"
-#include "vectorUtils.h"
-#include "multiplayer.h"
-#include "multiplayer_server.h"
-#include "multiplayer_server_scanner.h"
-#include "multiplayer_client.h"
-#include "event.h"
-#include "logging.h"
-#include "tween.h"
-#include "clipboard.h"
 
 class Engine;
+union SDL_Event;
 extern Engine* engine;
 
 class Engine

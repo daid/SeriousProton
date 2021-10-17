@@ -1,6 +1,7 @@
 #include "multiplayer_server.h"
 #include "multiplayer_client.h"
 #include "multiplayer_internal.h"
+#include "multiplayer.h"
 #include "engine.h"
 
 #include "io/http/request.h"

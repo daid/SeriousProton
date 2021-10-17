@@ -4,6 +4,7 @@
 #include <engine.h>
 #include <json11/json11.hpp>
 #include <fstream>
+#include <unordered_set>
 #include <SDL_events.h>
 
 

@@ -5,6 +5,8 @@
 #include "engine.h"
 
 #include "graphics/opengl.h"
+#include "graphics/shader.h"
+#include "vectorUtils.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <variant>
 
