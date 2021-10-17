@@ -51,8 +51,17 @@ Engine::Engine()
     } 
 #endif // WIN32
 
+    SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
+    SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
+#ifdef SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH
+    SDL_SetHint(SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH, "1");
+#elif defined(SDL_HINT_MOUSE_TOUCH_EVENTS)
+    SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+#endif
     SDL_Init(SDL_INIT_EVERYTHING);
     SDL_ShowCursor(false);
+
     atexit(SDL_Quit);
 
     initRandom();
