@@ -58,6 +58,7 @@ class Renderable: public virtual PObject
         virtual ~Renderable();
         virtual void render(sp::RenderTarget& target) = 0;
         void moveToRenderLayer(RenderLayer* renderLayer);
+        RenderLayer* getRenderLayer();
         
         //Anything that can be rendered can process input.
         virtual bool onPointerMove(glm::vec2 position, sp::io::Pointer::ID id) { return false; }

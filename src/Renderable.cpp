@@ -115,3 +115,8 @@ void Renderable::moveToRenderLayer(RenderLayer* new_render_layer)
     if (layer)
         layer->renderableList.push_back(this);
 }
+
+RenderLayer* Renderable::getRenderLayer()
+{
+    return layer;
+}
