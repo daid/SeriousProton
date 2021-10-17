@@ -78,23 +78,47 @@ endif()
 
 if(glm_FOUND)
     message(STATUS "GLM version used: SYSTEM")
+    if(NOT TARGET glm::glm)
+        # Compatibility with older versions
+        add_library(glm::glm ALIAS glm)
+    endif()
 else()
     # We can only be coming here from:
     #    * 'auto', if we failed to find a suitable system package,
     #    * 'bundled'
     message(STATUS "GLM version used: BUNDLED")
+    
+    set(GLM_VERSION "0.9.9.8")
+    set(GLM_URL "https://github.com/g-truc/glm")
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
+        include(FetchContent)
+        FetchContent_Declare(
+            glm
+            GIT_REPOSITORY "${GLM_URL}"
+            GIT_TAG "${GLM_VERSION}"
+        )
+        FetchContent_GetProperties(glm)
+    else()
+        set(GLM_BASE_PATH "${EXTERNALS_DIR}")
+        set(glm_POPULATED FALSE)
+        if(NOT EXISTS "${GLM_BASE_PATH}/glm/CMakeLists.txt")
+            set(GLM_ZIP "${DOWNLOADS_DIR}/glm.zip")
+            file(DOWNLOAD "${GLM_URL}/releases/download/${GLM_VERSION}/glm-${GLM_VERSION}.zip" "${GLM_ZIP}" TIMEOUT 60 TLS_VERIFY ON)
 
-    set(GLM_BASE_PATH "${EXTERNALS_DIR}")
+            file(MAKE_DIRECTORY "${GLM_BASE_PATH}/glm")
+            execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf "${GLM_ZIP}" WORKING_DIRECTORY "${GLM_BASE_PATH}")
+        endif()
 
-    if(NOT EXISTS "${GLM_BASE_PATH}/glm/CMakeLists.txt")
-        set(GLM_ZIP "${DOWNLOADS_DIR}/glm.zip")
-        file(DOWNLOAD "https://github.com/g-truc/glm/releases/download/0.9.9.8/glm-0.9.9.8.zip" "${GLM_ZIP}" TIMEOUT 60 TLS_VERIFY ON)
-
-        file(MAKE_DIRECTORY "${GLM_BASE_PATH}/glm")
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf "${GLM_ZIP}" WORKING_DIRECTORY "${GLM_BASE_PATH}")
+        set(glm_SOURCE_DIR "${GLM_BASE_PATH}/glm")
+        set(glm_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/glm")
     endif()
 
-    add_subdirectory("${GLM_BASE_PATH}/glm" "${PROJECT_BINARY_DIR}/glm" EXCLUDE_FROM_ALL)
+    if(NOT glm_POPULATED)
+        if(COMMAND FetchContent_Populate)
+            FetchContent_Populate(glm)
+        endif()
+        add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR} EXCLUDE_FROM_ALL)
+    endif()
 endif()
 
 add_subdirectory(libs/Box2D)
