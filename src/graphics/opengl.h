@@ -5,6 +5,10 @@
 
 namespace sp {
 	void initOpenGL();
+
+	namespace gl {
+		bool enableDebugOutput(bool synchronous);
+	}
 }//namespace sp
 
 
