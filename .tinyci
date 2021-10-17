@@ -5,4 +5,4 @@ enabled = True
 directory = _build_native
 commands =
     cmake .. -DWARNING_IS_ERROR=1
-    make -j 3
+    make -j 2
