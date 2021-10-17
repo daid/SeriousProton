@@ -5,7 +5,16 @@
 
 #define STB_DXT_IMPLEMENTATION
 #define STB_DXT_STATIC
+#include <cstring>
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wdouble-promotion"
+#endif//__GNUC__
 #include "stb/stb_dxt.h"
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif//__GNUC__
 
 namespace {
 	std::vector<uint8_t> compressDxt(const sp::Image &image_data)
