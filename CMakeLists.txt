@@ -14,7 +14,7 @@ endif()
 
 # User-settings
 option(SERIOUSPROTON_WITH_JSON "Use json library." OFF)
-set(WARNING_IS_ERROR ON)
+set(WARNING_IS_ERROR OFF)
 
 #
 set(EXTERNALS_DIR "${PROJECT_BINARY_DIR}/externals")
