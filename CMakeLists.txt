@@ -14,7 +14,7 @@ endif()
 
 # User-settings
 option(SERIOUSPROTON_WITH_JSON "Use json library." OFF)
-option(WARNING_IS_ERROR OFF)
+set(WARNING_IS_ERROR OFF)
 
 #
 set(EXTERNALS_DIR "${PROJECT_BINARY_DIR}/externals")
@@ -351,8 +351,6 @@ target_compile_options(seriousproton_deps
         "$<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:RelWithDebInfo>>:-g1>"
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:${OPTIMIZER_FLAGS}>"
         "$<$<NOT:$<BOOL:${MSVC}>>:-Wall;-Wextra;-Woverloaded-virtual;-Wdouble-promotion;-Wsuggest-override;-Werror=return-type;-Wno-unused-parameter;-Wno-unused-but-set-parameter>"
-        "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<BOOL:${WARNING_IS_ERROR}>>:-Werror>"
-        "$<$<AND:$<BOOL:${MSVC}>,$<BOOL:${WARNING_IS_ERROR}>>:/WX>"
         "$<$<BOOL:${MSVC}>:/MP;/permissive->"
 )
 
@@ -377,6 +375,11 @@ endif()
 
 ## Object list
 add_library(seriousproton_objects OBJECT ${source_files})
+target_compile_options(seriousproton_objects
+    PRIVATE
+        "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<BOOL:${WARNING_IS_ERROR}>>:-Werror>"
+        "$<$<AND:$<BOOL:${MSVC}>,$<BOOL:${WARNING_IS_ERROR}>>:/WX>"
+)
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
     # target_link_libraries() support for object libraries only exists since 3.12.
