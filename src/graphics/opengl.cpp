@@ -72,7 +72,7 @@ namespace {
         }
     }
 
-    void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*user*/)
+    void APIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*user*/)
     {
         Logging entry(severityCast(severity), __FILE__, __LINE__, "", "[GL] ", sourceLabel(source), debugTypeLabel(type), string(id) + " ", message);
     }
