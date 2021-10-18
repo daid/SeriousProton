@@ -204,7 +204,7 @@ void BasicTexture::bind()
 
         if (compressed.empty() && GLAD_GL_EXT_texture_compression_s3tc)
         {
-            compressed = ompressDxt(image);
+            compressed = compressDxt(image);
             compressed_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
             LOG(DEBUG, "Loaded texture through DXT5.");
         }
