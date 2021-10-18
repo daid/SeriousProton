@@ -194,6 +194,70 @@ else()
     message(STATUS "Freetype 2 version used: BUNDLED")
 endif()
 
+# ASTC encoder
+set(ASTCENCODER_VERSION 3.2)
+set(ASTCENCODER_URL "https://github.com/ARM-software/astc-encoder")
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
+  include(FetchContent)
+  FetchContent_Declare(
+    astcencoder
+    GIT_REPOSITORY "${ASTCENCODER_URL}"
+    GIT_TAG "${ASTCENCODER_VERSION}"
+  )
+  FetchContent_GetProperties(astcencoder)
+else()
+  # Poor man's FetchContent.
+  set(ASTCENCODER_BASE_PATH "${EXTERNALS_DIR}")
+  set(astcencoder_POPULATED FALSE)
+  if(NOT EXISTS "${ASTCENCODER_BASE_PATH}/astcencoder/CMakeLists.txt")
+    set(ASTCENCODER_ZIP "${DOWNLOADS_DIR}/astcencoder.zip")
+    file(DOWNLOAD "${ASTCENCODER_URL}/archive/refs/tags/${ASTCENCODER_VERSION}.zip" "${MESHOPTIMIZER_ZIP}" TIMEOUT 60 TLS_VERIFY ON)
+
+    execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf "${ASTCENCODER_ZIP}" WORKING_DIRECTORY "${ASTCENCODER_BASE_PATH}")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E rename "astc-encoder-${ASTCENCODER_VERSION}" astcencoder WORKING_DIRECTORY "${ASTCENCODER_BASE_PATH}")
+  endif()
+
+  set(astcencoder_SOURCE_DIR "${ASTCENCODER_BASE_PATH}/astcencoder")
+  set(astcencoder_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/astcencoder")
+endif()
+
+if(NOT astcencoder_POPULATED)
+    if(COMMAND FetchContent_Populate)
+        FetchContent_Populate(astcencoder)
+    endif()
+
+        
+    if (CMAKE_VERSION VERSION_LESS 3.15 AND NOT ASTCENCODER_PATCHED)
+        # Patch ASTC to drop CMake min requirement.
+        file(READ "${astcencoder_SOURCE_DIR}/Source/cmake_core.cmake" cmake_core)
+        string(REPLACE "$<PLATFORM_ID:Linux,Darwin>" "$<OR:$<PLATFORM_ID:Linux>,$<PLATFORM_ID:Darwin>>" cmake_core "${cmake_core}")
+        file(WRITE "${astcencoder_SOURCE_DIR}/Source/cmake_core.cmake" "${cmake_core}")
+
+        file(READ "${astcencoder_SOURCE_DIR}/CMakeLists.txt" astcenc_cmakelists)
+        string(REPLACE "cmake_minimum_required(VERSION 3.15)" "cmake_minimum_required(VERSION ${CMAKE_VERSION})" astcenc_cmakelists "${astcenc_cmakelists}")
+        string(REPLACE "cmake_policy(SET CMP0091 NEW)  # MSVC runtime support" "" astcenc_cmakelists "${astcenc_cmakelists}")
+        file(WRITE "${astcencoder_SOURCE_DIR}/CMakeLists.txt" "${astcenc_cmakelists}")
+        set(ASTCENCODER_PATCHED TRUE CACHE BOOL "")
+    endif()
+
+    # Configure ASTC
+
+    # Just build the none abi.
+    set(ISA_NONE    ON  CACHE BOOL "" FORCE)
+    set(ISA_AVX2    OFF CACHE BOOL "" FORCE)
+    set(ISA_SSE41   OFF CACHE BOOL "" FORCE)
+    set(ISA_SSE2    OFF CACHE BOOL "" FORCE)
+    set(ISA_NEON    OFF CACHE BOOL "" FORCE)
+    
+
+    set(DECOMPRESSOR OFF CACHE BOOL "" FORCE)
+    set(DIAGNOSTICS OFF CACHE BOOL "" FORCE)
+    set(UNITTEST OFF CACHE BOOL "" FORCE)
+    set(CLI OFF CACHE BOOL "" FORCE)
+
+    add_subdirectory(${astcencoder_SOURCE_DIR} ${astcencoder_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
 #---------------------------------File lists-----------------------------------
 set(source_files #All SeriousProton's objects to compile
     src/audio/source.cpp
@@ -381,6 +445,7 @@ target_compile_options(seriousproton_deps
 target_link_libraries(seriousproton_deps
     INTERFACE 
         box2d glad lua ${SDL2_LIBRARIES} glm::glm Threads::Threads ${FREETYPE_LIBRARIES}
+        astcenc-none-static
         $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"

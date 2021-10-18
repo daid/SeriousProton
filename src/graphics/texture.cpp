@@ -2,10 +2,15 @@
 #include "graphics/opengl.h"
 
 #include <array>
+#include <cstring>
+
+#include <astcenc.h>
+#include <SDL_assert.h>
+
+#include "logging.h"
 
 #define STB_DXT_IMPLEMENTATION
 #define STB_DXT_STATIC
-#include <cstring>
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -15,6 +20,8 @@
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif//__GNUC__
+
+
 
 namespace {
 	std::vector<uint8_t> compressDxt(const sp::Image &image_data)
@@ -59,8 +66,104 @@ namespace {
 
 		return compressed;
 	}
-}
 
+    class AstcCompressor final
+    {
+    public:
+        static std::unique_ptr<AstcCompressor> load()
+        {
+            std::unique_ptr<AstcCompressor> compressor{ new AstcCompressor };
+
+            auto status = astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_FASTEST, ASTCENC_FLG_SELF_DECOMPRESS_ONLY, &compressor->config);
+            if (status != ASTCENC_SUCCESS)
+            {
+                LOG(ERROR, "astcenc config init: ", astcenc_get_error_string(status));
+                return {};
+            }
+
+            status = astcenc_context_alloc(&compressor->config, 1, &compressor->context);
+            if (status != ASTCENC_SUCCESS)
+            {
+                LOG(ERROR, "astcenc context creation: %s", astcenc_get_error_string(status));
+                return {};
+            }
+
+            return compressor;
+        }
+
+        std::vector<uint8_t> compress(sp::Image& image)
+        {
+            const auto width = image.getSize().x;
+            const auto height = image.getSize().y;
+            constexpr auto channels = 4u;
+
+            std::array<void*, 1> data{ image.getPtr() };
+            astcenc_image raw
+            {
+                static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1u,
+                ASTCENC_TYPE_U8, data.data()
+            };
+
+            std::vector<uint8_t> compressed(((raw.dim_x + 4 - 1) / 4) * ((raw.dim_y + 4 - 1) / 4) * 16);
+            const auto swizzle = [](uint32_t channels) -> astcenc_swizzle
+            {
+                switch (channels)
+                {
+                case 1: // Grey
+                    return { ASTCENC_SWZ_R, ASTCENC_SWZ_R, ASTCENC_SWZ_R, ASTCENC_SWZ_1 };
+
+                case 2: // Lum Alpha
+                    return { ASTCENC_SWZ_R, ASTCENC_SWZ_R, ASTCENC_SWZ_R, ASTCENC_SWZ_A };
+
+                case 3:
+                    return { ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_1 };
+
+                case 4:
+                    return { ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
+                default:
+                    SDL_assert(false); // wat
+                    return { ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
+                }
+            }(channels);
+
+            auto status = astcenc_compress_image(context, &raw, &swizzle, compressed.data(), compressed.size(), 0);
+            if (status != ASTCENC_SUCCESS)
+            {
+                LOG(ERROR, "astcenc compression: %s", astcenc_get_error_string(status));
+                compressed.clear();
+            }
+
+            astcenc_compress_reset(context);
+
+            return compressed;
+        }
+
+        ~AstcCompressor()
+        {
+            astcenc_context_free(context);
+        }
+
+        AstcCompressor(const AstcCompressor&) = delete;
+        AstcCompressor& operator=(const AstcCompressor&) = delete;
+        AstcCompressor(const AstcCompressor&&) = delete;
+        AstcCompressor& operator=(AstcCompressor&&) = delete;
+    private:
+        AstcCompressor() = default;
+        
+        astcenc_config config{};
+        astcenc_context* context{};
+    };
+
+    std::vector<uint8_t> compressAstc(sp::Image& image)
+    {
+        static auto compressor = AstcCompressor::load();
+        if (!compressor)
+            return {};
+
+        return compressor->compress(image);
+        
+    }
+} // anonymous namespace
 
 namespace sp {
 
@@ -90,15 +193,28 @@ void BasicTexture::bind()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 
-        if (GLAD_GL_EXT_texture_compression_s3tc)
+        std::vector<uint8_t> compressed;
+        GLenum compressed_format{ GL_NONE };
+        if (GLAD_GL_KHR_texture_compression_astc_ldr)
         {
-			auto compressed = compressDxt(image);
-			glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, image.getSize().x, image.getSize().y, 0, static_cast<GLsizei>(compressed.size()), compressed.data());
+            compressed = compressAstc(image);
+            compressed_format = GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+            LOG(DEBUG, "Loaded texture through astc.");
         }
-		else
-		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.getSize().x, image.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.getPtr());
-		}
+
+        if (compressed.empty() && GLAD_GL_EXT_texture_compression_s3tc)
+        {
+            compressed = ompressDxt(image);
+            compressed_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            LOG(DEBUG, "Loaded texture through DXT5.");
+        }
+
+        if (!compressed.empty())
+        {
+            glCompressedTexImage2D(GL_TEXTURE_2D, 0, compressed_format, image.getSize().x, image.getSize().y, 0, static_cast<GLsizei>(compressed.size()), compressed.data());
+        }
+        else
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.getSize().x, image.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.getPtr());
 
         image = {};
     }
