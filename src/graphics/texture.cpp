@@ -6,6 +6,7 @@
 
 #include <astcenc.h>
 #include <SDL_assert.h>
+#include <atomic>
 #include <thread>
 
 #include "logging.h"
