@@ -142,7 +142,7 @@ namespace {
             };
 
             // Create and start workers...
-            for (auto i = 0; i < workers.size(); ++i)
+            for (auto i = 0u; i < workers.size(); ++i)
             {
                 workers[i] = std::thread(worker_function, i);
             }
