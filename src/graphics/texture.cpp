@@ -6,6 +6,7 @@
 
 #include <astcenc.h>
 #include <SDL_assert.h>
+#include <thread>
 
 #include "logging.h"
 
@@ -81,7 +82,7 @@ namespace {
                 return {};
             }
 
-            status = astcenc_context_alloc(&compressor->config, 1, &compressor->context);
+            status = astcenc_context_alloc(&compressor->config, std::thread::hardware_concurrency(), &compressor->context);
             if (status != ASTCENC_SUCCESS)
             {
                 LOG(ERROR, "astcenc context creation: %s", astcenc_get_error_string(status));
@@ -126,13 +127,41 @@ namespace {
                 }
             }(channels);
 
-            auto status = astcenc_compress_image(context, &raw, &swizzle, compressed.data(), compressed.size(), 0);
-            if (status != ASTCENC_SUCCESS)
+            // Create worker pool, based on available threads.
+            std::vector<std::thread> workers(std::thread::hardware_concurrency());
+
+            // Gather errors.
+            std::vector<std::atomic<astcenc_error>> errors(workers.size());
+
+            // Worker function.
+            // All the heavy synchronizing stuff is done by astcenc itself, we only set up the worker threads.
+            auto worker_function = [this, &raw, &swizzle, &compressed, &errors](auto index)
             {
-                LOG(ERROR, "astcenc compression: %s", astcenc_get_error_string(status));
-                compressed.clear();
+                errors[index] = astcenc_compress_image(context, &raw, &swizzle, compressed.data(), compressed.size(), index);
+            };
+
+            // Create and start workers...
+            for (auto i = 0; i < workers.size(); ++i)
+            {
+                workers[i] = std::thread(worker_function, i);
             }
 
+            // ... Wait until they're all done
+            for (auto& worker : workers)
+            {
+                worker.join();
+            }
+
+            // Check for errors (no concurrency)
+            for (const auto& error : errors)
+            {
+                if (error != ASTCENC_SUCCESS)
+                {
+                    LOG(ERROR, "astcenc compression: %s", astcenc_get_error_string(error));
+                    compressed.clear();
+                }
+            }
+            
             astcenc_compress_reset(context);
 
             return compressed;
