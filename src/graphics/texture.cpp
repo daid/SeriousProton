@@ -20,19 +20,7 @@
 #pragma GCC diagnostic pop
 #endif//__GNUC__
 
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmisleading-indentation"
-#pragma GCC diagnostic ignored "-Wparentheses"
-#pragma GCC diagnostic ignored "-Wunused-value"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#endif // __GNUC__
 #include "rg_etc1/rg_etc1.h"
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif//__GNUC__
-
-
 
 namespace {
     std::vector<uint8_t> compressDxt(const sp::Image& image_data)

@@ -9,6 +9,7 @@
 //         I still need to test it throughly when compiled with gcc.)
 //
 // v1.03 - 5/12/13 - Initial public release
+
 #include "rg_etc1.h"
 
 #include <stdlib.h>
@@ -17,7 +18,17 @@
 //#include <stdio.h>
 #include <math.h>
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#pragma GCC diagnostic ignored "-Wparentheses"
+#pragma GCC diagnostic ignored "-Wunused-value"
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#endif // __GNUC__
+
+#ifdef _MSC_VER
 #pragma warning (disable: 4201) //  nonstandard extension used : nameless struct/union
+#endif
 
 #if defined(_DEBUG) || defined(DEBUG)
 #define RG_ETC1_BUILD_DEBUG
