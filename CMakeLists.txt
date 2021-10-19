@@ -315,6 +315,9 @@ set(source_files #All SeriousProton's objects to compile
 
     cmake/glDebug.inl.in
     "${glDebug_inl}"
+
+    libs/rg_etc1/rg_etc1.h
+    libs/rg_etc1/rg_etc1.cpp
 )
 
 if(NOT ANDROID)
