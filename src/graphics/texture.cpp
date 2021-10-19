@@ -90,7 +90,7 @@ void BasicTexture::bind()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 
-        if (GLAD_GL_EXT_texture_compression_s3tc)
+        if (GLAD_GL_EXT_texture_compression_s3tc && image.getSize().x > 0 && image.getSize().y > 0)
         {
 			auto compressed = compressDxt(image);
 			glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, image.getSize().x, image.getSize().y, 0, static_cast<GLsizei>(compressed.size()), compressed.data());
