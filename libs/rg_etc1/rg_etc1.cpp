@@ -24,6 +24,7 @@
 #pragma GCC diagnostic ignored "-Wparentheses"
 #pragma GCC diagnostic ignored "-Wunused-value"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif // __GNUC__
 
 #ifdef _MSC_VER
