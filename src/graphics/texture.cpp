@@ -83,7 +83,10 @@ namespace {
                 return {};
             }
 
-            status = astcenc_context_alloc(&compressor->config, std::thread::hardware_concurrency(), &compressor->context);
+            // According to https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency
+            // Make sure we account for that edge case.
+            compressor->concurrency = std::max(1u, std::thread::hardware_concurrency());
+            status = astcenc_context_alloc(&compressor->config, compressor->concurrency, &compressor->context);
             if (status != ASTCENC_SUCCESS)
             {
                 LOG(ERROR, "astcenc context creation: %s", astcenc_get_error_string(status));
@@ -129,10 +132,10 @@ namespace {
             }(channels);
 
             // Create worker pool, based on available threads.
-            std::vector<std::thread> workers(std::thread::hardware_concurrency());
+            std::vector<std::thread> workers(concurrency - 1);
 
             // Gather errors.
-            std::vector<std::atomic<astcenc_error>> errors(workers.size());
+            std::vector<std::atomic<astcenc_error>> errors(concurrency);
 
             // Worker function.
             // All the heavy synchronizing stuff is done by astcenc itself, we only set up the worker threads.
@@ -144,8 +147,13 @@ namespace {
             // Create and start workers...
             for (auto i = 0u; i < workers.size(); ++i)
             {
-                workers[i] = std::thread(worker_function, i);
+                workers[i] = std::thread(worker_function, i + 1);
             }
+
+            // This thread always acts likes the first one
+            // (covers the edge case where `hardware_concurrency()` might return 0,
+            // meaning we should probably not rely on threads.
+            worker_function(0);
 
             // ... Wait until they're all done
             for (auto& worker : workers)
@@ -182,6 +190,7 @@ namespace {
         
         astcenc_config config{};
         astcenc_context* context{};
+        uint32_t concurrency{};
     };
 
     std::vector<uint8_t> compressAstc(sp::Image& image)
