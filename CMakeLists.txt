@@ -130,7 +130,7 @@ set(glDebug_inl "${CMAKE_CURRENT_BINARY_DIR}/include/graphics/glDebug.inl")
 add_custom_command(
     OUTPUT "${glDebug_inl}"
     COMMAND ${CMAKE_COMMAND} -Dglad_h="${glad_source_dir}/glad/glad.h" -DglDebug_inl="${glDebug_inl}" -P cmake/GenerateGlDebug.cmake
-    MAIN_DEPENDENCY "${glad_h}"
+    MAIN_DEPENDENCY "${glad_source_dir}/glad/glad.h"
     DEPENDS cmake/glDebug.inl.in cmake/GenerateGlDebug.cmake
     COMMENT "Generating glDebug.inl"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
