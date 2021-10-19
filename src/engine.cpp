@@ -190,6 +190,7 @@ void Engine::runMainLoop()
             sp::io::Keybinding::allPostUpdate();
         }
         soundManager->stopMusic();
+        sp::audio::Source::stopAudioSystem();
     }
 }
 

@@ -86,6 +86,11 @@ void Source::startAudioSystem()
     }
 }
 
+void Source::stopAudioSystem()
+{
+    SDL_PauseAudioDevice(audio_device, 1);
+}
+
 void Source::onAudioCallback(int16_t* stream, int sample_count)
 {
     memset(stream, 0, sample_count * sizeof(int16_t));

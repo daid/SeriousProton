@@ -38,6 +38,7 @@ private:
     
 private:
     static void startAudioSystem();
+    static void stopAudioSystem();
     static void onAudioCallback(int16_t* stream, int sample_count);
     
     friend class ::Engine;
