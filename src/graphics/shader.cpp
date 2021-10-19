@@ -16,7 +16,7 @@ static const char* fragment_shader_header = "#version 120\n";
 #endif
 
 Shader::Shader(const string& name, const string& code, const std::vector<string>& defines, const std::unordered_map<string, int>& attribute_mapping)
-: name(name), vertex_code(vertex_shader_header), fragment_code(fragment_shader_header), attribute_mapping{attribute_mapping}
+: attribute_mapping{attribute_mapping}, name(name), vertex_code(vertex_shader_header), fragment_code(fragment_shader_header)
 {
     for(auto str : defines)
     {
