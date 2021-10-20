@@ -3,6 +3,14 @@
 
 #include <glad/glad.h>
 
+extern "C" {
+	GLAPI int SP_texture_compression_etc2;
+}
+#ifndef GL_COMPRESSED_RGBA8_ETC2_EAC
+// ETC2 support. Since we're ES2, we have to check for it at runtime.
+#define GL_COMPRESSED_RGBA8_ETC2_EAC 0x9278
+#endif
+
 namespace sp {
 	void initOpenGL();
 
