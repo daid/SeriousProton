@@ -145,6 +145,13 @@ Address Address::getLocalAddress()
 #else
     LOG(Warning, "No method to get local IP address.");
 #endif
+    addr_info.sort([](const AddrInfo& a, const AddrInfo& b)
+    {
+        if (a.family == b.family)
+            return memcmp(a.addr.data(), b.addr.data(), std::min(a.addr.size(), b.addr.size()));
+        return a.family - b.family;
+    });
+
     return Address(std::move(addr_info));
 }
 
