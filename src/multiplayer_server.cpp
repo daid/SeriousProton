@@ -608,7 +608,7 @@ void GameServer::runMasterServerUpdateThread()
     }
     int port = 80;
     int port_start = hostname.find(":");
-    string uri = hostname.substr(path_start + 1);
+    string uri = hostname.substr(path_start);
     if (port_start >= 0)
     {
         // If a port is attached to the hostname, parse it out.

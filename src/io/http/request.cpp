@@ -93,7 +93,10 @@ Request::Response Request::request(const string& method, const string& path, con
     for(auto& h : headers)
         request += h.first + ": " + h.second + "\r\n";
     if (data.length() > 0)
+    {
+        request += "Content-Type: application/x-www-form-urlencoded\r\n";
         request += "Content-Length: " + string(int(data.length())) + "\r\n";
+    }
     request += "\r\n";
 
     socket.send(request.data(), request.length());
