@@ -10,6 +10,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <variant>
 
+#include <SDL_assert.h>
+
 
 namespace sp {
 
@@ -49,11 +51,26 @@ static ImageInfo getTextureInfo(std::string_view texture)
     auto it = image_info.find(texture);
     if (it != image_info.end())
         return it->second;
+
+    P<ResourceStream> stream = getResourceStream(string(texture) + ".ktx2");
     Image image;
-    auto stream = getResourceStream(texture);
+    if (stream)
+    {
+        image = Texture::loadUASTC(stream, std::make_optional<glm::uvec2>(128u, 128u));
+        if (image.getSize().x == 0 || image.getSize().y == 0)
+        {
+            stream = nullptr;
+        }
+    }
+
     if (!stream)
-        stream = getResourceStream(string(texture) + ".png");
-    image.loadFromStream(stream);
+    {
+        stream = getResourceStream(texture);
+        if (!stream)
+            stream = getResourceStream(string(texture) + ".png");
+        image.loadFromStream(stream);
+    }
+    
     auto size = image.getSize();
     if (size.x > 128 || size.y > 128)
     {
@@ -63,6 +80,8 @@ static ImageInfo getTextureInfo(std::string_view texture)
         image_info[texture] = {gltexture, size, {0.0f, 0.0f, 1.0f, 1.0f}};
         return {gltexture, size, {0.0f, 0.0f, 1.0f, 1.0f}};
     }
+
+    SDL_assert(image.getFormat() == 0);
     Rect uv_rect = atlas_texture->add(std::move(image), 1);
     image_info[texture] = {nullptr, size, uv_rect};
     LOG(Info, "Added ", string(texture), " to atlas@", uv_rect.position, " ", uv_rect.size, "  ", atlas_texture->usageRate() * 100.0f, "%");
