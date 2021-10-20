@@ -32,10 +32,26 @@ sp::Texture* TextureManager::loadTexture(const string& name)
     sp::BasicTexture* texture = new sp::BasicTexture();
     textureMap[name] = texture;
 
+    P<ResourceStream> stream = getResourceStream(string(name) + ".ktx2");
     sp::Image image;
-    P<ResourceStream> stream = getResourceStream(name);
-    if (!stream) stream = getResourceStream(name + ".png");
-    if (!stream || !image.loadFromStream(stream))
+    if (stream)
+    {
+        image = sp::Texture::loadUASTC(stream, {});
+        if (image.getSize().x == 0 || image.getSize().y == 0)
+        {
+            stream = nullptr;
+        }
+    }
+
+    if (!stream)
+    {
+        stream = getResourceStream(name);
+        if (!stream)
+            stream = getResourceStream(string(name) + ".png");
+        image.loadFromStream(stream);
+    }
+
+    if (image.getSize().x == 0 || image.getSize().y == 0)
     {
         LOG(WARNING) << "Failed to load texture: " << name;
         sp::Image backup_image({8, 8}, {255, 0, 255, 128});
