@@ -4,12 +4,15 @@
 #include "nonCopyable.h"
 #include "graphics/image.h"
 
+#include <optional>
+
 
 namespace sp {
 
 class Texture : sp::NonCopyable
 {
 public:
+    static Image loadUASTC(const P<ResourceStream>& stream, std::optional<glm::uvec2> threshold);
     virtual void bind() = 0;
 };
 
