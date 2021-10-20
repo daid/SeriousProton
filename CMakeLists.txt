@@ -194,6 +194,9 @@ else()
     message(STATUS "Freetype 2 version used: BUNDLED")
 endif()
 
+# BASIS Universal (Supercompressed GPU Texture Codec)
+add_subdirectory(libs/basis_universal)
+
 #---------------------------------File lists-----------------------------------
 set(source_files #All SeriousProton's objects to compile
     src/audio/source.cpp
@@ -380,7 +383,7 @@ target_compile_options(seriousproton_deps
 
 target_link_libraries(seriousproton_deps
     INTERFACE 
-        box2d glad lua ${SDL2_LIBRARIES} glm::glm Threads::Threads ${FREETYPE_LIBRARIES}
+        box2d glad lua ${SDL2_LIBRARIES} glm::glm Threads::Threads ${FREETYPE_LIBRARIES} basisu-transcoder
         $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
