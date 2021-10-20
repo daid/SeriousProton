@@ -26,6 +26,8 @@ Image::Image(Image&& other) noexcept
     pixels = std::move(other.pixels);
     size = other.size;
     other.size = {0, 0};
+    format = other.format;
+    other.format = 0;
 }
 
 Image::Image(glm::ivec2 size)
@@ -40,10 +42,10 @@ Image::Image(glm::ivec2 size, glm::u8vec4 color)
     pixels.resize(size.x * size.y, color);
 }
 
-Image::Image(glm::ivec2 size, std::vector<glm::u8vec4>&& pixels)
-: size(size)
+Image::Image(glm::ivec2 size, std::vector<glm::u8vec4>&& pixels, uint32_t format)
+: size(size), format{format}
 {
-    assert(static_cast<size_t>(size.x * size.y) == pixels.size());
+    assert(static_cast<size_t>(size.x * size.y) == pixels.size() || format != 0);
     this->pixels = std::move(pixels);
 }
 
@@ -53,6 +55,8 @@ void Image::operator=(Image&& other) noexcept
     pixels = std::move(other.pixels);
     size = other.size;
     other.size = {0, 0};
+    format = other.format;
+    other.format = 0;
 }
 
 void Image::update(glm::ivec2 size, const glm::u8vec4* ptr)
