@@ -5,6 +5,10 @@
 #include "stringImproved.h"
 #include "P.h"
 
+#ifdef WIN32
+#include "dynamicLibrary.h"
+#endif
+
 
 class Engine;
 union SDL_Event;
@@ -29,6 +33,9 @@ private:
     float gameSpeed;
     
     EngineTiming last_engine_timing;
+#ifdef WIN32
+    std::unique_ptr<DynamicLibrary> exchndl;
+#endif
 public:
     Engine();
     ~Engine();

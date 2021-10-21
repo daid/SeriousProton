@@ -18,15 +18,6 @@ int DEBUG_PobjCount;
 PObject* DEBUG_PobjListStart;
 #endif
 
-#ifdef WIN32
-#include <windows.h>
-
-namespace
-{
-    HINSTANCE exchndl = nullptr;
-}
-#endif
-
 Engine* engine;
 
 Engine::Engine()
@@ -35,11 +26,11 @@ Engine::Engine()
 
 #ifdef WIN32
     // Setup crash reporter (Dr. MinGW) if available.
-    exchndl = LoadLibrary(TEXT("exchndl.dll"));
+    exchndl = DynamicLibrary::open("exchndl.dll");
 
     if (exchndl)
     {
-        auto pfnExcHndlInit = GetProcAddress(exchndl, "ExcHndlInit");
+        auto pfnExcHndlInit = exchndl->getFunction<void(*)(void)>("ExcHndlInit");
 
         if (pfnExcHndlInit)
         {
@@ -48,9 +39,7 @@ Engine::Engine()
         }
         else
         {
-            LOG(WARNING) << "Failed to initialize Crash Reporter";
-            FreeLibrary(exchndl);
-            exchndl = nullptr;
+            exchndl.reset();
         }
     } 
 #endif // WIN32
@@ -81,14 +70,6 @@ Engine::~Engine()
 {
     delete soundManager;
     soundManager = nullptr;
-
-#ifdef WIN32
-    if (exchndl)
-    {
-        FreeLibrary(exchndl);
-        exchndl = nullptr;
-    }
-#endif // WIN32
 }
 
 void Engine::registerObject(string name, P<PObject> obj)
