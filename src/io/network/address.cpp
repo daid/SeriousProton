@@ -1,6 +1,7 @@
 #include <io/network/address.h>
 #include <io/network/socketBase.h>
 #include <logging.h>
+#include <cstring>
 
 #ifdef _WIN32
 #include <winsock2.h>
