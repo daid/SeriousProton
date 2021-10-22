@@ -49,13 +49,6 @@ Window::~Window()
 
 void Window::render()
 {
-//#warning SDL2 TODO
-/*
-    if (InputHandler::keyboardIsPressed(sf::Keyboard::Return) && (sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt) || sf::Keyboard::isKeyPressed(sf::Keyboard::RAlt)))
-    {
-        setFullscreen(!isFullscreen());
-    }
-*/
     SDL_GL_MakeCurrent(static_cast<SDL_Window*>(window), gl_context);
 
     int w, h;
@@ -315,7 +308,10 @@ void Window::handleEvent(const SDL_Event& event)
             break;
         case SDLK_KP_ENTER:
         case SDLK_RETURN:
-            render_chain->onTextInput(sp::TextInputEvent::Return);
+            if (event.key.keysym.mod & KMOD_ALT)
+                setFullscreen(!isFullscreen());
+            else
+                render_chain->onTextInput(sp::TextInputEvent::Return);
             break;
         case SDLK_TAB:
         case SDLK_KP_TAB:
