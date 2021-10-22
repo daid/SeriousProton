@@ -191,19 +191,19 @@ void DirectoryResourceProvider::findResources(std::vector<string>& found_files, 
 {
 #if !defined(ANDROID)
     namespace fs = std::filesystem;
-    fs::path path{ directory.c_str() };
-    if (fs::is_directory(path))
+    fs::path root{ basepath.c_str() };
+    root /= directory.c_str();
+    if (fs::is_directory(root))
     {
         constexpr auto traversal_options{ fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied };
         std::error_code error_code{};
-        for (const auto& entry : fs::directory_iterator(path, traversal_options, error_code))
+        for (const auto& entry : fs::recursive_directory_iterator(root, traversal_options, error_code))
         {
             if (!error_code)
             {
-                if (entry.is_directory())
-                    findResources(found_files, entry.path().u8string(), searchPattern);
-                else if (searchMatch(entry.path().u8string(), searchPattern))
-                    found_files.push_back(entry.path().u8string());
+                auto relative_path = fs::relative(entry.path(), root).u8string();
+                if (!entry.is_directory() && searchMatch(relative_path, searchPattern))
+                    found_files.push_back(relative_path);
             }
         }
     }
