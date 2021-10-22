@@ -1,17 +1,10 @@
 #include "resources.h"
 
-#ifdef _MSC_VER
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#else
-#include <dirent.h>
-#endif
 #include <cstdio>
 #include <filesystem>
 #include <SDL.h>
 
 #ifdef ANDROID
-#include <SDL.h>
 #include <jni.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
@@ -194,51 +187,26 @@ std::vector<string> DirectoryResourceProvider::findResources(string searchPatter
     return found_files;
 }
 
-void DirectoryResourceProvider::findResources(std::vector<string>& found_files, const string path, const string searchPattern)
+void DirectoryResourceProvider::findResources(std::vector<string>& found_files, const string directory, const string searchPattern)
 {
-#ifdef _MSC_VER
-    WIN32_FIND_DATAA data;
-    string search_root(basepath + "/" + path);
-    if (!search_root.endswith("/"))
+#if !defined(ANDROID)
+    namespace fs = std::filesystem;
+    fs::path root{ basepath.c_str() };
+    root /= directory.c_str();
+    if (fs::is_directory(root))
     {
-        search_root += "/";
-    }
-    HANDLE handle = FindFirstFileA((search_root + "*").c_str(), &data);
-    if (handle == INVALID_HANDLE_VALUE)
-        return;
-    do
-    {
-        if (data.cFileName[0] == '.')
-            continue;
-        string name = path + string(data.cFileName);
-        if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        constexpr auto traversal_options{ fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied };
+        std::error_code error_code{};
+        for (const auto& entry : fs::recursive_directory_iterator(root, traversal_options, error_code))
         {
-            findResources(found_files, name + "/", searchPattern);
+            if (!error_code)
+            {
+                auto relative_path = fs::relative(entry.path(), root).u8string();
+                if (!entry.is_directory() && searchMatch(relative_path, searchPattern))
+                    found_files.push_back(relative_path);
+            }
         }
-        else
-        {
-            if (searchMatch(name, searchPattern))
-                found_files.push_back(name);
-        }
-    } while (FindNextFileA(handle, &data));
-
-    FindClose(handle);
-#else
-    DIR* dir = opendir((basepath + "/" + path).c_str());
-    if (!dir)
-        return;
-    
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != nullptr)
-    {
-        if (entry->d_name[0] == '.')
-            continue;
-        string name = path + string(entry->d_name);
-        if (searchMatch(name, searchPattern))
-            found_files.push_back(name);
-        findResources(found_files, path + string(entry->d_name) + "/", searchPattern);
     }
-    closedir(dir);
 #endif
 }
 
