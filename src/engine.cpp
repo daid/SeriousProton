@@ -4,8 +4,8 @@
 #include "collisionable.h"
 #include "audio/source.h"
 #include "io/keybinding.h"
-#include "input.h"
 #include "soundManager.h"
+#include "windowManager.h"
 #include "scriptInterface.h"
 #include "multiplayer_server.h"
 
@@ -59,7 +59,6 @@ Engine::Engine()
 
     initRandom();
     CollisionManager::initialize();
-    InputHandler::initialize();
     gameSpeed = 1.0f;
     running = true;
     elapsedTime = 0.0f;
@@ -116,14 +115,12 @@ void Engine::runMainLoop()
 #endif
         while(running)
         {
-            InputHandler::preEventsUpdate();
             // Handle events
             SDL_Event event;
             while (SDL_PollEvent(&event))
             {
                 handleEvent(event);
             }
-            InputHandler::postEventsUpdate();
 
 #ifdef DEBUG
             if (debug_output_timer.isExpired())
@@ -250,7 +247,6 @@ void Engine::handleEvent(SDL_Event& event)
             if (window->window && SDL_GetWindowID(static_cast<SDL_Window*>(window->window)) == window_id)
                 window->handleEvent(event);
     }
-    InputHandler::handleEvent(event);
     sp::io::Keybinding::handleEvent(event);
 }
 

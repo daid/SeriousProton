@@ -212,7 +212,6 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/shader.cpp
     src/graphics/opengl.cpp
     src/i18n.cpp
-    src/input.cpp
     src/logging.cpp
     src/multiplayer.cpp
     src/multiplayer_client.cpp
@@ -267,7 +266,6 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/shader.h
     src/graphics/opengl.h
     src/i18n.h
-    src/input.h
     src/io/keybinding.h
     src/io/dataBuffer.h
     src/io/pointer.h

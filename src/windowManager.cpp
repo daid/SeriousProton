@@ -12,7 +12,6 @@
 #include "Renderable.h"
 #include "collisionable.h"
 #include "postProcessManager.h"
-#include "input.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
