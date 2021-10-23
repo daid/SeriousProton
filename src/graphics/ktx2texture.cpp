@@ -14,7 +14,7 @@ namespace {
 	constexpr auto forced_mip = 0;
 #endif
 
-	constexpr basist::transcoder_texture_format getBestFormat(bool has_alpha)
+	basist::transcoder_texture_format getBestFormat(bool has_alpha)
 	{
 		using format_t = basist::transcoder_texture_format;
 
