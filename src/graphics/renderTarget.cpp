@@ -75,19 +75,17 @@ static ImageInfo getTextureInfo(std::string_view texture)
 
     constexpr glm::ivec2 atlas_threshold{ 128, 128 };
     KTX2Texture ktxtexture;
-    glm::ivec2 size{};
     Image image;
     if (stream)
     {
         if (ktxtexture.loadFromStream(stream))
         {
-            size = ktxtexture.getSize();
+            auto size = ktxtexture.getSize();
             if (size.x > atlas_threshold.x || size.y > atlas_threshold.y)
             {
                 auto gltexture = ktxtexture.toTexture();
                 if (gltexture)
                 {
-                    gltexture->setSmooth(true);
                     LOG(Info, "Loaded ", texture.data(), " (ktx2)");
                     image_info[texture] = { gltexture.get(), size, {0.0f, 0.0f, 1.0f, 1.0f} };
                     return { gltexture.release(), size, {0.0f, 0.0f, 1.0f, 1.0f} };
