@@ -222,7 +222,6 @@ set(source_files #All SeriousProton's objects to compile
     src/networkAudioStream.cpp
     src/networkRecorder.cpp
     src/P.cpp
-    src/PlayerController.cpp
     src/postProcessManager.cpp
     src/random.cpp
     src/Renderable.cpp
@@ -293,7 +292,6 @@ set(source_files #All SeriousProton's objects to compile
     src/networkRecorder.h
     src/nonCopyable.h
     src/P.h
-    src/PlayerController.h
     src/postProcessManager.h
     src/random.h
     src/rect.h
