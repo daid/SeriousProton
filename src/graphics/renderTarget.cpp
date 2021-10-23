@@ -4,6 +4,7 @@
 #include "windowManager.h"
 #include "engine.h"
 
+#include "graphics/ktx2texture.h"
 #include "graphics/opengl.h"
 #include "graphics/shader.h"
 #include "vectorUtils.h"
@@ -72,14 +73,44 @@ static ImageInfo getTextureInfo(std::string_view texture)
         stream = getResourceStream(string(texture) + ".ktx2");
     }
 
+    constexpr glm::ivec2 atlas_threshold{ 128, 128 };
+    KTX2Texture ktxtexture;
+    glm::ivec2 size{};
     Image image;
     if (stream)
     {
-        image = Texture::loadUASTC(stream, std::make_optional<glm::uvec2>(128u, 128u));
-        if (image.getSize().x == 0 || image.getSize().y == 0)
+        if (ktxtexture.loadFromStream(stream))
         {
-            stream = nullptr;
+            size = ktxtexture.getSize();
+            if (size.x > atlas_threshold.x || size.y > atlas_threshold.y)
+            {
+                auto gltexture = ktxtexture.toTexture();
+                if (gltexture)
+                {
+                    gltexture->setSmooth(true);
+                    LOG(Info, "Loaded ", texture.data(), " (ktx2)");
+                    image_info[texture] = { gltexture.get(), size, {0.0f, 0.0f, 1.0f, 1.0f} };
+                    return { gltexture.release(), size, {0.0f, 0.0f, 1.0f, 1.0f} };
+                }
+                else
+                {
+                    LOG(Warning, "[ktx2]: ", texture.data(), " failed to load into texture.");
+                }
+            }
+            else if (auto to_image = ktxtexture.toImage(); to_image.has_value())
+            {
+                image = std::move(to_image.value());
+            }
+            else
+                LOG(Warning, "[ktx2]: ", texture.data(), " failed to load into image.");
         }
+        else
+        {
+            LOG(Warning, "[ktx2]: ", texture.data(), " failed to read stream.");
+        }
+
+        // failed to load from the KTX2 file - fallback on image.
+        stream = nullptr;
     }
 
     if (!stream)
@@ -91,16 +122,14 @@ static ImageInfo getTextureInfo(std::string_view texture)
     }
     
     auto size = image.getSize();
-    if (size.x > 128 || size.y > 128)
+    if (size.x > atlas_threshold.x || size.y > atlas_threshold.y)
     {
         LOG(Info, "Loaded ", string(texture));
-        auto gltexture = new sp::BasicTexture();
-        gltexture->loadFromImage(std::move(image));
+        auto gltexture = new sp::BasicTexture(image);
         image_info[texture] = {gltexture, size, {0.0f, 0.0f, 1.0f, 1.0f}};
         return {gltexture, size, {0.0f, 0.0f, 1.0f, 1.0f}};
     }
 
-    SDL_assert(image.getFormat() == 0);
     Rect uv_rect = atlas_texture->add(std::move(image), 1);
     image_info[texture] = {nullptr, size, uv_rect};
     LOG(Info, "Added ", string(texture), " to atlas@", uv_rect.position, " ", uv_rect.size, "  ", atlas_texture->usageRate() * 100.0f, "%");

@@ -2,6 +2,7 @@
 #include "resources.h"
 #include "textureManager.h"
 #include "graphics/image.h"
+#include "graphics/ktx2texture.h"
 
 TextureManager textureManager;
 
@@ -29,9 +30,6 @@ sp::Texture* TextureManager::getTexture(const string& name)
 
 sp::Texture* TextureManager::loadTexture(const string& name)
 {
-    sp::BasicTexture* texture = new sp::BasicTexture();
-    textureMap[name] = texture;
-
     P<ResourceStream> stream;
     // filename variants:
     //  name
@@ -51,36 +49,45 @@ sp::Texture* TextureManager::loadTexture(const string& name)
         // No extension, or substitution failed (maybe it wasn't an extension), blindly add it.
         stream = getResourceStream(name + ".ktx2");
     }
-    sp::Image image;
+
+    std::unique_ptr<sp::BasicTexture> texture;
+    sp::KTX2Texture ktxtexture;
     if (stream)
     {
-        image = sp::Texture::loadUASTC(stream, {});
+        if (ktxtexture.loadFromStream(stream))
+        {
+            texture = ktxtexture.toTexture();
+            if (!texture)
+                LOG(Warning, "[ktx2]: ", name, " failed to load into texture.");
+        }
+        else
+            LOG(Warning, "[ktx2]: ", name, " failed to read stream.");
+    }
+
+    if (!texture)
+    {
+        sp::Image image;
+        if (!stream)
+        {
+            stream = getResourceStream(name);
+            if (!stream)
+                stream = getResourceStream(string(name) + ".png");
+            image.loadFromStream(stream);
+        }
+
         if (image.getSize().x == 0 || image.getSize().y == 0)
         {
-            stream = nullptr;
+            LOG(WARNING) << "Failed to load texture: " << name;
+            image = sp::Image({ 8, 8 }, { 255, 0, 255, 128 });
         }
-    }
 
-    if (!stream)
-    {
-        stream = getResourceStream(name);
-        if (!stream)
-            stream = getResourceStream(string(name) + ".png");
-        image.loadFromStream(stream);
+        texture = std::make_unique<sp::BasicTexture>(image);
     }
-
-    if (image.getSize().x == 0 || image.getSize().y == 0)
-    {
-        LOG(WARNING) << "Failed to load texture: " << name;
-        sp::Image backup_image({8, 8}, {255, 0, 255, 128});
-        texture->loadFromImage(std::move(backup_image));
-        return texture;
-    }
-
+    
     texture->setRepeated(defaultRepeated);
     texture->setSmooth(defaultSmooth);
-    
-    texture->loadFromImage(std::move(image));
+
+    textureMap[name] = texture.get();
     LOG(INFO) << "Loaded: " << name;
-    return texture;
+    return texture.release();
 }

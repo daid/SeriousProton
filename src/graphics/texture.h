@@ -4,33 +4,38 @@
 #include "nonCopyable.h"
 #include "graphics/image.h"
 
-#include <optional>
-
-
 namespace sp {
 
-class Texture : sp::NonCopyable
+class Texture
 {
 public:
-    static Image loadUASTC(const P<ResourceStream>& stream, std::optional<glm::uvec2> threshold);
-    static size_t compressedSize(const Image& image);
+    Texture();
+    Texture(const Texture&) = delete;
+    Texture& operator=(const Texture&) = delete;
+    virtual ~Texture();
     virtual void bind() = 0;
 };
 
-class BasicTexture : public Texture
+class BasicTexture final : public Texture
 {
 public:
+    explicit BasicTexture(const Image& image);
+    BasicTexture(const glm::uvec2& size, const std::vector<uint8_t>& pixels, uint32_t native_format);
+    ~BasicTexture() override;
+    BasicTexture(BasicTexture&&);
+    BasicTexture& operator =(BasicTexture&&);
+
     void setRepeated(bool);
     void setSmooth(bool);
-    
-    void loadFromImage(Image&& image);
 
     virtual void bind() override;
 
+    uint32_t getNativeHandle() const { return handle; }
 private:
-    bool smooth = false;
-    unsigned int handle = 0;
-    sp::Image image;
+    BasicTexture(const glm::uvec2& size, uint32_t native_format, const void* pixels, size_t byte_count);
+    void setSmoothBindless(bool);
+    void setRepeatedBindless(bool);
+    uint32_t handle = 0;  
 };
 
 }

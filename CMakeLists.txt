@@ -209,6 +209,7 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/font.cpp
     src/graphics/freetypefont.cpp
     src/graphics/image.cpp
+    src/graphics/ktx2texture.cpp
     src/graphics/renderTarget.cpp
     src/graphics/texture.cpp
     src/graphics/textureAtlas.cpp
@@ -265,6 +266,7 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/font.h
     src/graphics/freetypefont.h
     src/graphics/image.h
+    src/graphics/ktx2texture.h
     src/graphics/renderTarget.h
     src/graphics/texture.h
     src/graphics/textureAtlas.h

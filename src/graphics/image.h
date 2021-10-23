@@ -16,7 +16,7 @@ public:
     Image(Image&& other) noexcept;
     Image(glm::ivec2 size);
     Image(glm::ivec2 size, glm::u8vec4 color);
-    Image(glm::ivec2 size, std::vector<glm::u8vec4>&& pixels, uint32_t format = 0, glm::uvec2 texsize = {});
+    Image(glm::ivec2 size, std::vector<glm::u8vec4>&& pixels);
     
     void operator=(Image&& other) noexcept;
     Image(const Image&) = delete;
@@ -25,17 +25,13 @@ public:
     void update(glm::ivec2 size, const glm::u8vec4* ptr);
     void update(glm::ivec2 size, const glm::u8vec4* ptr, int pitch);
     bool loadFromStream(P<ResourceStream> stream);
-    
-    glm::ivec2 getSize() const { return size; }
-    const glm::u8vec4* getPtr() const { return &pixels[0]; }
-    glm::u8vec4* getPtr() { return &pixels[0]; }
-    uint32_t getFormat() const { return format;  }
-    
-    glm::vec2 tex_size{};
+
+    const glm::ivec2& getSize() const { return size; }
+    const glm::u8vec4* getPtr() const { return pixels.data(); }
+    glm::u8vec4* getPtr() { return pixels.data(); }
 private:
     std::vector<glm::u8vec4> pixels;
     glm::ivec2 size;
-    uint32_t format{};
 };
 
 }//namespace sp
