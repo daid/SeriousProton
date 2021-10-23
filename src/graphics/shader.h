@@ -11,8 +11,11 @@ namespace sp {
 class Shader : sp::NonCopyable
 {
 public:
-    Shader(string name, string code, const std::vector<string>& defines={});
-    Shader(string name, P<ResourceStream> code_stream, const std::vector<string>& defines={});
+    Shader(const string& name, const string& code, const std::vector<string>& defines = {}, const std::unordered_map<string, int>& attribute_mapping = {});
+    Shader(const string& name, P<ResourceStream> code_stream, const std::vector<string>& defines = {}, const std::unordered_map<string, int>& attribute_mapping = {});
+
+    Shader(const string& name, const string& code, const std::unordered_map<string, int>& attribute_mapping);
+    Shader(const string& name, P<ResourceStream> code_stream, const std::unordered_map<string, int>& attribute_mapping);
 
     void bind();
     int getUniformLocation(const string& name);
