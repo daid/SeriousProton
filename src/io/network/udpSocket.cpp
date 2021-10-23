@@ -111,10 +111,10 @@ bool UdpSocket::joinMulticast(int group_nr)
     {
         for(const auto& addr_info : Address::getLocalAddress().addr_info)
         {
-            if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.length() == sizeof(struct sockaddr_in))
+            if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.size() == sizeof(struct sockaddr_in))
             {
                 struct sockaddr_in server_addr;
-                memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+                memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
                 
                 struct ip_mreq mreq;
                 mreq.imr_multiaddr.s_addr = htonl((239 << 24) | (192 << 16) | (group_nr));
@@ -166,9 +166,9 @@ bool UdpSocket::send(const void* data, size_t size, const Address& address, int 
         memset(&server_addr, 0, sizeof(server_addr));
         for(auto& addr_info : address.addr_info)
         {
-            if (addr_info.family == AF_INET6 && addr_info.addr.length() == sizeof(server_addr))
+            if (addr_info.family == AF_INET6 && addr_info.addr.size() == sizeof(server_addr))
             {
-                memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+                memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
                 is_set = true;
                 break;
             }
@@ -189,9 +189,9 @@ bool UdpSocket::send(const void* data, size_t size, const Address& address, int 
     memset(&server_addr, 0, sizeof(server_addr));
     for(auto& addr_info : address.addr_info)
     {
-        if (addr_info.family == AF_INET && addr_info.addr.length() == sizeof(server_addr))
+        if (addr_info.family == AF_INET && addr_info.addr.size() == sizeof(server_addr))
         {
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             is_set = true;
             break;
         }
@@ -287,10 +287,10 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
     bool success = false;
     for(const auto& addr_info : Address::getLocalAddress().addr_info)
     {
-        if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.length() == sizeof(struct sockaddr_in))
+        if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.size() == sizeof(struct sockaddr_in))
         {
             struct sockaddr_in server_addr;
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             
             ::setsockopt(handle, IPPROTO_IP, IP_MULTICAST_IF, reinterpret_cast<const char*>(&server_addr.sin_addr), sizeof(server_addr.sin_addr));
 
@@ -304,10 +304,10 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
             if (result == int(size))
                 success = true;
         }
-        if (addr_info.family == AF_INET6 && socket_is_ipv6 && addr_info.addr.length() == sizeof(struct sockaddr_in6))
+        if (addr_info.family == AF_INET6 && socket_is_ipv6 && addr_info.addr.size() == sizeof(struct sockaddr_in6))
         {
             struct sockaddr_in6 server_addr;
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             
             ::setsockopt(handle, IPPROTO_IPV6, IPV6_MULTICAST_IF, reinterpret_cast<const char*>(&server_addr.sin6_addr), sizeof(server_addr.sin6_addr));
 

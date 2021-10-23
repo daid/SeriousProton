@@ -188,11 +188,11 @@ bool TcpSocket::connect(const Address& host, int port)
         handle = ::socket(addr_info.family, SOCK_STREAM, 0);
         if (handle == INVALID_SOCKET)
             return false;
-        if (addr_info.family == AF_INET && sizeof(struct sockaddr_in) == addr_info.addr.length())
+        if (addr_info.family == AF_INET && sizeof(struct sockaddr_in) == addr_info.addr.size())
         {
             struct sockaddr_in server_addr;
             memset(&server_addr, 0, sizeof(server_addr));
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             server_addr.sin_port = htons(port);
             if (::connect(handle, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr)) == 0)
             {
@@ -200,11 +200,11 @@ bool TcpSocket::connect(const Address& host, int port)
                 return true;
             }
         }
-        if (addr_info.family == AF_INET6 && sizeof(struct sockaddr_in6) == addr_info.addr.length())
+        if (addr_info.family == AF_INET6 && sizeof(struct sockaddr_in6) == addr_info.addr.size())
         {
             struct sockaddr_in6 server_addr;
             memset(&server_addr, 0, sizeof(server_addr));
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             server_addr.sin6_port = htons(port);
             if (::connect(handle, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr)) == 0)
             {
