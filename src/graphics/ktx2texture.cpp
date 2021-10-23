@@ -14,14 +14,7 @@ namespace {
 	constexpr auto forced_mip = 0;
 #endif
 
-	// one block per 4x4(=16) pixels.
-	constexpr uint32_t pixels_per_block = 4 * 4;
-	constexpr uint32_t getBlockCount(const glm::uvec2& size)
-	{
-		return (size.x * size.y + pixels_per_block - 1) / pixels_per_block;
-	}
-
-	constexpr basist::transcoder_texture_format uastcLoadFormat(bool has_alpha)
+	constexpr basist::transcoder_texture_format getBestFormat(bool has_alpha)
 	{
 		using format_t = basist::transcoder_texture_format;
 
@@ -194,7 +187,7 @@ namespace sp {
 		if (!details)
 			return {};
 
-		auto target_format = uastcLoadFormat(details->getInfo().m_alpha_flag);
+		auto target_format = getBestFormat(details->getInfo().m_alpha_flag);
 		if (basist::basis_transcoder_format_is_uncompressed(target_format))
 		{
 			if (auto image = toImage(); image.has_value())
@@ -214,7 +207,7 @@ namespace sp {
 		if (!details)
 			return {};
 
-		return details->transcode<uint8_t>(uastcLoadFormat(details->getInfo().m_alpha_flag));
+		return details->transcode<uint8_t>(getBestFormat(details->getInfo().m_alpha_flag));
 	}
 
 	glm::ivec2 KTX2Texture::getSize() const
@@ -224,7 +217,7 @@ namespace sp {
 
 	uint32_t KTX2Texture::getNativeFormat() const
 	{
-		return details ? basistFormatCast(uastcLoadFormat(details->getInfo().m_alpha_flag)) : GL_NONE;
+		return details ? basistFormatCast(getBestFormat(details->getInfo().m_alpha_flag)) : GL_NONE;
 	}
 
 	KTX2Texture::KTX2Texture() = default;
