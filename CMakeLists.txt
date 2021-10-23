@@ -216,7 +216,6 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/shader.cpp
     src/graphics/opengl.cpp
     src/i18n.cpp
-    src/input.cpp
     src/logging.cpp
     src/multiplayer.cpp
     src/multiplayer_client.cpp
@@ -226,7 +225,6 @@ set(source_files #All SeriousProton's objects to compile
     src/networkAudioStream.cpp
     src/networkRecorder.cpp
     src/P.cpp
-    src/PlayerController.cpp
     src/postProcessManager.cpp
     src/random.cpp
     src/Renderable.cpp
@@ -273,7 +271,6 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/shader.h
     src/graphics/opengl.h
     src/i18n.h
-    src/input.h
     src/io/keybinding.h
     src/io/dataBuffer.h
     src/io/pointer.h
@@ -298,7 +295,6 @@ set(source_files #All SeriousProton's objects to compile
     src/networkRecorder.h
     src/nonCopyable.h
     src/P.h
-    src/PlayerController.h
     src/postProcessManager.h
     src/random.h
     src/rect.h

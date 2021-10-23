@@ -15,9 +15,8 @@ static const char* vertex_shader_header = "#version 120\n";
 static const char* fragment_shader_header = "#version 120\n";
 #endif
 
-
-Shader::Shader(string name, string code, const std::vector<string>& defines)
-: name(name), vertex_code(vertex_shader_header), fragment_code(fragment_shader_header)
+Shader::Shader(const string& name, const string& code, const std::vector<string>& defines, const std::unordered_map<string, int>& attribute_mapping)
+: attribute_mapping{attribute_mapping}, name(name), vertex_code(vertex_shader_header), fragment_code(fragment_shader_header)
 {
     for(auto str : defines)
     {
@@ -45,10 +44,18 @@ Shader::Shader(string name, string code, const std::vector<string>& defines)
     }
 }
 
-Shader::Shader(string name, P<ResourceStream> code_stream, const std::vector<string>& defines)
-: Shader(name, code_stream->readAll(), defines)
+Shader::Shader(const string& name, P<ResourceStream> code_stream, const std::vector<string>& defines, const std::unordered_map<string, int>& attribute_mapping)
+: Shader(name, code_stream->readAll(), defines, attribute_mapping)
 {
 }
+
+Shader::Shader(const string& name, const string& code, const std::unordered_map<string, int>& attribute_mapping)
+    :Shader(name, code, {}, attribute_mapping)
+{}
+
+Shader::Shader(const string& name, P<ResourceStream> code_stream, const std::unordered_map<string, int>& attribute_mapping)
+    :Shader(name, code_stream, {}, attribute_mapping)
+{}
 
 static unsigned int compileShader(const string& name, const char* code, int type)
 {
@@ -84,6 +91,13 @@ bool Shader::compileShader()
         return false;
     }
     program = glCreateProgram();
+
+    // Remap attribute locations if they're already set (has to be done early)
+    for (const auto& [name, position] : attribute_mapping)
+    {
+        glBindAttribLocation(program, position, name.data());
+    }
+
     glAttachShader(program, vertex_shader_handle);
     glAttachShader(program, fragment_shader_handle);
     glLinkProgram(program);

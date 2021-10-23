@@ -5,7 +5,6 @@
 #include "multiplayer.h"
 #include "multiplayer_client.h"
 #include "multiplayer_internal.h"
-#include "input.h"
 #include "logging.h"
 
 #include <SDL.h>
