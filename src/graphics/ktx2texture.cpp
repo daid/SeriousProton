@@ -2,7 +2,15 @@
 
 #include <array>
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif//__GNUC__
 #include <transcoder/basisu_transcoder.h>
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif//__GNUC__
 
 #include "graphics/opengl.h"
 #include "graphics/texture.h"
