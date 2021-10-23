@@ -136,15 +136,6 @@ void Engine::runMainLoop()
             if (delta < 0.001f)
                 delta = 0.001f;
             delta *= gameSpeed;
-#ifdef DEBUG
-/*
-#warning TODO SDL2
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tab))
-                delta /= 5.f;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tilde))
-                delta *= 5.f;
-*/
-#endif
             EngineTiming engine_timing;
             
             sp::SystemStopwatch engine_timing_stopwatch;

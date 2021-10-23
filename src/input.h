@@ -21,8 +21,6 @@ private:
 class InputHandler
 {
 public:
-    static bool touch_screen;
-
     static PVector<JoystickEventHandler> joystick_event_handlers;
 
     static glm::vec2    getJoysticXYPos() { return glm::vec2(joystick_axis_pos[0][0], joystick_axis_pos[0][1]); }

@@ -1,7 +1,6 @@
 #include "input.h"
 #include "engine.h"
 
-bool InputHandler::touch_screen = false;
 PVector<JoystickEventHandler> InputHandler::joystick_event_handlers;
 
 //#warning TODO SDL2 this no longer works, SDLK_Keycode will be out of range. Port SP2 keybindings.
@@ -22,9 +21,6 @@ JoystickEventHandler::~JoystickEventHandler()
 void InputHandler::initialize()
 {
     memset(joystick_axis_pos, 0, sizeof(joystick_axis_pos));
-#ifdef __ANDROID__
-    touch_screen = true;
-#endif
 }
 
 void InputHandler::preEventsUpdate()

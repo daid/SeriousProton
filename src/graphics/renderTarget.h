@@ -37,7 +37,7 @@ public:
     void drawPoint(glm::vec2 position, glm::u8vec4 color);
     void drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color);
     void drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color);
-    void drawTiled(const sp::Rect& rect, std::string_view texture);    //TODO this draws pixel perfect texture size, unlike all other functions.
+    void drawTiled(const sp::Rect& rect, std::string_view texture);
     void drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color);
     void drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color);
     void fillCircle(glm::vec2 center, float radius, glm::u8vec4 color);
