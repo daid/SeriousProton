@@ -7,6 +7,12 @@
 #include <transcoder/basisu_transcoder.h>
 
 namespace {
+#if defined(ANDROID)
+	constexpr auto forced_mip = 2;
+#else
+	constexpr auto forced_mip = 0;
+#endif
+
 	// one block per 4x4(=16) pixels.
 	constexpr uint32_t pixels_per_block = 4 * 4;
 	constexpr uint32_t getBlockCount(const glm::uvec2& size)
@@ -148,27 +154,39 @@ namespace sp {
 		{
 			if (transcoder.start_transcoding())
 			{
-				const glm::uvec2 source_size{ transcoder.get_width(), transcoder.get_height() };
-				const auto format = uastcLoadFormat(source_size, transcoder.get_has_alpha(), threshold);
-				
-				std::vector<glm::u8vec4> pixels;
-				if (basist::basis_transcoder_format_is_uncompressed(format))
-					pixels.resize(transcoder.get_width() * transcoder.get_height());
-				else
+				if (basist::ktx2_image_level_info info; transcoder.get_image_level_info(info, forced_mip, 0, 0))
 				{
-					auto block_size = basist::basis_get_bytes_per_block_or_pixel(format);
-					
-					// each item in the pixels array is 4B.
-					pixels.resize(getBlockCount(source_size) * bytesPerBlock(basistFormatCast(format)) / 4);
-				}
+					const auto format = uastcLoadFormat({ info.m_orig_width , info.m_orig_height }, info.m_alpha_flag, threshold);
 
-				
-				if (transcoder.transcode_image_level(0, 0, 0, pixels.data(), static_cast<uint32_t>(pixels.size() * 4), format))
-					return Image(glm::ivec2{ static_cast<int32_t>(transcoder.get_width()), static_cast<int32_t>(transcoder.get_height()) }, std::move(pixels), basistFormatCast(format));
+					std::vector<glm::u8vec4> pixels;
+					if (basist::basis_transcoder_format_is_uncompressed(format))
+						pixels.resize(info.m_orig_width * info.m_orig_height);
+					else
+					{
+						auto block_size = basist::basis_get_bytes_per_block_or_pixel(format);
+
+						// each item in the pixels array is 4B.
+						pixels.resize(info.m_total_blocks * bytesPerBlock(basistFormatCast(format)) / 4);
+					}
+
+					if (transcoder.transcode_image_level(forced_mip, 0, 0, pixels.data(), static_cast<uint32_t>(pixels.size() * 4), format))
+					{
+						glm::ivec2 dims{ static_cast<int32_t>(info.m_orig_width), static_cast<int32_t>(info.m_orig_height) };
+						auto gl_format = basistFormatCast(format);
+						return Image(dims, std::move(pixels), gl_format, { info.m_width, info.m_height });
+					}
+				}
 			}
 		}
 
 		return {};
+	}
+
+	size_t Texture::compressedSize(const Image& image)
+	{
+		if (image.getFormat() == 0) // not compressed
+			return 0;
+		return getBlockCount(image.getSize()) * bytesPerBlock(image.getFormat());
 	}
 
 void BasicTexture::setRepeated(bool)
@@ -199,8 +217,11 @@ void BasicTexture::bind()
 
 		if (image.getFormat() != 0)
 		{
-			const auto compressed_size = getBlockCount(image.getSize()) * bytesPerBlock(image.getFormat());
-			glCompressedTexImage2D(GL_TEXTURE_2D, 0, image.getFormat(), image.getSize().x, image.getSize().y, 0, static_cast<GLsizei>(compressed_size), image.getPtr());
+			const auto compressed_size = getBlockCount(image.tex_size) * bytesPerBlock(image.getFormat());
+			SDL_assert_always(compressed_size > 0);
+			SDL_assert_always(image.tex_size.x > 0);
+			SDL_assert_always(image.tex_size.y > 0);
+			glCompressedTexImage2D(GL_TEXTURE_2D, 0, image.getFormat(), static_cast<GLsizei>(image.tex_size.x), static_cast<GLsizei>(image.tex_size.y), 0, static_cast<GLsizei>(compressed_size), image.getPtr());
 		}
 		else
 		{

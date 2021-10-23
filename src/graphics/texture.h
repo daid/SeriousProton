@@ -13,6 +13,7 @@ class Texture : sp::NonCopyable
 {
 public:
     static Image loadUASTC(const P<ResourceStream>& stream, std::optional<glm::uvec2> threshold);
+    static size_t compressedSize(const Image& image);
     virtual void bind() = 0;
 };
 

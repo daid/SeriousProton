@@ -32,7 +32,25 @@ sp::Texture* TextureManager::loadTexture(const string& name)
     sp::BasicTexture* texture = new sp::BasicTexture();
     textureMap[name] = texture;
 
-    P<ResourceStream> stream = getResourceStream(string(name) + ".ktx2");
+    P<ResourceStream> stream;
+    // filename variants:
+    //  name
+    //  name.notanextension
+    //  name.ext
+    //  name.notanext.ext
+    // Attempt to load the best version.
+    auto last_dot = name.find_last_of('.');
+    if (last_dot != std::string::npos)
+    {
+        // Extension found, try and substitute it.
+        stream = getResourceStream(name.substr(0, static_cast<uint32_t>(last_dot)) + ".ktx2");
+    }
+
+    if (!stream)
+    {
+        // No extension, or substitution failed (maybe it wasn't an extension), blindly add it.
+        stream = getResourceStream(name + ".ktx2");
+    }
     sp::Image image;
     if (stream)
     {

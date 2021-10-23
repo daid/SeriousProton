@@ -17,9 +17,7 @@
 
 namespace sp {
 
-Image::Image()
-{
-}
+Image::Image() = default;
 
 Image::Image(Image&& other) noexcept
 {
@@ -28,6 +26,8 @@ Image::Image(Image&& other) noexcept
     other.size = {0, 0};
     format = other.format;
     other.format = 0;
+    tex_size = other.tex_size;
+    other.tex_size = {};
 }
 
 Image::Image(glm::ivec2 size)
@@ -42,11 +42,11 @@ Image::Image(glm::ivec2 size, glm::u8vec4 color)
     pixels.resize(size.x * size.y, color);
 }
 
-Image::Image(glm::ivec2 size, std::vector<glm::u8vec4>&& pixels, uint32_t format)
-: size(size), format{format}
+Image::Image(glm::ivec2 size_in, std::vector<glm::u8vec4>&& pixels_in, uint32_t format_in, glm::uvec2 texsize_in)
+    : tex_size{ texsize_in }, size(size_in), format{ format_in }
 {
-    assert(static_cast<size_t>(size.x * size.y) == pixels.size() || format != 0);
-    this->pixels = std::move(pixels);
+    assert(static_cast<size_t>(size.x * size.y) == pixels_in.size() || format != 0);
+    this->pixels = std::move(pixels_in);
 }
 
 void Image::operator=(Image&& other) noexcept
@@ -57,6 +57,8 @@ void Image::operator=(Image&& other) noexcept
     other.size = {0, 0};
     format = other.format;
     other.format = 0;
+    tex_size = other.tex_size;
+    other.tex_size = {};
 }
 
 void Image::update(glm::ivec2 size, const glm::u8vec4* ptr)

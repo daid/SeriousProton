@@ -52,7 +52,26 @@ static ImageInfo getTextureInfo(std::string_view texture)
     if (it != image_info.end())
         return it->second;
 
-    P<ResourceStream> stream = getResourceStream(string(texture) + ".ktx2");
+    P<ResourceStream> stream;
+    // filename variants:
+    //  name
+    //  name.notanextension
+    //  name.ext
+    //  name.notanext.ext
+    // Attempt to load the best version.
+    auto last_dot = texture.find_last_of('.');
+    if (last_dot != std::string::npos)
+    {
+        // Extension found, try and substitute it.
+        stream = getResourceStream(string(texture.substr(0, static_cast<uint32_t>(last_dot))) + ".ktx2");
+    }
+
+    if (!stream)
+    {
+        // No extension, or substitution failed (maybe it wasn't an extension), blindly add it.
+        stream = getResourceStream(string(texture) + ".ktx2");
+    }
+
     Image image;
     if (stream)
     {
