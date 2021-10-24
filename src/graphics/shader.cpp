@@ -136,7 +136,7 @@ void Shader::bind()
 
 int Shader::getUniformLocation(const string& name)
 {
-    assert(current_shader == this);
+    SDL_assert(current_shader == this);
     auto it = uniform_mapping.find(name);
     if (it != uniform_mapping.end())
         return it->second;
@@ -150,7 +150,7 @@ int Shader::getUniformLocation(const string& name)
 
 int Shader::getAttributeLocation(const string& name)
 {
-    assert(current_shader == this);
+    SDL_assert(current_shader == this);
     auto it = attribute_mapping.find(name);
     if (it != attribute_mapping.end())
         return it->second;

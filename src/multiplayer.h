@@ -167,8 +167,8 @@ public:
 #endif
     template <typename T> void registerMemberReplication_(F_PARAM T* member, float update_delay = 0.0f)
     {
-        assert(!replicated);
-        assert(memberReplicationInfo.size() < 0xFFFF);
+        SDL_assert(!replicated);
+        SDL_assert(memberReplicationInfo.size() < 0xFFFF);
         MemberReplicationInfo info;
 #ifdef DEBUG
         info.name = name;
@@ -200,8 +200,8 @@ public:
 
     template <typename T> void registerMemberReplication_(F_PARAM std::vector<T>* member, float update_delay = 0.0f)
     {
-        assert(!replicated);
-        assert(memberReplicationInfo.size() < 0xFFFF);
+        SDL_assert(!replicated);
+        SDL_assert(memberReplicationInfo.size() < 0xFFFF);
         MemberReplicationInfo info;
 #ifdef DEBUG
         info.name = name;

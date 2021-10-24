@@ -1,7 +1,7 @@
 #include "graphics/image.h"
-#include <cassert>
+#include <SDL_assert.h>
 
-#define STBI_ASSERT(x) assert(x)
+#define STBI_ASSERT(x) SDL_assert(x)
 #define STB_IMAGE_IMPLEMENTATION
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
@@ -43,7 +43,7 @@ Image::Image(glm::ivec2 size, glm::u8vec4 color)
 Image::Image(glm::ivec2 size, std::vector<glm::u8vec4>&& pixels)
 : size(size)
 {
-    assert(static_cast<size_t>(size.x * size.y) == pixels.size());
+    SDL_assert(static_cast<size_t>(size.x * size.y) == pixels.size());
     this->pixels = std::move(pixels);
 }
 

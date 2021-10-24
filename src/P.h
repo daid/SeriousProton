@@ -2,7 +2,7 @@
 #define PEE_POINTER_H
 
 #include <vector>
-#include <assert.h>
+#include <SDL_assert.h>
 
 #include "nonCopyable.h"
 #include "logging.h"
@@ -102,8 +102,8 @@ public:
         {
             LOG(ERROR) << "Oh noes! Better find me and put a breakpoint here!";
         }
-        assert(ptr);
-        assert(!ptr->_destroyed_flag);
+        SDL_assert(ptr);
+        SDL_assert(!ptr->_destroyed_flag);
 #endif
         return ptr;
     }

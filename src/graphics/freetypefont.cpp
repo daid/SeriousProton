@@ -180,7 +180,7 @@ Image FreetypeFont::drawGlyph(int char_code, int pixel_size)
             image_pixels.resize(bitmap.width * bitmap.rows, {255,255,255,255});
             if (bitmap.pixel_mode == FT_PIXEL_MODE_MONO)
             {
-                assert(false); //TODO
+                SDL_assert(false); //TODO
             }
             else
             {

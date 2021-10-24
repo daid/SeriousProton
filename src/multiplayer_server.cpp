@@ -21,8 +21,8 @@ P<GameServer> game_server;
 GameServer::GameServer(string server_name, int version_number, int listen_port)
 : server_name(server_name), listen_port(listen_port), version_number(version_number)
 {
-    assert(!game_server);
-    assert(!game_client);
+    SDL_assert(!game_server);
+    SDL_assert(!game_client);
     game_server = this;
     lastGameSpeed = engine->getGameSpeed();
     sendDataRate = 0.0f;
