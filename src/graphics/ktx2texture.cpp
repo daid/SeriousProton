@@ -22,33 +22,44 @@ namespace {
 	constexpr auto forced_mip = 0;
 #endif
 
-	basist::transcoder_texture_format getBestFormat(bool has_alpha)
+	basist::transcoder_texture_format getBestFormat(bool has_alpha, basist::basis_tex_format tex_format = basist::basis_tex_format::cUASTC4x4)
 	{
 		using format_t = basist::transcoder_texture_format;
-
 		// Use GPU capabilities, in order of preference.
 		// ASTC
-		if (GLAD_GL_KHR_texture_compression_astc_ldr)
+		if (GLAD_GL_KHR_texture_compression_astc_ldr && basist::basis_is_format_supported(format_t::cTFASTC_4x4_RGBA, tex_format))
 			return format_t::cTFASTC_4x4_RGBA; // No RGB variant.
 
 		// ETC2
-		if (SP_texture_compression_etc2)
+		if (SP_texture_compression_etc2 && basist::basis_is_format_supported(format_t::cTFETC2_RGBA, tex_format))
 			return format_t::cTFETC2_RGBA;
 
 		// PVRTC2
 		if (GLAD_GL_IMG_texture_compression_pvrtc2)
-			return has_alpha ? format_t::cTFPVRTC2_4_RGBA : format_t::cTFPVRTC2_4_RGB;
+		{
+			auto target_format = has_alpha ? format_t::cTFPVRTC2_4_RGBA : format_t::cTFPVRTC2_4_RGB;
+			if (basist::basis_is_format_supported(target_format, tex_format))
+				return target_format;
+		} 
 
 		// PVRTC1
 		if (GLAD_GL_IMG_texture_compression_pvrtc)
-			return has_alpha ? format_t::cTFPVRTC1_4_RGBA : format_t::cTFPVRTC1_4_RGB;
+		{
+			auto target_format = has_alpha ? format_t::cTFPVRTC1_4_RGBA : format_t::cTFPVRTC1_4_RGB;
+			if (basist::basis_is_format_supported(target_format, tex_format))
+				return target_format;
+		}
 
 		// S3TC/DXT.
 		if (GLAD_GL_EXT_texture_compression_s3tc)
-			return has_alpha ? format_t::cTFBC3_RGBA : format_t::cTFBC1_RGB;
+		{
+			auto target_format = has_alpha ? format_t::cTFBC3_RGBA : format_t::cTFBC1_RGB;
+			if (basist::basis_is_format_supported(target_format, tex_format))
+				return target_format;
+		}
 
 		// ETC1.
-		if (GLAD_GL_OES_compressed_ETC1_RGB8_texture && !has_alpha)
+		if (GLAD_GL_OES_compressed_ETC1_RGB8_texture && !has_alpha && basist::basis_is_format_supported(format_t::cTFETC1_RGB, tex_format))
 			return format_t::cTFETC1_RGB;
 
 		return format_t::cTFRGBA32;
