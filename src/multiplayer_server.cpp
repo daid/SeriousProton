@@ -581,6 +581,7 @@ void GameServer::sendAll(sp::io::DataBuffer& packet)
 
 void GameServer::registerOnMasterServer(string master_url)
 {
+    stopMasterServerRegistry();
     this->master_server_url = master_url;
     master_server_update_thread = std::move(std::thread(&GameServer::runMasterServerUpdateThread, this));
 }
@@ -594,6 +595,7 @@ void GameServer::stopMasterServerRegistry()
 
 void GameServer::runMasterServerUpdateThread()
 {
+    master_server_state = MasterServerState::Disabled;
     if (!master_server_url.startswith("http://"))
     {
         LOG(ERROR) << "Master server URL " << master_server_url << " does not start with \"http://\"";
@@ -621,6 +623,7 @@ void GameServer::runMasterServerUpdateThread()
     
     LOG(INFO) << "Registering at master server " << master_server_url;
     
+    master_server_state = MasterServerState::Registering;
     sp::io::http::Request http(hostname, port);
     while(!isDestroyed() && master_server_url != "")
     {
@@ -628,14 +631,20 @@ void GameServer::runMasterServerUpdateThread()
         if (response.status != 200)
         {
             LOG(WARNING) << "Failed to register at master server " << master_server_url << " (status " << response.status << ")";
+            master_server_state = MasterServerState::FailedToReachMasterServer;
         }else if (response.body != "OK")
         {
             LOG(WARNING) << "Master server " << master_server_url << " reports error on registering: " << response.body;
+            master_server_state = MasterServerState::FailedPortForwarding;
+        }else
+        {
+            master_server_state = MasterServerState::Success;
         }
         
         for(int n=0;n<60 && !isDestroyed() && master_server_url != "";n++)
             std::this_thread::sleep_for(std::chrono::duration<float>(1.f));
     }
+    master_server_state = MasterServerState::Disabled;
 }
 
 void GameServer::startAudio(int32_t client_id, int32_t target_identifier)
