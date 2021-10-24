@@ -30,7 +30,7 @@ private:
     
         int family; //One of the AF_* macros, currently only AF_INET or AF_INET6
         string human_readable;
-        std::string addr;    //We abuse the std::string as a data buffer, it allows for easy memory management.
+        std::vector<uint8_t> addr;
     };
 
     Address(std::list<AddrInfo>&& addr_info);

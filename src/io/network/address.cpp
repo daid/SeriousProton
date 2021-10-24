@@ -149,15 +149,15 @@ Address Address::getLocalAddress()
     addr_info.sort([](const AddrInfo& a, const AddrInfo& b)
     {
         if (a.family == b.family)
-            return memcmp(a.addr.data(), b.addr.data(), std::min(a.addr.size(), b.addr.size()));
-        return a.family - b.family;
+            return memcmp(a.addr.data(), b.addr.data(), std::min(a.addr.size(), b.addr.size())) <= 0;
+        return (a.family - b.family) <= 0;
     });
 
     return Address(std::move(addr_info));
 }
 
 Address::AddrInfo::AddrInfo(int family, const string& human_readable, const void* addr, size_t addrlen)
-: family(family), human_readable(human_readable), addr(static_cast<const char*>(addr), addrlen)
+: family(family), human_readable(human_readable), addr(static_cast<const uint8_t *>(addr), static_cast<const uint8_t*>(addr) + addrlen)
 {
 }
 
