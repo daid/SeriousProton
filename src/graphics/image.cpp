@@ -17,7 +17,9 @@
 
 namespace sp {
 
-Image::Image() = default;
+Image::Image()
+    :size{ 0, 0 }
+{}
 
 Image::Image(Image&& other) noexcept
     :pixels{std::move(other.pixels)}, size{std::move(other.size)}
