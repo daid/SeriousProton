@@ -1,6 +1,6 @@
 #include <io/keybinding.h>
 #include <logging.h>
-#include <cassert>
+#include <SDL_assert.h>
 #include <engine.h>
 #include <json11/json11.hpp>
 #include <fstream>
@@ -23,7 +23,7 @@ Keybinding::Keybinding(const string& name)
     up_event = false;
 
     for(auto other = keybindings; other; other = other->next)
-        assert(other->name != name);//"Duplicate keybinding name"
+        SDL_assert(other->name != name);//"Duplicate keybinding name"
 
     auto ptr = &keybindings;
     while(*ptr)
@@ -445,7 +445,7 @@ std::vector<Keybinding*> Keybinding::listAllByCategory(const string& category)
 
 void Keybinding::setVirtualKey(int index, float value)
 {
-    assert(index >= 0 && index <= 255);//"Virtual key indexes need to be in the range 0-255"
+    SDL_assert(index >= 0 && index <= 255);//"Virtual key indexes need to be in the range 0-255"
     
     updateKeys(virtual_mask | index, value);
 }
