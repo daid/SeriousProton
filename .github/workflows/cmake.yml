@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [SDL2]
+    branches: [master]
   pull_request:
 
 jobs:
