@@ -49,52 +49,9 @@ static inline float angleDifference(float angle_a, float angle_b)
     return ret;
 }
 
-#include <SFML/System/Vector2.hpp>
-#include <SFML/Graphics/Color.hpp>
-
 /** math.h no longer defines M_PI in C++11. For... reasons? */
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
 #endif
-
-/**
-    SFML is missing a few useful operators on the 2D vectors.
-    These are the missing operators.
-*/
-
-namespace sf
-{
-    template <typename T>
-    Vector2<T> vector2FromAngle(const T& angle)
-    {
-        T a = angle / 180.0 * M_PI;
-        return Vector2<T>(cosf(a), sinf(a));
-    }
-
-    template <typename T>
-    T vector2ToAngle(const Vector2<T>& v)
-    {
-        return atan2(v.y, v.x) / M_PI * 180;
-    }
-
-    template <typename T>
-    Vector2<T> rotateVector(const Vector2<T>& v, const T& angle)
-    {
-        T a = angle / 180.0f * M_PI;
-        return Vector2<T>(cosf(a), sinf(a)) * v.x + Vector2<T>(-sinf(a), cosf(a)) * v.y;
-    }
-
-    template <typename T>
-    T length(const Vector2<T>& v)
-    {
-        return sqrtf(v.x*v.x+v.y*v.y);
-    }
-
-    template <typename T>
-    Vector2<T> normalize(const Vector2<T>& v)
-    {
-        return v / length(v);
-    }
-}
 
 #endif//SFML_EXTRA_VECTOR_UTILS_H

@@ -1,6 +1,7 @@
 #include <io/network/address.h>
 #include <io/network/socketBase.h>
 #include <logging.h>
+#include <cstring>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -40,7 +41,7 @@ Address::Address(const string& hostname)
             continue;
 
         char buffer[128];
-        ::getnameinfo(data->ai_addr, data->ai_addrlen, buffer, sizeof(buffer), nullptr, 0, NI_NUMERICHOST);
+        ::getnameinfo(data->ai_addr, static_cast<socklen_t>(data->ai_addrlen), buffer, sizeof(buffer), nullptr, 0, NI_NUMERICHOST);
 
         addr_info.emplace_back(data->ai_family, buffer, data->ai_addr, data->ai_addrlen);
     }
@@ -145,11 +146,18 @@ Address Address::getLocalAddress()
 #else
     LOG(Warning, "No method to get local IP address.");
 #endif
+    addr_info.sort([](const AddrInfo& a, const AddrInfo& b)
+    {
+        if (a.family == b.family)
+            return memcmp(a.addr.data(), b.addr.data(), std::min(a.addr.size(), b.addr.size())) <= 0;
+        return (a.family - b.family) <= 0;
+    });
+
     return Address(std::move(addr_info));
 }
 
 Address::AddrInfo::AddrInfo(int family, const string& human_readable, const void* addr, size_t addrlen)
-: family(family), human_readable(human_readable), addr(static_cast<const char*>(addr), addrlen)
+: family(family), human_readable(human_readable), addr(static_cast<const uint8_t *>(addr), static_cast<const uint8_t*>(addr) + addrlen)
 {
 }
 

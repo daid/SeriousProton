@@ -7,6 +7,8 @@ bool PostProcessor::global_post_processor_enabled = true;
 PostProcessor::PostProcessor(string name, RenderChain* chain)
 : chain(chain), enabled{false}
 {
+// SDL2 TODO post processors not implemented, might remove them?
+    /*
     if (sf::Shader::isAvailable())
     {
         if (auto shader_frag = getResourceStream(name + ".frag"); shader_frag)
@@ -28,13 +30,14 @@ PostProcessor::PostProcessor(string name, RenderChain* chain)
         LOG(WARNING) << "Did not load load shader: " << name;
         LOG(WARNING) << "Because of no shader support in video card driver.";
     }
+    */
 }
 
 void PostProcessor::render(sp::RenderTarget& target)
-{
+{/*
     if (!enabled || !sf::Shader::isAvailable() || !global_post_processor_enabled)
-    {
-        chain->render(target);
+    {*/
+        chain->render(target);/*
         return;
     } 
 
@@ -83,10 +86,48 @@ void PostProcessor::render(sp::RenderTarget& target)
 
     // Restore view
     target.getSFMLTarget().setView(renderTexture.getView());
+    */
 }
 
 void PostProcessor::setUniform(string name, float value)
 {
+    /*
     if (sf::Shader::isAvailable() && global_post_processor_enabled)
         shader.setUniform(name, value);
+        */
+}
+
+bool PostProcessor::onPointerMove(glm::vec2 position, sp::io::Pointer::ID id)
+{
+    return chain->onPointerMove(position, id);
+}
+
+void PostProcessor::onPointerLeave(sp::io::Pointer::ID id)
+{
+    chain->onPointerLeave(id);
+}
+
+bool PostProcessor::onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id)
+{
+    return chain->onPointerDown(button, position, id);
+}
+
+void PostProcessor::onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id)
+{
+    chain->onPointerDrag(position, id);
+}
+
+void PostProcessor::onPointerUp(glm::vec2 position, sp::io::Pointer::ID id)
+{
+    chain->onPointerUp(position, id);
+}
+
+void PostProcessor::onTextInput(const string& text)
+{
+    chain->onTextInput(text);
+}
+
+void PostProcessor::onTextInput(sp::TextInputEvent e)
+{
+    chain->onTextInput(e);
 }

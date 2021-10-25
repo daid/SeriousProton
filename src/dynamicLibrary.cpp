@@ -1,27 +1,22 @@
 #include "dynamicLibrary.h"
 
+#include <SDL_loadso.h>
+
 #include "logging.h"
 
 #include <string_view>
 
 #if defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-using handle_t = HMODULE;
 static constexpr std::string_view native_extension{ ".dll" };
-#else // assume posix
-#include <dlfcn.h>
-using handle_t = void*;
-#ifdef __APPLE__
+#elif defined(__APPLE__) 
 static constexpr std::string_view native_extension{ ".dylib" };
-#else
+#else // assume posix
 static constexpr std::string_view native_extension{ ".so" };
-#endif
 #endif
 
 struct DynamicLibrary::Impl final
 {
-    explicit Impl(handle_t handle)
+    explicit Impl(void* handle)
         :handle{ handle }
     {}
 
@@ -31,30 +26,20 @@ struct DynamicLibrary::Impl final
     Impl& operator=(Impl&&) = delete;
     ~Impl();
 
-    handle_t handle{};
+    void* handle{};
 };
 
 DynamicLibrary::Impl::~Impl()
 {
-    if (!handle)
-        return;
-
-#if defined(_WIN32)
-    FreeLibrary(handle);
-#else
-    dlclose(handle);
-#endif
+    if (handle)
+        SDL_UnloadObject(handle);
 }
 
 [[nodiscard]]
 std::unique_ptr<DynamicLibrary> DynamicLibrary::open(const std::filesystem::path& filepath)
 {
     std::unique_ptr<DynamicLibrary> library;
-#if defined(_WIN32)
-    auto handle = LoadLibraryW(filepath.c_str());
-#else
-    auto handle = dlopen(filepath.c_str(), RTLD_LAZY);
-#endif
+    auto handle = SDL_LoadObject(filepath.string().c_str());
 
     if (handle)
         library.reset(new DynamicLibrary(std::make_unique<Impl>(handle)));
@@ -74,12 +59,8 @@ void* DynamicLibrary::getFunction<void*>(std::string_view name)
 {
     if (!impl->handle)
         return nullptr;
-        
-#if defined(_WIN32)
-    return reinterpret_cast<void*>(GetProcAddress(impl->handle, name.data()));
-#else
-    return dlsym(impl->handle, name.data());
-#endif
+    
+    return SDL_LoadFunction(impl->handle, name.data());
 }
 
 DynamicLibrary::~DynamicLibrary() = default;

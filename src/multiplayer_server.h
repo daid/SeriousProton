@@ -25,6 +25,17 @@ extern P<GameServer> game_server;
 
 class GameServer : public Updatable
 {
+public:
+    enum class MasterServerState
+    {
+        Disabled,
+        Registering,
+        Success,
+        FailedToReachMasterServer,
+        FailedPortForwarding,
+    };
+
+private:
     sp::SystemStopwatch last_update_time;
     sp::SystemTimer keep_alive_send_timer;
     sp::io::network::UdpSocket broadcast_listen_socket;
@@ -71,6 +82,7 @@ class GameServer : public Updatable
 
     string master_server_url;
     std::thread master_server_update_thread;
+    MasterServerState master_server_state = MasterServerState::Disabled;
 public:
     GameServer(string server_name, int versionNumber, int listenPort = defaultServerPort);
     virtual ~GameServer();
@@ -89,6 +101,7 @@ public:
     void setServerName(string name) { server_name = name; }
     
     void registerOnMasterServer(string master_server_url);
+    MasterServerState getMasterServerState() { return master_server_state; }
     void stopMasterServerRegistry();
     void setPassword(string password);
 

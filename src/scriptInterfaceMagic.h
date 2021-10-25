@@ -224,24 +224,6 @@ template<> void convert<bool>::param(lua_State* L, int& idx, bool& b);
 
 template<> void convert<glm::u8vec4>::param(lua_State* L, int& idx, glm::u8vec4& color);
 
-/* Convert parameters to sf::Vector2 objects. */
-template<typename T>
-struct convert<sf::Vector2<T>>
-{
-    static void param(lua_State* L, int& idx, sf::Vector2<T>& v)
-    {
-        convert<T>::param(L, idx, v.x);
-        convert<T>::param(L, idx, v.y);
-    }
-    
-    static int returnType(lua_State* L, const sf::Vector2<T>& t)
-    {
-        auto result = convert<T>::returnType(L, t.x);
-        result += convert<T>::returnType(L, t.y);
-        return result;
-    }
-};
-
 template<typename T, glm::qualifier Q>
 struct convert<glm::vec<2, T, Q>>
 {

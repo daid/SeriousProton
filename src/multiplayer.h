@@ -2,7 +2,6 @@
 #define MULTIPLAYER_H
 
 #include <io/dataBuffer.h>
-#include <SFML/Graphics/Color.hpp>
 #include <stdint.h>
 #include "Updatable.h"
 #include "stringImproved.h"
@@ -32,14 +31,6 @@ template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operato
 template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::vec<3, T, Q>& v)
 {
     return packet >> v.x >> v.y >> v.z;
-}
-template<typename T> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sf::Vector2<T>& v)
-{
-    return packet << v.x << v.y;
-}
-template<typename T> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sf::Vector2<T>& v)
-{
-    return packet >> v.x >> v.y;
 }
 template<typename T1, typename T2> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const std::pair<T1, T2>& pair)
 {
@@ -174,10 +165,10 @@ public:
 #define registerMemberReplication(member, ...) registerMemberReplication_(member , ## __VA_ARGS__ )
 #define F_PARAM
 #endif
-    template <typename T> void registerMemberReplication_(F_PARAM T* member, float update_delay = 0.0)
+    template <typename T> void registerMemberReplication_(F_PARAM T* member, float update_delay = 0.0f)
     {
-        assert(!replicated);
-        assert(memberReplicationInfo.size() < 0xFFFF);
+        SDL_assert(!replicated);
+        SDL_assert(memberReplicationInfo.size() < 0xFFFF);
         MemberReplicationInfo info;
 #ifdef DEBUG
         info.name = name;
@@ -194,7 +185,7 @@ public:
         );
         init_prev_data<T>(info);
         info.update_delay = update_delay;
-        info.update_timeout = 0.0;
+        info.update_timeout = 0.0f;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChanged;
         info.sendFunction = &multiplayerReplicationFunctions<T>::sendData;
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveData;
@@ -207,10 +198,10 @@ public:
 #endif
     }
 
-    template <typename T> void registerMemberReplication_(F_PARAM std::vector<T>* member, float update_delay = 0.0)
+    template <typename T> void registerMemberReplication_(F_PARAM std::vector<T>* member, float update_delay = 0.0f)
     {
-        assert(!replicated);
-        assert(memberReplicationInfo.size() < 0xFFFF);
+        SDL_assert(!replicated);
+        SDL_assert(memberReplicationInfo.size() < 0xFFFF);
         MemberReplicationInfo info;
 #ifdef DEBUG
         info.name = name;
@@ -218,7 +209,7 @@ public:
         info.ptr = member;
         info.prev_data = reinterpret_cast<std::uint64_t>(new std::vector<T>);
         info.update_delay = update_delay;
-        info.update_timeout = 0.0;
+        info.update_timeout = 0.0f;
         info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChangedVector;
         info.sendFunction = &multiplayerReplicationFunctions<T>::sendDataVector;
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveDataVector;
@@ -226,7 +217,7 @@ public:
         memberReplicationInfo.push_back(info);
     }
 
-    void registerMemberReplication_(F_PARAM glm::vec3* member, float update_delay = 0.0)
+    void registerMemberReplication_(F_PARAM glm::vec3* member, float update_delay = 0.0f)
     {
         registerMemberReplication(&member->x, update_delay);
         registerMemberReplication(&member->y, update_delay);
@@ -244,7 +235,7 @@ public:
     {
         for(unsigned int n=0; n<memberReplicationInfo.size(); n++)
             if (memberReplicationInfo[n].ptr == data)
-                memberReplicationInfo[n].update_timeout = 0.0;
+                memberReplicationInfo[n].update_timeout = 0.0f;
     }
 
     void registerCollisionableReplication(float object_significant_range = -1);

@@ -1,6 +1,7 @@
 #include "multiplayer_server.h"
 #include "multiplayer_client.h"
 #include "multiplayer_internal.h"
+#include "multiplayer.h"
 #include "engine.h"
 
 #include "io/http/request.h"
@@ -20,13 +21,13 @@ P<GameServer> game_server;
 GameServer::GameServer(string server_name, int version_number, int listen_port)
 : server_name(server_name), listen_port(listen_port), version_number(version_number)
 {
-    assert(!game_server);
-    assert(!game_client);
+    SDL_assert(!game_server);
+    SDL_assert(!game_client);
     game_server = this;
     lastGameSpeed = engine->getGameSpeed();
-    sendDataRate = 0.0;
-    sendDataRatePerClient = 0.0;
-    boardcastServerDelay = 0.0;
+    sendDataRate = 0.0f;
+    sendDataRatePerClient = 0.0f;
+    boardcastServerDelay = 0.0f;
     keep_alive_send_timer.repeat(10);;
 
     nextObjectId = 1;
@@ -155,7 +156,7 @@ void GameServer::update(float /*gameDelta*/)
             int cnt = 0;
             for(unsigned int n=0; n<obj->memberReplicationInfo.size(); n++)
             {
-                if (obj->memberReplicationInfo[n].update_timeout > 0.0)
+                if (obj->memberReplicationInfo[n].update_timeout > 0.0f)
                 {
                     obj->memberReplicationInfo[n].update_timeout -= delta;
                 }else{
@@ -259,7 +260,7 @@ void GameServer::update(float /*gameDelta*/)
                         break;
                     case CMD_ALIVE_RESP:
                         {
-                            clientList[n].ping = clientList[n].round_trip_start_time.get() * 1000.0f;
+                            clientList[n].ping = static_cast<int32_t>(clientList[n].round_trip_start_time.get() * 1000.0f);
                         }
                         break;
                     default:
@@ -368,7 +369,7 @@ void GameServer::update(float /*gameDelta*/)
                         break;
                     case CMD_ALIVE_RESP:
                         {
-                            clientList[n].ping = clientList[n].round_trip_start_time.get() * 1000.0f;
+                            clientList[n].ping = static_cast<int32_t>(clientList[n].round_trip_start_time.get() * 1000.0f);
                         }
                     break;
                     default:
@@ -500,11 +501,11 @@ void GameServer::handleBroadcastUDPSocket(float delta)
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
         broadcast_listen_socket.send(sendPacket, recvAddress, recvPort);
     }
-    if (boardcastServerDelay > 0.0)
+    if (boardcastServerDelay > 0.0f)
     {
         boardcastServerDelay -= delta;
     }else{
-        boardcastServerDelay = 5.0;
+        boardcastServerDelay = 5.0f;
 
         sp::io::DataBuffer sendPacket;
         sendPacket << int32_t(multiplayerVerficationNumber) << int32_t(version_number) << server_name;
@@ -580,6 +581,7 @@ void GameServer::sendAll(sp::io::DataBuffer& packet)
 
 void GameServer::registerOnMasterServer(string master_url)
 {
+    stopMasterServerRegistry();
     this->master_server_url = master_url;
     master_server_update_thread = std::move(std::thread(&GameServer::runMasterServerUpdateThread, this));
 }
@@ -593,6 +595,7 @@ void GameServer::stopMasterServerRegistry()
 
 void GameServer::runMasterServerUpdateThread()
 {
+    master_server_state = MasterServerState::Disabled;
     if (!master_server_url.startswith("http://"))
     {
         LOG(ERROR) << "Master server URL " << master_server_url << " does not start with \"http://\"";
@@ -607,7 +610,7 @@ void GameServer::runMasterServerUpdateThread()
     }
     int port = 80;
     int port_start = hostname.find(":");
-    string uri = hostname.substr(path_start + 1);
+    string uri = hostname.substr(path_start);
     if (port_start >= 0)
     {
         // If a port is attached to the hostname, parse it out.
@@ -620,6 +623,7 @@ void GameServer::runMasterServerUpdateThread()
     
     LOG(INFO) << "Registering at master server " << master_server_url;
     
+    master_server_state = MasterServerState::Registering;
     sp::io::http::Request http(hostname, port);
     while(!isDestroyed() && master_server_url != "")
     {
@@ -627,14 +631,20 @@ void GameServer::runMasterServerUpdateThread()
         if (response.status != 200)
         {
             LOG(WARNING) << "Failed to register at master server " << master_server_url << " (status " << response.status << ")";
+            master_server_state = MasterServerState::FailedToReachMasterServer;
         }else if (response.body != "OK")
         {
             LOG(WARNING) << "Master server " << master_server_url << " reports error on registering: " << response.body;
+            master_server_state = MasterServerState::FailedPortForwarding;
+        }else
+        {
+            master_server_state = MasterServerState::Success;
         }
         
         for(int n=0;n<60 && !isDestroyed() && master_server_url != "";n++)
             std::this_thread::sleep_for(std::chrono::duration<float>(1.f));
     }
+    master_server_state = MasterServerState::Disabled;
 }
 
 void GameServer::startAudio(int32_t client_id, int32_t target_identifier)

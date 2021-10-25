@@ -5,6 +5,16 @@
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 static constexpr int flags = 0;
+
+static inline int recvfrom(SOCKET s, void* buf, size_t len, int flags, struct sockaddr* from, socklen_t* fromlen)
+{
+    return recvfrom(s, static_cast<char*>(buf), static_cast<int>(len), flags, from, fromlen);
+}
+
+static inline int sendto(SOCKET s, const void* msg, size_t len, int flags, const struct sockaddr* to, socklen_t tolen)
+{
+    return sendto(s, static_cast<const char*>(msg), static_cast<int>(len), flags, to, tolen);
+}
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -101,10 +111,10 @@ bool UdpSocket::joinMulticast(int group_nr)
     {
         for(const auto& addr_info : Address::getLocalAddress().addr_info)
         {
-            if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.length() == sizeof(struct sockaddr_in))
+            if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.size() == sizeof(struct sockaddr_in))
             {
                 struct sockaddr_in server_addr;
-                memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+                memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
                 
                 struct ip_mreq mreq;
                 mreq.imr_multiaddr.s_addr = htonl((239 << 24) | (192 << 16) | (group_nr));
@@ -156,9 +166,9 @@ bool UdpSocket::send(const void* data, size_t size, const Address& address, int 
         memset(&server_addr, 0, sizeof(server_addr));
         for(auto& addr_info : address.addr_info)
         {
-            if (addr_info.family == AF_INET6 && addr_info.addr.length() == sizeof(server_addr))
+            if (addr_info.family == AF_INET6 && addr_info.addr.size() == sizeof(server_addr))
             {
-                memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+                memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
                 is_set = true;
                 break;
             }
@@ -169,7 +179,7 @@ bool UdpSocket::send(const void* data, size_t size, const Address& address, int 
             server_addr.sin6_family = AF_INET6;
             server_addr.sin6_port = htons(port);
 
-            int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
+            int result = ::sendto(handle, data, size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
             return result == int(size);
         }
     }
@@ -179,9 +189,9 @@ bool UdpSocket::send(const void* data, size_t size, const Address& address, int 
     memset(&server_addr, 0, sizeof(server_addr));
     for(auto& addr_info : address.addr_info)
     {
-        if (addr_info.family == AF_INET && addr_info.addr.length() == sizeof(server_addr))
+        if (addr_info.family == AF_INET && addr_info.addr.size() == sizeof(server_addr))
         {
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             is_set = true;
             break;
         }
@@ -192,7 +202,7 @@ bool UdpSocket::send(const void* data, size_t size, const Address& address, int 
         server_addr.sin_family = AF_INET;
         server_addr.sin_port = htons(port);
 
-        int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
+        int result = ::sendto(handle, data, size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
         return result == int(size);
     }
     return false;
@@ -209,7 +219,7 @@ size_t UdpSocket::receive(void* data, size_t size, Address& address, int& port)
         struct sockaddr_in6 from_addr;
         memset(&from_addr, 0, sizeof(from_addr));
         socklen_t from_addr_len = sizeof(from_addr);
-        int result = ::recvfrom(handle, static_cast<char*>(data), size, flags, reinterpret_cast<sockaddr*>(&from_addr), &from_addr_len);
+        int result = ::recvfrom(handle, data, size, flags, reinterpret_cast<sockaddr*>(&from_addr), &from_addr_len);
         if (result >= 0)
         {
             if (from_addr_len == sizeof(from_addr))
@@ -234,7 +244,7 @@ size_t UdpSocket::receive(void* data, size_t size, Address& address, int& port)
         struct sockaddr_in from_addr;
         memset(&from_addr, 0, sizeof(from_addr));
         socklen_t from_addr_len = sizeof(from_addr);
-        int result = ::recvfrom(handle, static_cast<char*>(data), size, flags, reinterpret_cast<sockaddr*>(&from_addr), &from_addr_len);
+        int result = ::recvfrom(handle, data, size, flags, reinterpret_cast<sockaddr*>(&from_addr), &from_addr_len);
         if (result >= 0)
         {
             if (from_addr_len == sizeof(from_addr))
@@ -277,10 +287,10 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
     bool success = false;
     for(const auto& addr_info : Address::getLocalAddress().addr_info)
     {
-        if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.length() == sizeof(struct sockaddr_in))
+        if (addr_info.family == AF_INET && !socket_is_ipv6 && addr_info.addr.size() == sizeof(struct sockaddr_in))
         {
             struct sockaddr_in server_addr;
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             
             ::setsockopt(handle, IPPROTO_IP, IP_MULTICAST_IF, reinterpret_cast<const char*>(&server_addr.sin_addr), sizeof(server_addr.sin_addr));
 
@@ -290,14 +300,14 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
             server_addr.sin_family = AF_INET;
             server_addr.sin_port = htons(port);
 
-            int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
+            int result = ::sendto(handle, data, size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
             if (result == int(size))
                 success = true;
         }
-        if (addr_info.family == AF_INET6 && socket_is_ipv6 && addr_info.addr.length() == sizeof(struct sockaddr_in6))
+        if (addr_info.family == AF_INET6 && socket_is_ipv6 && addr_info.addr.size() == sizeof(struct sockaddr_in6))
         {
             struct sockaddr_in6 server_addr;
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             
             ::setsockopt(handle, IPPROTO_IPV6, IPV6_MULTICAST_IF, reinterpret_cast<const char*>(&server_addr.sin6_addr), sizeof(server_addr.sin6_addr));
 
@@ -309,7 +319,7 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
             server_addr.sin6_family = AF_INET6;
             server_addr.sin6_port = htons(port);
 
-            int result = ::sendto(handle, static_cast<const char*>(data), size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
+            int result = ::sendto(handle, data, size, flags, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr));
             if (result == int(size))
                 success = true;
         }
@@ -348,7 +358,7 @@ bool UdpSocket::sendBroadcast(const void* data, size_t size, int port)
                 s.sin_family = AF_INET;
                 s.sin_port = htons(port);
                 s.sin_addr.s_addr = (pIPAddrTable->table[n].dwAddr & pIPAddrTable->table[n].dwMask) | ~pIPAddrTable->table[n].dwMask;
-                if (::sendto(handle, (const char*)data, size, 0, (struct sockaddr*)&s, sizeof(struct sockaddr_in)) >= 0)
+                if (::sendto(handle, data, size, 0, (struct sockaddr*)&s, sizeof(struct sockaddr_in)) >= 0)
                     success = true;
             }
         }

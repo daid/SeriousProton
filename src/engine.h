@@ -5,28 +5,13 @@
 #include "stringImproved.h"
 #include "P.h"
 
-#include "input.h"
-#include "windowManager.h"
-#include "postProcessManager.h"
-#include "shaderManager.h"
-#include "scriptInterface.h"
-#include "resources.h"
-#include "soundManager.h"
-#include "textureManager.h"
-#include "gameEntity.h"
-#include "collisionable.h"
-#include "random.h"
-#include "vectorUtils.h"
-#include "multiplayer.h"
-#include "multiplayer_server.h"
-#include "multiplayer_server_scanner.h"
-#include "multiplayer_client.h"
-#include "event.h"
-#include "logging.h"
-#include "tween.h"
-#include "clipboard.h"
+#ifdef WIN32
+#include "dynamicLibrary.h"
+#endif
+
 
 class Engine;
+union SDL_Event;
 extern Engine* engine;
 
 class Engine
@@ -42,13 +27,15 @@ public:
     };
 private:
     bool running;
-    WindowManager* windowManager;
     
     std::unordered_map<string, P<PObject> > objectMap;
     float elapsedTime;
     float gameSpeed;
     
     EngineTiming last_engine_timing;
+#ifdef WIN32
+    std::unique_ptr<DynamicLibrary> exchndl;
+#endif
 public:
     Engine();
     ~Engine();
@@ -64,7 +51,7 @@ public:
     void runMainLoop();
     void shutdown();
 private:
-    void handleEvent(sf::Event& event);
+    void handleEvent(SDL_Event& event);
 };
 
 #endif//ENGINE_H

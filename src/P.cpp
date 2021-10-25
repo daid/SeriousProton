@@ -7,7 +7,7 @@
         std::ptrdiff_t diff = &stackTest - (int*)this;
         //Check if this object is created on the stack, PObjects should not be created on the stack, as they manage
         // their own destruction.
-        assert(abs(diff) > 10000);//"Object on stack! Not allowed!"
+        SDL_assert(abs(diff) > 10000);//"Object on stack! Not allowed!"
         DEBUG_PobjCount ++;
         
         DEBUG_PobjListNext = DEBUG_PobjListStart;

@@ -8,8 +8,8 @@ P<GameClient> game_client;
 GameClient::GameClient(int version_number, sp::io::network::Address server, int port_nr)
 : version_number(version_number), server(server), port_nr(port_nr)
 {
-    assert(!game_server);
-    assert(!game_client);
+    SDL_assert(!game_server);
+    SDL_assert(!game_client);
 
     client_id = -1;
     game_client = this;
@@ -36,7 +36,7 @@ void GameClient::update(float /*delta*/)
     if (status == ReadyToConnect)
     {
         status = Connecting;
-        connect_thread = std::move(std::thread(&GameClient::runConnect, this));
+        connect_thread = std::thread(&GameClient::runConnect, this);
     }
     if (status == Disconnected || status == Connecting)
         return;

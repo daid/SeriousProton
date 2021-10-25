@@ -38,7 +38,7 @@ const string& tr(const string& input)
         return catalogue->tr(input);
 
     LOG(ERROR) << "tr called before the catalogue is loaded!";
-    assert(false);
+    SDL_assert(false);
     return input;
 }
 
@@ -49,7 +49,7 @@ const string& tr(const string& context, const string& input)
         return catalogue->tr(context, input);
 
     LOG(ERROR) << "tr called before the catalogue is loaded!";
-    assert(false);
+    SDL_assert(false);
     return input;
 }
 
@@ -94,7 +94,7 @@ bool Catalogue::load(const string& resource_name)
     if (!instance)
         instance.reset(new Catalogue);
 
-    assert(instance);
+    SDL_assert(instance);
     if (!instance)
     {
         // This probably won't work if we're OOM.
@@ -140,10 +140,10 @@ bool Catalogue::load_resource(const string& resource_name)
         length_offset_origonal.resize(header.count * 2);
         length_offset_translated.resize(header.count * 2);
         stream->seek(header.offset_origonal);
-        if (stream->read(length_offset_origonal.data(), length_offset_origonal.size() * sizeof(uint32_t)) != int(length_offset_origonal.size() * sizeof(uint32_t)))
+        if (stream->read(length_offset_origonal.data(), length_offset_origonal.size() * sizeof(uint32_t)) != length_offset_origonal.size() * sizeof(uint32_t))
             return false;
         stream->seek(header.offset_translated);
-        if (stream->read(length_offset_translated.data(), length_offset_translated.size() * sizeof(uint32_t)) != int(length_offset_translated.size() * sizeof(uint32_t)))
+        if (stream->read(length_offset_translated.data(), length_offset_translated.size() * sizeof(uint32_t)) != length_offset_translated.size() * sizeof(uint32_t))
             return false;
         if (swap)
         {

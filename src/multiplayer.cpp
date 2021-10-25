@@ -157,12 +157,12 @@ static void collisionable_cleanupFunction(void* prev_data_ptr)
 
 void MultiplayerObject::registerCollisionableReplication(float object_significant_range)
 {
-    assert(!replicated);
-    assert(memberReplicationInfo.size() < 0xFFFF);
+    SDL_assert(!replicated);
+    SDL_assert(memberReplicationInfo.size() < 0xFFFF);
 
     MemberReplicationInfo info;
     Collisionable* collisionable = dynamic_cast<Collisionable*>(this);
-    assert(collisionable);
+    SDL_assert(collisionable);
     collisionable->multiplayer_replication_object_significant_range = object_significant_range;
     if (object_significant_range > 0)
         collisionable_significant.push_back(collisionable);

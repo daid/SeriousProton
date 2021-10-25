@@ -1,24 +1,21 @@
 #include "engine.h"
 #include "random.h"
-#include "gameEntity.h"
 #include "Updatable.h"
 #include "collisionable.h"
 #include "audio/source.h"
+#include "io/keybinding.h"
+#include "soundManager.h"
+#include "windowManager.h"
+#include "scriptInterface.h"
+#include "multiplayer_server.h"
 
+#include <thread>
+#include <SDL.h>
 
 #ifdef DEBUG
 #include <typeinfo>
 int DEBUG_PobjCount;
 PObject* DEBUG_PobjListStart;
-#endif
-
-#ifdef WIN32
-#include <windows.h>
-
-namespace
-{
-    HINSTANCE exchndl = nullptr;
-}
 #endif
 
 Engine* engine;
@@ -29,11 +26,11 @@ Engine::Engine()
 
 #ifdef WIN32
     // Setup crash reporter (Dr. MinGW) if available.
-    exchndl = LoadLibrary(TEXT("exchndl.dll"));
+    exchndl = DynamicLibrary::open("exchndl.dll");
 
     if (exchndl)
     {
-        auto pfnExcHndlInit = GetProcAddress(exchndl, "ExcHndlInit");
+        auto pfnExcHndlInit = exchndl->getFunction<void(*)(void)>("ExcHndlInit");
 
         if (pfnExcHndlInit)
         {
@@ -42,37 +39,36 @@ Engine::Engine()
         }
         else
         {
-            LOG(WARNING) << "Failed to initialize Crash Reporter";
-            FreeLibrary(exchndl);
-            exchndl = nullptr;
+            exchndl.reset();
         }
     } 
 #endif // WIN32
 
+    SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
+    SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
+#ifdef SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH
+    SDL_SetHint(SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH, "1");
+#elif defined(SDL_HINT_MOUSE_TOUCH_EVENTS)
+    SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+#endif
+    SDL_Init(SDL_INIT_EVERYTHING);
+    SDL_ShowCursor(false);
+
+    atexit(SDL_Quit);
+
     initRandom();
-    windowManager = nullptr;
     CollisionManager::initialize();
-    InputHandler::initialize();
-    gameSpeed = 1.0;
+    gameSpeed = 1.0f;
     running = true;
-    elapsedTime = 0.0;
+    elapsedTime = 0.0f;
     soundManager = new SoundManager();
 }
 
 Engine::~Engine()
 {
-    if (windowManager)
-        windowManager->close();
     delete soundManager;
     soundManager = nullptr;
-
-#ifdef WIN32
-    if (exchndl)
-    {
-        FreeLibrary(exchndl);
-        exchndl = nullptr;
-    }
-#endif // WIN32
 }
 
 void Engine::registerObject(string name, P<PObject> obj)
@@ -89,8 +85,7 @@ P<PObject> Engine::getObject(string name)
 
 void Engine::runMainLoop()
 {
-    windowManager = dynamic_cast<WindowManager*>(*getObject("windowManager"));
-    if (!windowManager)
+    if (Window::all_windows.size() == 0)
     {
         sp::SystemStopwatch frame_timer;
         while(running)
@@ -102,7 +97,6 @@ void Engine::runMainLoop()
                 delta = 0.001f;
             delta *= gameSpeed;
 
-            entityList.update();
             foreach(Updatable, u, updatableList)
                 u->update(delta);
             elapsedTime += delta;
@@ -119,23 +113,18 @@ void Engine::runMainLoop()
         sp::SystemTimer debug_output_timer;
         debug_output_timer.repeat(5);
 #endif
-        while(running && windowManager->window.isOpen())
+        while(running)
         {
-            InputHandler::preEventsUpdate();
             // Handle events
-            sf::Event event;
-            while (windowManager->window.pollEvent(event))
+            SDL_Event event;
+            while (SDL_PollEvent(&event))
             {
                 handleEvent(event);
             }
-            InputHandler::postEventsUpdate();
 
 #ifdef DEBUG
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && windowManager->hasFocus())
-                running = false;
-
             if (debug_output_timer.isExpired())
-                printf("Object count: %4d %4zd %4zd\n", DEBUG_PobjCount, updatableList.size(), entityList.size());
+                LOG(DEBUG) << "Object count: " << DEBUG_PobjCount << " " << updatableList.size();
 #endif
 
             float delta = frame_timer.restart();
@@ -144,16 +133,9 @@ void Engine::runMainLoop()
             if (delta < 0.001f)
                 delta = 0.001f;
             delta *= gameSpeed;
-#ifdef DEBUG
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tab))
-                delta /= 5.f;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Tilde))
-                delta *= 5.f;
-#endif
             EngineTiming engine_timing;
             
             sp::SystemStopwatch engine_timing_stopwatch;
-            entityList.update();
             foreach(Updatable, u, updatableList) {
                 u->update(delta);
             }
@@ -165,29 +147,30 @@ void Engine::runMainLoop()
             soundManager->updateTick();
 
             // Clear the window
-            windowManager->render();
+            for(auto window : Window::all_windows)
+                window->render();
             engine_timing.render = engine_timing_stopwatch.restart();
             engine_timing.server_update = 0.0f;
             if (game_server)
                 engine_timing.server_update = game_server->getUpdateTime();
             
             last_engine_timing = engine_timing;
+
+            sp::io::Keybinding::allPostUpdate();
         }
         soundManager->stopMusic();
+        sp::audio::Source::stopAudioSystem();
     }
 }
 
-void Engine::handleEvent(sf::Event& event)
+void Engine::handleEvent(SDL_Event& event)
 {
-    // Window closed: exit
-    if (event.type == sf::Event::Closed)
+    if (event.type == SDL_QUIT)
         running = false;
-    if (event.type == sf::Event::GainedFocus)
-        windowManager->windowHasFocus = true;
-    if (event.type == sf::Event::LostFocus)
-        windowManager->windowHasFocus = false;
 #ifdef DEBUG
-    if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L))
+    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
+        running = false;
+    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_l)
     {
         int n = 0;
         printf("------------------------\n");
@@ -211,27 +194,60 @@ void Engine::handleEvent(sf::Event& event)
         printf("------------------------\n");
     }
 #endif
-    InputHandler::handleEvent(event);
-    if (event.type == sf::Event::Resized)
-        windowManager->setupView();
-#ifdef __ANDROID__
-    //Focus lost and focus gained events are used when the application window is created and destroyed.
-    if (event.type == sf::Event::LostFocus)
-        running = false;
-    
-    //The MouseEntered and MouseLeft events are received when the activity needs to pause or resume.
-    if (event.type == sf::Event::MouseLeft)
+
+    unsigned int window_id = 0;
+    switch(event.type)
     {
-        //Pause is when a small popup is on top of the window. So keep running.
-        while(windowManager->window.isOpen() && windowManager->window.waitEvent(event))
+    case SDL_KEYDOWN:
+#ifdef __EMSCRIPTEN__
+        if (!audio_started)
         {
-            if (event.type != sf::Event::MouseLeft)
-                handleEvent(event);
-            if (event.type == sf::Event::MouseEntered)
-                break;
+            audio::AudioSource::startAudioSystem();
+            audio_started = true;
         }
+#endif
+    case SDL_KEYUP:
+        window_id = event.key.windowID;
+        break;
+    case SDL_MOUSEMOTION:
+        window_id = event.motion.windowID;
+        break;
+    case SDL_MOUSEBUTTONDOWN:
+#ifdef __EMSCRIPTEN__
+        if (!audio_started)
+        {
+            audio::AudioSource::startAudioSystem();
+            audio_started = true;
+        }
+#endif
+    case SDL_MOUSEBUTTONUP:
+        window_id = event.button.windowID;
+        break;
+    case SDL_MOUSEWHEEL:
+        window_id = event.wheel.windowID;
+        break;
+    case SDL_WINDOWEVENT:
+        window_id = event.window.windowID;
+        break;
+    case SDL_FINGERDOWN:
+    case SDL_FINGERUP:
+    case SDL_FINGERMOTION:
+        window_id = SDL_GetWindowID(SDL_GetMouseFocus());
+        break;
+    case SDL_TEXTEDITING:
+        window_id = event.edit.windowID;
+        break;
+    case SDL_TEXTINPUT:
+        window_id = event.text.windowID;
+        break;
     }
-#endif//__ANDROID__
+    if (window_id != 0)
+    {
+        foreach(Window, window, Window::all_windows)
+            if (window->window && SDL_GetWindowID(static_cast<SDL_Window*>(window->window)) == window_id)
+                window->handleEvent(event);
+    }
+    sp::io::Keybinding::handleEvent(event);
 }
 
 void Engine::setGameSpeed(float speed)

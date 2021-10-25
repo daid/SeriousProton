@@ -58,7 +58,7 @@ public:
     virtual ~GameClient();
 
     P<MultiplayerObject> getObjectById(int32_t id);
-    virtual void update(float delta);
+    virtual void update(float delta) override;
 
     int32_t getClientId() { return client_id; }
     Status getStatus() { return status; }

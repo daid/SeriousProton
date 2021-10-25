@@ -5,6 +5,17 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 static constexpr int flags = 0;
+
+static inline int send(SOCKET s, const void* msg, size_t len, int flags)
+{
+    return send(s, static_cast<const char*>(msg), static_cast<int>(len), flags);
+}
+
+static inline int recv(SOCKET s, void* buf, size_t len, int flags)
+{
+    return recv(s, static_cast<char*>(buf), static_cast<int>(len), flags);
+}
+
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -177,11 +188,11 @@ bool TcpSocket::connect(const Address& host, int port)
         handle = ::socket(addr_info.family, SOCK_STREAM, 0);
         if (handle == INVALID_SOCKET)
             return false;
-        if (addr_info.family == AF_INET && sizeof(struct sockaddr_in) == addr_info.addr.length())
+        if (addr_info.family == AF_INET && sizeof(struct sockaddr_in) == addr_info.addr.size())
         {
             struct sockaddr_in server_addr;
             memset(&server_addr, 0, sizeof(server_addr));
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             server_addr.sin_port = htons(port);
             if (::connect(handle, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr)) == 0)
             {
@@ -189,11 +200,11 @@ bool TcpSocket::connect(const Address& host, int port)
                 return true;
             }
         }
-        if (addr_info.family == AF_INET6 && sizeof(struct sockaddr_in6) == addr_info.addr.length())
+        if (addr_info.family == AF_INET6 && sizeof(struct sockaddr_in6) == addr_info.addr.size())
         {
             struct sockaddr_in6 server_addr;
             memset(&server_addr, 0, sizeof(server_addr));
-            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.length());
+            memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             server_addr.sin6_port = htons(port);
             if (::connect(handle, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr)) == 0)
             {
@@ -219,7 +230,7 @@ bool TcpSocket::connectSSL(const Address& host, int port)
     }
     
     ssl_handle = SSL_new(ssl_context);
-    SSL_set_fd(static_cast<SSL*>(ssl_handle), handle);
+    SSL_set_fd(static_cast<SSL*>(ssl_handle), static_cast<int>(handle));
     if (!SSL_connect(static_cast<SSL*>(ssl_handle)))
     {
         LOG(Warning, "Failed to connect SSL socket due to SSL negotiation failure.");
@@ -285,9 +296,9 @@ void TcpSocket::send(const void* data, size_t size)
     {
         int result;
         if (ssl_handle)
-            result = SSL_write(static_cast<SSL*>(ssl_handle), static_cast<const char*>(data) + done, size - done);
+            result = SSL_write(static_cast<SSL*>(ssl_handle), static_cast<const char*>(data) + done, static_cast<int>(size - done));
         else
-            result = ::send(handle, static_cast<const char*>(data) + done, size - done, flags);
+            result = ::send(handle, reinterpret_cast<const void *>(static_cast<const char*>(data) + done), size - done, flags);
         if (result < 0)
         {
             if (!isLastErrorNonBlocking())
@@ -314,9 +325,9 @@ size_t TcpSocket::receive(void* data, size_t size)
     
     int result;
     if (ssl_handle)
-        result = SSL_read(static_cast<SSL*>(ssl_handle), static_cast<char*>(data), size);
+        result = SSL_read(static_cast<SSL*>(ssl_handle), static_cast<char*>(data), static_cast<int>(size));
     else
-        result = ::recv(handle, static_cast<char*>(data), size, flags);
+        result = ::recv(handle, data, size, flags);
     if (result < 0)
     {
         result = 0;
@@ -353,7 +364,7 @@ bool TcpSocket::receive(io::DataBuffer& buffer)
             if (ssl_handle)
                 result = SSL_read(static_cast<SSL*>(ssl_handle), reinterpret_cast<char*>(size_buffer), 1);
             else
-                result = ::recv(handle, reinterpret_cast<char*>(size_buffer), 1, flags);
+                result = ::recv(handle, size_buffer, 1, flags);
             if (result < 0)
             {
                 result = 0;
@@ -379,9 +390,9 @@ bool TcpSocket::receive(io::DataBuffer& buffer)
     {
         int result;
         if (ssl_handle)
-            result = SSL_read(static_cast<SSL*>(ssl_handle), reinterpret_cast<char*>(&receive_buffer[received_size]), receive_buffer.size() - received_size);
+            result = SSL_read(static_cast<SSL*>(ssl_handle), reinterpret_cast<char*>(&receive_buffer[received_size]), static_cast<int>(receive_buffer.size() - received_size));
         else
-            result = ::recv(handle, reinterpret_cast<char*>(&receive_buffer[received_size]), receive_buffer.size() - received_size, flags);
+            result = ::recv(handle, &receive_buffer[received_size], receive_buffer.size() - received_size, flags);
         if (result < 0)
         {
             result = 0;
@@ -415,9 +426,9 @@ bool TcpSocket::sendSendQueue()
     do
     {
         if (ssl_handle)
-            result = SSL_write(static_cast<SSL*>(ssl_handle), static_cast<const char*>(send_queue.data()), send_queue.size());
+            result = SSL_write(static_cast<SSL*>(ssl_handle), static_cast<const char*>(send_queue.data()), static_cast<int>(send_queue.size()));
         else
-            result = ::send(handle, static_cast<const char*>(send_queue.data()), send_queue.size(), flags);
+            result = ::send(handle, static_cast<const void*>(send_queue.data()), send_queue.size(), flags);
         if (result < 0)
         {
             result = 0;
