@@ -17,11 +17,11 @@ namespace sp {
 	public:
 		bool loadFromStream(P<ResourceStream> stream);
 
-		std::optional<Image> toImage();
-		std::unique_ptr<BasicTexture> toTexture();
-		std::vector<uint8_t> toNative();
+		std::optional<Image> toImage(uint32_t mip_level = 0);
+		std::unique_ptr<BasicTexture> toTexture(uint32_t mip_level = 0);
+		std::vector<uint8_t> toNative(uint32_t mip_level = 0);
 
-		glm::ivec2 getSize() const;
+		glm::ivec2 getSize(uint32_t mip_level = 0) const;
 		uint32_t getNativeFormat() const;
 
 		KTX2Texture();
