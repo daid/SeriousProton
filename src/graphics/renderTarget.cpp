@@ -83,7 +83,7 @@ static ImageInfo getTextureInfo(std::string_view texture)
             auto size = ktxtexture.getSize();
             if (size.x > atlas_threshold.x || size.y > atlas_threshold.y)
             {
-                auto gltexture = ktxtexture.toTexture();
+                auto gltexture = ktxtexture.toTexture(std::min(textureManager.getBaseMipLevel(), ktxtexture.getMipCount() - 1));
                 if (gltexture)
                 {
                     LOG(Info, "Loaded ", texture.data(), " (ktx2)");

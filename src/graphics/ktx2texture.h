@@ -23,6 +23,7 @@ namespace sp {
 
 		glm::ivec2 getSize(uint32_t mip_level = 0) const;
 		uint32_t getNativeFormat() const;
+		uint32_t getMipCount() const;
 
 		KTX2Texture();
 		~KTX2Texture();

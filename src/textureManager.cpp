@@ -56,7 +56,7 @@ sp::Texture* TextureManager::loadTexture(const string& name)
     {
         if (ktxtexture.loadFromStream(stream))
         {
-            texture = ktxtexture.toTexture();
+            texture = ktxtexture.toTexture(std::min(getBaseMipLevel(), ktxtexture.getMipCount() - 1));
             if (!texture)
                 LOG(Warning, "[ktx2]: ", name, " failed to load into texture.");
         }

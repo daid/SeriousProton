@@ -131,6 +131,11 @@ namespace sp {
 
 			return glm::ivec2{ info.m_width, info.m_height };
 		}
+
+		uint32_t getMipCount() const
+		{
+			return transcoder.get_levels();
+		}
 	private:
 		static std::unique_ptr<basist::etc1_global_selector_codebook> codebook;
 
@@ -252,6 +257,13 @@ namespace sp {
 	uint32_t KTX2Texture::getNativeFormat() const
 	{
 		return details ? basistFormatCast(details->getBestFormat()) : GL_NONE;
+	}
+
+	uint32_t KTX2Texture::getMipCount() const
+	{
+		if (!details)
+			return 0;
+		return details->getMipCount();
 	}
 
 	KTX2Texture::KTX2Texture() = default;
