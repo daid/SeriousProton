@@ -465,7 +465,7 @@ void Keybinding::addBinding(int key, bool inverted)
 
 void Keybinding::setValue(float value)
 {
-    if (value < 0.01f && value > -0.01f)//Add a tiny dead zone by default. Assists in gamepads that give off "almost zero" in neutral.
+    if (value < 0.05f && value > -0.05f)//Add a tiny dead zone by default. Assists in gamepads that give off "almost zero" in neutral.
         value = 0.0;
     if (this->value < 0.5f && value >= 0.5f)
         down_event = true;
@@ -660,10 +660,13 @@ void Keybinding::handleEvent(const SDL_Event& event)
 
 void Keybinding::updateKeys(int key_number, float value)
 {
-    if (value > 0.5f && rebinding_key && (key_number & (static_cast<int>(rebinding_type) << 16)))
+    if (rebinding_key)
     {
-        rebinding_key->addBinding(key_number, false);
-        rebinding_key = nullptr;
+        if ((value > 0.5f || value < -0.5f) && (key_number & (static_cast<int>(rebinding_type) << 16)))
+        {
+            rebinding_key->addBinding(key_number, value < 0.0f);
+            rebinding_key = nullptr;
+        }
     }
 
     for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
