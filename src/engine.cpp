@@ -67,6 +67,7 @@ Engine::Engine()
 
 Engine::~Engine()
 {
+    updatableList.clear();
     delete soundManager;
     soundManager = nullptr;
 }
