@@ -2,7 +2,7 @@
 #include <logging.h>
 #include <SDL_assert.h>
 #include <engine.h>
-#include <json11/json11.hpp>
+#include <io/json.h>
 #include <fstream>
 #include <unordered_set>
 #include <SDL_events.h>
@@ -358,31 +358,33 @@ void Keybinding::loadKeybindings(const string& filename)
         return;
     std::stringstream data;
     data << file.rdbuf();
-    string err;
+    std::string err;
 
-    json11::Json json = json11::Json::parse(data.str(), err);
-    if (err != "")
+    auto parsed_json = sp::json::parse(data.str(), err);
+    if (!parsed_json.has_value())
     {
-        LOG(Warning, "Failed to load keybindings from", filename, ":", err);
+        LOG(Warning, "Failed to load keybindings from", filename, ": ", err);
         return;
     }
 
+    auto json = parsed_json.value();
+
     for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
     {
-        const json11::Json& entry = json[keybinding->name];
+        const auto& entry = json[keybinding->name];
         if (!entry.is_object())
             continue;
         if (entry["key"].is_string())
         {
-            keybinding->setKey(entry["key"].string_value());
+            keybinding->setKey(entry["key"].get<std::string>());
         }
         else if (entry["key"].is_array())
         {
             keybinding->clearKeys();
-            for(auto key_entry : entry["key"].array_items())
+            for(const auto& key_entry : entry["key"])
             {
                 if (key_entry.is_string())
-                    keybinding->addKey(key_entry.string_value());
+                    keybinding->addKey(key_entry.get<std::string>());
             }
         }
         else
@@ -394,20 +396,19 @@ void Keybinding::loadKeybindings(const string& filename)
 
 void Keybinding::saveKeybindings(const string& filename)
 {
-    json11::Json::object obj;
+    nlohmann::json obj;
     for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
     {
-        json11::Json::object data;
-        json11::Json::array keys;
+        nlohmann::json data;
+        nlohmann::json keys;
         for(unsigned int index=0; index<keybinding->bindings.size(); index++)
             keys.push_back(keybinding->getKey(index).c_str());
         data["key"] = keys;
         obj[keybinding->name] = data;
     }
-    json11::Json json = obj;
 
     std::ofstream file(filename);
-    file << json.dump();
+    file << obj.dump();
 }
 
 Keybinding* Keybinding::getByName(const string& name)
