@@ -233,7 +233,11 @@ void Engine::handleEvent(SDL_Event& event)
     case SDL_FINGERDOWN:
     case SDL_FINGERUP:
     case SDL_FINGERMOTION:
+#if SDL_PATCHLEVEL >= 12
         window_id = event.tfinger.windowID;
+#else
+        window_id = SDL_GetWindowID(SDL_GetMouseFocus());
+#endif
         break;
     case SDL_TEXTEDITING:
         window_id = event.edit.windowID;
