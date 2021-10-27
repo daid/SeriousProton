@@ -59,7 +59,7 @@ public:
 
     // Music
     void playMusic(string filename);
-    void playMusicSet(std::vector<string> filenames);
+    void playMusicSet(const std::vector<string>& filenames);
     void stopMusic();
     void setMusicVolume(float volume);
     float getMusicVolume();
