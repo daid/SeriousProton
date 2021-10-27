@@ -1,69 +1,151 @@
-#include <stdio.h>
-#ifdef __ANDROID__
-#include <android/log.h>
-#endif//__ANDROID__
-
 #include "logging.h"
 
-ELogLevel Logging::global_level = LOGLEVEL_ERROR;
-FILE* Logging::log_stream = nullptr;
+#include <SDL_log.h>
+#include <array>
+#include <string>
 
-#ifdef __ANDROID__
-#define print_func(str) __android_log_write(ANDROID_LOG_INFO, "SeriousProton", str)
+#ifdef WIN32
+// Windows/SDL quirk (2.0.14):
+//  On Win32 write access is exclusive with SDL's implementation:
+//  https://github.com/libsdl-org/SDL/blob/4cd981609b50ed273d80c635c1ca4c1e5518fb21/src/file/SDL_rwops.c#L122
+//  And by default (ie - public binaries) the STDIO interface is compiled out on win32.
+//  Since this prevents someone to `tail` the log while the game is running,
+//  fallback on cstdio on windows.
+#define SP_LOGGING_FALLBACK_STDIO 1
 #else
-#define print_func(str) fputs(str, Logging::log_stream)
+#define SP_LOGGING_FALLBACK_STDIO 0
 #endif
 
-Logging::Logging(ELogLevel level, std::string_view file, int /*line*/, std::string_view function_name)
+#if SP_LOGGING_FALLBACK_STDIO
+#include <cstdio>
+#else
+#include <SDL_rwops.h>
+#endif
+
+namespace
 {
-    do_logging = level >= global_level;
-    
-    if (do_logging)
+    const std::array<std::string, SDL_NUM_LOG_PRIORITIES - 1> priority_labels{
+        "[VERBOSE ]: ",
+        "[DEBUG   ]: ",
+        "[INFO    ]: ",
+        "[WARNING ]: ",
+        "[ERROR   ]: ",
+        "[CRITICAL]: "
+    };
+
+    void sdlCallback(void* userdata, int /*category*/, SDL_LogPriority priority, const char* message)
     {
-        if (log_stream == nullptr)
-            log_stream = stderr;
-        switch(level)
+#if SP_LOGGING_FALLBACK_STDIO
+        auto stream = static_cast<FILE*>(userdata);
+        auto write = [stream](const void* buffer, size_t size, size_t num)
+        {
+            return fwrite(buffer, size, num, stream);
+        };
+#else
+        auto stream = static_cast<SDL_RWops*>(userdata);
+        auto write = [stream](const void* buffer, size_t size, size_t num)
+        {
+            return SDL_RWwrite(stream, buffer, size, num);
+        };
+#endif
+        const auto& label = priority_labels[priority];
+        write(label.data(), label.size(), 1);
+        write(message, SDL_strlen(message), 1);
+        write("\n", 1, 1);
+#if SP_LOGGING_FALLBACK_STDIO
+        fflush(stream);
+#endif
+    }
+
+    constexpr SDL_LogPriority asSDLPriority(ELogLevel level)
+    {
+        auto priority = SDL_LOG_PRIORITY_VERBOSE;
+        switch (level)
         {
         case LOGLEVEL_DEBUG:
-            print_func("[DEBUG] ");
+            priority = SDL_LOG_PRIORITY_DEBUG;
             break;
         case LOGLEVEL_INFO:
-            print_func("[INFO]  ");
+            priority = SDL_LOG_PRIORITY_INFO;
             break;
         case LOGLEVEL_WARNING:
-            print_func("[WARN]  ");
+            priority = SDL_LOG_PRIORITY_WARN;
             break;
         case LOGLEVEL_ERROR:
-            print_func("[ERROR] ");
+            priority = SDL_LOG_PRIORITY_ERROR;
             break;
         }
+
+        return priority;
     }
+}
+
+ELogLevel Logging::global_level = LOGLEVEL_ERROR;
+
+Logging::Logging(ELogLevel in_level, std::string_view file, int /*line*/, std::string_view function_name)
+    :do_logging{in_level >= global_level}, level{in_level}
+{
 }
 
 Logging::~Logging()
 {
     if (do_logging)
-        print_func("\n");
+    {
+        auto sdl_level = SDL_LOG_PRIORITY_VERBOSE;
+        switch (level)
+        {
+        case LOGLEVEL_DEBUG:
+            sdl_level = SDL_LOG_PRIORITY_DEBUG;
+            break;
+        case LOGLEVEL_INFO:
+            sdl_level = SDL_LOG_PRIORITY_INFO;
+            break;
+        case LOGLEVEL_WARNING:
+            sdl_level = SDL_LOG_PRIORITY_WARN;
+            break;
+        case LOGLEVEL_ERROR:
+            sdl_level = SDL_LOG_PRIORITY_ERROR;
+            break;
+        }
+
+        SDL_LogMessage(SDL_LOG_CATEGORY_APPLICATION, sdl_level, "%s", stream.str().c_str());
+    }
 }
 
 const Logging& operator<<(const Logging& log, const char* str)
 {
     if (log.do_logging)
-        print_func(str);
+        log.stream << str;
     return log;
 }
 
 void Logging::setLogLevel(ELogLevel level)
 {
     global_level = level;
+    SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, asSDLPriority(global_level));
 }
 
 void Logging::setLogFile(std::string_view filename)
 {
-    log_stream = fopen(filename.data(), "wt");
-    #ifdef _WIN32
-    // win32 doesn't support line buffering. #1042
-    // Instead, don't buffer logging at all on Windows.
-    setvbuf(log_stream, NULL, _IONBF, 0);
-    #endif//_WIN32
+    SDL_LogOutputFunction current = nullptr;
+    void* current_data = nullptr;
+    SDL_LogGetOutputFunction(&current, &current_data);
+    if (current == &sdlCallback)
+    {
+#if SP_LOGGING_FALLBACK_STDIO
+        auto stream = static_cast<FILE*>(current_data);
+        fclose(stream);
+#else
+        auto stream = static_cast<SDL_RWops*>(current_data);
+        SDL_RWclose(stream);
+#endif
+    }
+
+#if SP_LOGGING_FALLBACK_STDIO
+    auto handle = fopen(filename.data(), "wt");
+#else
+    auto handle = SDL_RWFromFile(filename.data(), "wt");
+#endif
+
+    SDL_LogSetOutputFunction(&sdlCallback, handle);
 }
