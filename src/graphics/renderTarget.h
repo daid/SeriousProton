@@ -31,9 +31,9 @@ public:
 
     void drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color);
     void drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color);
-    void drawLine(const std::initializer_list<glm::vec2> points, glm::u8vec4 color);
-    void drawLine(const std::vector<glm::vec2> points, glm::u8vec4 color);
-    void drawLineBlendAdd(const std::vector<glm::vec2> points, glm::u8vec4 color);
+    void drawLine(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color);
+    void drawLine(const std::vector<glm::vec2>& points, glm::u8vec4 color);
+    void drawLineBlendAdd(const std::vector<glm::vec2>& points, glm::u8vec4 color);
     void drawPoint(glm::vec2 position, glm::u8vec4 color);
     void drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color);
     void drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color);
