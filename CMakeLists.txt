@@ -13,7 +13,6 @@ if(POLICY CMP0077)
 endif()
 
 # User-settings
-option(SERIOUSPROTON_WITH_JSON "Use json library." OFF)
 option(WARNING_IS_ERROR "Enable warning as errors." OFF)
 
 #
@@ -140,19 +139,6 @@ set_source_files_properties("${glDebug_inl}" PROPERTIES GENERATED TRUE)
 
 add_subdirectory(libs/lua)
 
-# json11
-if(SERIOUSPROTON_WITH_JSON)
-    SET(WITH_JSON "bundled" CACHE STRING "Which json11 to use (possible values are 'bundled' or 'system')")
-
-    if(WITH_JSON STREQUAL "system")
-        find_package(json11 REQUIRED)
-        message(STATUS "json11 version used: SYSTEM")
-    elseif(WITH_JSON STREQUAL "bundled")
-        message(STATUS "json11 version used: BUNDLED")
-        add_subdirectory(libs/json11)
-    endif()
-endif()
-
 SET(WITH_OPUS "bundled" CACHE STRING "Which opus library to use (possible values are 'bundled' or 'system')")
 
 if(WITH_OPUS STREQUAL "system")
@@ -271,8 +257,10 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/shader.h
     src/graphics/opengl.h
     src/i18n.h
-    src/io/keybinding.h
+    
     src/io/dataBuffer.h
+    src/io/json.h
+    src/io/keybinding.h
     src/io/pointer.h
     src/io/textinput.h
     src/io/http/request.h
@@ -386,7 +374,7 @@ target_link_libraries(seriousproton_deps
         $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
-        "$<BUILD_INTERFACE:opus;$<$<BOOL:${SERIOUSPROTON_WITH_JSON}>:json11>;$<$<NOT:$<BOOL:${ANDROID}>>:${CMAKE_DL_LIBS}>>"
+        "$<BUILD_INTERFACE:opus;$<$<NOT:$<BOOL:${ANDROID}>>:${CMAKE_DL_LIBS}>>"
 )
 
 if(NOT ANDROID)

@@ -167,7 +167,6 @@ varying vec4 v_color;
 void main()
 {
     gl_FragColor = texture2D(u_texture, v_texcoords) * v_color;
-    gl_FragColor.rgb *= v_color.a;
 }
 )");
     if (!vertices_vbo)
@@ -289,7 +288,7 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_co
     });
 }
 
-void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, glm::u8vec4 color)
+void RenderTarget::drawLine(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
 {
     auto n = lines_vertex_data.size();
     for(auto& p : points)
@@ -302,7 +301,7 @@ void RenderTarget::drawLine(const std::initializer_list<glm::vec2> points, glm::
     }
 }
 
-void RenderTarget::drawLine(const std::vector<glm::vec2> points, glm::u8vec4 color)
+void RenderTarget::drawLine(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
     auto n = lines_vertex_data.size();
     for(auto& p : points)
@@ -315,7 +314,7 @@ void RenderTarget::drawLine(const std::vector<glm::vec2> points, glm::u8vec4 col
     }
 }
 
-void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2> points, glm::u8vec4 color)
+void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
     finish();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);

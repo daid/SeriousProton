@@ -67,6 +67,7 @@ Engine::Engine()
 
 Engine::~Engine()
 {
+    updatableList.clear();
     delete soundManager;
     soundManager = nullptr;
 }
@@ -232,7 +233,11 @@ void Engine::handleEvent(SDL_Event& event)
     case SDL_FINGERDOWN:
     case SDL_FINGERUP:
     case SDL_FINGERMOTION:
+#if SDL_VERSION_ATLEAST(2, 0, 12)
+        window_id = event.tfinger.windowID;
+#else
         window_id = SDL_GetWindowID(SDL_GetMouseFocus());
+#endif
         break;
     case SDL_TEXTEDITING:
         window_id = event.edit.windowID;

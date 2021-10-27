@@ -1,12 +1,13 @@
 #ifndef LOGGING_H
 #define LOGGING_H
+#include <sstream>
 #include <string_view>
 
 #include <glm/vec2.hpp>
 #include "nonCopyable.h"
 #include "stringImproved.h"
 #if defined(_MSC_VER)
-#define LOG(LEVEL, ...) Logging(LOGLEVEL_ ## LEVEL, __FILE__, __LINE__, __FUNCTION__ , ##__VA_ARGS__)
+#define LOG(LEVEL, ...) Logging{LOGLEVEL_ ## LEVEL, __FILE__, __LINE__, __FUNCTION__ , ##__VA_ARGS__}
 #else
 #define LOG(LEVEL, ...) Logging(LOGLEVEL_ ## LEVEL, __FILE__, __LINE__, __PRETTY_FUNCTION__ , ##__VA_ARGS__)
 #endif
@@ -27,12 +28,13 @@ enum ELogLevel
 class Logging : sp::NonCopyable
 {
     static ELogLevel global_level;
-    static FILE* log_stream;
     bool do_logging;
+    mutable std::ostringstream stream;
+    ELogLevel level;
 public:
     Logging(ELogLevel level, std::string_view file, int line, std::string_view function_name);
     template<typename... ARGS>
-    Logging(ELogLevel level, std::string_view file, int line, std::string_view function_name, const ARGS&... args)
+    Logging(ELogLevel level, std::string_view file, int line, std::string_view function_name, ARGS&&... args)
     : Logging(level, file, line, function_name)
     {
         ((*this << args), ...);
