@@ -5,11 +5,22 @@
 
 extern "C" {
 	GLAPI int SP_texture_compression_etc2;
-}
+
 #ifndef GL_COMPRESSED_RGBA8_ETC2_EAC
 // ETC2 support. Since we're ES2, we have to check for it at runtime.
 #define GL_COMPRESSED_RGBA8_ETC2_EAC 0x9278
 #endif
+
+	// VAO functions come in a lot of flavors (APPLE, ARB, OES)
+	// but they all have the same prototype.
+	// Masquerade them to avoid callers to have to constantly check which extension is active
+	// To pick the right one.
+	GLAPI int SP_ANY_vertex_array_object;
+	GLAPI void (APIENTRYP sp_glBindVertexArrayANY)(GLuint);
+	GLAPI void (APIENTRYP sp_glDeleteVertexArraysANY)(GLsizei n, const GLuint* arrays);
+	GLAPI void (APIENTRYP sp_glGenVertexArraysANY)(GLsizei n, GLuint* arrays);
+	GLAPI GLboolean (APIENTRYP sp_glIsVertexArrayANY)(GLuint array);
+}
 
 namespace sp {
 	void initOpenGL();
@@ -73,5 +84,15 @@ namespace sp {
 #define SP_TRACE_OPENGL_CALL(name, function, ...) sp::glWrapper(name, __FILE__, SP_PRETTY_FUNCTION, __LINE__, sp::details::traceOpenGLCallParams(__VA_ARGS__), function,##__VA_ARGS__)
 
 #include "graphics/glDebug.inl"
+
+#define glBindVertexArrayANY(...) SP_TRACE_OPENGL_CALL("glBindVertexArrayANY", sp_glBindVertexArrayANY,##__VA_ARGS__)
+#define glDeleteVertexArraysANY(...) SP_TRACE_OPENGL_CALL("glDeleteVertexArraysANY", sp_glDeleteVertexArraysANY,##__VA_ARGS__)
+#define glGenVertexArraysANY(...) SP_TRACE_OPENGL_CALL("glGenVertexArraysANY", sp_glGenVertexArraysANY,##__VA_ARGS__)
+#define glIsVertexArrayANY(...) SP_TRACE_OPENGL_CALL("glIsVertexArrayANY", sp_glIsVertexArrayANY,##__VA_ARGS__)
+#else // SP_ENABLE_OPENGL_TRACING
+#define glBindVertexArrayANY sp_glBindVertexArrayANY
+#define glDeleteVertexArraysANY sp_glDeleteVertexArraysANY
+#define glGenVertexArraysANY sp_glGenVertexArraysANY
+#define glIsVertexArrayANY sp_glIsVertexArrayANY
 #endif // SP_ENABLE_OPENGL_TRACING
 #endif//SP_GRAPHICS_OPENGL_H

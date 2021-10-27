@@ -40,6 +40,7 @@ public:
     void drawTiled(const sp::Rect& rect, std::string_view texture);
     void drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color);
     void drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color);
+    void drawTriangles(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& indices, glm::u8vec4 color);
     void fillCircle(glm::vec2 center, float radius, glm::u8vec4 color);
     void fillRect(const sp::Rect& rect, glm::u8vec4 color);
 

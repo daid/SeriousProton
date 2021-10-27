@@ -437,6 +437,15 @@ void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::
     }
 }
 
+void RenderTarget::drawTriangles(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& indices, glm::u8vec4 color)
+{
+    auto n = vertex_data.size();
+    for(auto& p : points)
+        vertex_data.push_back({p, color, atlas_white_pixel});
+    for(auto idx : indices)
+        index_data.push_back(n + idx);
+}
+
 void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
 {
     const int point_count = 50;

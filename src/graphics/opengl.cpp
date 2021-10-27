@@ -9,6 +9,12 @@
 
 extern "C" {
     int SP_texture_compression_etc2 = 0;
+
+    int SP_ANY_vertex_array_object = 0;
+    void (APIENTRYP sp_glBindVertexArrayANY)(GLuint array) = nullptr;
+    void (APIENTRYP sp_glDeleteVertexArraysANY)(GLsizei n, const GLuint* arrays) = nullptr;
+    void (APIENTRYP sp_glGenVertexArraysANY)(GLsizei n, GLuint* arrays) = nullptr;
+    GLboolean(APIENTRYP sp_glIsVertexArrayANY)(GLuint array) = nullptr;
 }
 
 namespace {
@@ -111,6 +117,35 @@ void initOpenGL()
     std::vector<GLint> formats(count);
     glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, formats.data());
     SP_texture_compression_etc2 = std::find(std::begin(formats), std::end(formats), GL_COMPRESSED_RGBA8_ETC2_EAC) != std::end(formats);
+    
+    // Setup VAO functions.
+    if (GLAD_GL_ARB_vertex_array_object)
+    {
+        sp_glBindVertexArrayANY = glad_glBindVertexArray;
+        sp_glDeleteVertexArraysANY = glad_glDeleteVertexArrays;
+        sp_glGenVertexArraysANY = glad_glGenVertexArrays;
+        sp_glIsVertexArrayANY = glad_glIsVertexArray;
+    }
+    else if(GLAD_GL_OES_vertex_array_object)
+    {
+        sp_glBindVertexArrayANY = glad_glBindVertexArrayOES;
+        sp_glDeleteVertexArraysANY = glad_glDeleteVertexArraysOES;
+        sp_glGenVertexArraysANY = glad_glGenVertexArraysOES;
+        sp_glIsVertexArrayANY = glad_glIsVertexArrayOES;
+    }
+    else if (GLAD_GL_APPLE_vertex_array_object)
+    {
+        sp_glBindVertexArrayANY = glad_glBindVertexArrayAPPLE;
+        sp_glDeleteVertexArraysANY = glad_glDeleteVertexArraysAPPLE;
+        sp_glGenVertexArraysANY = glad_glGenVertexArraysAPPLE;
+        sp_glIsVertexArrayANY = glad_glIsVertexArrayAPPLE;
+    }
+
+    if (GLAD_GL_ARB_vertex_array_object || GLAD_GL_OES_vertex_array_object || GLAD_GL_APPLE_vertex_array_object)
+    {
+        SP_ANY_vertex_array_object = 1;
+    }
+        
 
     SDL_assert_always(glGetError() == GL_NO_ERROR);
 }
