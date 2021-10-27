@@ -19,8 +19,8 @@ public:
     Image(glm::ivec2 size, std::vector<glm::u8vec4>&& pixels);
     
     void operator=(Image&& other) noexcept;
-    Image(const Image&) = delete;
-    Image& operator =(const Image&) = delete;
+    Image(const Image&) = default;
+    Image& operator =(const Image&) = default;
     
     void update(glm::ivec2 size, const glm::u8vec4* ptr);
     void update(glm::ivec2 size, const glm::u8vec4* ptr, int pitch);
