@@ -182,32 +182,26 @@ std::vector<string> DirectoryResourceProvider::findResources(string searchPatter
         }
     }
 #else
-    findResources(found_files, "", searchPattern);
-#endif
-    return found_files;
-}
-
-void DirectoryResourceProvider::findResources(std::vector<string>& found_files, const string directory, const string searchPattern)
-{
-#if !defined(ANDROID)
     namespace fs = std::filesystem;
-    fs::path root{ basepath.c_str() };
-    root /= directory.c_str();
-    if (fs::is_directory(root))
+
+    const fs::path root{ basepath.data() };
+    constexpr auto traversal_options{ fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied };
+    std::error_code error_code{};
+    for (const auto& entry : fs::recursive_directory_iterator(root, traversal_options, error_code))
     {
-        constexpr auto traversal_options{ fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied };
-        std::error_code error_code{};
-        for (const auto& entry : fs::recursive_directory_iterator(root, traversal_options, error_code))
+        if (!error_code)
         {
-            if (!error_code)
-            {
-                auto relative_path = fs::relative(entry.path(), root).u8string();
-                if (!entry.is_directory() && searchMatch(relative_path, searchPattern))
-                    found_files.push_back(relative_path);
-            }
+            // Use relative generic paths (ie forward slashes)
+            // In case caller want to pattern match with a folder.
+            auto relative_path = fs::relative(entry.path(), root).generic_u8string();
+            if (!entry.is_directory() && searchMatch(relative_path, searchPattern))
+                found_files.push_back(relative_path);
         }
+        else
+            LOG(WARNING, entry.path().u8string(), " encountered an error: ", error_code.message());
     }
 #endif
+    return found_files;
 }
 
 P<ResourceStream> getResourceStream(string filename)
