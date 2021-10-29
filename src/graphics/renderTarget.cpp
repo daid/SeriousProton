@@ -443,7 +443,7 @@ void RenderTarget::drawTriangles(const std::vector<glm::vec2>& points, const std
     for(auto& p : points)
         vertex_data.push_back({p, color, atlas_white_pixel});
     for(auto idx : indices)
-        index_data.push_back(n + idx);
+        index_data.push_back(static_cast<uint16_t>(n + idx));
 }
 
 void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)

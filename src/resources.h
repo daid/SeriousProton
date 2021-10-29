@@ -38,8 +38,6 @@ public:
     
     virtual P<ResourceStream> getResourceStream(const string filename) override;
     virtual std::vector<string> findResources(const string searchPattern) override;
-private:
-    void findResources(std::vector<string>& paths, const string basepath, const string searchPattern);
 };
 
 P<ResourceStream> getResourceStream(const string filename);

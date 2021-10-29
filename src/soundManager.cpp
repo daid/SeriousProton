@@ -29,7 +29,7 @@ void SoundManager::playMusic(string name)
     startMusic(name, true);
 }
 
-void SoundManager::playMusicSet(std::vector<string> filenames)
+void SoundManager::playMusicSet(const std::vector<string>& filenames)
 {
     music_set = filenames;
     if (music_set.size() > 0)
