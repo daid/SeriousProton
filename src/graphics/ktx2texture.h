@@ -22,6 +22,7 @@ namespace sp {
         std::vector<uint8_t> toNative(uint32_t mip_level = 0);
 
         glm::ivec2 getSize(uint32_t mip_level = 0) const;
+        glm::ivec2 getNativeSize(uint32_t mip_level = 0) const;
         uint32_t getNativeFormat() const;
         uint32_t getMipCount() const;
 

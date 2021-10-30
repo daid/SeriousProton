@@ -129,6 +129,15 @@ namespace sp {
             if (!transcoder.get_image_level_info(info, mip_level, 0, 0))
                 return {};
 
+            return glm::ivec2{ info.m_orig_width, info.m_orig_height };
+        }
+
+        glm::ivec2 getNativeSize(uint32_t mip_level) const
+        {
+            basist::ktx2_image_level_info info;
+            if (!transcoder.get_image_level_info(info, mip_level, 0, 0))
+                return {};
+
             return glm::ivec2{ info.m_width, info.m_height };
         }
 
@@ -236,7 +245,7 @@ namespace sp {
             return {};
 
         if (auto pixels = toNative(mip_level); !pixels.empty())
-            return std::make_unique<BasicTexture>(getSize(mip_level), std::move(pixels), getNativeFormat());
+            return std::make_unique<BasicTexture>(details->getNativeSize(mip_level), std::move(pixels), getNativeFormat());
 
         return {};
     }
@@ -252,6 +261,11 @@ namespace sp {
     glm::ivec2 KTX2Texture::getSize(uint32_t mip_level) const
     {
         return details ? details->getSize(mip_level) : glm::ivec2{};
+    }
+
+    glm::ivec2 KTX2Texture::getNativeSize(uint32_t mip_level) const
+    {
+        return details ? details->getNativeSize(mip_level) : glm::ivec2{};
     }
 
     uint32_t KTX2Texture::getNativeFormat() const
