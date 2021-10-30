@@ -44,6 +44,11 @@ Window::Window(glm::vec2 virtual_size, bool fullscreen, RenderChain* render_chai
 
 Window::~Window()
 {
+
+    if (gl_context && all_windows.size() <= 1)
+        SDL_GL_DeleteContext(gl_context);
+    if (window)
+        SDL_DestroyWindow(static_cast<SDL_Window*>(window));
 }
 
 void Window::render()
