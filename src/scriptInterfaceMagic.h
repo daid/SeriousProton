@@ -222,8 +222,6 @@ template<> void convert<string>::param(lua_State* L, int& idx, string& str);
 
 template<> void convert<bool>::param(lua_State* L, int& idx, bool& b);
 
-template<> void convert<glm::u8vec4>::param(lua_State* L, int& idx, glm::u8vec4& color);
-
 template<typename T, glm::qualifier Q>
 struct convert<glm::vec<2, T, Q>>
 {
@@ -249,7 +247,38 @@ struct convert<glm::vec<3, T, Q>>
         convert<T>::param(L, idx, v.y);
         convert<T>::param(L, idx, v.z);
     }
+
+    static int returnType(lua_State* L, const glm::vec<3, T, Q>& t)
+    {
+        auto result = convert<T>::returnType(L, t.x);
+        result += convert<T>::returnType(L, t.y);
+        result += convert<T>::returnType(L, t.z);
+        return result;
+    }
 };
+
+template<typename T, glm::qualifier Q>
+struct convert<glm::vec<4, T, Q>>
+{
+    static void param(lua_State* L, int& idx, glm::vec<4, T, Q>& v)
+    {
+        convert<T>::param(L, idx, v.x);
+        convert<T>::param(L, idx, v.y);
+        convert<T>::param(L, idx, v.z);
+        convert<T>::param(L, idx, v.w);
+    }
+
+    static int returnType(lua_State* L, const glm::vec<4, T, Q>& t)
+    {
+        auto result = convert<T>::returnType(L, t.x);
+        result += convert<T>::returnType(L, t.y);
+        result += convert<T>::returnType(L, t.z);
+        result += convert<T>::returnType(L, t.w);
+        return result;
+    }
+};
+
+template<> void convert<glm::u8vec4>::param(lua_State* L, int& idx, glm::u8vec4& color);
 
 /* Convert parameters to std::vector<?> objects. */
 template<typename T>
