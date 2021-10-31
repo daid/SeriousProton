@@ -222,8 +222,6 @@ template<> void convert<string>::param(lua_State* L, int& idx, string& str);
 
 template<> void convert<bool>::param(lua_State* L, int& idx, bool& b);
 
-template<> void convert<glm::u8vec4>::param(lua_State* L, int& idx, glm::u8vec4& color);
-
 template<typename T, glm::qualifier Q>
 struct convert<glm::vec<2, T, Q>>
 {
@@ -279,6 +277,8 @@ struct convert<glm::vec<4, T, Q>>
         return result;
     }
 };
+
+template<> void convert<glm::u8vec4>::param(lua_State* L, int& idx, glm::u8vec4& color);
 
 /* Convert parameters to std::vector<?> objects. */
 template<typename T>
