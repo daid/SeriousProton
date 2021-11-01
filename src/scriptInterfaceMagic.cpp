@@ -72,6 +72,12 @@ template<> void convert<string>::param(lua_State* L, int& idx, string& str)
     str = luaL_checkstring(L, idx++);
 }
 
+
+template<> void convert<std::string_view>::param(lua_State* L, int& idx, std::string_view& str)
+{
+    str = luaL_checkstring(L, idx++);
+}
+
 template<> void convert<bool>::param(lua_State* L, int& idx, bool& b)
 {
     b = lua_toboolean(L, idx++);
