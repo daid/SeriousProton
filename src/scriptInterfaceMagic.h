@@ -219,6 +219,7 @@ struct convert<PVector<T>>
 //Specialized template for const char* so we can convert lua strings to C strings. This overrules the general T* template for const char*
 template<> void convert<const char*>::param(lua_State* L, int& idx, const char*& str);
 template<> void convert<string>::param(lua_State* L, int& idx, string& str);
+template<> void convert<std::string_view>::param(lua_State* L, int& idx, std::string_view& str);
 
 template<> void convert<bool>::param(lua_State* L, int& idx, bool& b);
 
