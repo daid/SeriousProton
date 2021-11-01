@@ -4,11 +4,14 @@
 #include "windowManager.h"
 #include "engine.h"
 
+#include "graphics/ktx2texture.h"
 #include "graphics/opengl.h"
 #include "graphics/shader.h"
 #include "vectorUtils.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <variant>
+
+#include <SDL_assert.h>
 
 
 namespace sp {
@@ -49,20 +52,84 @@ static ImageInfo getTextureInfo(std::string_view texture)
     auto it = image_info.find(texture);
     if (it != image_info.end())
         return it->second;
-    Image image;
-    auto stream = getResourceStream(texture);
+
+    P<ResourceStream> stream;
+    // filename variants:
+    //  name
+    //  name.notanextension
+    //  name.ext
+    //  name.notanext.ext
+    // Attempt to load the best version.
+    auto last_dot = texture.find_last_of('.');
+    if (last_dot != std::string::npos)
+    {
+        // Extension found, try and substitute it.
+        stream = getResourceStream(string(texture.substr(0, static_cast<uint32_t>(last_dot))) + ".ktx2");
+    }
+
     if (!stream)
-        stream = getResourceStream(string(texture) + ".png");
-    image.loadFromStream(stream);
+    {
+        // No extension, or substitution failed (maybe it wasn't an extension), blindly add it.
+        stream = getResourceStream(string(texture) + ".ktx2");
+    }
+
+    constexpr glm::ivec2 atlas_threshold{ 128, 128 };
+    KTX2Texture ktxtexture;
+    Image image;
+    if (stream)
+    {
+        if (ktxtexture.loadFromStream(stream))
+        {
+            auto size = ktxtexture.getSize();
+            if (size.x > atlas_threshold.x || size.y > atlas_threshold.y)
+            {
+                auto mip_level = std::min(textureManager.getBaseMipLevel(), ktxtexture.getMipCount() - 1);
+                size = ktxtexture.getSize(mip_level);
+                auto gltexture = ktxtexture.toTexture(mip_level);
+                if (gltexture)
+                {
+                    LOG(Info, "Loaded ", texture.data(), " (ktx2)");
+                    image_info[texture] = { gltexture.get(), size, {0.0f, 0.0f, 1.0f, 1.0f} };
+                    return { gltexture.release(), size, {0.0f, 0.0f, 1.0f, 1.0f} };
+                }
+                else
+                {
+                    LOG(Warning, "[ktx2]: ", texture.data(), " failed to load into texture.");
+                }
+            }
+            else if (auto to_image = ktxtexture.toImage(); to_image.has_value())
+            {
+                image = std::move(to_image.value());
+            }
+            else
+                LOG(Warning, "[ktx2]: ", texture.data(), " failed to load into image.");
+        }
+        else
+        {
+            LOG(Warning, "[ktx2]: ", texture.data(), " failed to read stream.");
+        }
+
+        // failed to load from the KTX2 file - fallback on image.
+        stream = nullptr;
+    }
+
+    if (!stream)
+    {
+        stream = getResourceStream(texture);
+        if (!stream)
+            stream = getResourceStream(string(texture) + ".png");
+        image.loadFromStream(stream);
+    }
+    
     auto size = image.getSize();
-    if (size.x > 128 || size.y > 128)
+    if (size.x > atlas_threshold.x || size.y > atlas_threshold.y)
     {
         LOG(Info, "Loaded ", string(texture));
-        auto gltexture = new sp::BasicTexture();
-        gltexture->loadFromImage(std::move(image));
+        auto gltexture = new sp::BasicTexture(image);
         image_info[texture] = {gltexture, size, {0.0f, 0.0f, 1.0f, 1.0f}};
         return {gltexture, size, {0.0f, 0.0f, 1.0f, 1.0f}};
     }
+
     Rect uv_rect = atlas_texture->add(std::move(image), 1);
     image_info[texture] = {nullptr, size, uv_rect};
     LOG(Info, "Added ", string(texture), " to atlas@", uv_rect.position, " ", uv_rect.size, "  ", atlas_texture->usageRate() * 100.0f, "%");

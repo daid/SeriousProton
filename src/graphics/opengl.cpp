@@ -5,10 +5,11 @@
 #include <SDL_video.h>
 #include <SDL_assert.h>
 
-
 #include "stringImproved.h"
 
 extern "C" {
+    int SP_texture_compression_etc2 = 0;
+
     int SP_ANY_vertex_array_object = 0;
     void (APIENTRYP sp_glBindVertexArrayANY)(GLuint array) = nullptr;
     void (APIENTRYP sp_glDeleteVertexArraysANY)(GLsizei n, const GLuint* arrays) = nullptr;
@@ -110,6 +111,13 @@ void initOpenGL()
             exit(1);
     }
 
+    // Find out supported compressed textures.
+    GLint count{};
+    glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &count);
+    std::vector<GLint> formats(count);
+    glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, formats.data());
+    SP_texture_compression_etc2 = std::find(std::begin(formats), std::end(formats), GL_COMPRESSED_RGBA8_ETC2_EAC) != std::end(formats);
+    
     // Setup VAO functions.
     if (GLAD_GL_ARB_vertex_array_object)
     {

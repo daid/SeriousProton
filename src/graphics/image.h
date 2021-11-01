@@ -19,18 +19,20 @@ public:
     Image(glm::ivec2 size, std::vector<glm::u8vec4>&& pixels);
     
     void operator=(Image&& other) noexcept;
+    Image(const Image&) = default;
+    Image& operator =(const Image&) = default;
     
     void update(glm::ivec2 size, const glm::u8vec4* ptr);
     void update(glm::ivec2 size, const glm::u8vec4* ptr, int pitch);
     bool loadFromStream(P<ResourceStream> stream);
-    
+
     glm::ivec2 getSize() const { return size; }
-    const glm::u8vec4* getPtr() const { return &pixels[0]; }
-    glm::u8vec4* getPtr() { return &pixels[0]; }
-    
+    const glm::u8vec4* getPtr() const { return pixels.data(); }
+    glm::u8vec4* getPtr() { return pixels.data(); }
+
 private:
-    glm::ivec2 size;
     std::vector<glm::u8vec4> pixels;
+    glm::ivec2 size;
 };
 
 }//namespace sp

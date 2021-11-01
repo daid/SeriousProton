@@ -18,33 +18,29 @@
 namespace sp {
 
 Image::Image()
-{
-}
+    :size{ 0, 0 }
+{}
 
 Image::Image(Image&& other) noexcept
+    :pixels{std::move(other.pixels)}, size{std::move(other.size)}
 {
-    pixels = std::move(other.pixels);
-    size = other.size;
     other.size = {0, 0};
 }
 
-Image::Image(glm::ivec2 size)
-: size(size)
+Image::Image(glm::ivec2 size_in)
+: pixels(size_in.x * size_in.y), size{size_in}
 {
-    pixels.resize(size.x * size.y);
 }
 
-Image::Image(glm::ivec2 size, glm::u8vec4 color)
-: size(size)
+Image::Image(glm::ivec2 size_in, glm::u8vec4 color)
+: pixels(size_in.x * size_in.y, color), size{size_in}
 {
-    pixels.resize(size.x * size.y, color);
 }
 
-Image::Image(glm::ivec2 size, std::vector<glm::u8vec4>&& pixels)
-: size(size)
+Image::Image(glm::ivec2 size_in, std::vector<glm::u8vec4>&& pixels_in)
+    : pixels{ std::move(pixels_in) }, size{ size_in }
 {
     SDL_assert(static_cast<size_t>(size.x * size.y) == pixels.size());
-    this->pixels = std::move(pixels);
 }
 
 void Image::operator=(Image&& other) noexcept
@@ -58,8 +54,7 @@ void Image::operator=(Image&& other) noexcept
 void Image::update(glm::ivec2 size, const glm::u8vec4* ptr)
 {
     this->size = size;
-    pixels.resize(size.x * size.y);
-    memcpy(pixels.data(), ptr, size.x * size.y * sizeof(glm::u8vec4));
+    pixels.assign(ptr, ptr + size.x * size.y);
 }
 
 void Image::update(glm::ivec2 size, const glm::u8vec4* ptr, int pitch)
