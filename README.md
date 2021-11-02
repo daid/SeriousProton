@@ -1,7 +1,7 @@
 SeriousProton
 =============
 
-C++ game engine coded on top of SFML from scratch. There will be dragons and undocumented stuff in here.
+C++ game engine coded on top of [SDL2](https://libsdl.org/) from scratch. There will be dragons and undocumented stuff in here.
 
 ## Master server
 
