@@ -142,8 +142,8 @@ struct convert<T*>
 
 template<class T>
 struct convert<P<T>>
-//TODO: Possible addition, make sure T is a subclass of PObject
 {
+    static_assert(std::is_base_of_v<PObject, T>, "T must be a derived class of PObject.");
     static void param(lua_State* L, int& idx, P<T>& ptr)
     {
         if (!lua_istable(L, idx))
@@ -210,6 +210,7 @@ struct convert<P<T>>
 template<class T>
 struct convert<PVector<T>>
 {
+    static_assert(std::is_base_of_v<PObject, T>, "T must be a derived class of PObject.");
     static int returnType(lua_State* L, const PVector<T>& pvector)
     {
         return convert<std::vector<P<T>>>::returnType(L, pvector);
