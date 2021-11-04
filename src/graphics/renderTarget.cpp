@@ -905,8 +905,6 @@ void RenderTarget::finish(sp::Texture* texture)
     if (index_data.size())
     {
         shader->bind();
-        glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);
 
         glUniform1i(shader->getUniformLocation("u_texture"), 0);
         glActiveTexture(GL_TEXTURE0);
@@ -932,8 +930,6 @@ void RenderTarget::finish(sp::Texture* texture)
     if (lines_index_data.size())
     {
         shader->bind();
-        glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);
 
         glUniform1i(shader->getUniformLocation("u_texture"), 0);
         glActiveTexture(GL_TEXTURE0);
