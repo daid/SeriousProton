@@ -33,6 +33,7 @@ public:
     static bool load(const string& resource_name);
     static void reset();
     static const Catalogue* get();
+    static std::unique_ptr<Catalogue> create(const string& resource_name);
 
     const string& tr(const string& input) const;
     const string& tr(const string& context, const string& input) const;
@@ -41,7 +42,6 @@ public:
 
 private:
     Catalogue();
-    
 
     bool load_resource(const string& resource);
     std::unordered_map<string, string> entries;

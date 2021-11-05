@@ -114,6 +114,13 @@ const Catalogue* Catalogue::get()
     return instance.get();
 }
 
+std::unique_ptr<Catalogue> Catalogue::create(const string& resource_name)
+{
+    auto result = std::unique_ptr<Catalogue>(new Catalogue);
+    result->load_resource(resource_name);
+    return result;
+}
+
 bool Catalogue::load_resource(const string& resource_name)
 {
     auto stream = getResourceStream(resource_name);
