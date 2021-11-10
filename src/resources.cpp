@@ -193,7 +193,7 @@ std::vector<string> DirectoryResourceProvider::findResources(string searchPatter
         {
             // Use relative generic paths (ie forward slashes)
             // In case caller want to pattern match with a folder.
-            auto relative_path = fs::relative(entry.path(), root).generic_u8string();
+            auto relative_path = entry.path().lexically_relative(root).generic_u8string();
             if (!entry.is_directory() && searchMatch(relative_path, searchPattern))
                 found_files.push_back(relative_path);
         }
