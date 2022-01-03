@@ -109,6 +109,7 @@ private:
     bool down_event;
     bool up_event;
 
+    string getKeyInternal(int index) const;
     void addBinding(int key, bool inverted);
 
     void setValue(float value);

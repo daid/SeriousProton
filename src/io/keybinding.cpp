@@ -183,6 +183,17 @@ string Keybinding::getKey(int index) const
 {
     if (index >= 0 && index < int(bindings.size()))
     {
+        if (bindings[index].inverted)
+            return "-" + getKeyInternal(index);
+        return getKeyInternal(index);
+    }
+    return "";
+}
+
+string Keybinding::getKeyInternal(int index) const
+{
+    if (index >= 0 && index < int(bindings.size()))
+    {
         int key = bindings[index].key;
         switch(key & type_mask)
         {
