@@ -96,6 +96,8 @@ Renderable::Renderable()
 
 Renderable::Renderable(RenderLayer* renderLayer)
 {
+    if (renderLayer == nullptr)
+        renderLayer = defaultRenderLayer;
     layer = renderLayer;
     if (layer)
         layer->renderableList.push_back(this);
