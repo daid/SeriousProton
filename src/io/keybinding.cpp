@@ -518,10 +518,12 @@ void Keybinding::handleEvent(const SDL_Event& event)
     switch(event.type)
     {
     case SDL_KEYDOWN:
-        updateKeys(event.key.keysym.sym | keyboard_mask, 1.0);
+        if (!SDL_IsTextInputActive())
+            updateKeys(event.key.keysym.sym | keyboard_mask, 1.0);
         break;
     case SDL_KEYUP:
-        updateKeys(event.key.keysym.sym | keyboard_mask, 0.0);
+        if (!SDL_IsTextInputActive())
+            updateKeys(event.key.keysym.sym | keyboard_mask, 0.0);
         break;
     case SDL_MOUSEBUTTONDOWN:
         {
