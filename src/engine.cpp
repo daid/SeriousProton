@@ -54,6 +54,7 @@ Engine::Engine()
 #endif
     SDL_Init(SDL_INIT_EVERYTHING);
     SDL_ShowCursor(false);
+    SDL_StopTextInput();
 
     atexit(SDL_Quit);
 
