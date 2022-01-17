@@ -46,6 +46,7 @@ Engine::Engine()
 
     SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
     SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
+    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1"); // Have clicking on a window to get focus generate mouse events. For multimonitor support.
 #ifdef SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH
     SDL_SetHint(SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH, "1");
 #elif defined(SDL_HINT_MOUSE_TOUCH_EVENTS)
