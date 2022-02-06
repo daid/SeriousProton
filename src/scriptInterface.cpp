@@ -28,6 +28,28 @@ static int irandom(lua_State* L)
 /// Generate a random number between the min and max value.
 REGISTER_SCRIPT_FUNCTION(irandom);
 
+static int traceback(lua_State* L)
+{
+    string result;
+    int level = 1;
+    lua_Debug debug;
+    while (lua_getstack(L, level++, &debug)) {
+        lua_getinfo(L, "Slnt", &debug);
+        result += string(debug.source);
+        if (debug.currentline > 0)
+            result += ":" + string(debug.currentline);
+        if (debug.name && debug.name[0])
+            result += ":" + string(debug.name);
+        result += "\n";
+    }
+    lua_pushstring(L, result.c_str());
+    return 1;
+}
+// traceback()
+// Returns a string containing a list of function calls up to the current point.
+//  useful for debugging and error reporting.
+REGISTER_SCRIPT_FUNCTION(traceback);
+
 static int destroyScript(lua_State* L)
 {
     ScriptObject* obj = static_cast<ScriptObject*>(lua_touserdata(L, lua_upvalueindex(1)));
