@@ -373,14 +373,16 @@ void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thick
     }
 }
 
-void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
+void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture, glm::vec2 offset)
 {
     auto info = getTextureInfo(texture);
     if (info.texture)
         finish();
 
     glm::vec2 increment = info.size;
-    glm::ivec2 tile_count{int(rect.size.x / increment.x) + 1, int(rect.size.y / increment.y) + 1};
+    offset.x *= increment.x;
+    offset.y *= increment.y;
+    glm::ivec2 tile_count{int((rect.size.x + offset.x) / increment.x) + 1, int((rect.size.y + offset.y) / increment.y) + 1};
     for(int x=0; x<tile_count.x; x++)
     {
         for(int y=0; y<tile_count.y; y++)
@@ -390,20 +392,40 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture)
                 uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
                 uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
             });
-            glm::vec2 p0 = rect.position + glm::vec2(increment.x * x, increment.y * y);
-            glm::vec2 p1 = rect.position + glm::vec2(increment.x * (x + 1), increment.y * (y + 1));
+            glm::vec2 p0 = rect.position + glm::vec2(increment.x * x, increment.y * y) - offset;
+            glm::vec2 p1 = rect.position + glm::vec2(increment.x * (x + 1), increment.y * (y + 1)) - offset;
+            glm::vec2 uv0 = info.uv_rect.position;
+            glm::vec2 uv1 = info.uv_rect.position + info.uv_rect.size;
+            if (p0.x < 0) {
+                uv0.x += info.uv_rect.size.x * -p0.x / increment.x;
+                p0.x = 0;
+            }
+            if (p0.y < 0) {
+                uv0.y += info.uv_rect.size.y * -p0.y / increment.y;
+                p0.y = 0;
+            }
+            if (p1.x > rect.position.x + rect.size.x)
+            {
+                uv1.x -= info.uv_rect.size.x * (p1.x - (rect.position.x + rect.size.x)) / increment.x;
+                p1.x = rect.position.x + rect.size.x;
+            }
+            if (p1.y > rect.position.y + rect.size.y)
+            {
+                uv1.y -= info.uv_rect.size.y * (p1.y - (rect.position.y + rect.size.y)) / increment.y;
+                p1.y = rect.position.y + rect.size.y;
+            }
             vertex_data.push_back({
                 p0, {255, 255, 255, 255},
-                {info.uv_rect.position.x, info.uv_rect.position.y}});
+                {uv0.x, uv0.y}});
             vertex_data.push_back({
                 {p0.x, p1.y}, {255, 255, 255, 255},
-                {info.uv_rect.position.x, info.uv_rect.position.y + info.uv_rect.size.y}});
+                {uv0.x, uv1.y}});
             vertex_data.push_back({
                 {p1.x, p0.y}, {255, 255, 255, 255},
-                {info.uv_rect.position.x + info.uv_rect.size.x, info.uv_rect.position.y}});
+                {uv1.x, uv0.y}});
             vertex_data.push_back({
                 p1, {255, 255, 255, 255},
-                {info.uv_rect.position.x + info.uv_rect.size.x, info.uv_rect.position.y + info.uv_rect.size.y}});
+                {uv1.x, uv1.y}});
         }
     }
     

@@ -14,6 +14,11 @@ sp::Shader* ShaderManager::getShader(string name)
         auto filename = defines[0];
         defines.erase(defines.begin());
         P<ResourceStream> code_stream = getResourceStream(filename + ".shader");
+        if (!code_stream)
+        {
+            shaders[name] = nullptr;
+            return nullptr;
+        }
         sp::Shader* shader = new sp::Shader(name, code_stream, defines);
         shaders[name] = shader;
         return shader;
