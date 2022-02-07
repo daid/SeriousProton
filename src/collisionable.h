@@ -23,6 +23,8 @@ private:
 class Collisionable : public virtual PObject
 {
 private:
+    glm::vec2 position{};
+    float rotation = 0.0f;
     b2Body* body;
     bool enable_physics;
     bool static_physics;
@@ -53,6 +55,7 @@ public:
     void setAngularVelocity(float velocity);
     float getAngularVelocity() const;
     void applyImpulse(glm::vec2 position, glm::vec2 impulse);
+    bool hasCollisionShape();
 
     glm::vec2 toLocalSpace(glm::vec2 v) const;
     glm::vec2 toWorldSpace(glm::vec2 v) const;

@@ -304,8 +304,11 @@ void Collisionable::createBody(b2Shape* shape)
 
 void Collisionable::destroyBody()
 {
-    if (body)
+    if (body) {
+        this->position = getPosition();
+        this->rotation = getRotation();
         CollisionManager::world->DestroyBody(body);
+    }
     body = nullptr;
 }
 
@@ -315,25 +318,29 @@ void Collisionable::collide(Collisionable* /*target*/, float /*force*/)
 
 void Collisionable::setPosition(glm::vec2 position)
 {
-    if (body == NULL) return;
-    body->SetTransform(v2b(position), body->GetAngle());
+    if (body == NULL)
+        this->position = position;
+    else
+        body->SetTransform(v2b(position), body->GetAngle());
 }
 
 glm::vec2 Collisionable::getPosition() const
 {
-    if (body == NULL) return glm::vec2(0, 0);
+    if (body == NULL) return position;
     return b2v(body->GetPosition());
 }
 
 void Collisionable::setRotation(float angle)
 {
-    if (body == NULL) return;
-    body->SetTransform(body->GetPosition(), glm::radians(angle));
+    if (body == NULL)
+        rotation = angle;
+    else
+        body->SetTransform(body->GetPosition(), glm::radians(angle));
 }
 
 float Collisionable::getRotation() const
 {
-    if (body == NULL) return 0;
+    if (body == NULL) return rotation;
     return glm::degrees(body->GetAngle());
 }
 
@@ -363,6 +370,11 @@ void Collisionable::applyImpulse(glm::vec2 position, glm::vec2 impulse)
 {
     if (body == NULL) return;
     body->ApplyLinearImpulse(v2b(impulse), v2b(position), true);
+}
+
+bool Collisionable::hasCollisionShape()
+{
+    return body != nullptr;
 }
 
 glm::vec2 Collisionable::toLocalSpace(glm::vec2 v) const
