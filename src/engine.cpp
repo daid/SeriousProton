@@ -12,6 +12,10 @@
 #include <thread>
 #include <SDL.h>
 
+#ifdef STEAMSDK
+#include "steam/steam_api.h"
+#endif
+
 #ifdef DEBUG
 #include <typeinfo>
 int DEBUG_PobjCount;
@@ -23,6 +27,16 @@ Engine* engine;
 Engine::Engine()
 {
     engine = this;
+
+#ifdef STEAMSDK
+    if (SteamAPI_RestartAppIfNecessary(1907040))
+        exit(1);
+    if (!SteamAPI_Init())
+    {
+        LOG(Error, "Failed to initialize steam API.");
+        exit(1);
+    }
+#endif
 
 #ifdef WIN32
     // Setup crash reporter (Dr. MinGW) if available.
@@ -107,7 +121,9 @@ void Engine::runMainLoop()
             CollisionManager::handleCollisions(delta);
             ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();
-            
+#ifdef STEAMSDK
+            SteamAPI_RunCallbacks();
+#endif
             std::this_thread::sleep_for(std::chrono::duration<float>(1.f/60.f - delta));
         }
     }else{
@@ -149,6 +165,9 @@ void Engine::runMainLoop()
             engine_timing.collision = engine_timing_stopwatch.restart();
             ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();
+#ifdef STEAMSDK
+            SteamAPI_RunCallbacks();
+#endif
 
             // Clear the window
             for(auto window : Window::all_windows)

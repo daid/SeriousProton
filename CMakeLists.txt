@@ -14,6 +14,7 @@ endif()
 
 # User-settings
 option(WARNING_IS_ERROR "Enable warning as errors." OFF)
+set(STEAMSDK "" CACHE PATH "Path to steam SDK, if not supplied steam features will not be available. Steam features are NOT required.")
 
 #
 set(EXTERNALS_DIR "${PROJECT_BINARY_DIR}/externals")
@@ -373,6 +374,13 @@ target_link_libraries(seriousproton_deps
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
         "$<BUILD_INTERFACE:opus;$<$<NOT:$<BOOL:${ANDROID}>>:${CMAKE_DL_LIBS}>>"
 )
+if (STEAMSDK)
+    target_link_libraries(seriousproton_deps INTERFACE steam_api)
+    target_link_directories(seriousproton_deps INTERFACE "${STEAMSDK}/redistributable_bin")
+    target_include_directories(seriousproton_deps INTERFACE "${STEAMSDK}/public")
+    target_compile_definitions(seriousproton_deps INTERFACE STEAMSDK=1)
+    message(STATUS "Using steam SDK at ${STEAMSDK}")
+endif()
 
 if(NOT ANDROID)
     # Necessary for some older compilers (except on android, where the fs api isn't used)
@@ -440,6 +448,9 @@ if(WIN32)
         install(FILES "${SDL2_PREFIX}/bin/SDL2.dll" DESTINATION . COMPONENT runtime)
     else()
         install(PROGRAMS "$<TARGET_PROPERTY:SDL2::SDL2,IMPORTED_LOCATION>" DESTINATION . COMPONENT runtime)
+    endif()
+    if(STEAMSDK)
+        install(FILES "${STEAMSDK}/redistributable_bin/steam_api.dll" DESTINATION . COMPONENT runtime)
     endif()
 
     if (MINGW)
