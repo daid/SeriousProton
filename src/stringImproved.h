@@ -680,6 +680,10 @@ public:
     /* Convert this string to a number */
     float toFloat() const { return strtof(c_str(), nullptr); }
     int toInt(int bits_per_digit=10) const { return strtol(c_str(), nullptr, bits_per_digit); }
+    bool toBool() const {
+        if (lower() == "true" || lower() == "yes" || lower() == "ok") return true;
+        return toInt() != 0;
+    }
 };
 #undef _WHITESPACE
 
