@@ -200,6 +200,7 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/shader.cpp
     src/graphics/opengl.cpp
     src/i18n.cpp
+    src/keyValueTree.cpp
     src/logging.cpp
     src/multiplayer.cpp
     src/multiplayer_client.cpp
@@ -226,6 +227,7 @@ set(source_files #All SeriousProton's objects to compile
     src/Updatable.cpp
     src/windowManager.cpp
     src/io/keybinding.cpp
+    src/io/keyValueTreeLoader.cpp
     src/io/network/address.cpp
     src/io/network/selector.cpp
     src/io/network/socketBase.cpp
@@ -255,10 +257,12 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/shader.h
     src/graphics/opengl.h
     src/i18n.h
+    src/keyValueTree.h
     
     src/io/dataBuffer.h
     src/io/json.h
     src/io/keybinding.h
+    src/io/keyValueTreeLoader.h
     src/io/pointer.h
     src/io/textinput.h
     src/io/http/request.h
