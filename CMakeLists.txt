@@ -232,6 +232,7 @@ set(source_files #All SeriousProton's objects to compile
     src/io/network/selector.cpp
     src/io/network/socketBase.cpp
     src/io/network/tcpListener.cpp
+    src/io/network/streamSocket.cpp
     src/io/network/tcpSocket.cpp
     src/io/network/udpSocket.cpp
     src/io/http/request.cpp
@@ -272,6 +273,7 @@ set(source_files #All SeriousProton's objects to compile
     src/io/network/selector.h
     src/io/network/socketBase.h
     src/io/network/tcpListener.h
+    src/io/network/streamSocket.h
     src/io/network/tcpSocket.h
     src/io/network/udpSocket.h
     src/logging.h

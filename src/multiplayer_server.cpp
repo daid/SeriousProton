@@ -6,6 +6,7 @@
 
 #include "io/http/request.h"
 
+
 #define MULTIPLAYER_COLLECT_DATA_STATS 0
 
 #if MULTIPLAYER_COLLECT_DATA_STATS
@@ -15,6 +16,7 @@ static std::unordered_map<string, int> multiplayer_stats;
 #else
 #define ADD_MULTIPLAYER_STATS(name, bytes) do {} while(0)
 #endif
+
 
 P<GameServer> game_server;
 

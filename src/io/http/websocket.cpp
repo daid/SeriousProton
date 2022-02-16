@@ -44,6 +44,7 @@ namespace websocket {
 
 Websocket::Websocket()
 {
+    socket = std::make_unique<network::TcpSocket>();
 }
 
 Websocket::Websocket(Websocket&& other)
@@ -143,12 +144,12 @@ bool Websocket::connect(const string& hostname, int port, const string& path, Sc
 #else
     if (scheme == Scheme::Https)
     {
-        if (!socket.connectSSL(io::network::Address(hostname), port))
+        if (!socket->connectSSL(io::network::Address(hostname), port))
             return false;
     }
     else
     {
-        if (!socket.connect(io::network::Address(hostname), port))
+        if (!socket->connect(io::network::Address(hostname), port))
             return false;
     }
 
@@ -168,9 +169,9 @@ bool Websocket::connect(const string& hostname, int port, const string& path, Sc
     request +=
         "Cache-Control: no-cache, no-store, must-revalidate\r\n"
         "\r\n";
-    socket.send(request.data(), request.length());
+    socket->send(request.data(), request.length());
     state = State::Connecting;
-    socket.setBlocking(false);
+    socket->setBlocking(false);
 #endif
     return true;
 }
@@ -184,7 +185,7 @@ void Websocket::close()
         socket_handle = -1;
     }
 #else
-    socket.close();
+    socket->close();
     buffer.clear();
     received_fragment.clear();
 #endif
@@ -217,7 +218,7 @@ void Websocket::send(const io::DataBuffer& data_buffer)
             websocket::fin_mask | websocket::opcode_text,
             uint8_t(data_buffer.getDataSize()),
         };
-        socket.send(header, sizeof(header));
+        socket->send(header, sizeof(header));
     }
     else if (data_buffer.getDataSize() < (1 << 16))
     {
@@ -227,7 +228,7 @@ void Websocket::send(const io::DataBuffer& data_buffer)
             uint8_t((data_buffer.getDataSize() >> 8) & 0xFF),
             uint8_t(data_buffer.getDataSize() & 0xFF),
         };
-        socket.send(header, sizeof(header));
+        socket->send(header, sizeof(header));
     }
     else
     {
@@ -240,10 +241,10 @@ void Websocket::send(const io::DataBuffer& data_buffer)
             uint8_t((data_buffer.getDataSize() >> 8) & 0xFF),
             uint8_t(data_buffer.getDataSize() & 0xFF),
         };
-        socket.send(header, sizeof(header));
+        socket->send(header, sizeof(header));
     }
 
-    socket.send(data_buffer.getData(), data_buffer.getDataSize());
+    socket->send(data_buffer.getData(), data_buffer.getDataSize());
 #endif
 }
 
@@ -347,7 +348,7 @@ bool Websocket::receive(io::DataBuffer& data_buffer)
             case websocket::opcode_close:
                 {
                     uint8_t reply[] = {websocket::fin_mask | websocket::opcode_close, 0};//close packet
-                    socket.send(reply, sizeof(reply));
+                    socket->send(reply, sizeof(reply));
                 }
                 close();
                 return false;
@@ -356,7 +357,7 @@ bool Websocket::receive(io::DataBuffer& data_buffer)
                     //Note: The standard says that we need to include the payload of the ping packet as payload in the pong packet.
                     //      We ignore this, as this no client seems to use this.
                     uint8_t reply[] = {websocket::fin_mask | websocket::opcode_pong, 0};//pong packet
-                    socket.send(reply, sizeof(reply));
+                    socket->send(reply, sizeof(reply));
                 }
                 break;
             case websocket::opcode_pong:
@@ -405,13 +406,13 @@ void Websocket::updateReceiveBuffer()
 #else
     char receive_buffer[4096];
     size_t received_size;
-    received_size = socket.receive(receive_buffer, sizeof(receive_buffer));
+    received_size = socket->receive(receive_buffer, sizeof(receive_buffer));
     if (received_size > 0)
     {
         buffer.resize(buffer.size() + received_size);
         memcpy(&buffer[buffer.size()] - received_size, receive_buffer, received_size);
     }
-    if (!socket.isConnected())
+    if (!socket->isConnected())
         state = State::Disconnected;
 
     if (state == State::Connecting)

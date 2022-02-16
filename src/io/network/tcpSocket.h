@@ -3,6 +3,7 @@
 
 #include <io/network/address.h>
 #include <io/network/socketBase.h>
+#include <io/network/streamSocket.h>
 #include <io/dataBuffer.h>
 
 
@@ -11,42 +12,26 @@ namespace io {
 namespace network {
 
 
-class TcpSocket : public SocketBase
+class TcpSocket : public SocketBase, public StreamSocket
 {
 public:
     TcpSocket();
-    TcpSocket(TcpSocket&& socket);
     ~TcpSocket();
-
-    TcpSocket& operator=(TcpSocket&& other);
 
     bool connect(const Address& host, int port);
     bool connectSSL(const Address& host, int port);
     void setDelay(bool delay); //Enable of disable the NO_DELAY/Nagle algorithm, allowing for less latency at the cost of more packets.
-    void close();
+    virtual void close() override;
 
-    bool isConnected();
+    virtual bool isConnected() override;
 
-    void send(const void* data, size_t size);
-    void queue(const void* data, size_t size);
-    size_t receive(void* data, size_t size);
+protected:
+    virtual size_t _send(const void* data, size_t size) override;
+    virtual size_t _receive(void* data, size_t size) override;
 
-    void send(const io::DataBuffer& buffer);
-    void queue(const io::DataBuffer& buffer);
-    bool receive(io::DataBuffer& buffer);
-
-    //Returns true if there is still data in the queue after sending
-    bool sendSendQueue();
 private:
-    
     void* ssl_handle;
 
-    std::string send_queue;
-    uint32_t receive_packet_size{0};
-    bool receive_packet_size_done{false};
-    std::vector<uint8_t> receive_buffer;
-    size_t received_size;
-    
     friend class TcpListener;
 };
 

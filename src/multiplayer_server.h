@@ -39,6 +39,7 @@ private:
     sp::SystemStopwatch last_update_time;
     sp::SystemTimer keep_alive_send_timer;
     sp::io::network::UdpSocket broadcast_listen_socket;
+    
     sp::io::network::TcpListener listenSocket;
     std::unique_ptr<sp::io::network::TcpSocket> new_socket;
     string server_name;

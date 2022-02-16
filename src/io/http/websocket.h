@@ -58,7 +58,7 @@ private:
     int socket_handle = -1;
 #else
     string websock_key;
-    sp::io::network::TcpSocket socket;
+    std::unique_ptr<sp::io::network::TcpSocket> socket;
     std::vector<uint8_t> buffer;
     std::vector<uint8_t> received_fragment;
     std::unordered_map<string, string> headers;

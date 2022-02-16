@@ -146,36 +146,9 @@ TcpSocket::TcpSocket()
 {
 }
 
-TcpSocket::TcpSocket(TcpSocket&& socket)
-{
-    *this = std::move(socket);
-}
-
 TcpSocket::~TcpSocket()
 {
     close();
-}
-
-TcpSocket& TcpSocket::operator=(TcpSocket&& socket)
-{
-    if (this == &socket)
-        return *this;
-    close();
-
-    handle = socket.handle;
-    ssl_handle = socket.ssl_handle;
-    send_queue = std::move(socket.send_queue);
-    blocking = socket.blocking;
-    receive_buffer = std::move(socket.receive_buffer);
-    received_size = socket.received_size;
-
-    socket.handle = INVALID_SOCKET;
-    socket.send_queue.clear();
-    socket.receive_buffer.clear();
-    socket.received_size = 0;
-    socket.ssl_handle = nullptr;
-
-    return *this;
 }
 
 bool TcpSocket::connect(const Address& host, int port)
@@ -270,7 +243,7 @@ void TcpSocket::close()
         ::close(handle);
 #endif
         handle = INVALID_SOCKET;
-        send_queue.clear();
+        clearQueue();
         if (ssl_handle)
             SSL_free(static_cast<SSL*>(ssl_handle));
         ssl_handle = nullptr;
@@ -282,47 +255,24 @@ bool TcpSocket::isConnected()
     return handle != INVALID_SOCKET;
 }
 
-void TcpSocket::send(const void* data, size_t size)
+size_t TcpSocket::_send(const void* data, size_t size)
 {
-    if (!isConnected())
-        return;
-    if (sendSendQueue())
+    int result;
+    if (ssl_handle)
+        result = SSL_write(static_cast<SSL*>(ssl_handle), static_cast<const char*>(data), static_cast<int>(size));
+    else
+        result = ::send(handle, reinterpret_cast<const void *>(static_cast<const char*>(data)), size, flags);
+    if (result < 0)
     {
-        queue(data, size);
-        return;
-    }
-
-    for(size_t done = 0; done < size; )
-    {
-        int result;
-        if (ssl_handle)
-            result = SSL_write(static_cast<SSL*>(ssl_handle), static_cast<const char*>(data) + done, static_cast<int>(size - done));
-        else
-            result = ::send(handle, reinterpret_cast<const void *>(static_cast<const char*>(data) + done), size - done, flags);
-        if (result < 0)
-        {
-            if (!isLastErrorNonBlocking())
-                close();
-            else
-                send_queue += std::string(static_cast<const char*>(data) + done, size - done);
-            return;
-        }
-        done += result;
-    }
-}
-
-void TcpSocket::queue(const void* data, size_t size)
-{
-    send_queue += std::string(static_cast<const char*>(data), size);
-}
-
-size_t TcpSocket::receive(void* data, size_t size)
-{
-    sendSendQueue();
-    
-    if (!isConnected())
+        if (!isLastErrorNonBlocking())
+            close();
         return 0;
-    
+    }
+    return result;
+}
+
+size_t TcpSocket::_receive(void* data, size_t size)
+{
     int result;
     if (ssl_handle)
         result = SSL_read(static_cast<SSL*>(ssl_handle), static_cast<char*>(data), static_cast<int>(size));
@@ -335,111 +285,6 @@ size_t TcpSocket::receive(void* data, size_t size)
             close();
     }
     return result;
-}
-
-void TcpSocket::send(const io::DataBuffer& buffer)
-{
-    io::DataBuffer packet_size(uint32_t(buffer.getDataSize()));
-    send(packet_size.getData(), packet_size.getDataSize());
-    send(buffer.getData(), buffer.getDataSize());
-}
-
-void TcpSocket::queue(const io::DataBuffer& buffer)
-{
-    io::DataBuffer packet_size(uint32_t(buffer.getDataSize()));
-    queue(packet_size.getData(), packet_size.getDataSize());
-    queue(buffer.getData(), buffer.getDataSize());
-}
-
-bool TcpSocket::receive(io::DataBuffer& buffer)
-{
-    if (!isConnected())
-        return 0;
-    
-    if (!receive_packet_size_done)
-    {
-        uint8_t size_buffer[1];
-        do {
-            int result;
-            if (ssl_handle)
-                result = SSL_read(static_cast<SSL*>(ssl_handle), reinterpret_cast<char*>(size_buffer), 1);
-            else
-                result = ::recv(handle, size_buffer, 1, flags);
-            if (result < 0)
-            {
-                result = 0;
-                if (!isLastErrorNonBlocking())
-                {
-                    close();
-                    return false;
-                }
-            }
-            if (result == 0)
-                return false;
-            receive_packet_size = (receive_packet_size << 7) | (size_buffer[0] & 0x7F);
-            if (!(size_buffer[0] & 0x80))
-                receive_packet_size_done = true;
-        } while(!receive_packet_size_done);
-
-        receive_buffer.resize(receive_packet_size);
-        receive_packet_size = 0;
-        received_size = 0;
-    }
-
-    while(true)
-    {
-        int result;
-        if (ssl_handle)
-            result = SSL_read(static_cast<SSL*>(ssl_handle), reinterpret_cast<char*>(&receive_buffer[received_size]), static_cast<int>(receive_buffer.size() - received_size));
-        else
-            result = ::recv(handle, &receive_buffer[received_size], receive_buffer.size() - received_size, flags);
-        if (result < 0)
-        {
-            result = 0;
-            if (!isLastErrorNonBlocking())
-            {
-                close();
-                return false;
-            }
-        }
-        received_size += result;
-        if (received_size == receive_buffer.size())
-        {
-            buffer = std::move(receive_buffer);
-            received_size = 0;
-            receive_packet_size_done = false;
-            return true;
-        }
-        if (result < 1)
-            break;
-    }
-    
-    return false;
-}
-
-bool TcpSocket::sendSendQueue()
-{
-    if (send_queue.size() < 1)
-        return false;
-    
-    int result;
-    do
-    {
-        if (ssl_handle)
-            result = SSL_write(static_cast<SSL*>(ssl_handle), static_cast<const char*>(send_queue.data()), static_cast<int>(send_queue.size()));
-        else
-            result = ::send(handle, static_cast<const void*>(send_queue.data()), send_queue.size(), flags);
-        if (result < 0)
-        {
-            result = 0;
-            if (!isLastErrorNonBlocking())
-                close();
-        }
-        if (result > 0)
-            send_queue = send_queue.substr(result);
-    } while(result > 0 && send_queue.size() > 0);
-    
-    return send_queue.size() > 0;
 }
 
 }//namespace network
