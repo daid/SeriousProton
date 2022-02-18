@@ -24,6 +24,7 @@ static inline int recv(SOCKET s, void* buf, size_t len, int flags)
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <poll.h>
 static constexpr int flags = MSG_NOSIGNAL;
 static constexpr intptr_t INVALID_SOCKET = -1;
 #endif
@@ -265,7 +266,11 @@ StreamSocket::State TcpSocket::getState()
         fds.fd = handle;
         fds.events = POLLOUT;
         fds.revents = 0;
+#ifdef WIN32
         if (WSAPoll(&fds, 1, 0))
+#else
+        if (poll(&fds, 1, 0))
+#endif
         {
             struct sockaddr_in6 server_addr;
             int server_addr_len = sizeof(server_addr);
