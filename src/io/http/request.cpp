@@ -77,7 +77,7 @@ Request::Response Request::request(const string& method, const string& path, con
     }
     free(body);
 #else
-    if (!socket.isConnected())
+    if (socket.getState() == sp::io::network::StreamSocket::State::Closed)
     {
         if (scheme == Scheme::Auto)
             scheme = ((port == 443) ? Scheme::Https : Scheme::Http);

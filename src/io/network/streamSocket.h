@@ -1,9 +1,8 @@
 #ifndef SP2_IO_NETWORK_STREAM_SOCKET_H
 #define SP2_IO_NETWORK_STREAM_SOCKET_H
 
-#include <io/network/address.h>
-#include <io/network/socketBase.h>
 #include <io/dataBuffer.h>
+#include <nonCopyable.h>
 
 
 namespace sp {
@@ -14,10 +13,15 @@ namespace network {
 class StreamSocket : sp::NonCopyable
 {
 public:
+    enum class State {
+        Closed,
+        Connecting,
+        Connected
+    };
     virtual ~StreamSocket();
     virtual void close() = 0;
 
-    virtual bool isConnected() = 0;
+    virtual State getState() = 0;
 
     void send(const void* data, size_t size);
     void queue(const void* data, size_t size);

@@ -412,7 +412,7 @@ void Websocket::updateReceiveBuffer()
         buffer.resize(buffer.size() + received_size);
         memcpy(&buffer[buffer.size()] - received_size, receive_buffer, received_size);
     }
-    if (!socket->isConnected())
+    if (socket->getState() == sp::io::network::StreamSocket::State::Closed)
         state = State::Disconnected;
 
     if (state == State::Connecting)

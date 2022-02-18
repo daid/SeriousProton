@@ -27,7 +27,6 @@ void SocketBase::setBlocking(bool blocking)
     this->blocking = blocking;
     if (handle == INVALID_SOCKET)
     {
-        LOG(Warning, "Failed to setBlocking due to being called on an incomplete socket");
         return;
     }
 

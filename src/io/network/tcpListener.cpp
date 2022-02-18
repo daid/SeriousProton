@@ -115,7 +115,7 @@ bool TcpListener::accept(TcpSocket& socket)
             close();
         return false;
     }
-    if (socket.isConnected())
+    if (socket.getState() != StreamSocket::State::Closed)
         socket.close();
     socket.handle = result;
     socket.setBlocking(socket.blocking);

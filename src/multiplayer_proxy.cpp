@@ -145,7 +145,7 @@ void GameServerProxy::update(float delta)
                 break;
             }
         }
-        if (!mainSocket->isConnected() || no_data_timeout.isExpired())
+        if (mainSocket->getState() == sp::io::network::StreamSocket::State::Closed || no_data_timeout.isExpired())
         {
             LOG(INFO) << "Disconnected proxy";
             mainSocket->close();
@@ -257,7 +257,7 @@ void GameServerProxy::update(float delta)
                 break;
             }
         }
-        if (info.socket == NULL || !info.socket->isConnected())
+        if (info.socket == NULL || info.socket->getState() == sp::io::network::StreamSocket::State::Closed)
         {
             if (info.validClient)
             {

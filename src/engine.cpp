@@ -14,6 +14,7 @@
 
 #ifdef STEAMSDK
 #include "steam/steam_api.h"
+#include "steam/steam_api_flat.h"
 #endif
 
 #ifdef DEBUG
@@ -36,6 +37,8 @@ Engine::Engine()
         LOG(Error, "Failed to initialize steam API.");
         exit(1);
     }
+    SteamNetworkingUtils()->InitRelayNetworkAccess();
+    LOG(Debug, "StreamID:", SteamAPI_ISteamUser_GetSteamID(SteamAPI_SteamUser()));
 #endif
 
 #ifdef WIN32

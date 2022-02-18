@@ -153,14 +153,15 @@ TcpSocket::~TcpSocket()
 
 bool TcpSocket::connect(const Address& host, int port)
 {
-    if (isConnected())
+    if (handle != INVALID_SOCKET)
         close();
-
+    
     for(const auto& addr_info : host.addr_info)
     {
         handle = ::socket(addr_info.family, SOCK_STREAM, 0);
         if (handle == INVALID_SOCKET)
             return false;
+        setBlocking(blocking);
         if (addr_info.family == AF_INET && sizeof(struct sockaddr_in) == addr_info.addr.size())
         {
             struct sockaddr_in server_addr;
@@ -168,8 +169,10 @@ bool TcpSocket::connect(const Address& host, int port)
             memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             server_addr.sin_port = htons(port);
             if (::connect(handle, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr)) == 0)
+                return true;
+            if (isLastErrorNonBlocking())
             {
-                setBlocking(blocking);
+                connecting = true;
                 return true;
             }
         }
@@ -180,8 +183,10 @@ bool TcpSocket::connect(const Address& host, int port)
             memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
             server_addr.sin6_port = htons(port);
             if (::connect(handle, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(server_addr)) == 0)
+                return true;
+            if (isLastErrorNonBlocking())
             {
-                setBlocking(blocking);
+                connecting = true;
                 return true;
             }
         }
@@ -235,7 +240,7 @@ void TcpSocket::setDelay(bool delay)
 
 void TcpSocket::close()
 {
-    if (isConnected())
+    if (handle != INVALID_SOCKET)
     {
 #ifdef _WIN32
         closesocket(handle);
@@ -243,6 +248,7 @@ void TcpSocket::close()
         ::close(handle);
 #endif
         handle = INVALID_SOCKET;
+        connecting = false;
         clearQueue();
         if (ssl_handle)
             SSL_free(static_cast<SSL*>(ssl_handle));
@@ -250,9 +256,30 @@ void TcpSocket::close()
     }
 }
 
-bool TcpSocket::isConnected()
+StreamSocket::State TcpSocket::getState()
 {
-    return handle != INVALID_SOCKET;
+    if (handle == INVALID_SOCKET)
+        return StreamSocket::State::Closed;
+    if (connecting) {
+        struct pollfd fds;
+        fds.fd = handle;
+        fds.events = POLLOUT;
+        fds.revents = 0;
+        if (WSAPoll(&fds, 1, 0))
+        {
+            struct sockaddr_in6 server_addr;
+            int server_addr_len = sizeof(server_addr);
+            if (getpeername(handle, reinterpret_cast<sockaddr*>(&server_addr), &server_addr_len))
+            {
+                close();
+                return StreamSocket::State::Closed;
+            }
+            connecting = false;
+            return StreamSocket::State::Connected;
+        }
+        return StreamSocket::State::Connecting;
+    }
+    return StreamSocket::State::Connected;
 }
 
 size_t TcpSocket::_send(const void* data, size_t size)

@@ -44,7 +44,6 @@ Window::Window(glm::vec2 virtual_size, bool fullscreen, RenderChain* render_chai
 
 Window::~Window()
 {
-
     if (gl_context && all_windows.size() <= 1)
         SDL_GL_DeleteContext(gl_context);
     if (window)
@@ -167,8 +166,9 @@ void Window::create()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     int flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
-    if (fullscreen)
+    if (fullscreen) {
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    }
     window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), windowWidth, windowHeight, flags);
     if (!gl_context)
         gl_context = SDL_GL_CreateContext(static_cast<SDL_Window*>(window));

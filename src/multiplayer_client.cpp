@@ -3,6 +3,11 @@
 #include "multiplayer_internal.h"
 #include "engine.h"
 
+#include "io/network/tcpSocket.h"
+#ifdef STEAMSDK
+#include "io/network/steamP2PSocket.h"
+#endif
+
 P<GameClient> game_client;
 
 GameClient::GameClient(int version_number, sp::io::network::Address server, int port_nr)
@@ -13,15 +18,34 @@ GameClient::GameClient(int version_number, sp::io::network::Address server, int 
 
     client_id = -1;
     game_client = this;
-    status = ReadyToConnect;
+    status = Connecting;
 
     no_data_timeout.start(no_data_disconnect_time);
+    auto sock = std::make_unique<sp::io::network::TcpSocket>();
+    sock->setBlocking(false);
+    sock->connect(server, port_nr);
+    socket = std::move(sock);
 }
+
+#ifdef STEAMSDK
+GameClient::GameClient(int version_number, uint64_t steam_id)
+{
+    SDL_assert(!game_server);
+    SDL_assert(!game_client);
+
+    client_id = -1;
+    game_client = this;
+    status = Connecting;
+
+    no_data_timeout.start(no_data_disconnect_time);
+    auto sock = std::make_unique<sp::io::network::SteamP2PSocket>();
+    sock->connect(steam_id);
+    socket = std::move(sock);
+}
+#endif
 
 GameClient::~GameClient()
 {
-    if (connect_thread.joinable())
-        connect_thread.join();
 }
 
 P<MultiplayerObject> GameClient::getObjectById(int32_t id)
@@ -33,13 +57,25 @@ P<MultiplayerObject> GameClient::getObjectById(int32_t id)
 
 void GameClient::update(float /*delta*/)
 {
-    if (status == ReadyToConnect)
-    {
-        status = Connecting;
-        connect_thread = std::thread(&GameClient::runConnect, this);
-    }
-    if (status == Disconnected || status == Connecting)
+    if (status == Disconnected)
         return;
+    if (status == Connecting)
+    {
+        switch(socket->getState())
+        {
+        case sp::io::network::StreamSocket::State::Closed:
+            status = Disconnected;
+            LOG(INFO) << "GameClient: Failed to connect";
+            break;
+        case sp::io::network::StreamSocket::State::Connecting:
+            break;
+        case sp::io::network::StreamSocket::State::Connected:
+            LOG(INFO) << "GameClient: Connected, waiting for authentication";
+            status = Authenticating;
+            break;
+        }
+        return;
+    }
 
     std::vector<int32_t> delList;
     for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
@@ -54,7 +90,7 @@ void GameClient::update(float /*delta*/)
 
     sp::io::DataBuffer reply;
     sp::io::DataBuffer packet;
-    while(socket.receive(packet))
+    while(socket->receive(packet))
     {
         no_data_timeout.start(no_data_disconnect_time);
 
@@ -62,7 +98,6 @@ void GameClient::update(float /*delta*/)
         packet >> command;
         switch(status)
         {
-        case ReadyToConnect:
         case Connecting:
         case Authenticating:
         case WaitingForPassword:
@@ -85,7 +120,7 @@ void GameClient::update(float /*delta*/)
                     {
                         reply.clear();
                         reply << CMD_CLIENT_SEND_AUTH << int32_t(version_number) << string("");
-                        socket.send(reply);
+                        socket->send(reply);
                     }else{
                         status = WaitingForPassword;
                     }
@@ -100,7 +135,7 @@ void GameClient::update(float /*delta*/)
                 // send response to calculate ping
                 reply.clear();
                 reply << CMD_ALIVE_RESP;
-                socket.send(reply);
+                socket->send(reply);
                 break;
             default:
                 LOG(ERROR) << "Unknown command from server: " << command;
@@ -210,7 +245,7 @@ void GameClient::update(float /*delta*/)
                 // send response to calculate ping
                 reply.clear();
                 reply << CMD_ALIVE_RESP;
-                socket.send(reply);
+                socket->send(reply);
                 break;
             default:
                 LOG(ERROR) << "Unknown command from server: " << command;
@@ -220,18 +255,18 @@ void GameClient::update(float /*delta*/)
         }
     }
 
-    if (!socket.isConnected() || no_data_timeout.isExpired())
+    if (socket->getState() == sp::io::network::StreamSocket::State::Closed || no_data_timeout.isExpired())
     {
         if (disconnect_reason == DisconnectReason::None)
-            disconnect_reason = socket.isConnected() ? DisconnectReason::TimedOut : DisconnectReason::ClosedByServer;
-        socket.close();
+            disconnect_reason = socket->getState() != sp::io::network::StreamSocket::State::Closed ? DisconnectReason::TimedOut : DisconnectReason::ClosedByServer;
+        socket->close();
         status = Disconnected;
     }
 }
 
 void GameClient::sendPacket(sp::io::DataBuffer& packet)
 {
-    socket.send(packet);
+    socket->send(packet);
 }
 
 void GameClient::sendPassword(string password)
@@ -242,21 +277,7 @@ void GameClient::sendPassword(string password)
     disconnect_reason = DisconnectReason::BadCredentials;
     sp::io::DataBuffer reply;
     reply << CMD_CLIENT_SEND_AUTH << int32_t(version_number) << password;
-    socket.send(reply);
+    socket->send(reply);
     
     status = Authenticating;
-}
-
-void GameClient::runConnect()
-{
-    if (socket.connect(server, static_cast<uint16_t>(port_nr)))
-    {
-        LOG(INFO) << "GameClient: Connected, waiting for authentication";
-        status = Authenticating;
-    }else{
-        LOG(INFO) << "GameClient: Failed to connect";
-        status = Disconnected;
-    }
-    socket.setBlocking(false);
-    socket.setDelay(false);
 }

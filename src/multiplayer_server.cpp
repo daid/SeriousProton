@@ -6,6 +6,10 @@
 
 #include "io/http/request.h"
 
+#ifdef STEAMSDK
+#include "io/network/steamP2PSocket.h"
+#endif
+
 
 #define MULTIPLAYER_COLLECT_DATA_STATS 0
 
@@ -35,12 +39,12 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     nextObjectId = 1;
     nextclient_id = 1;
 
-    if (!listenSocket.listen(static_cast<uint16_t>(listen_port)))
+    if (!listen_socket.listen(static_cast<uint16_t>(listen_port)))
     {
         LOG(ERROR) << "Failed to listen on TCP port: " << listen_port;
         destroy();
     }
-    listenSocket.setBlocking(false);
+    listen_socket.setBlocking(false);
     new_socket = std::make_unique<sp::io::network::TcpSocket>();
     if (!broadcast_listen_socket.bind(static_cast<uint16_t>(listen_port)))
     {
@@ -51,6 +55,12 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
         LOG(Error, "Failed to join multicast group for local server discovery");
     }
     broadcast_listen_socket.setBlocking(false);
+#ifdef STEAMSDK
+    if (!listen_steam.listen())
+    {
+        LOG(Error, "Failed to listen for steam P2P connections");
+    }
+#endif
 #if MULTIPLAYER_COLLECT_DATA_STATS
     multiplayer_stats_dump.repeat(1.0f);
 #endif
@@ -74,9 +84,9 @@ void GameServer::connectToProxy(sp::io::network::Address address, int port)
     }
 
     ClientInfo info;
+    socket->setBlocking(false);
+    socket->setDelay(false);
     info.socket = std::move(socket);
-    info.socket->setBlocking(false);
-    info.socket->setDelay(false);
     info.client_id = nextclient_id;
     info.receive_state = CRS_Auth;
     nextclient_id++;
@@ -99,8 +109,11 @@ void GameServer::destroy()
     clientList.clear();
     objectMap.clear();
 
-    listenSocket.close();
+    listen_socket.close();
     broadcast_listen_socket.close();
+#ifdef STEAMSDK
+    listen_steam.close();
+#endif
 
     Updatable::destroy();
 }
@@ -196,23 +209,17 @@ void GameServer::update(float /*gameDelta*/)
 
     handleBroadcastUDPSocket(delta);
 
-    if (listenSocket.accept(*new_socket))
+    if (listen_socket.accept(*new_socket))
     {
         new_socket->setBlocking(false);
         new_socket->setDelay(false);
-        ClientInfo info;
-        info.socket = std::move(new_socket);
+        newClientConnection(std::move(new_socket));
         new_socket = std::make_unique<sp::io::network::TcpSocket>();
-        info.client_id = nextclient_id;
-        info.receive_state = CRS_Auth;
-        nextclient_id++;
-        {
-            sp::io::DataBuffer packet;
-            packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
-            info.socket->queue(packet);
-        }
-        LOG(INFO) << "New connection: " << info.client_id << " waiting for authentication";
-        clientList.push_back(std::move(info));
+    }
+    auto steam_socket = listen_steam.accept();
+    if (steam_socket)
+    {
+        newClientConnection(std::move(steam_socket));
     }
 
     for(unsigned int n=0; n<clientList.size(); n++)
@@ -389,7 +396,7 @@ void GameServer::update(float /*gameDelta*/)
         if (clientList[n].socket != NULL) {
             clientList[n].socket->sendSendQueue();
         }
-        if (clientList[n].socket == NULL || !clientList[n].socket->isConnected())
+        if (clientList[n].socket == NULL || clientList[n].socket->getState() == sp::io::network::StreamSocket::State::Closed)
         {
             if (clientList[n].socket)
             {
@@ -514,6 +521,22 @@ void GameServer::handleBroadcastUDPSocket(float delta)
         broadcast_listen_socket.sendMulticast(sendPacket, 666, listen_port + 1);
         broadcast_listen_socket.sendBroadcast(sendPacket, listen_port + 1);
     }
+}
+
+void GameServer::newClientConnection(std::unique_ptr<sp::io::network::StreamSocket> socket)
+{
+    ClientInfo info;
+    info.socket = std::move(socket);
+    info.client_id = nextclient_id;
+    info.receive_state = CRS_Auth;
+    nextclient_id++;
+    {
+        sp::io::DataBuffer packet;
+        packet << CMD_REQUEST_AUTH << int32_t(version_number) << bool(server_password != "");
+        info.socket->queue(packet);
+    }
+    LOG(INFO) << "New connection: " << info.client_id << " waiting for authentication";
+    clientList.push_back(std::move(info));
 }
 
 void GameServer::registerObject(P<MultiplayerObject> obj)

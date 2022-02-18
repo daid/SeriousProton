@@ -310,6 +310,15 @@ set(source_files #All SeriousProton's objects to compile
     "${glDebug_inl}"
 )
 
+if(STEAMSDK)
+    list(APPEND source_files
+        src/io/network/steamP2PListener.cpp
+        src/io/network/steamP2PListener.h
+        src/io/network/steamP2PSocket.cpp
+        src/io/network/steamP2PSocket.h
+    )
+endif()
+
 if(NOT ANDROID)
     list(APPEND source_files src/dynamicLibrary.cpp)
 endif()

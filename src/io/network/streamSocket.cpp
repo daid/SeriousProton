@@ -13,7 +13,7 @@ StreamSocket::~StreamSocket()
 
 void StreamSocket::send(const void* data, size_t size)
 {
-    if (!isConnected())
+    if (getState() != State::Connected)
         return;
     if (sendSendQueue())
     {
@@ -26,7 +26,7 @@ void StreamSocket::send(const void* data, size_t size)
         size_t result = _send(static_cast<const char*>(data) + done, static_cast<int>(size - done));
         if (result == 0)
         {
-            if (isConnected())
+            if (getState() == State::Connected)
                 send_queue += std::string(static_cast<const char*>(data) + done, size - done);
             return;
         }
@@ -43,7 +43,7 @@ size_t StreamSocket::receive(void* data, size_t size)
 {
     sendSendQueue();
     
-    if (!isConnected())
+    if (getState() != State::Connected)
         return 0;
     
     return _receive(data, size);
@@ -65,7 +65,7 @@ void StreamSocket::queue(const io::DataBuffer& buffer)
 
 bool StreamSocket::receive(io::DataBuffer& buffer)
 {
-    if (!isConnected())
+    if (getState() != State::Connected)
         return 0;
     
     if (!receive_packet_size_done)

@@ -23,7 +23,7 @@ public:
     void setDelay(bool delay); //Enable of disable the NO_DELAY/Nagle algorithm, allowing for less latency at the cost of more packets.
     virtual void close() override;
 
-    virtual bool isConnected() override;
+    virtual State getState() override;
 
 protected:
     virtual size_t _send(const void* data, size_t size) override;
@@ -31,6 +31,7 @@ protected:
 
 private:
     void* ssl_handle;
+    bool connecting = false;
 
     friend class TcpListener;
 };

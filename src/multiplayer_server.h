@@ -3,7 +3,11 @@
 
 #include "io/network/udpSocket.h"
 #include "io/network/tcpSocket.h"
+#include "io/network/streamSocket.h"
 #include "io/network/tcpListener.h"
+#ifdef STEAMSDK
+#include "io/network/steamP2PListener.h"
+#endif
 #include "Updatable.h"
 #include "stringImproved.h"
 #include "networkAudioStream.h"
@@ -40,8 +44,11 @@ private:
     sp::SystemTimer keep_alive_send_timer;
     sp::io::network::UdpSocket broadcast_listen_socket;
     
-    sp::io::network::TcpListener listenSocket;
+    sp::io::network::TcpListener listen_socket;
     std::unique_ptr<sp::io::network::TcpSocket> new_socket;
+#ifdef STEAMSDK
+    sp::io::network::SteamP2PListener listen_steam;
+#endif
     string server_name;
     int listen_port;
     int version_number;
@@ -64,7 +71,7 @@ private:
     };
     struct ClientInfo
     {
-        std::unique_ptr<sp::io::network::TcpSocket> socket;
+        std::unique_ptr<sp::io::network::StreamSocket> socket;
         int32_t client_id;
         int32_t command_client_id;
         EClientReceiveState receive_state;
@@ -111,6 +118,7 @@ public:
     void stopAudio(int32_t client_id);
     void sendAudioPacketFrom(int32_t client_id, sp::io::DataBuffer& packet);
 private:
+    void newClientConnection(std::unique_ptr<sp::io::network::StreamSocket> socket);
     void registerObject(P<MultiplayerObject> obj);
     void broadcastServerCommandFromObject(int32_t id, sp::io::DataBuffer& packet);
     void keepAliveAll();
