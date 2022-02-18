@@ -216,11 +216,11 @@ void GameServer::update(float /*gameDelta*/)
         newClientConnection(std::move(new_socket));
         new_socket = std::make_unique<sp::io::network::TcpSocket>();
     }
+#ifdef STEAMSDK
     auto steam_socket = listen_steam.accept();
     if (steam_socket)
-    {
         newClientConnection(std::move(steam_socket));
-    }
+#endif
 
     for(unsigned int n=0; n<clientList.size(); n++)
     {
