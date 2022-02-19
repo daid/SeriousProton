@@ -273,11 +273,7 @@ StreamSocket::State TcpSocket::getState()
 #endif
         {
             struct sockaddr_in6 server_addr;
-#ifdef WIN32
-            int server_addr_len = sizeof(server_addr);
-#else
-            size_t server_addr_len = sizeof(server_addr);
-#endif
+            socklen_t server_addr_len = sizeof(server_addr);
             if (getpeername(handle, reinterpret_cast<sockaddr*>(&server_addr), &server_addr_len))
             {
                 close();
