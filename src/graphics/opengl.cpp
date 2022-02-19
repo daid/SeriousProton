@@ -97,8 +97,12 @@ void initOpenGL()
         return;
     init_done = true;
 
+    int major = 0, minor = 0;
     int profile_mask = 0;
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major);
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor);
     SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &profile_mask);
+    LOG(Info, "OpenGL context version: ", major, ".", minor, "(profile:", profile_mask, ")");
     
     if (profile_mask == SDL_GL_CONTEXT_PROFILE_ES)
     {
