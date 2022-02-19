@@ -102,13 +102,17 @@ void initOpenGL()
     
     if (profile_mask == SDL_GL_CONTEXT_PROFILE_ES)
     {
-        if (!gladLoadGLES2Loader(&SDL_GL_GetProcAddress))
+        if (!gladLoadGLES2Loader(&SDL_GL_GetProcAddress)) {
+            LOG(Error, "Failed to initialize OpenGL functions...");
             exit(1);
+        }
     }
     else
     {
-        if (!gladLoadGLLoader(&SDL_GL_GetProcAddress))
+        if (!gladLoadGLLoader(&SDL_GL_GetProcAddress)) {
+            LOG(Error, "Failed to initialize OpenGL functions...");
             exit(1);
+        }
     }
 
     // Find out supported compressed textures.
