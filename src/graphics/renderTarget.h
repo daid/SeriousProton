@@ -64,6 +64,7 @@ public:
     void drawStretchedH(sp::Rect rect, std::string_view texture, glm::u8vec4 color={255,255,255,255});
     void drawStretchedV(sp::Rect rect, std::string_view texture, glm::u8vec4 color={255,255,255,255});
     void drawStretchedHV(sp::Rect rect, float corner_size, std::string_view texture, glm::u8vec4 color={255,255,255,255});
+    void drawStretchedHVClipped(sp::Rect rect, sp::Rect clip_rect, float corner_size, std::string_view texture, glm::u8vec4 color={255,255,255,255});
 
     void finish();
 
