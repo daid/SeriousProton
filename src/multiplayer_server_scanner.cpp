@@ -1,5 +1,6 @@
 #include "multiplayer_server_scanner.h"
 #include "io/http/request.h"
+using namespace std::chrono_literals;
 
 ServerScanner::ServerScanner(int version_number, int server_port)
 : server_port(server_port), version_number(version_number)
@@ -15,6 +16,7 @@ ServerScanner::~ServerScanner()
 
 void ServerScanner::scanMasterServer(string url)
 {
+    abort_wait.notify_all();
     if (master_server_scan_thread.joinable())
         return;
     LOG(INFO) << "Switching to master server scanning";
@@ -45,6 +47,7 @@ void ServerScanner::scanLocalNetwork()
 
     LOG(INFO) << "Switching to local server scanning";
     master_server_url = "";
+    abort_wait.notify_all();
     if (master_server_scan_thread.joinable())
     {
         master_server_scan_thread.join();
@@ -209,8 +212,16 @@ void ServerScanner::masterServerScanThread()
                 }
             }
         }
-        
-        for(int n=0;n<10 && !isDestroyed() && master_server_url != ""; n++)
-            std::this_thread::sleep_for(std::chrono::duration<float>(1.f));
+
+        if (!isDestroyed() && master_server_url != "") {
+            std::mutex wait_mutex;
+            std::unique_lock<std::mutex> lk(wait_mutex);
+            abort_wait.wait_for(lk, 10s);
+        }
     }
+}
+
+void ServerScanner::destroy() {
+    PObject::destroy();
+    abort_wait.notify_all();
 }
