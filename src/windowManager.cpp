@@ -20,8 +20,8 @@
 PVector<Window> Window::all_windows;
 void* Window::gl_context = nullptr;
 
-Window::Window(glm::vec2 virtual_size, bool fullscreen, RenderChain* render_chain, int fsaa)
-: minimal_virtual_size(virtual_size), current_virtual_size(virtual_size), render_chain(render_chain), fullscreen(fullscreen), fsaa(fsaa)
+Window::Window(glm::vec2 virtual_size, Mode mode, RenderChain* render_chain, int fsaa)
+: minimal_virtual_size(virtual_size), current_virtual_size(virtual_size), render_chain(render_chain), mode(mode), fsaa(fsaa)
 {
     srand(static_cast<int32_t>(time(nullptr)));
 
@@ -71,12 +71,25 @@ void Window::render()
     SDL_GL_SwapWindow(static_cast<SDL_Window*>(window));
 }
 
-void Window::setFullscreen(bool new_fullscreen)
+void Window::setMode(Mode new_mode)
 {
-    if (fullscreen == new_fullscreen)
+    if (mode == new_mode)
         return;
-    fullscreen = new_fullscreen;
-    SDL_SetWindowFullscreen(static_cast<SDL_Window*>(window), fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+    mode = new_mode;
+    auto size = calculateWindowSize();
+    SDL_SetWindowSize(static_cast<SDL_Window*>(window), size.x, size.y);
+    switch(mode)
+    {
+    case Mode::Window:
+        SDL_SetWindowFullscreen(static_cast<SDL_Window*>(window), 0);
+        break;
+    case Mode::Fullscreen:
+        SDL_SetWindowFullscreen(static_cast<SDL_Window*>(window), SDL_WINDOW_FULLSCREEN_DESKTOP);
+        break;
+    case Mode::ExclusiveFullscreen:
+        SDL_SetWindowFullscreen(static_cast<SDL_Window*>(window), SDL_WINDOW_FULLSCREEN);
+        break;
+    }
     setupView();
 }
 
@@ -124,27 +137,7 @@ void Window::create()
     }
 
     // Create the window of the application
-    auto windowWidth = static_cast<int>(minimal_virtual_size.x);
-    auto windowHeight = static_cast<int>(minimal_virtual_size.y);
-
-    SDL_Rect rect;
-    if (SDL_GetDisplayBounds(display_nr, &rect))
-    {
-        display_nr = 0;
-        SDL_GetDisplayBounds(display_nr, &rect);
-    }
-
-    int scale = 2;
-    while(windowWidth * scale < int(rect.w) && windowHeight * scale < int(rect.h))
-        scale += 1;
-    windowWidth *= scale - 1;
-    windowHeight *= scale - 1;
-
-    while(windowWidth >= int(rect.w) || windowHeight >= int(rect.h) - 100)
-    {
-        windowWidth = static_cast<int>(std::floor(windowWidth * 0.9f));
-        windowHeight = static_cast<int>(std::floor(windowHeight * 0.9f));
-    }
+    auto size = calculateWindowSize();
 
 #if defined(ANDROID)
     constexpr auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_ES;
@@ -166,10 +159,18 @@ void Window::create()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     int flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
-    if (fullscreen) {
+    switch(mode)
+    {
+    case Mode::Window:
+        break;
+    case Mode::Fullscreen:
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+        break;
+    case Mode::ExclusiveFullscreen:
+        flags |= SDL_WINDOW_FULLSCREEN;
+        break;
     }
-    window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), windowWidth, windowHeight, flags);
+    window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), size.x, size.y, flags);
     if (!gl_context)
         gl_context = SDL_GL_CreateContext(static_cast<SDL_Window*>(window));
     if (SDL_GL_SetSwapInterval(-1))
@@ -313,7 +314,7 @@ void Window::handleEvent(const SDL_Event& event)
         case SDLK_KP_ENTER:
         case SDLK_RETURN:
             if (event.key.keysym.mod & KMOD_ALT)
-                setFullscreen(!isFullscreen());
+                setMode(getMode() == Mode::Window ? Mode::Fullscreen : Mode::Window);
             else
                 render_chain->onTextInput(sp::TextInputEvent::Return);
             break;
@@ -381,4 +382,43 @@ void Window::setupView()
     }else{
         current_virtual_size.y = current_virtual_size.x / window_size.x * window_size.y;
     }
+}
+
+glm::ivec2 Window::calculateWindowSize() const
+{
+    int display_nr = 0;
+    for(auto w : all_windows)
+    {
+        if (w == this)
+            break;
+        display_nr ++;
+    }
+
+    // Create the window of the application
+    auto windowWidth = static_cast<int>(minimal_virtual_size.x);
+    auto windowHeight = static_cast<int>(minimal_virtual_size.y);
+
+    SDL_Rect rect{0,0,0,0};
+    if (SDL_GetDisplayBounds(display_nr, &rect))
+    {
+        display_nr = 0;
+        SDL_GetDisplayBounds(display_nr, &rect);
+    }
+    if (mode != Mode::Window && rect.w && rect.h)
+    {
+        return {rect.w, rect.h};
+    }
+
+    int scale = 2;
+    while(windowWidth * scale < int(rect.w) && windowHeight * scale < int(rect.h))
+        scale += 1;
+    windowWidth *= scale - 1;
+    windowHeight *= scale - 1;
+
+    while(windowWidth >= int(rect.w) || windowHeight >= int(rect.h) - 100)
+    {
+        windowWidth = static_cast<int>(std::floor(windowWidth * 0.9f));
+        windowHeight = static_cast<int>(std::floor(windowHeight * 0.9f));
+    }
+    return {windowWidth, windowHeight};
 }
