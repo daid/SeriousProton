@@ -82,6 +82,7 @@ void Window::setMode(Mode new_mode)
     {
     case Mode::Window:
         SDL_SetWindowFullscreen(static_cast<SDL_Window*>(window), 0);
+        SDL_SetWindowPosition(static_cast<SDL_Window*>(window), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
         break;
     case Mode::Fullscreen:
         SDL_SetWindowFullscreen(static_cast<SDL_Window*>(window), SDL_WINDOW_FULLSCREEN_DESKTOP);
