@@ -13,7 +13,7 @@ static int random(lua_State* L)
     return 1;
 }
 /// random(min_value, max_value)
-/// Generate a random floating point number between the min and max value. Includes min and max as possible values.
+/// Generate a random floating point number uniformly distributed on the interval [min_value, max_value). Meaning min_value included and max_value excluded.
 /// (Floating point numbers are factional numbers, so 1.5, 2.333333, 3.141)
 REGISTER_SCRIPT_FUNCTION(random);
 
@@ -26,7 +26,7 @@ static int irandom(lua_State* L)
     return 1;
 }
 /// irandom(min_value, max_value)
-/// Generate a random integer number between the min and max value. Includes min and max as possible values.
+/// Generate a random integer number uniformly distributed on the interval [min_value, max_value]. Meaning min_value and max_value included.
 /// (Integer numbers are whole numbers, so 1, 2, 3, 5, 1400)
 REGISTER_SCRIPT_FUNCTION(irandom);
 
