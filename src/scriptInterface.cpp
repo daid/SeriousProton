@@ -13,7 +13,8 @@ static int random(lua_State* L)
     return 1;
 }
 /// random(min_value, max_value)
-/// Generate a random number between the min and max value.
+/// Generate a random floating point number between the min and max value. Includes min and max as possible values.
+/// (Floating point numbers are factional numbers, so 1.5, 2.333333, 3.141)
 REGISTER_SCRIPT_FUNCTION(random);
 
 static int irandom(lua_State* L)
@@ -24,8 +25,9 @@ static int irandom(lua_State* L)
     lua_pushinteger(L, irandom(rMin, rMax));
     return 1;
 }
-/// random(min_value, max_value)
-/// Generate a random number between the min and max value.
+/// irandom(min_value, max_value)
+/// Generate a random integer number between the min and max value. Includes min and max as possible values.
+/// (Integer numbers are whole numbers, so 1, 2, 3, 5, 1400)
 REGISTER_SCRIPT_FUNCTION(irandom);
 
 static int traceback(lua_State* L)
