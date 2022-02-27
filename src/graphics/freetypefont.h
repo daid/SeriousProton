@@ -11,7 +11,7 @@ namespace sp {
 class FreetypeFont : public Font
 {
 public:
-    FreetypeFont(P<ResourceStream> stream);
+    FreetypeFont(const string& name, P<ResourceStream> stream);
     ~FreetypeFont();
 
 protected:

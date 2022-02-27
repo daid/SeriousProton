@@ -32,13 +32,13 @@ void ft_stream_close(FT_Stream)
 
 namespace sp {
 
-FreetypeFont::FreetypeFont(P<ResourceStream> stream)
+FreetypeFont::FreetypeFont(const string& name, P<ResourceStream> stream)
 {
     ft_library = nullptr;
     ft_face = nullptr;
 
     font_resource_stream = stream;
-    LOG(Info, "Loading font...");
+    LOG(Info, "Loading font: ", name);
     
     FT_Library library;
     if (FT_Init_FreeType(&library) != 0)
