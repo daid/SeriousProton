@@ -13,7 +13,8 @@ static int random(lua_State* L)
     return 1;
 }
 /// random(min_value, max_value)
-/// Generate a random floating point number uniformly distributed on the interval [min_value, max_value). Meaning min_value included and max_value excluded.
+/// Generate a random floating point number uniformly distributed on the interval [min_value, max_value]. Meaning min_value and max_value included.
+/// For further information see: https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution.
 /// (Floating point numbers are factional numbers, so 1.5, 2.333333, 3.141)
 REGISTER_SCRIPT_FUNCTION(random);
 
