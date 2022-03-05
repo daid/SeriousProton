@@ -12,7 +12,7 @@ static int random(lua_State* L)
     lua_pushnumber(L, random(rMin, rMax));
     return 1;
 }
-/// random(min_value, max_value)
+/// float random(float min_value, float max_value)
 /// Generate a random floating point number between the min and max value. Includes min and max as possible values.
 /// (Floating point numbers are factional numbers, so 1.5, 2.333333, 3.141)
 REGISTER_SCRIPT_FUNCTION(random);
@@ -25,7 +25,7 @@ static int irandom(lua_State* L)
     lua_pushinteger(L, irandom(rMin, rMax));
     return 1;
 }
-/// irandom(min_value, max_value)
+/// int irandom(int min_value, int max_value)
 /// Generate a random integer number between the min and max value. Includes min and max as possible values.
 /// (Integer numbers are whole numbers, so 1, 2, 3, 5, 1400)
 REGISTER_SCRIPT_FUNCTION(irandom);
@@ -47,9 +47,9 @@ static int traceback(lua_State* L)
     lua_pushstring(L, result.c_str());
     return 1;
 }
-// traceback()
-// Returns a string containing a list of function calls up to the current point.
-//  useful for debugging and error reporting.
+/// string traceback()
+/// Returns a string containing a list of function calls up to the current point.
+///  useful for debugging and error reporting.
 REGISTER_SCRIPT_FUNCTION(traceback);
 
 static int destroyScript(lua_State* L)
@@ -58,6 +58,7 @@ static int destroyScript(lua_State* L)
     obj->destroy();
     return 0;
 }
+/// void destroyScript()
 /// Destroy this script instance. Note that the script will keep running till the end of the current script call.
 //REGISTER_SCRIPT_FUNCTION(destroyScript);//Not registered as a normal function, as it needs a reference to the ScriptObject, which is passed as an upvalue.
 
