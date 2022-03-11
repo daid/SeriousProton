@@ -172,8 +172,17 @@ void Window::create()
         break;
     }
     window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), size.x, size.y, flags);
-    if (!gl_context)
+    if (!window) {
+        LOG(Error, "Failed to create SDL2 window:", SDL_GetError());
+        exit(1);
+    }
+    if (!gl_context) {
         gl_context = SDL_GL_CreateContext(static_cast<SDL_Window*>(window));
+        if (!gl_context) {
+            LOG(Error, "Failed to create OpenGL context:", SDL_GetError());
+            exit(1);
+        }
+    }
     if (SDL_GL_SetSwapInterval(-1))
         SDL_GL_SetSwapInterval(1);
     setupView();
