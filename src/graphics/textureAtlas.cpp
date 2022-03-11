@@ -31,7 +31,9 @@ void AtlasTexture::bind()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
         
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_size.x, texture_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        std::vector<glm::u8vec4> initial_data;
+        initial_data.resize(texture_size.x * texture_size.y, {0, 0, 0, 0});
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_size.x, texture_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, initial_data.data());
         //Put 1 white pixel in the {1,1} corner, which we can use to draw solid things.
         glm::u8vec4 white{255,255,255,255};
         glTexSubImage2D(GL_TEXTURE_2D, 0, texture_size.x - 1, texture_size.y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &white);
