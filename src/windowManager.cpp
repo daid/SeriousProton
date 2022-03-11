@@ -16,6 +16,15 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
 #include <SDL.h>
+#include <stdlib.h>
+
+static string getFromEnvironment(const char* key, string default_value) {
+    auto value = getenv(key);
+    if (!value)
+        return default_value;
+    return value;
+}
+
 
 PVector<Window> Window::all_windows;
 void* Window::gl_context = nullptr;
@@ -141,19 +150,24 @@ void Window::create()
     auto size = calculateWindowSize();
 
 #if defined(ANDROID)
-    constexpr auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_ES;
-    constexpr auto context_profile_minor_version = 0;
-
+    auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_ES;
+    auto context_profile_minor_version = getFromEnvironment("SP_GL_MINOR", "0").toInt();
 #else
-    constexpr auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_CORE;
-    constexpr auto context_profile_minor_version = 1;
+    auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_CORE;
+    auto context_profile_minor_version = getFromEnvironment("SP_GL_MINOR", "1").toInt();
 #endif
+    if (getFromEnvironment("SP_GL_PROFILE", "") == "ES")
+        context_profile_mask = SDL_GL_CONTEXT_PROFILE_ES;
+    else if (getFromEnvironment("SP_GL_PROFILE", "") == "CORE")
+        context_profile_mask = SDL_GL_CONTEXT_PROFILE_CORE;
+    else if (getFromEnvironment("SP_GL_PROFILE", "") == "COMPAT")
+        context_profile_mask = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, context_profile_mask);
 #if defined(DEBUG)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, getFromEnvironment("SP_GL_MAJOR", "2").toInt());
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, context_profile_minor_version);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
