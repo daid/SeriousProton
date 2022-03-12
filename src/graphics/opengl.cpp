@@ -7,6 +7,12 @@
 
 #include "stringImproved.h"
 
+namespace sp {
+	namespace gl {
+		bool contextIsES = false;
+	}
+}
+
 extern "C" {
     int SP_texture_compression_etc2 = 0;
 
@@ -104,7 +110,8 @@ void initOpenGL()
     SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &profile_mask);
     LOG(Info, "OpenGL context version: ", major, ".", minor, "(profile:", profile_mask, ")");
     
-    if (profile_mask == SDL_GL_CONTEXT_PROFILE_ES)
+    gl::contextIsES = profile_mask == SDL_GL_CONTEXT_PROFILE_ES;
+    if (gl::contextIsES)
     {
         if (!gladLoadGLES2Loader(&SDL_GL_GetProcAddress)) {
             LOG(Error, "Failed to initialize OpenGL functions...");

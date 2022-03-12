@@ -193,6 +193,14 @@ void Window::create()
     if (!gl_context) {
         gl_context = SDL_GL_CreateContext(static_cast<SDL_Window*>(window));
         if (!gl_context) {
+            SDL_DestroyWindow(static_cast<SDL_Window*>(window));
+            LOG(Warning, "Failed to create OpenGL context, retrying with GLES2.0 context");
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+            window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), SDL_WINDOWPOS_CENTERED_DISPLAY(display_nr), size.x, size.y, flags);
+        }
+        if (!gl_context) {
             LOG(Error, "Failed to create OpenGL context:", SDL_GetError());
             exit(1);
         }

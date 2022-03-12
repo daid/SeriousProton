@@ -27,6 +27,7 @@ namespace sp {
 
 	namespace gl {
 		bool enableDebugOutput(bool synchronous);
+		extern bool contextIsES;
 	}
 }//namespace sp
 

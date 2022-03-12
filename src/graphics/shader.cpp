@@ -7,17 +7,18 @@ namespace sp {
 
 static Shader* current_shader = nullptr;
 
-#if defined(ANDROID)
-static const char* vertex_shader_header = "#version 100\nprecision highp float;\n";
-static const char* fragment_shader_header = "#version 100\nprecision mediump float;\n";
-#else
+static const char* vertex_shader_header_es = "#version 100\nprecision highp float;\n";
+static const char* fragment_shader_header_es = "#version 100\nprecision mediump float;\n";
 static const char* vertex_shader_header = "#version 120\n";
 static const char* fragment_shader_header = "#version 120\n";
-#endif
 
 Shader::Shader(const string& name, const string& code, const std::vector<string>& defines, const std::unordered_map<string, int>& attribute_mapping)
 : attribute_mapping{attribute_mapping}, name(name), vertex_code(vertex_shader_header), fragment_code(fragment_shader_header)
 {
+    if (gl::contextIsES) {
+        vertex_code = vertex_shader_header_es;
+        fragment_code = fragment_shader_header_es;
+    }
     for(auto str : defines)
     {
         vertex_code += "#define " + string(str) + " 1\n";
