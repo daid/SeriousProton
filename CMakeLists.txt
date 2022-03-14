@@ -197,6 +197,7 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/renderTarget.cpp
     src/graphics/texture.cpp
     src/graphics/textureAtlas.cpp
+    src/graphics/renderTexture.cpp
     src/graphics/shader.cpp
     src/graphics/opengl.cpp
     src/i18n.cpp
@@ -255,6 +256,7 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/renderTarget.h
     src/graphics/texture.h
     src/graphics/textureAtlas.h
+    src/graphics/renderTexture.h
     src/graphics/shader.h
     src/graphics/opengl.h
     src/i18n.h

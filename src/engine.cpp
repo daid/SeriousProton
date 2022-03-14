@@ -196,7 +196,7 @@ void Engine::handleEvent(SDL_Event& event)
 #ifdef DEBUG
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
         running = false;
-    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_l)
+    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_l && !SDL_IsTextInputActive())
     {
         int n = 0;
         printf("------------------------\n");

@@ -1,100 +1,84 @@
 #include "logging.h"
 #include "postProcessManager.h"
+#include "shaderManager.h"
 #include "resources.h"
+#include "graphics/opengl.h"
+#include <stddef.h>
 
-bool PostProcessor::global_post_processor_enabled = true;
 
-PostProcessor::PostProcessor(string name, RenderChain* chain)
-: chain(chain), enabled{false}
+PostProcessor::PostProcessor(string shadername, RenderChain* chain)
+: shader(ShaderManager::getShader(shadername)), render_texture({128, 128}), chain(chain), enabled{false}
 {
-// SDL2 TODO post processors not implemented, might remove them?
-    /*
-    if (sf::Shader::isAvailable())
-    {
-        if (auto shader_frag = getResourceStream(name + ".frag"); shader_frag)
-        {
-            if (shader.loadFromStream(**shader_frag, sf::Shader::Fragment))
-            {
-                LOG(INFO) << "Loaded shader: " << name;
-                enabled = true;
-            }
-            else {
-                LOG(WARNING) << "Failed to load shader:" << name;
-            }
-        }
-        else
-        {
-            LOG(WARNING) << "Failed to open shader stream for " << name;
-        }
-    }else{
-        LOG(WARNING) << "Did not load load shader: " << name;
-        LOG(WARNING) << "Because of no shader support in video card driver.";
-    }
-    */
 }
 
 void PostProcessor::render(sp::RenderTarget& target)
-{/*
-    if (!enabled || !sf::Shader::isAvailable() || !global_post_processor_enabled)
-    {*/
-        chain->render(target);/*
-        return;
-    } 
-
-    //Hack the rectangle for this element so it sits perfectly on pixel boundaries.
-    sf::Vector2u pixel_size{ target.getSFMLTarget().getSize() };
-
-    // If the window or texture size is 0/impossible, or if the window size has
-    // changed, resize the viewport, render texture, and input/textureSizes.
-    if (size.x < 1 || renderTexture.getSize().x < 1 || size != pixel_size)
+{
+    if (!enabled)
     {
-        size = pixel_size;
+        chain->render(target);
+        return;
+    }
+    target.finish();
 
-        //Setup a backBuffer to render the game on. Then we can render the backbuffer back to the main screen with full-screen shader effects
-        sf::ContextSettings settings{ 24, 8 }; // 24/8 depth/stencil.
-        if (!renderTexture.create(size.x, size.y, settings))
-        {
-            // If we fail to create the RT, just disable the post processor and fallback to the backbuffer.
-            LOG(WARNING) << "Failed to setup the render texture for post processing effects. They will be disabled.";
-            global_post_processor_enabled = false;
-            chain->render(target);
-            return;
-        }
-
-        renderTexture.setRepeated(true);
-        renderTexture.setSmooth(true);
-
-        shader.setUniform("inputSize", sf::Vector2f{ size });
-        shader.setUniform("textureSize", sf::Vector2f{ renderTexture.getSize() });
+    render_texture.setSize(target.getPhysicalSize());
+    if (!render_texture.activateRenderTarget())
+    {
+        chain->render(target);
+        return;
     }
 
-    // The view can evolve independently from the window size - update every frame.
-    renderTexture.setView(target.getSFMLTarget().getView());
-    renderTexture.clear(sf::Color(20, 20, 20));
-   
-    sp::RenderTarget textureTarget(renderTexture);
-    chain->render(textureTarget);
+    chain->render(target);
+    target.finish();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    renderTexture.display();
+    shader->bind();
 
-    // The RT is a fullscreen texture.
-    // Setup the view to cover the entire RT.
-    target.getSFMLTarget().setView(sf::View({ 0.f, 0.f, static_cast<float>(renderTexture.getSize().x), static_cast<float>(renderTexture.getSize().y) }));
-    
-    sf::Sprite backBufferSprite(renderTexture.getTexture());
-    target.getSFMLTarget().draw(backBufferSprite, &shader);
+    glUniform1i(shader->getUniformLocation("u_texture"), 0);
+    glActiveTexture(GL_TEXTURE0);
+    render_texture.bind();
+    for(auto it : uniforms)
+        glUniform1f(shader->getUniformLocation(it.first.c_str()), it.second);
 
-    // Restore view
-    target.getSFMLTarget().setView(renderTexture.getView());
-    */
+    using VertexType = std::pair<glm::vec2, glm::vec2>;
+
+    if (vertices_vbo == 0)
+    {
+        glGenBuffers(1, &vertices_vbo);
+        glGenBuffers(1, &indices_vbo);
+
+        std::vector<VertexType> vertex_data{
+            {{-1, -1}, {0, 0}},
+            {{-1,  1}, {0, 1}},
+            {{ 1, -1}, {1, 0}},
+            {{ 1,  1}, {1, 1}},
+        };
+        std::vector<uint16_t> index_data{0, 1, 2, 1, 3, 2};
+
+        glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(VertexType) * vertex_data.size(), vertex_data.data(), GL_DYNAMIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * index_data.size(), index_data.data(), GL_DYNAMIC_DRAW);
+    }
+    else
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);
+    }
+
+    glVertexAttribPointer(shader->getAttributeLocation("a_position"), 2, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(sizeof(VertexType)), (void*)offsetof(VertexType, first));
+    glEnableVertexAttribArray(shader->getAttributeLocation("a_position"));
+    glVertexAttribPointer(shader->getAttributeLocation("a_texcoords"), 2, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(sizeof(VertexType)), (void*)offsetof(VertexType, second));
+    glEnableVertexAttribArray(shader->getAttributeLocation("a_texcoords"));
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr);
+
+    glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_NONE);
 }
 
 void PostProcessor::setUniform(string name, float value)
 {
-    /*
-    if (sf::Shader::isAvailable() && global_post_processor_enabled)
-        shader.setUniform(name, value);
-        */
+    uniforms[name] = value;
 }
 
 bool PostProcessor::onPointerMove(glm::vec2 position, sp::io::Pointer::ID id)
