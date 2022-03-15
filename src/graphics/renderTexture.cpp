@@ -21,7 +21,7 @@ RenderTexture::~RenderTexture()
 
 bool RenderTexture::create()
 {
-    if (!GLAD_GL_ARB_framebuffer_object)
+    if (!glad_glGenFramebuffers)
         return false;
     if (!frame_buffer)
     {
