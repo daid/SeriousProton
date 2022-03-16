@@ -13,7 +13,7 @@ PostProcessor::PostProcessor(string shadername, RenderChain* chain)
 
 void PostProcessor::render(sp::RenderTarget& target)
 {
-    if (!enabled || true) // post processors disabled until all issues with RenderTexture has been solved.
+    if (!enabled) // post processors disabled until all issues with RenderTexture has been solved.
     {
         chain->render(target);
         return;
