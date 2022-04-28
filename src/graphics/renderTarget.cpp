@@ -198,7 +198,7 @@ void RenderTarget::setDefaultFont(sp::Font* font)
 void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color)
 {
     auto info = getTextureInfo(texture);
-    if (info.texture)
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4)
         finish();
     
     auto n = vertex_data.size();
@@ -230,7 +230,7 @@ void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center,
     if (rotation == 0)
         return drawSprite(texture, center, size, color);
     auto info = getTextureInfo(texture);
-    if (info.texture)
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4)
         finish();
     auto& uv_rect = info.uv_rect;
 
@@ -270,6 +270,8 @@ void RenderTarget::drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 {
+    if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2)
+        finish();
     auto n = lines_vertex_data.size();
     lines_vertex_data.push_back({start, color, atlas_white_pixel});
     lines_vertex_data.push_back({end, color, atlas_white_pixel});
@@ -280,6 +282,8 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color)
 {
+    if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2)
+        finish();
     auto n = lines_vertex_data.size();
     lines_vertex_data.push_back({start, start_color, atlas_white_pixel});
     lines_vertex_data.push_back({end, end_color, atlas_white_pixel});
@@ -290,6 +294,8 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_co
 
 void RenderTarget::drawLine(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
 {
+    if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - points.size())
+        finish();
     auto n = lines_vertex_data.size();
     for(auto& p : points)
         lines_vertex_data.push_back({p, color, atlas_white_pixel});
@@ -303,6 +309,8 @@ void RenderTarget::drawLine(const std::initializer_list<glm::vec2>& points, glm:
 
 void RenderTarget::drawLine(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
+    if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - points.size())
+        finish();
     auto n = lines_vertex_data.size();
     for(auto& p : points)
         lines_vertex_data.push_back({p, color, atlas_white_pixel});
@@ -354,6 +362,9 @@ void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color
 void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color)
 {
     constexpr size_t point_count = 50;
+
+    if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - point_count * 2)
+        finish();
 
     auto n = vertex_data.size();
     for(auto idx=0u; idx<point_count;idx++)
@@ -435,6 +446,9 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture, glm
 
 void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
 {
+    if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - points.size())
+        finish();
+
     auto n = vertex_data.size();
     for(auto& p : points)
         vertex_data.push_back({p, color, atlas_white_pixel});
@@ -448,6 +462,9 @@ void RenderTarget::drawTriangleStrip(const std::initializer_list<glm::vec2>& poi
 
 void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
+    if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - points.size())
+        finish();
+
     auto n = vertex_data.size();
     for(auto& p : points)
         vertex_data.push_back({p, color, atlas_white_pixel});
@@ -461,6 +478,9 @@ void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::
 
 void RenderTarget::drawTriangles(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& indices, glm::u8vec4 color)
 {
+    if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - points.size())
+        finish();
+
     auto n = vertex_data.size();
     for(auto& p : points)
         vertex_data.push_back({p, color, atlas_white_pixel});
@@ -471,6 +491,9 @@ void RenderTarget::drawTriangles(const std::vector<glm::vec2>& points, const std
 void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
 {
     const int point_count = 50;
+
+    if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - point_count)
+        finish();
 
     auto n = vertex_data.size();
     for(int idx=0; idx<point_count;idx++)
