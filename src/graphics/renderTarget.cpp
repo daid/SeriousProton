@@ -198,7 +198,7 @@ void RenderTarget::setDefaultFont(sp::Font* font)
 void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color)
 {
     auto info = getTextureInfo(texture);
-    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4)
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
         finish();
     
     auto n = vertex_data.size();
@@ -230,7 +230,7 @@ void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center,
     if (rotation == 0)
         return drawSprite(texture, center, size, color);
     auto info = getTextureInfo(texture);
-    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4)
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
         finish();
     auto& uv_rect = info.uv_rect;
 
@@ -270,7 +270,7 @@ void RenderTarget::drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 {
-    if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2)
+    if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2U)
         finish();
     auto n = lines_vertex_data.size();
     lines_vertex_data.push_back({start, color, atlas_white_pixel});
@@ -282,7 +282,7 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 
 void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color)
 {
-    if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2)
+    if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2U)
         finish();
     auto n = lines_vertex_data.size();
     lines_vertex_data.push_back({start, start_color, atlas_white_pixel});
