@@ -490,18 +490,18 @@ void RenderTarget::drawTriangles(const std::vector<glm::vec2>& points, const std
 
 void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
 {
-    const int point_count = 50;
+    const unsigned int point_count = 50;
 
     if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - point_count)
         finish();
 
     auto n = vertex_data.size();
-    for(int idx=0; idx<point_count;idx++)
+    for(unsigned int idx=0; idx<point_count;idx++)
     {
         float f = float(idx) / float(point_count) * static_cast<float>(M_PI) * 2.0f;
         vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, atlas_white_pixel});
     }
-    for(int idx=2; idx<point_count;idx++)
+    for(unsigned int idx=2; idx<point_count;idx++)
     {
         index_data.insert(index_data.end(), {
             uint16_t(n), uint16_t(n + idx - 1), uint16_t(n + idx),
