@@ -130,6 +130,10 @@ Address Address::getLocalAddress()
             {
                 continue;
             }
+            if (addr->ifa_addr == nullptr)
+            {
+                continue;
+            }
             if (addr->ifa_addr->sa_family == AF_INET)
             {
                 ::getnameinfo(addr->ifa_addr, sizeof(struct sockaddr_in), buffer, sizeof(buffer), nullptr, 0, NI_NUMERICHOST);
