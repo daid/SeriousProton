@@ -5,6 +5,9 @@
 #include <io/network/tcpSocket.h>
 #include <unordered_map>
 
+#ifndef EMSCRIPTEN
+#include <memory>
+#endif
 
 namespace sp {
 namespace io {
