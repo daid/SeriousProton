@@ -164,6 +164,16 @@ Request::Response Request::request(const string& method, const string& path, con
             response.body += received_data.substr(0, chunk_size);
             received_data = received_data.substr(chunk_size + 2);
         } while(chunk_size > 0);
+    } else if (response.headers.find("Connection") != response.headers.end() && response.headers["Connection"] == "close")
+    {
+        response.body = std::move(received_data);
+        while(socket.getState() == network::StreamSocket::State::Connected)
+        {
+            received_size = socket.receive(receive_buffer, sizeof(receive_buffer));
+            response.body += string(receive_buffer, static_cast<int>(received_size));
+            if (received_size == 0)
+                break;
+        }
     }
 
     response.success = true;
