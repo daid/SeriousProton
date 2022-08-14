@@ -121,16 +121,16 @@ Request::Response Request::request(const string& method, const string& path, con
     {
         int idx = header_line.find(":");
         if (idx > -1)
-            response.headers[header_line.substr(0, idx).strip()] = header_line.substr(idx + 1).strip();
+            response.headers[header_line.substr(0, idx).strip().lower()] = header_line.substr(idx + 1).strip();
     }
     received_data = received_data.substr(received_data.find("\r\n\r\n") + 4);
 
     if (response_line.size() > 1)
         response.status = response_line[1].toInt();
 
-    if (response.headers.find("Content-Length") != response.headers.end())
+    if (response.headers.find("content-length") != response.headers.end())
     {
-        int content_length = response.headers["Content-Length"].toInt();
+        int content_length = response.headers["content-length"].toInt();
         response.body = std::move(received_data);
         while(int(response.body.length()) < content_length)
         {
@@ -140,7 +140,7 @@ Request::Response Request::request(const string& method, const string& path, con
                 return response;
         }
     }
-    else if (response.headers.find("Transfer-Encoding") != response.headers.end() && response.headers["Transfer-Encoding"] == "chunked")
+    else if (response.headers.find("transfer-encoding") != response.headers.end() && response.headers["transfer-encoding"] == "chunked")
     {
         int chunk_size;
         do
@@ -164,7 +164,7 @@ Request::Response Request::request(const string& method, const string& path, con
             response.body += received_data.substr(0, chunk_size);
             received_data = received_data.substr(chunk_size + 2);
         } while(chunk_size > 0);
-    } else if (response.headers.find("Connection") != response.headers.end() && response.headers["Connection"] == "close")
+    } else if (response.headers.find("connection") != response.headers.end() && response.headers["connection"] == "close")
     {
         response.body = std::move(received_data);
         while(socket.getState() == network::StreamSocket::State::Connected)
