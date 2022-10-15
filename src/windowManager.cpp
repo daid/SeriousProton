@@ -152,6 +152,9 @@ void Window::create()
 #if defined(ANDROID)
     auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_ES;
     auto context_profile_minor_version = getFromEnvironment("SP_GL_MINOR", "0").toInt();
+#elif defined(__APPLE__)
+    auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
+    auto context_profile_minor_version = getFromEnvironment("SP_GL_MINOR", "1").toInt();
 #else
     auto context_profile_mask = SDL_GL_CONTEXT_PROFILE_CORE;
     auto context_profile_minor_version = getFromEnvironment("SP_GL_MINOR", "1").toInt();
