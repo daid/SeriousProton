@@ -174,7 +174,7 @@ void ServerScanner::masterServerScanThread()
 
     int port = 80;
     int port_start = hostname.find(":");
-    string uri = hostname.substr(path_start + 1);
+    string uri = hostname.substr(path_start);
     if (port_start >= 0)
     {
         LOG(INFO) << "Port detected.";
