@@ -291,6 +291,8 @@ void Collisionable::createBody(b2Shape* shape)
         bodyDef.type = static_physics ? b2_kinematicBody : b2_dynamicBody;
         bodyDef.userData = this;
         bodyDef.allowSleep = false;
+        bodyDef.position = v2b(this->position);
+        bodyDef.angle = glm::radians(this->rotation);
         body = CollisionManager::world->CreateBody(&bodyDef);
     }
 
