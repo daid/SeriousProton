@@ -24,6 +24,7 @@ private:
     friend class ::Window;
 public:
     static void setDefaultFont(sp::Font* font);
+    static sp::Font* getDefaultFont();
 
     void drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color={255,255,255,255});
     void drawRotatedSprite(std::string_view texture, glm::vec2 center, float size, float rotation, glm::u8vec4 color={255,255,255,255});

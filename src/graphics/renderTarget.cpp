@@ -195,6 +195,11 @@ void RenderTarget::setDefaultFont(sp::Font* font)
     default_font = font;
 }
 
+sp::Font* RenderTarget::getDefaultFont()
+{
+    return default_font;
+}
+
 void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color)
 {
     auto info = getTextureInfo(texture);

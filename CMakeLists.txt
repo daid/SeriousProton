@@ -14,6 +14,7 @@ endif()
 
 # User-settings
 option(WARNING_IS_ERROR "Enable warning as errors." OFF)
+option(SHARED_SP "Build SeriousProton as a shared library, to speed up mingw linking times" OFF)
 set(STEAMSDK "" CACHE PATH "Path to steam SDK, if not supplied steam features will not be available. Steam features are NOT required.")
 
 #
@@ -356,7 +357,11 @@ if(NOT ANDROID)
 endif()
 
 ## Object list
-add_library(seriousproton_objects OBJECT ${source_files})
+if (SHARED_SP)
+	add_library(seriousproton_objects SHARED ${source_files})
+else()
+	add_library(seriousproton_objects OBJECT ${source_files})
+endif()
 target_compile_options(seriousproton_objects
     PRIVATE
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<BOOL:${WARNING_IS_ERROR}>>:-Werror>"
