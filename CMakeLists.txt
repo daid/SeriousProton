@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 project(SeriousProton LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH
@@ -21,40 +21,7 @@ set(EXTERNALS_DIR "${PROJECT_BINARY_DIR}/externals")
 set(DOWNLOADS_DIR "${PROJECT_BINARY_DIR}/downloads")
 file(MAKE_DIRECTORY "${EXTERNAL_DIR}" "${DOWNLOADS_DIR}")
 
-# Crash Logger for MinGW
-if(WIN32)
-    option(ENABLE_CRASH_LOGGER "Enable the Dr. MinGW crash logging facilities" OFF)
-    set(DRMINGW_ROOT DRMINGW_ROOT-NOTFOUND CACHE PATH "Path to Dr. MinGW")
-
-    if(NOT ENABLE_CRASH_LOGGER)
-        message(STATUS "Crash Logger is OFF")
-    else()
-        message(STATUS "Crash Logger is ON")
-
-        if(NOT DRMINGW_ROOT)
-            message(VERBOSE "Downloading Dr. MinGW")
-
-            if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-                set(DRMINGW_ARCH "32")
-            else()
-                set(DRMINGW_ARCH "64")
-            endif()
-
-            # 0.9.x seems to give a hard time to people on Win7.
-            # Sticking with 0.8 for that reason.
-            set(DRMINGW_VERSION "0.8.2")
-            set(DRMINGW_BASENAME "drmingw-${DRMINGW_VERSION}-win${DRMINGW_ARCH}")
-            set(DRMINGW_ROOT "${CMAKE_CURRENT_BINARY_DIR}/${DRMINGW_BASENAME}" CACHE PATH "Path to Dr. MinGW" FORCE)
-
-            if(NOT EXISTS "${DRMINGW_ROOT}/bin/exchndl.dll")
-                set(DRMINGW_ZIP "${CMAKE_CURRENT_BINARY_DIR}/${DRMINGW_BASENAME}.7z")
-
-                file(DOWNLOAD "https://github.com/jrfonseca/drmingw/releases/download/${DRMINGW_VERSION}/${DRMINGW_BASENAME}.7z" "${DRMINGW_ZIP}" TIMEOUT 60 TLS_VERIFY ON)
-                execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf "${DRMINGW_ZIP}" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
-            endif()
-        endif()
-    endif()
-endif()
+include("cmake/DrMingw.cmake")
 
 #--------------------------------Dependencies----------------------------------
 find_package(SDL2 REQUIRED)
@@ -90,28 +57,13 @@ else()
     
     set(GLM_VERSION "0.9.9.8")
     set(GLM_URL "https://github.com/g-truc/glm")
-    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
-        include(FetchContent)
-        FetchContent_Declare(
-            glm
-            GIT_REPOSITORY "${GLM_URL}"
-            GIT_TAG "${GLM_VERSION}"
-        )
-        FetchContent_GetProperties(glm)
-    else()
-        set(GLM_BASE_PATH "${EXTERNALS_DIR}")
-        set(glm_POPULATED FALSE)
-        if(NOT EXISTS "${GLM_BASE_PATH}/glm/CMakeLists.txt")
-            set(GLM_ZIP "${DOWNLOADS_DIR}/glm.zip")
-            file(DOWNLOAD "${GLM_URL}/releases/download/${GLM_VERSION}/glm-${GLM_VERSION}.zip" "${GLM_ZIP}" TIMEOUT 60 TLS_VERIFY ON)
-
-            file(MAKE_DIRECTORY "${GLM_BASE_PATH}/glm")
-            execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf "${GLM_ZIP}" WORKING_DIRECTORY "${GLM_BASE_PATH}")
-        endif()
-
-        set(glm_SOURCE_DIR "${GLM_BASE_PATH}/glm")
-        set(glm_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/glm")
-    endif()
+	include(FetchContent)
+	FetchContent_Declare(
+		glm
+		GIT_REPOSITORY "${GLM_URL}"
+		GIT_TAG "${GLM_VERSION}"
+	)
+	FetchContent_GetProperties(glm)
 
     if(NOT glm_POPULATED)
         if(COMMAND FetchContent_Populate)
@@ -383,40 +335,15 @@ target_compile_options(seriousproton_deps
         "$<$<BOOL:${MSVC}>:/MP;/permissive->"
 )
 
+include("cmake/SteamSDK.cmake")
 target_link_libraries(seriousproton_deps
     INTERFACE 
-        box2d glad lua ${SDL2_LIBRARIES} glm::glm Threads::Threads ${FREETYPE_LIBRARIES} basisu-transcoder
-        $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32>
+        box2d glad lua ${SDL2_LIBRARIES} glm::glm Threads::Threads ${FREETYPE_LIBRARIES} basisu-transcoder $<BUILD_INTERFACE:steamsdk>
+        $<$<BOOL:${WIN32}>:wsock32 ws2_32 crypt32 iphlpapi>
         # LTO flag must be on the linker's list as well.
         "$<$<AND:$<BOOL:${CMAKE_COMPILER_IS_GNUCC}>,$<OR:$<CONFIG:RelWithDebInfo>,$<CONFIG:Release>>>:-flto>"
         "$<BUILD_INTERFACE:opus;$<$<NOT:$<BOOL:${ANDROID}>>:${CMAKE_DL_LIBS}>>"
 )
-if (STEAMSDK)
-    if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-        if(WIN32)
-            target_link_libraries(seriousproton_deps INTERFACE steam_api)
-            target_link_directories(seriousproton_deps INTERFACE "${STEAMSDK}/redistributable_bin")
-        endif()
-        if(UNIX AND NOT APPLE)
-            target_link_libraries(seriousproton_deps INTERFACE steam_api)
-            target_link_directories(seriousproton_deps INTERFACE "${STEAMSDK}/redistributable_bin/linux32")
-        endif()
-    else()
-        if(WIN32)
-            target_link_libraries(seriousproton_deps INTERFACE steam_api64)
-            target_link_directories(seriousproton_deps INTERFACE "${STEAMSDK}/redistributable_bin/win64")
-        endif()
-        if(UNIX AND NOT APPLE)
-            target_link_libraries(seriousproton_deps INTERFACE steam_api)
-            target_link_directories(seriousproton_deps INTERFACE "${STEAMSDK}/redistributable_bin/linux64")
-        endif()
-    endif()
-    target_include_directories(seriousproton_deps INTERFACE "${STEAMSDK}/public")
-    target_compile_definitions(seriousproton_deps INTERFACE STEAMSDK=1)
-    message(STATUS "Using steam SDK at ${STEAMSDK}")
-else()
-    message(STATUS "Not using steam SDK")
-endif()
 
 if(NOT ANDROID)
     # Necessary for some older compilers (except on android, where the fs api isn't used)
