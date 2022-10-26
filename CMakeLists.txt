@@ -261,6 +261,14 @@ set(source_files #All SeriousProton's objects to compile
     src/vectorUtils.h
     src/windowManager.h
 
+    src/container/sparseset.h
+
+    src/ecs/entity.h
+    src/ecs/entity.cpp
+    src/ecs/component.h
+    src/ecs/component.cpp
+    src/ecs/query.h
+
     cmake/glDebug.inl.in
     "${glDebug_inl}"
 )
