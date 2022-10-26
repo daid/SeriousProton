@@ -179,7 +179,6 @@ add_library(opus STATIC
     src/mlp.c
     src/mlp_data.c
     src/opus.c
-    src/opus_compare.c
     src/opus_decoder.c
     src/opus_encoder.c
     src/opus_multistream.c
