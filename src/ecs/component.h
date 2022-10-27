@@ -8,6 +8,8 @@ class ComponentStorageBase {
 public:
     ComponentStorageBase();
 
+private:
+    ComponentStorageBase* next = nullptr;
 protected:
     static void destroyAll(uint32_t index);
     virtual void destroy(uint32_t index) = 0;

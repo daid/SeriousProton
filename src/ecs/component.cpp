@@ -2,16 +2,17 @@
 
 namespace sp::ecs {
 
-static std::vector<ComponentStorageBase*> all_component_storage;
+static ComponentStorageBase* all_component_storage = nullptr;
 
 ComponentStorageBase::ComponentStorageBase()
 {
-    all_component_storage.push_back(this);
+    this->next = all_component_storage;
+    all_component_storage = this;
 }
 
 void ComponentStorageBase::destroyAll(uint32_t index)
 {
-    for(auto storage : all_component_storage)
+    for(auto storage = all_component_storage; storage; storage = storage->next)
         storage->destroy(index);
 }
 
