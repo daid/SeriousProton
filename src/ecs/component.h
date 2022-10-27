@@ -2,6 +2,8 @@
 
 #include "container/sparseset.h"
 
+class GameServer;
+template<typename T> class MultiplayerECSComponentReplication;
 namespace sp::ecs {
 
 class ComponentStorageBase {
@@ -29,6 +31,7 @@ template<typename T> class ComponentStorage : public ComponentStorageBase {
 
     friend class Entity;
     template<class, class...> friend class Query;
+    friend class ::MultiplayerECSComponentReplication<T>;
 };
 
 }

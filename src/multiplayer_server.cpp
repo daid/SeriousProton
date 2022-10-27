@@ -3,6 +3,7 @@
 #include "multiplayer_internal.h"
 #include "multiplayer.h"
 #include "engine.h"
+#include "ecs/entity.h"
 
 #include "io/http/request.h"
 
@@ -141,6 +142,25 @@ void GameServer::update(float /*gameDelta*/)
         sp::io::DataBuffer packet;
         packet << CMD_SET_GAME_SPEED << lastGameSpeed;
         sendAll(packet);
+    }
+
+    //Replicate ECS data, we send this as one big packet so ECS state is always consistent on the client.
+    sp::io::DataBuffer ecs_packet;
+    ecs_packet << CMD_ECS_UPDATE;
+    //  For each entity, check which version number we last transmitted and if it is changed, transmit the new version number.
+    ecs_entity_version.resize(sp::ecs::Entity::entity_version.size(), std::numeric_limits<uint32_t>::max());
+    for(uint32_t index; index<sp::ecs::Entity::entity_version.size(); index++) {
+        if (ecs_entity_version[index] != sp::ecs::Entity::entity_version[index]) {
+            ecs_entity_version[index] = sp::ecs::Entity::entity_version[index];
+            ecs_packet << CMD_ECS_ENTITY_VERSION << index << ecs_entity_version[index];
+        }
+    }
+    //  For each component type, check which components are added/changed/deleted and send that over.
+    for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
+        ecsrb->update(ecs_packet);
+    }
+    if (ecs_packet.getDataSize() > sizeof(CMD_ECS_UPDATE)) {
+        sendAll(ecs_packet);
     }
 
     std::vector<int32_t> delList;

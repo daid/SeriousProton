@@ -4,8 +4,8 @@
 
 namespace sp::ecs {
 
-static std::vector<uint32_t> entity_version;
-static std::vector<uint32_t> free_list;
+std::vector<uint32_t> Entity::entity_version;
+std::vector<uint32_t> Entity::free_list;
 
 Entity Entity::create()
 {

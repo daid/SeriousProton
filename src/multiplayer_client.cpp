@@ -247,6 +247,49 @@ void GameClient::update(float /*delta*/)
                 reply << CMD_ALIVE_RESP;
                 socket->send(reply);
                 break;
+            case CMD_ECS_UPDATE:
+                while(packet.available())
+                {
+                    uint8_t ecs_cmd;
+                    packet >> ecs_cmd;
+                    switch(ecs_cmd)
+                    {
+                    case CMD_ECS_ENTITY_VERSION:
+                        {
+                            uint32_t index, version;
+                            packet >> index >> version;
+                            if (index >= sp::ecs::Entity::entity_version.size()) {
+                                sp::ecs::Entity::entity_version.push_back(version);
+                            } else if (sp::ecs::Entity::entity_version[index] != version) {
+                                sp::ecs::Entity::entity_version[index] = version;
+                            }
+                        }
+                        break;
+                    case CMD_ECS_SET_COMPONENT:
+                        {
+                            uint16_t component_index;
+                            uint32_t index;
+                            packet >> component_index >> index;
+                            for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
+                                if (ecsrb->component_index == component_index)
+                                    ecsrb->receive(index, packet);
+                            }
+                        }
+                        break;
+                    case CMD_ECS_DEL_COMPONENT:
+                        {
+                            uint16_t component_index;
+                            uint32_t index;
+                            packet >> component_index >> index;
+                            for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
+                                if (ecsrb->component_index == component_index)
+                                    ecsrb->remove(index);
+                            }
+                        }
+                        break;
+                    }
+                }
+                break;
             default:
                 LOG(ERROR) << "Unknown command from server: " << command;
             }

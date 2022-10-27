@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include "Updatable.h"
 #include "stringImproved.h"
+#include "ecs/entity.h"
+#include "multiplayer_internal.h"
 
 class MultiplayerObject;
 
@@ -224,6 +226,12 @@ public:
         registerMemberReplication(&member->z, update_delay);
     }
 
+    void registerMemberReplication_(F_PARAM sp::ecs::Entity* member, float update_delay = 0.0f)
+    {
+        registerMemberReplication(&member->index, update_delay);
+        registerMemberReplication(&member->version, update_delay);
+    }
+
     void updateMemberReplicationUpdateDelay(void* data, float update_delay)
     {
         for(unsigned int n=0; n<memberReplicationInfo.size(); n++)
@@ -291,5 +299,57 @@ template<class T> MultiplayerObject* createMultiplayerObject()
 {
     return new T();
 }
+
+class MultiplayerECSComponentReplicationBase {
+public:
+    static inline MultiplayerECSComponentReplicationBase* first = nullptr;
+    MultiplayerECSComponentReplicationBase* next;
+    uint16_t component_index = 0;
+
+    MultiplayerECSComponentReplicationBase() {
+        next = first;
+        first = this;
+        if (next)
+            component_index = next->component_index + 1;
+    }
+
+    virtual void update(sp::io::DataBuffer& packet) = 0;
+    virtual void receive(uint32_t index, sp::io::DataBuffer& packet) = 0;
+    virtual void remove(uint32_t index) = 0;
+};
+template<typename T> class MultiplayerECSComponentReplication : public MultiplayerECSComponentReplicationBase
+{
+public:
+    sp::SparseSet<T> component_copy;
+
+    void update(sp::io::DataBuffer& packet) override
+    {
+        for(auto [index, data] : sp::ecs::ComponentStorage<T>::storage.sparseset)
+        {
+            if (!component_copy.has(index) || component_copy.get(index) != data) {
+                component_copy.set(index, data);
+                packet << CMD_ECS_SET_COMPONENT << component_index << index << data;
+            }
+        }
+        for(auto [index, data] : component_copy)
+        {
+            if (!sp::ecs::ComponentStorage<T>::storage.sparseset.has(index)) {
+                component_copy.remove(index);
+                packet << CMD_ECS_DEL_COMPONENT << component_index << index;
+            }
+        }
+    }
+
+    void receive(uint32_t index, sp::io::DataBuffer& packet) override
+    {
+        T data;
+        packet >> data;
+        sp::ecs::ComponentStorage<T>::storage.sparseset.set(index, data);
+    }
+    void remove(uint32_t index) override
+    {
+        sp::ecs::ComponentStorage<T>::storage.sparseset.remove(index);
+    }
+};
 
 #endif//MULTIPLAYER_H
