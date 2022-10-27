@@ -17,6 +17,7 @@ Entity Entity::create()
 	} else {
 		e.index = free_list.back();
 		free_list.pop_back();
+		entity_version[e.index] &=~destroyed_flag;
 		e.version = entity_version[e.index];
 	}
 	return e;
@@ -37,6 +38,26 @@ Entity::operator bool() const
     return entity_version[index] == version;
 }
 
+bool Entity::operator==(const Entity& other) const {
+	auto bt = bool(*this);
+	auto bo = bool(*this);
+	if (bt != bo)
+		return false;
+	if (!bt)
+		return true;
+	return index == other.index;
+}
+
+bool Entity::operator!=(const Entity& other) const {
+	auto bt = bool(*this);
+	auto bo = bool(*this);
+	if (bt != bo)
+		return true;
+	if (!bt)
+		return false;
+	return index != other.index;
+}
+
 void Entity::destroy()
 {
 	if (!*this)
@@ -44,7 +65,7 @@ void Entity::destroy()
 	ComponentStorageBase::destroyAll(index);
 	
 	// By increasing the version number, everything else will know this entity no longer exists.
-	entity_version[index] += 1;
+	entity_version[index] = (entity_version[index] + 1) | destroyed_flag;
 	free_list.push_back(index);
 }
 

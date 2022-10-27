@@ -42,8 +42,17 @@ public:
 	{
 		return ComponentStorage<T>::storage.sparseset.has(index);
 	}
+	template<class T> void removeComponent()
+	{
+		ComponentStorage<T>::storage.sparseset.remove(index);
+	}
 
+	bool operator==(const Entity& other) const;
+	bool operator!=(const Entity& other) const;
+
+	uint32_t getIndex() { return index; } // You should never need this, but the multiplayer code does need it.
 private:
+	static constexpr uint32_t destroyed_flag = 1 << 31;
 
 	uint32_t index = std::numeric_limits<uint32_t>::max();
 	uint32_t version = std::numeric_limits<uint32_t>::max();

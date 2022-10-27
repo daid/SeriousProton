@@ -126,6 +126,9 @@ bool multiplayerReplicationFunctions<T>::isChanged(void* data, void* prev_data_p
 
 template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr);
 
+template <> void multiplayerReplicationFunctions<sp::ecs::Entity>::sendData(void* data, sp::io::DataBuffer& packet);
+template <> void multiplayerReplicationFunctions<sp::ecs::Entity>::receiveData(void* data, sp::io::DataBuffer& packet);
+
 //In between class that handles all the nasty synchronization of objects between server and client.
 //I'm assuming that it should be a pure virtual class though.
 class MultiplayerObject : public virtual PObject
@@ -226,12 +229,6 @@ public:
         registerMemberReplication(&member->z, update_delay);
     }
 
-    void registerMemberReplication_(F_PARAM sp::ecs::Entity* member, float update_delay = 0.0f)
-    {
-        registerMemberReplication(&member->index, update_delay);
-        registerMemberReplication(&member->version, update_delay);
-    }
-
     void updateMemberReplicationUpdateDelay(void* data, float update_delay)
     {
         for(unsigned int n=0; n<memberReplicationInfo.size(); n++)
@@ -314,8 +311,8 @@ public:
     }
 
     virtual void update(sp::io::DataBuffer& packet) = 0;
-    virtual void receive(uint32_t index, sp::io::DataBuffer& packet) = 0;
-    virtual void remove(uint32_t index) = 0;
+    virtual void receive(sp::ecs::Entity entity, sp::io::DataBuffer& packet) = 0;
+    virtual void remove(sp::ecs::Entity entity) = 0;
 };
 template<typename T> class MultiplayerECSComponentReplication : public MultiplayerECSComponentReplicationBase
 {
@@ -340,15 +337,15 @@ public:
         }
     }
 
-    void receive(uint32_t index, sp::io::DataBuffer& packet) override
+    void receive(sp::ecs::Entity entity, sp::io::DataBuffer& packet) override
     {
         T data;
         packet >> data;
-        sp::ecs::ComponentStorage<T>::storage.sparseset.set(index, data);
+        entity.addComponent<T>(data);
     }
-    void remove(uint32_t index) override
+    void remove(sp::ecs::Entity entity) override
     {
-        sp::ecs::ComponentStorage<T>::storage.sparseset.remove(index);
+        entity.removeComponent<T>();
     }
 };
 

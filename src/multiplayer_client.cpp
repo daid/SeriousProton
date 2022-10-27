@@ -254,15 +254,21 @@ void GameClient::update(float /*delta*/)
                     packet >> ecs_cmd;
                     switch(ecs_cmd)
                     {
-                    case CMD_ECS_ENTITY_VERSION:
+                    case CMD_ECS_ENTITY_CREATE:
                         {
-                            uint32_t index, version;
-                            packet >> index >> version;
-                            if (index >= sp::ecs::Entity::entity_version.size()) {
-                                sp::ecs::Entity::entity_version.push_back(version);
-                            } else if (sp::ecs::Entity::entity_version[index] != version) {
-                                sp::ecs::Entity::entity_version[index] = version;
-                            }
+                            uint32_t index;
+                            packet >> index;
+                            if (index >= entity_mapping.size())
+                                entity_mapping.resize(index + 1);
+                            entity_mapping[index] = sp::ecs::Entity::create();
+                        }
+                        break;
+                    case CMD_ECS_ENTITY_DESTROY:
+                        {
+                            uint32_t index;
+                            packet >> index;
+                            if (index < entity_mapping.size())
+                                entity_mapping[index].destroy();
                         }
                         break;
                     case CMD_ECS_SET_COMPONENT:
@@ -272,7 +278,7 @@ void GameClient::update(float /*delta*/)
                             packet >> component_index >> index;
                             for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
                                 if (ecsrb->component_index == component_index)
-                                    ecsrb->receive(index, packet);
+                                    ecsrb->receive(entity_mapping[index], packet);
                             }
                         }
                         break;
@@ -283,7 +289,7 @@ void GameClient::update(float /*delta*/)
                             packet >> component_index >> index;
                             for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
                                 if (ecsrb->component_index == component_index)
-                                    ecsrb->remove(index);
+                                    ecsrb->remove(entity_mapping[index]);
                             }
                         }
                         break;

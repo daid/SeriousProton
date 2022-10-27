@@ -62,6 +62,20 @@ template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, 
     return false;
 }
 
+template <> void multiplayerReplicationFunctions<sp::ecs::Entity>::sendData(void* data, sp::io::DataBuffer& packet)
+{
+    auto e = (sp::ecs::Entity*)data;
+    if (*e) {
+        packet << e->getIndex();
+    } else {
+        packet << std::numeric_limits<uint32_t>::max();
+    }
+}
+
+template <> void multiplayerReplicationFunctions<sp::ecs::Entity>::receiveData(void* data, sp::io::DataBuffer& packet)
+{
+}
+
 static bool collisionable_isChanged(void* data, void* prev_data_ptr)
 {
     CollisionableReplicationData* rep_data = *(CollisionableReplicationData**)prev_data_ptr;

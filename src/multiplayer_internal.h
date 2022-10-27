@@ -26,8 +26,9 @@ static const command_t CMD_AUDIO_COMM_DATA = 0x0021;
 static const command_t CMD_AUDIO_COMM_STOP = 0x0022;
 
 static constexpr command_t CMD_ECS_UPDATE = 0x0030;
-static constexpr uint8_t CMD_ECS_ENTITY_VERSION = 0x00;
-static constexpr uint8_t CMD_ECS_SET_COMPONENT = 0x01;
-static constexpr uint8_t CMD_ECS_DEL_COMPONENT = 0x02;
+static constexpr uint8_t CMD_ECS_ENTITY_CREATE = 0x00;
+static constexpr uint8_t CMD_ECS_ENTITY_DESTROY = 0x01;
+static constexpr uint8_t CMD_ECS_SET_COMPONENT = 0x02;
+static constexpr uint8_t CMD_ECS_DEL_COMPONENT = 0x03;
 
 #endif//MULTIPLAYER_INTERNAL_H
