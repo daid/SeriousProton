@@ -16,4 +16,10 @@ void ComponentStorageBase::destroyAll(uint32_t index)
         storage->destroy(index);
 }
 
+void ComponentStorageBase::dumpDebugInfo()
+{
+    for(auto storage = all_component_storage; storage; storage = storage->next)
+        storage->dumpDebugInfoImpl();
+}
+
 }

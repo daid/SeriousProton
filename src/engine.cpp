@@ -8,6 +8,7 @@
 #include "windowManager.h"
 #include "scriptInterface.h"
 #include "multiplayer_server.h"
+#include "ecs/entity.h"
 
 #include <thread>
 #include <SDL.h>
@@ -218,6 +219,9 @@ void Engine::handleEvent(SDL_Event& event)
         }
         printf("%4d %s\n",grand_total,"All PObjects");
         printf("------------------------\n");
+
+        sp::ecs::Entity::dumpDebugInfo();
+        sp::ecs::ComponentStorageBase::dumpDebugInfo();
     }
 #endif
 

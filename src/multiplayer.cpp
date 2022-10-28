@@ -68,12 +68,20 @@ template <> void multiplayerReplicationFunctions<sp::ecs::Entity>::sendData(void
     if (*e) {
         packet << e->getIndex();
     } else {
-        packet << std::numeric_limits<uint32_t>::max();
+        packet << sp::ecs::Entity::no_index;
     }
 }
 
 template <> void multiplayerReplicationFunctions<sp::ecs::Entity>::receiveData(void* data, sp::io::DataBuffer& packet)
 {
+    auto e = (sp::ecs::Entity*)data;
+
+    uint32_t index;
+    packet >> index;
+    if (index < game_client->entity_mapping.size())
+        *e = game_client->entity_mapping[index];
+    else
+        *e = sp::ecs::Entity{};
 }
 
 static bool collisionable_isChanged(void* data, void* prev_data_ptr)

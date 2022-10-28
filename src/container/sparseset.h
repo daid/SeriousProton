@@ -72,6 +72,8 @@ public:
     
     Iterator begin() { return Iterator(*this, dense.size() - 1); }
     Iterator end() { return Iterator(*this, std::numeric_limits<size_t>::max()); }
+
+    size_t size() { return data.size(); }
 private:
     std::vector<uint32_t> sparse;
     std::vector<uint32_t> dense;

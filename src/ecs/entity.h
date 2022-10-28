@@ -51,11 +51,15 @@ public:
 	bool operator!=(const Entity& other) const;
 
 	uint32_t getIndex() { return index; } // You should never need this, but the multiplayer code does need it.
-private:
-	static constexpr uint32_t destroyed_flag = 1 << 31;
 
-	uint32_t index = std::numeric_limits<uint32_t>::max();
-	uint32_t version = std::numeric_limits<uint32_t>::max();
+	static void dumpDebugInfo();
+
+	static constexpr uint32_t no_index = std::numeric_limits<uint32_t>::max();
+private:
+	static constexpr uint32_t destroyed_flag = 1 << (std::numeric_limits<uint32_t>::digits - 1);
+
+	uint32_t index = no_index;
+	uint32_t version = no_index;
 
 	static Entity fromIndex(uint32_t index);
 	static std::vector<uint32_t> entity_version;

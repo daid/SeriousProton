@@ -149,10 +149,14 @@ void GameServer::update(float /*gameDelta*/)
     ecs_packet << CMD_ECS_UPDATE;
     //  For each entity, check which version number we last transmitted and if it is changed, transmit creation/deletion of entities.
     ecs_entity_version.resize(sp::ecs::Entity::entity_version.size(), std::numeric_limits<uint32_t>::max());
-    for(uint32_t index; index<sp::ecs::Entity::entity_version.size(); index++) {
+    for(uint32_t index=0; index<sp::ecs::Entity::entity_version.size(); index++) {
         if (ecs_entity_version[index] != sp::ecs::Entity::entity_version[index]) {
-            if (ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag)
+            if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag)) {
                 ecs_packet << CMD_ECS_ENTITY_DESTROY << index;
+                for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
+                    ecsrb->onEntityDestroyed(index);
+                }
+            }
             ecs_entity_version[index] = sp::ecs::Entity::entity_version[index];
             if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag))
                 ecs_packet << CMD_ECS_ENTITY_CREATE << index;
@@ -474,6 +478,19 @@ void GameServer::handleNewClient(ClientInfo& info)
     }
 
     onNewClient(info.client_id);
+
+    //Replicate ECS data, we send this as one big packet so ECS state is always consistent on the client.
+    sp::io::DataBuffer ecs_packet;
+    ecs_packet << CMD_ECS_UPDATE;
+    //  For each entity, check which version number we last transmitted and if it is changed, transmit creation/deletion of entities.
+    for(uint32_t index=0; index<sp::ecs::Entity::entity_version.size(); index++) {
+        if (!(sp::ecs::Entity::entity_version[index] & sp::ecs::Entity::destroyed_flag))
+            ecs_packet << CMD_ECS_ENTITY_CREATE << index;
+    }
+    //  For each component type, send all existing components.
+    for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next)
+        ecsrb->sendAll(ecs_packet);
+    info.socket->queue(ecs_packet);
 
     //On a new client, first create all the already existing objects. And update all the values.
     for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)

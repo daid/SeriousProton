@@ -1,5 +1,6 @@
 #include "entity.h"
 #include "component.h"
+#include "logging.h"
 #include <vector>
 
 namespace sp::ecs {
@@ -33,7 +34,7 @@ Entity Entity::fromIndex(uint32_t index)
 
 Entity::operator bool() const
 {
-	if (index == std::numeric_limits<uint32_t>::max())
+	if (index == no_index)
 		return false;
     return entity_version[index] == version;
 }
@@ -67,6 +68,11 @@ void Entity::destroy()
 	// By increasing the version number, everything else will know this entity no longer exists.
 	entity_version[index] = (entity_version[index] + 1) | destroyed_flag;
 	free_list.push_back(index);
+}
+
+void Entity::dumpDebugInfo()
+{
+	LOG(Debug, "Entity count:", entity_version.size() - free_list.size(), " Free entities:", free_list.size());
 }
 
 }
