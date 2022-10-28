@@ -490,6 +490,7 @@ void GameServer::handleNewClient(ClientInfo& info)
     //  For each component type, send all existing components.
     for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next)
         ecsrb->sendAll(ecs_packet);
+    sendDataCounter += ecs_packet.getDataSize();
     info.socket->queue(ecs_packet);
 
     //On a new client, first create all the already existing objects. And update all the values.
