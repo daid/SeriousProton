@@ -3,6 +3,7 @@
 #include "multiplayer_internal.h"
 #include "engine.h"
 
+#include "ecs/multiplayer.h"
 #include "io/network/tcpSocket.h"
 #ifdef STEAMSDK
 #include "io/network/steamP2PSocket.h"
@@ -276,7 +277,7 @@ void GameClient::update(float /*delta*/)
                             uint16_t component_index;
                             uint32_t index;
                             packet >> component_index >> index;
-                            for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
+                            for(auto ecsrb = sp::ecs::ComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
                                 if (ecsrb->component_index == component_index) {
                                     if (index < entity_mapping.size() && entity_mapping[index])
                                         ecsrb->receive(entity_mapping[index], packet);
@@ -289,7 +290,7 @@ void GameClient::update(float /*delta*/)
                             uint16_t component_index;
                             uint32_t index;
                             packet >> component_index >> index;
-                            for(auto ecsrb = MultiplayerECSComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
+                            for(auto ecsrb = sp::ecs::ComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
                                 if (ecsrb->component_index == component_index && index < entity_mapping.size())
                                     ecsrb->remove(entity_mapping[index]);
                             }

@@ -45,7 +45,7 @@ public:
             return false;
         uint32_t moved_index = dense.back();
         dense[sparse[index]] = moved_index;
-        data[sparse[index]] = data.back();
+        data[sparse[index]] = std::move(data.back());
         sparse[moved_index] = sparse[index];
         sparse[index] = std::numeric_limits<uint32_t>::max();
         

@@ -268,6 +268,7 @@ set(source_files #All SeriousProton's objects to compile
     src/ecs/component.h
     src/ecs/component.cpp
     src/ecs/query.h
+    src/ecs/multiplayer.h
 
     cmake/glDebug.inl.in
     "${glDebug_inl}"

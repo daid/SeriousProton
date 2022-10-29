@@ -3,9 +3,9 @@
 #include "container/sparseset.h"
 #include "logging.h"
 
-class GameServer;
-template<typename T> class MultiplayerECSComponentReplication;
+
 namespace sp::ecs {
+template<typename T> class ComponentReplication;
 
 class ComponentStorageBase {
 public:
@@ -39,7 +39,7 @@ template<typename T> class ComponentStorage : public ComponentStorageBase {
 
     friend class Entity;
     template<class, class...> friend class Query;
-    friend class ::MultiplayerECSComponentReplication<T>;
+    friend class ComponentReplication<T>;
 };
 
 }
