@@ -12,11 +12,14 @@
 #include "Renderable.h"
 #include "collisionable.h"
 #include "postProcessManager.h"
+#include "io/keybinding.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
 #include <SDL.h>
 #include <stdlib.h>
+
+sp::io::Keybinding fullscreen_key{"FULLSCREEN"};
 
 static string getFromEnvironment(const char* key, string default_value) {
     auto value = getenv(key);
@@ -61,6 +64,9 @@ Window::~Window()
 
 void Window::render()
 {
+    if (fullscreen_key.getDown())
+        setMode(getMode() == Mode::Window ? Mode::Fullscreen : Mode::Window);
+
     SDL_GL_MakeCurrent(static_cast<SDL_Window*>(window), gl_context);
 
     int w, h;
