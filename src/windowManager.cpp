@@ -10,7 +10,6 @@
 #include "graphics/opengl.h"
 #include "Updatable.h"
 #include "Renderable.h"
-#include "collisionable.h"
 #include "postProcessManager.h"
 #include "io/keybinding.h"
 

@@ -28,6 +28,12 @@ public:
 			return nullptr;
 		return &ComponentStorage<T>::storage.sparseset.get(index);
 	}
+	template<class T> const T* getComponent() const
+	{
+		if (!hasComponent<T>())
+			return nullptr;
+		return &ComponentStorage<T>::storage.sparseset.get(index);
+	}
 	template<class T> T& addComponent()
 	{
 		ComponentStorage<T>::storage.sparseset.set(index, {});
@@ -38,7 +44,13 @@ public:
 		ComponentStorage<T>::storage.sparseset.set(index, T{std::forward<ARGS>(args)...});
 		return ComponentStorage<T>::storage.sparseset.get(index);
 	}
-	template<class T> bool hasComponent()
+	template<class T> T& getOrAddComponent()
+	{
+		if (!hasComponent<T>())
+			ComponentStorage<T>::storage.sparseset.set(index, {});
+		return ComponentStorage<T>::storage.sparseset.get(index);
+	}
+	template<class T> bool hasComponent() const
 	{
 		return ComponentStorage<T>::storage.sparseset.has(index);
 	}

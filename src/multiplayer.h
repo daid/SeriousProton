@@ -243,8 +243,6 @@ public:
                 memberReplicationInfo[n].update_timeout = 0.0f;
     }
 
-    void registerCollisionableReplication(float object_significant_range = -1);
-
     int32_t getMultiplayerId() { return multiplayerObjectId; }
     const string& getMultiplayerClassIdentifier() { return multiplayerClassIdentifier; }
     void sendClientCommand(sp::io::DataBuffer& packet);//Send a command from the client to the server.

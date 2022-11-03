@@ -1,7 +1,6 @@
 #include "engine.h"
 #include "random.h"
 #include "Updatable.h"
-#include "collisionable.h"
 #include "audio/source.h"
 #include "io/keybinding.h"
 #include "soundManager.h"
@@ -9,6 +8,7 @@
 #include "scriptInterface.h"
 #include "multiplayer_server.h"
 #include "ecs/entity.h"
+#include "systems/collision.h"
 
 #include <thread>
 #include <SDL.h>
@@ -78,7 +78,6 @@ Engine::Engine()
     atexit(SDL_Quit);
 
     initRandom();
-    CollisionManager::initialize();
     gameSpeed = 1.0f;
     running = true;
     elapsedTime = 0.0f;
@@ -122,7 +121,7 @@ void Engine::runMainLoop()
             foreach(Updatable, u, updatableList)
                 u->update(delta);
             elapsedTime += delta;
-            CollisionManager::handleCollisions(delta);
+            sp::CollisionSystem::update(delta);
             ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();
 #ifdef STEAMSDK
@@ -165,7 +164,7 @@ void Engine::runMainLoop()
             }
             elapsedTime += delta;
             engine_timing.update = engine_timing_stopwatch.restart();
-            CollisionManager::handleCollisions(delta);
+            sp::CollisionSystem::update(delta);
             engine_timing.collision = engine_timing_stopwatch.restart();
             ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();

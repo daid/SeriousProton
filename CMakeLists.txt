@@ -140,7 +140,6 @@ set(source_files #All SeriousProton's objects to compile
     src/audio/sound.cpp
     src/audio/music.cpp
     src/clipboard.cpp
-    src/collisionable.cpp
     src/engine.cpp
     src/event.cpp
     src/graphics/font.cpp
@@ -197,7 +196,6 @@ set(source_files #All SeriousProton's objects to compile
     src/audio/sound.h
     src/audio/music.h
     src/clipboard.h
-    src/collisionable.h
     src/dynamicLibrary.h
     src/engine.h
     src/event.h
@@ -269,6 +267,10 @@ set(source_files #All SeriousProton's objects to compile
     src/ecs/component.cpp
     src/ecs/query.h
     src/ecs/multiplayer.h
+
+    src/components/collision.h
+    src/systems/collision.h
+    src/systems/collision.cpp
 
     cmake/glDebug.inl.in
     "${glDebug_inl}"
