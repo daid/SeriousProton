@@ -120,8 +120,10 @@ void Engine::runMainLoop()
 
             foreach(Updatable, u, updatableList)
                 u->update(delta);
-            elapsedTime += delta;
+            for(auto system : systems)
+                system->update(delta);
             sp::CollisionSystem::update(delta);
+            elapsedTime += delta;
             ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();
 #ifdef STEAMSDK
@@ -162,6 +164,8 @@ void Engine::runMainLoop()
             foreach(Updatable, u, updatableList) {
                 u->update(delta);
             }
+            for(auto system : systems)
+                system->update(delta);
             elapsedTime += delta;
             engine_timing.update = engine_timing_stopwatch.restart();
             sp::CollisionSystem::update(delta);

@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include "stringImproved.h"
+#include "ecs/system.h"
 #include "P.h"
 
 #ifdef WIN32
@@ -36,6 +37,7 @@ private:
 #ifdef WIN32
     std::unique_ptr<DynamicLibrary> exchndl;
 #endif
+    std::vector<sp::ecs::System*> systems;
 public:
     Engine();
     ~Engine();
@@ -48,6 +50,10 @@ public:
     void registerObject(string name, P<PObject> obj);
     P<PObject> getObject(string name);
     
+    template<class T> void registerSystem() {
+        systems.push_back(new T());
+    }
+
     void runMainLoop();
     void shutdown();
 private:
