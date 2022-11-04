@@ -147,6 +147,9 @@ void CollisionSystem::update(float delta)
                 if (!*a || !*b)
                     break;
                 handler->collision(*a, *b, force);
+                if (!*a || !*b)
+                    break;
+                handler->collision(*b, *a, force);
             }
         }
     }

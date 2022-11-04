@@ -23,11 +23,11 @@ template<class PRIMARY, class... T> class Query {
 public:
     class Iterator {
     public:
-        Iterator(int) : iterator(ComponentStorage<PRIMARY>::storage.sparseset.begin()) { checkForSkip(); }
+        Iterator(int) : iterator(ComponentStorage<PRIMARY>::storage.sparseset.begin()) { while(checkForSkip()) {} }
         Iterator() : iterator(ComponentStorage<PRIMARY>::storage.sparseset.end()) {}
 
         bool operator!=(const Iterator& other) const { return iterator != other.iterator; }
-        void operator++() { ++iterator; checkForSkip(); }
+        void operator++() { ++iterator; while(checkForSkip()) {} }
         std::tuple<Entity, PRIMARY&, typename optional_info<T>::ref_type...> operator*() {
             auto [index, primary] = *iterator;
             return {Entity::fromIndex(index), primary, getComponent<T>(index)...};
@@ -46,13 +46,15 @@ public:
             }
         }
 
-        void checkForSkip() {
-            if (iterator.atEnd()) return;
+        bool checkForSkip() {
+            if (iterator.atEnd()) return false;
             if constexpr (sizeof...(T) > 0) {
                 if (!checkIfHasAll<T...>()) {
                     ++iterator;
+                    return true;
                 }
             }
+            return false;
         }
         template<typename T2, typename... ARGS> bool checkIfHasAll() {
             auto index = (*iterator).first;
