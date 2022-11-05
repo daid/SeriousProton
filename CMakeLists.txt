@@ -260,6 +260,7 @@ set(source_files #All SeriousProton's objects to compile
     src/windowManager.h
 
     src/container/sparseset.h
+    src/container/chunkedvector.h
 
     src/ecs/entity.h
     src/ecs/entity.cpp

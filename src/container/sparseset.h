@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <vector>
 #include <limits>
+#include "chunkedvector.h"
 
 
 namespace sp {
@@ -77,7 +78,7 @@ public:
 private:
     std::vector<uint32_t> sparse;
     std::vector<uint32_t> dense;
-    std::vector<T> data;
+    ChunkedVector<T> data;
 };
 
 }
