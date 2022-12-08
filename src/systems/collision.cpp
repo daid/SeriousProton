@@ -51,7 +51,7 @@ void CollisionSystem::update(float delta)
     world->Step(delta, 4, 8);
     
     // Go over each entity with physics, and create/update bodies if needed.
-    for(auto [entity, position, physics] : sp::ecs::Query<Position, Physics>()) {
+    for(auto [entity, transform, physics] : sp::ecs::Query<Transform, Physics>()) {
         if (physics.physics_dirty)
         {
             physics.physics_dirty = false;
@@ -68,8 +68,8 @@ void CollisionSystem::update(float delta)
             bodyDef.type = physics.type == Physics::Type::Dynamic ? b2_dynamicBody : b2_kinematicBody;
             bodyDef.userData = ptr;
             bodyDef.allowSleep = false;
-            bodyDef.position = v2b(position.position);
-            bodyDef.angle = glm::radians(position.rotation);
+            bodyDef.position = v2b(transform.position);
+            bodyDef.angle = glm::radians(transform.rotation);
             physics.body = world->CreateBody(&bodyDef);
 
             b2FixtureDef shapeDef;
@@ -89,13 +89,13 @@ void CollisionSystem::update(float delta)
                 physics.body->CreateFixture(&shapeDef);
             }
         }
-        if (position.position_user_set && physics.body) {
-            physics.body->SetTransform(v2b(position.position), physics.body->GetAngle());
-            position.position_user_set = false;
+        if (transform.position_user_set && physics.body) {
+            physics.body->SetTransform(v2b(transform.position), physics.body->GetAngle());
+            transform.position_user_set = false;
         }
-        if (position.rotation_user_set && physics.body) {
-            physics.body->SetTransform(physics.body->GetPosition(), glm::radians(position.rotation));
-            position.rotation_user_set = false;
+        if (transform.rotation_user_set && physics.body) {
+            physics.body->SetTransform(physics.body->GetPosition(), glm::radians(transform.rotation));
+            transform.rotation_user_set = false;
         }
         if (physics.linear_velocity_user_set && physics.body) {
             physics.body->SetLinearVelocity(v2b(physics.linear_velocity));
@@ -111,17 +111,17 @@ void CollisionSystem::update(float delta)
     std::vector<b2Body*> remove_list;
     for(b2Body* body = world->GetBodyList(); body; body = body->GetNext()) {
         sp::ecs::Entity* entity_ptr = (sp::ecs::Entity*)body->GetUserData();
-        Position* position;
+        Transform* transform;
         Physics* physics;
-        if (!*entity_ptr || !(physics = entity_ptr->getComponent<Physics>()) || !(position = entity_ptr->getComponent<Position>())) {
+        if (!*entity_ptr || !(physics = entity_ptr->getComponent<Physics>()) || !(transform = entity_ptr->getComponent<Transform>())) {
             delete entity_ptr;
             remove_list.push_back(body);
         } else {
-            position->position = b2v(body->GetPosition());
-            position->rotation = glm::degrees(body->GetAngle());
+            transform->position = b2v(body->GetPosition());
+            transform->rotation = glm::degrees(body->GetAngle());
             physics->linear_velocity = b2v(body->GetLinearVelocity());
             physics->angular_velocity = glm::degrees(body->GetAngularVelocity());
-            position->multiplayer_dirty = true; //TODO make this condition and like, not sending every tick.
+            transform->multiplayer_dirty = true; //TODO make this condition and like, not sending every tick.
         }
     }
     for(auto body : remove_list) {

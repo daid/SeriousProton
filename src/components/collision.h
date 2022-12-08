@@ -7,8 +7,8 @@ class b2Body;
 namespace sp {
 class CollisionSystem;
 
-// Position component, to give an entity a position and rotation in the 3D world.
-class Position
+// Transform component, to give an entity a position and rotation in the 3D world.
+class Transform
 {
 public:
     glm::vec2 getPosition() const { return position; }
