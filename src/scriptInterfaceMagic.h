@@ -78,6 +78,8 @@ int convert<T>::returnType(lua_State* L, return_t t)
     {
         if constexpr (std::is_integral_v<T>)
             lua_pushinteger(L, t);
+        else if constexpr (std::is_enum_v<T>)
+            lua_pushinteger(L, static_cast<int>(t));
         else
             lua_pushnumber(L, t);
         return 1;
