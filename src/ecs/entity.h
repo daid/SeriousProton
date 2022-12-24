@@ -62,7 +62,9 @@ public:
 	bool operator==(const Entity& other) const;
 	bool operator!=(const Entity& other) const;
 
-	uint32_t getIndex() { return index; } // You should never need this, but the multiplayer code does need it.
+	uint32_t getIndex() const { return index; } // You should never need this, but the multiplayer code does need it.
+	uint32_t getVersion() const { return version; } // You should never need this, but the multiplayer code does need it.
+	static Entity forced(uint32_t index, uint32_t version) { auto e = Entity(); e.index = index; e.version = version; return e; }
 
 	static void dumpDebugInfo();
 

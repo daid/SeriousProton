@@ -2,6 +2,7 @@
 #include "multiplayer.h"
 #include "multiplayer_internal.h"
 #include "engine.h"
+#include "components/multiplayer.h"
 
 #include "ecs/multiplayer.h"
 #include "io/network/tcpSocket.h"
@@ -257,11 +258,12 @@ void GameClient::update(float /*delta*/)
                     {
                     case CMD_ECS_ENTITY_CREATE:
                         {
-                            uint32_t index;
-                            packet >> index;
+                            uint32_t index, version;
+                            packet >> index >> version;
                             if (index >= entity_mapping.size())
                                 entity_mapping.resize(index + 1);
                             entity_mapping[index] = sp::ecs::Entity::create();
+                            entity_mapping[index].addComponent<ServerIndex>(index, version);
                         }
                         break;
                     case CMD_ECS_ENTITY_DESTROY:

@@ -271,6 +271,7 @@ set(source_files #All SeriousProton's objects to compile
     src/ecs/system.h
 
     src/components/collision.h
+    src/components/multiplayer.h
     src/systems/collision.h
     src/systems/collision.cpp
 

@@ -2,6 +2,37 @@
 #include "multiplayer_client.h"
 #include "engine.h"
 #include "multiplayer_internal.h"
+#include "components/multiplayer.h"
+
+
+sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sp::ecs::Entity& e)
+{
+    if (game_client) {
+        auto si = e.getComponent<ServerIndex>();
+        if (!si)
+            packet << 0 << 0;
+        else
+            packet << si->index << si->version;
+    } else {
+        packet << e.getIndex() << e.getVersion();
+    }
+    return packet;
+}
+
+sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sp::ecs::Entity& e)
+{
+    uint32_t index, version;
+    packet >> index >> version;
+    if (game_client) {
+        if (index < game_client->entity_mapping.size())
+            e = game_client->entity_mapping[index];
+        else
+            e = {};
+    } else {
+        e = sp::ecs::Entity::forced(index, version);
+    }
+    return packet;
+}
 
 
 MultiplayerClassListItem* multiplayerClassListStart;

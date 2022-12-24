@@ -46,6 +46,9 @@ template<typename T1, typename T2> static inline sp::io::DataBuffer& operator >>
 static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::u8vec4& c) { return packet << c.r << c.g << c.b << c.a; } \
 static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::u8vec4& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
 
+sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sp::ecs::Entity& e);
+sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sp::ecs::Entity& e);
+
 template <typename T> struct multiplayerReplicationFunctions
 {
     static bool isChanged(void* data, void* prev_data_ptr);

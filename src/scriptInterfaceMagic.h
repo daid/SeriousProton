@@ -11,6 +11,7 @@
 #include "stringImproved.h"
 #include "lua/lua.hpp"
 #include "glm/gtc/type_precision.hpp"
+#include "ecs/entity.h"
 #include <typeinfo>
 #include <optional>
 
@@ -95,6 +96,8 @@ int convert<T>::returnType(lua_State* L, return_t t)
 template<> int convert<bool>::returnType(lua_State* L, bool b);
 //Specialized template for the string return type, so we return a lua string.
 template<> int convert<string>::returnType(lua_State* L, const string& s);
+//Specialized template for the string return type, so we return a lua string.
+template<> int convert<sp::ecs::Entity>::returnType(lua_State* L, const sp::ecs::Entity& e);
 
 //Have optional parameters, provided they are last arguments of script function
 template<typename T>

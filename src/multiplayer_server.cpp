@@ -160,7 +160,7 @@ void GameServer::update(float /*gameDelta*/)
             }
             ecs_entity_version[index] = sp::ecs::Entity::entity_version[index];
             if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag))
-                ecs_packet << CMD_ECS_ENTITY_CREATE << index;
+                ecs_packet << CMD_ECS_ENTITY_CREATE << index << ecs_entity_version[index];
         }
     }
     //  For each component type, check which components are added/changed/deleted and send that over.
