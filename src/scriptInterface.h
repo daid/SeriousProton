@@ -20,7 +20,21 @@ public:
     
     bool run(string filename);
     void registerObject(P<PObject> object, string variable_name);
-    void setVariable(string variable_name, string value);
+    template<typename T> void setVariable(string variable_name, const T& value) {
+        //Get the environment table from the registry.
+        lua_pushlightuserdata(L, this);
+        lua_gettable(L, LUA_REGISTRYINDEX);
+
+        //Set our variable in this environment table
+        lua_pushstring(L, variable_name.c_str());
+        auto push_count = convert<T>::returnType(L, value);
+        if (push_count != 1)
+            luaL_error(L, "Tried setVariable on a type that is not a single lua variable");
+        lua_settable(L, -3);
+
+        //Pop the table
+        lua_pop(L, 1);
+    }
     bool runCode(string code);
     bool runCode(string code, string& json_output);
     string getError();

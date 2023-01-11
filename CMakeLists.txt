@@ -167,6 +167,12 @@ set(source_files #All SeriousProton's objects to compile
     src/random.cpp
     src/Renderable.cpp
     src/resources.cpp
+    src/script/environment.cpp
+    src/script/environment.h
+    src/script/conversion.h
+    src/script/component.h
+    src/script/callback.h
+    src/script/callback.cpp
     src/scriptInterface.cpp
     src/scriptInterfaceMagic.cpp
     src/shaderManager.cpp

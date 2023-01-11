@@ -202,21 +202,6 @@ bool ScriptObject::run(string filename)
     return true;
 }
 
-void ScriptObject::setVariable(string variable_name, string value)
-{
-    //Get the environment table from the registry.
-    lua_pushlightuserdata(L, this);
-    lua_gettable(L, LUA_REGISTRYINDEX);
-    
-    //Set our variable in this environment table
-    lua_pushstring(L, variable_name.c_str());
-    lua_pushstring(L, value.c_str());
-    lua_settable(L, -3);
-    
-    //Pop the table
-    lua_pop(L, 1);
-}
-
 void ScriptObject::registerObject(P<PObject> object, string variable_name)
 {
     //Get the environment table from the registry.

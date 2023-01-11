@@ -41,7 +41,7 @@ Entity::operator bool() const
 
 bool Entity::operator==(const Entity& other) const {
 	auto bt = bool(*this);
-	auto bo = bool(*this);
+	auto bo = bool(other);
 	if (bt != bo)
 		return false;
 	if (!bt)
@@ -51,7 +51,7 @@ bool Entity::operator==(const Entity& other) const {
 
 bool Entity::operator!=(const Entity& other) const {
 	auto bt = bool(*this);
-	auto bo = bool(*this);
+	auto bo = bool(other);
 	if (bt != bo)
 		return true;
 	if (!bt)
