@@ -78,7 +78,6 @@ static int destroyScript(lua_State* L)
 
 static int log(lua_State* L)
 {
-    string message = luaL_checkstring(L, 1);
     LOG(INFO) << "LUA log(): " << luaL_checkstring(L, 1);
     return 0;
 }
