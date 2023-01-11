@@ -76,6 +76,19 @@ static int destroyScript(lua_State* L)
 /// This function is provided by SeriousProton (src/scriptInterface.cpp).
 //REGISTER_SCRIPT_FUNCTION(destroyScript);//Not registered as a normal function, as it needs a reference to the ScriptObject, which is passed as an upvalue.
 
+static int log(lua_State* L)
+{
+    string message = luaL_checkstring(L, 1);
+    LOG(INFO) << "LUA log(): " << luaL_checkstring(L, 1);
+    return 0;
+}
+/// void log(string message)
+/// Emits the given message to the configured log file.
+/// Messages are Info-level and prefixed with "LUA log(): ".
+/// This function is provided by SeriousProton (src/scriptInterface.cpp).
+/// Example: log("Something happened!") -- emits "INFO: LUA log(): Something happened!"
+REGISTER_SCRIPT_FUNCTION(log)
+
 lua_State* ScriptObject::L = NULL;
 
 ScriptObject::ScriptObject()
