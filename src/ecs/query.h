@@ -57,8 +57,8 @@ public:
             return false;
         }
         template<typename T2, typename... ARGS> bool checkIfHasAll() {
-            auto index = (*iterator).first;
             if constexpr (!optional_info<T2>::value) {
+                auto index = (*iterator).first;
                 if (!ComponentStorage<T2>::storage.sparseset.has(index))
                     return false;
             }
