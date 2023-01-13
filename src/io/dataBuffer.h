@@ -220,6 +220,9 @@ public:
     DataBuffer& operator >>(float& data) { read(data); return *this; }
     DataBuffer& operator >>(double& data) { read(data); return *this; }
     DataBuffer& operator >>(string& data) { read(data); return *this; }
+
+    template<typename T, class=typename std::enable_if_t< std::is_enum_v<T>>> DataBuffer& operator <<(T data) { write(int(data)); return *this; }
+    template<typename T, class=typename std::enable_if_t< std::is_enum_v<T>>> DataBuffer& operator >>(T& data) { int n = 0; read(n); data = T(n); return *this; }
 private:
     void writeVLQu(uint32_t v) {
         if (v >= (1 << 28))
