@@ -13,8 +13,11 @@ static int random(lua_State* L)
     return 1;
 }
 /// float random(float min_value, float max_value)
-/// Generate a random floating point number between the min and max value. Includes min and max as possible values.
-/// (Floating point numbers are factional numbers, so 1.5, 2.333333, 3.141)
+/// Returns a random floating point number between the min and max values, inclusive.
+/// Floating point numbers are fractional numbers, such as 1.5, 2.333333, 3.141.
+/// To generate an integer value, use irandom().
+/// This function is provided by SeriousProton (src/scriptInterface.cpp).
+/// Example: value = random(0.0,1.0)
 REGISTER_SCRIPT_FUNCTION(random);
 
 static int irandom(lua_State* L)
@@ -26,8 +29,11 @@ static int irandom(lua_State* L)
     return 1;
 }
 /// int irandom(int min_value, int max_value)
-/// Generate a random integer number between the min and max value. Includes min and max as possible values.
-/// (Integer numbers are whole numbers, so 1, 2, 3, 5, 1400)
+/// Returns a random integer number between the min and max values, inclusive.
+/// Integer numbers are whole numbers, so 1, 2, 3, 5, 1400.
+/// To generate a floating point value, use random().
+/// This function is provided by SeriousProton (src/scriptInterface.cpp).
+/// Example: value = random(0,10)
 REGISTER_SCRIPT_FUNCTION(irandom);
 
 static int traceback(lua_State* L)
@@ -49,7 +55,13 @@ static int traceback(lua_State* L)
 }
 /// string traceback()
 /// Returns a string containing a list of function calls up to the current point.
-///  useful for debugging and error reporting.
+/// Use this function for debugging and error reporting.
+/// This function is provided by SeriousProton (src/scriptInterface.cpp).
+/// Example:
+/// player:getHull()
+/// traceback = traceback()
+/// -- traceback contains the string [[player:getHull()
+/// -- traceback = traceback()]]
 REGISTER_SCRIPT_FUNCTION(traceback);
 
 static int destroyScript(lua_State* L)
@@ -59,7 +71,9 @@ static int destroyScript(lua_State* L)
     return 0;
 }
 /// void destroyScript()
-/// Destroy this script instance. Note that the script will keep running till the end of the current script call.
+/// Destroys this script instance.
+/// The script continues running until the end of the current script call.
+/// This function is provided by SeriousProton (src/scriptInterface.cpp).
 //REGISTER_SCRIPT_FUNCTION(destroyScript);//Not registered as a normal function, as it needs a reference to the ScriptObject, which is passed as an upvalue.
 
 lua_State* ScriptObject::L = NULL;
