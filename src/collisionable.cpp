@@ -7,7 +7,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-override"
 #endif//__GNUC__
-#include "Box2D/Box2D.h"
+#include "box2d/box2d.h"
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif//__GNUC__
@@ -238,7 +238,7 @@ void Collisionable::setCollisionChain(const std::vector<glm::vec2>& points, bool
     }
     else
     {
-        shape.CreateChain(b_points.data(), static_cast<int32>(b_points.size()));
+        shape.CreateChain(b_points.data(), static_cast<int32>(b_points.size()), b2Vec2_zero, b2Vec2_zero);
     }
 
     createBody(&shape);
