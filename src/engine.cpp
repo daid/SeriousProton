@@ -116,6 +116,15 @@ void Engine::runMainLoop()
 
         while(running)
         {
+            // Handle SDL_QUIT event
+            SDL_Event event;
+            while (SDL_PollEvent(&event))
+            {
+                if (event.type == SDL_QUIT)
+                {
+                    running = false;
+                }
+            }
 #ifdef DEBUG
             if (debug_output_timer.isExpired())
                 LOG(DEBUG) << "Object count: " << DEBUG_PobjCount << " " << updatableList.size();
