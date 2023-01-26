@@ -109,8 +109,27 @@ void Engine::runMainLoop()
     if (Window::all_windows.size() == 0)
     {
         sp::SystemStopwatch frame_timer;
+#ifdef DEBUG
+        sp::SystemTimer debug_output_timer;
+        debug_output_timer.repeat(5);
+#endif
+
         while(running)
         {
+            // Handle SDL_QUIT event
+            SDL_Event event;
+            while (SDL_PollEvent(&event))
+            {
+                if (event.type == SDL_QUIT)
+                {
+                    running = false;
+                }
+            }
+#ifdef DEBUG
+            if (debug_output_timer.isExpired())
+                LOG(DEBUG) << "Object count: " << DEBUG_PobjCount << " " << updatableList.size();
+#endif
+
             float delta = frame_timer.restart();
             if (delta > 0.5f)
                 delta = 0.5f;
