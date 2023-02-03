@@ -20,6 +20,7 @@ public:
     
     bool run(string filename);
     void registerObject(P<PObject> object, string variable_name);
+    void registerObject(sp::ecs::Entity entity, string variable_name);
     template<typename T> void setVariable(string variable_name, const T& value) {
         //Get the environment table from the registry.
         lua_pushlightuserdata(L, this);

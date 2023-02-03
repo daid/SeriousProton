@@ -69,6 +69,13 @@ template<> int convert<sp::ecs::Entity>::returnType(lua_State* L, const sp::ecs:
     return 1;
 }
 
+template<> void convert<sp::ecs::Entity>::param(lua_State* L, int& idx, std::add_lvalue_reference_t<sp::ecs::Entity> e)
+{
+    //TODO?
+    e = {};
+    idx ++;
+}
+
 template<> void convert<const char*>::param(lua_State* L, int& idx, const char*& str)
 {
     str = luaL_checkstring(L, idx++);

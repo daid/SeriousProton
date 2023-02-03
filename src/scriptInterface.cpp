@@ -237,6 +237,27 @@ void ScriptObject::registerObject(P<PObject> object, string variable_name)
     }
 }
 
+void ScriptObject::registerObject(sp::ecs::Entity entity, string variable_name)
+{
+    //Get the environment table from the registry.
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+
+    //Set our global in this environment table
+    lua_pushstring(L, variable_name.c_str());
+    
+    if (convert< sp::ecs::Entity >::returnType(L, entity))
+    {
+        lua_settable(L, -3);
+        //Pop the environment table
+        lua_pop(L, 1);
+    }else{
+        LOG(ERROR) << "Failed to find class for object " << variable_name;
+        //Need to pop the variable name and the environment table.
+        lua_pop(L, 2);
+    }
+}
+
 bool ScriptObject::runCode(string code)
 {
     setCycleLimit();

@@ -96,8 +96,9 @@ int convert<T>::returnType(lua_State* L, return_t t)
 template<> int convert<bool>::returnType(lua_State* L, bool b);
 //Specialized template for the string return type, so we return a lua string.
 template<> int convert<string>::returnType(lua_State* L, const string& s);
-//Specialized template for the string return type, so we return a lua string.
+
 template<> int convert<sp::ecs::Entity>::returnType(lua_State* L, const sp::ecs::Entity& e);
+template<> void convert<sp::ecs::Entity>::param(lua_State* L, int& idx, std::add_lvalue_reference_t<sp::ecs::Entity> e);
 
 //Have optional parameters, provided they are last arguments of script function
 template<typename T>
