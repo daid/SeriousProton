@@ -98,6 +98,7 @@ template<> int convert<bool>::returnType(lua_State* L, bool b);
 template<> int convert<string>::returnType(lua_State* L, const string& s);
 
 template<> int convert<sp::ecs::Entity>::returnType(lua_State* L, const sp::ecs::Entity& e);
+template<> int convert<const sp::ecs::Entity>::returnType(lua_State* L, const sp::ecs::Entity& e);
 template<> void convert<sp::ecs::Entity>::param(lua_State* L, int& idx, std::add_lvalue_reference_t<sp::ecs::Entity> e);
 
 //Have optional parameters, provided they are last arguments of script function

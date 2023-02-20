@@ -69,6 +69,13 @@ template<> int convert<sp::ecs::Entity>::returnType(lua_State* L, const sp::ecs:
     return 1;
 }
 
+template<> int convert<const sp::ecs::Entity>::returnType(lua_State* L, const sp::ecs::Entity& e)
+{
+    //TODO?
+    lua_pushnil(L);
+    return 1;
+}
+
 template<> void convert<sp::ecs::Entity>::param(lua_State* L, int& idx, std::add_lvalue_reference_t<sp::ecs::Entity> e)
 {
     //TODO?

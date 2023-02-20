@@ -24,13 +24,13 @@ public:
 
 	template<class T> T* getComponent()
 	{
-		if (!hasComponent<T>())
+		if (!bool(*this) || !hasComponent<T>())
 			return nullptr;
 		return &ComponentStorage<T>::storage.sparseset.get(index);
 	}
 	template<class T> const T* getComponent() const
 	{
-		if (!hasComponent<T>())
+		if (!bool(*this) || !hasComponent<T>())
 			return nullptr;
 		return &ComponentStorage<T>::storage.sparseset.get(index);
 	}

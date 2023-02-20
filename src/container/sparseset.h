@@ -39,7 +39,21 @@ public:
         data.emplace_back(value);
         return true;
     }
-    
+
+    bool set(uint32_t index, T&& value)
+    {
+        if (has(index)) {
+            data[sparse[index]] = std::move(value);
+            return false;
+        }
+        if (sparse.size() <= index)
+            sparse.resize(index + 1, std::numeric_limits<uint32_t>::max());
+        sparse[index] = dense.size();
+        dense.push_back(index);
+        data.emplace_back(std::move(value));
+        return true;
+    }
+
     bool remove(uint32_t index)
     {
         if (!has(index))
