@@ -696,6 +696,11 @@ public:
     template <> const char* scriptBindObject<T>::objectBaseTypeName = # BASE; \
     ScriptClassInfo scriptClassInfo ## T ( # T , # BASE , scriptBindObject<T>::registerObjectCreation, scriptBindObject<T>::checkObjectType); \
     template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
+#define REGISTER_SCRIPT_SUBCLASS_NAMED(T, BASE, NAME) \
+    template <> const char* scriptBindObject<T>::objectTypeName = NAME; \
+    template <> const char* scriptBindObject<T>::objectBaseTypeName = # BASE; \
+    ScriptClassInfo scriptClassInfo ## T ( # T , # BASE , scriptBindObject<T>::registerObjectCreation, scriptBindObject<T>::checkObjectType); \
+    template <> void scriptBindObject<T>::registerFunctions(lua_State* L, int table)
 #define REGISTER_SCRIPT_SUBCLASS_NO_CREATE(T, BASE) \
     template <> const char* scriptBindObject<T>::objectTypeName = # T; \
     template <> const char* scriptBindObject<T>::objectBaseTypeName = # BASE; \
