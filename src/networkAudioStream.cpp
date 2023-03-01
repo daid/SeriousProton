@@ -36,7 +36,7 @@ void NetworkAudioStream::onMixSamples(int16_t* stream, int sample_count)
 
 void NetworkAudioStream::receivedPacketFromNetwork(const unsigned char* packet, int packet_size)
 {
-    std::array<int16_t, 2880> samples_buffer;
+    std::array<int16_t, 2880> samples_buffer{};
     int sample_count = opus_decode(decoder, packet, packet_size, samples_buffer.data(), static_cast<int>(samples_buffer.size()), 0);
     if (sample_count > 0)
     {

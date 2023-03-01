@@ -76,7 +76,7 @@ public:
             end += start;
             start = 0;
         }
-        len = std::min(end, len);
+        end = std::min(end, len);
         if (end <= start)
         {
             return "";

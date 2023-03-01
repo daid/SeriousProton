@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
 #pragma once
 #include <assert.h>
 #include <math.h>
@@ -31,12 +32,6 @@ THE SOFTWARE.
 #include <stdint.h>
 #include <string.h>
 #endif
-
-namespace gcc_ints
-{
-    __extension__ typedef __int128 int128;
-    __extension__ typedef unsigned __int128 uint128;
-}
 
 #define UINT64_C2(h, l) ((static_cast<uint64_t>(h) << 32) | static_cast<uint64_t>(l))
 
@@ -77,7 +72,7 @@ struct DiyFp {
 			h++;
 		return DiyFp(h, e + rhs.e + 64);
 #elif (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)) && defined(__x86_64__)
-		gcc_ints::uint128 p = static_cast<gcc_ints::uint128>(f) * static_cast<gcc_ints::uint128>(rhs.f);
+		unsigned __int128 p = static_cast<unsigned __int128>(f) * static_cast<unsigned __int128>(rhs.f);
 		uint64_t h = p >> 64;
 		uint64_t l = static_cast<uint64_t>(p);
 		if (l & (uint64_t(1) << 63)) // rounding
@@ -220,7 +215,7 @@ inline DiyFp GetCachedPower(int e, int* K) {
 	//int k = static_cast<int>(ceil((-61 - e) * 0.30102999566398114)) + 374;
 	double dk = (-61 - e) * 0.30102999566398114 + 347;	// dk must be positive, so can do ceiling in positive
 	int k = static_cast<int>(dk);
-	if (dk - k > 0.0)
+	if (k != dk)
 		k++;
 
 	unsigned index = static_cast<unsigned>((k >> 3) + 1);
@@ -296,7 +291,13 @@ inline void DigitGen(const DiyFp& W, const DiyFp& Mp, uint64_t delta, char* buff
 	}
 
 	// kappa = 0
-	for (;;) {
+	assert(*len >= 0);
+#ifdef __clang__
+  // Buffer bounds check in PR #48 breaks output in Clang. See issue #54.
+  for (;;) {
+#else
+	for (; static_cast<std::size_t>(*len) < sizeof(buffer);) {
+#endif
 		p2 *= 10;
 		delta *= 10;
 		char d = static_cast<char>(p2 >> -one.e);
@@ -407,24 +408,40 @@ inline void Prettify(char* buffer, int length, int k) {
 	}
 }
 
-inline void dtoa_milo(double value, char* buffer) {
-	// Not handling NaN and inf
-	assert(!isnan(value));
-	assert(!isinf(value));
+inline void dtoa_milo(double value, char* buffer)
+{
+	if (isnan(value))
+	{
+        buffer[0] = 'N';
+		buffer[1] = 'a';
+		buffer[2] = 'N';
+		buffer[3] = '\0';
+		return;
+	}
+	if (isinf(value))
+	{
+        if (value < 0)
+            *buffer++ = '-';
+        buffer[0] = 'I';
+		buffer[1] = 'n';
+		buffer[2] = 'f';
+		buffer[3] = '\0';
+		return;
+	}
 
 	if (value == 0) {
 		buffer[0] = '0';
 		buffer[1] = '.';
 		buffer[2] = '0';
 		buffer[3] = '\0';
+		return;
 	}
-	else {
-		if (value < 0) {
-			*buffer++ = '-';
-			value = -value;
-		}
-		int length, K;
-		Grisu2(value, buffer, &length, &K);
-		Prettify(buffer, length, K);
-	}
+
+    if (value < 0) {
+        *buffer++ = '-';
+        value = -value;
+    }
+    int length, K;
+    Grisu2(value, buffer, &length, &K);
+    Prettify(buffer, length, K);
 }

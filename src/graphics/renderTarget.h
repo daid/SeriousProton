@@ -68,6 +68,14 @@ public:
     void drawStretchedHVClipped(sp::Rect rect, sp::Rect clip_rect, float corner_size, std::string_view texture, glm::u8vec4 color={255,255,255,255});
 
     void finish();
+    struct VertexData
+    {
+        glm::vec2 position;
+        glm::u8vec4 color;
+        glm::vec2 uv;
+    };
+
+    void applyBuffer(sp::Texture* texture, std::vector<VertexData> &data, std::vector<uint16_t> &index, int mode);
 
     glm::vec2 getVirtualSize();
     glm::ivec2 getPhysicalSize(); //Size in pixels

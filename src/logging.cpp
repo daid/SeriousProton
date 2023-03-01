@@ -24,7 +24,8 @@
 
 namespace
 {
-    const std::array<std::string, SDL_NUM_LOG_PRIORITIES - 1> priority_labels{
+    const std::array<std::string, SDL_NUM_LOG_PRIORITIES> priority_labels{
+        "[UNKNOWN ]: ",
         "[VERBOSE ]: ",
         "[DEBUG   ]: ",
         "[INFO    ]: ",
