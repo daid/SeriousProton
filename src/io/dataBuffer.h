@@ -127,7 +127,7 @@ public:
 
     template<typename... T> std::tuple<T...> read() {
         std::tuple<T...> result;
-        std::apply([this](auto&... v) { ((*this << v), ...); }, result);
+        std::apply([this](auto&... v) { ((*this >> v), ...); }, result);
         return result;
     }
 
