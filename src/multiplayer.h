@@ -11,43 +11,40 @@
 class MultiplayerObject;
 
 
-#define REGISTER_MULTIPLAYER_ENUM(type) \
-    static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const type& e) { return packet << int8_t(e); } \
-    static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
-
-
 #define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
 
-template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::vec<2, T, Q>& v)
-{
-    return packet << v.x << v.y;
-}
-template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::vec<2, T, Q>& v)
-{
-    return packet >> v.x >> v.y;
-}
-template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::vec<3, T, Q>& v)
-{
-    return packet << v.x << v.y << v.z;
-}
-template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::vec<3, T, Q>& v)
-{
-    return packet >> v.x >> v.y >> v.z;
-}
-template<typename T1, typename T2> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const std::pair<T1, T2>& pair)
-{
-    return packet << pair.first << pair.second;
-}
-template<typename T1, typename T2> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, std::pair<T1, T2>& pair)
-{
-    return packet >> pair.first >> pair.second;
-}
+namespace sp::io {
+    template<typename T, glm::qualifier Q> static inline DataBuffer& operator << (DataBuffer& packet, const glm::vec<2, T, Q>& v)
+    {
+        return packet << v.x << v.y;
+    }
+    template<typename T, glm::qualifier Q> static inline DataBuffer& operator >> (DataBuffer& packet, glm::vec<2, T, Q>& v)
+    {
+        return packet >> v.x >> v.y;
+    }
+    template<typename T, glm::qualifier Q> static inline DataBuffer& operator << (DataBuffer& packet, const glm::vec<3, T, Q>& v)
+    {
+        return packet << v.x << v.y << v.z;
+    }
+    template<typename T, glm::qualifier Q> static inline DataBuffer& operator >> (DataBuffer& packet, glm::vec<3, T, Q>& v)
+    {
+        return packet >> v.x >> v.y >> v.z;
+    }
+    template<typename T1, typename T2> static inline DataBuffer& operator << (DataBuffer& packet, const std::pair<T1, T2>& pair)
+    {
+        return packet << pair.first << pair.second;
+    }
+    template<typename T1, typename T2> static inline DataBuffer& operator >> (DataBuffer& packet, std::pair<T1, T2>& pair)
+    {
+        return packet >> pair.first >> pair.second;
+    }
 
-static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::u8vec4& c) { return packet << c.r << c.g << c.b << c.a; } \
-static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::u8vec4& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
+    static inline DataBuffer& operator << (DataBuffer& packet, const glm::u8vec4& c) { return packet << c.r << c.g << c.b << c.a; } \
+    static inline DataBuffer& operator >> (DataBuffer& packet, glm::u8vec4& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
 
-sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const sp::ecs::Entity& e);
-sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, sp::ecs::Entity& e);
+    DataBuffer& operator << (DataBuffer& packet, const sp::ecs::Entity& e);
+    DataBuffer& operator >> (DataBuffer& packet, sp::ecs::Entity& e);
+}
 
 template <typename T> struct multiplayerReplicationFunctions
 {
