@@ -124,11 +124,11 @@ public:
     {
         appendRaw(other.buffer.data(), other.buffer.size());
     }
-    
-    template<typename T, typename... ARGS> void read(T& value, ARGS&... args)
-    {
-        read(value);
-        read(args...);
+
+    template<typename... T> std::tuple<T...> read() {
+        std::tuple<T...> result;
+        std::apply([this](auto&... v) { ((*this << v), ...); }, result);
+        return result;
     }
 
     void read(bool& b)
