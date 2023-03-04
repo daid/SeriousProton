@@ -228,6 +228,92 @@ void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float 
         finish(info.texture);
 }
 
+void RenderTarget::drawSpriteClipped(std::string_view texture, glm::vec2 center, float size, sp::Rect clip_rect, glm::u8vec4 color)
+{
+    if (clip_rect.size.x < 0 || clip_rect.size.y < 0)
+        return;
+
+    auto info = getTextureInfo(texture);
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
+        finish();
+
+    auto n = vertex_data.size();
+    index_data.insert(index_data.end(), {
+        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
+    });
+
+    size *= 0.5f;
+    glm::vec2 offset{size / float(info.size.y) * float(info.size.x), size};
+
+    float x0 = center.x - offset.x;
+    float x1 = center.x + offset.x;
+    float y0 = center.y - offset.y;
+    float y1 = center.y + offset.y;
+
+    const auto& uv_rect = info.uv_rect;
+    float u0 = uv_rect.position.x;
+    float u1 = uv_rect.position.x + uv_rect.size.x;
+    float v0 = uv_rect.position.y;
+    float v1 = uv_rect.position.y + uv_rect.size.y;
+
+    if (x1 < clip_rect.position.x)
+    {
+        return;
+    }
+    else if (x0 < clip_rect.position.x)
+    {
+        u0 = u1 - uv_rect.size.x * (clip_rect.position.x - x1) / (x0 - x1);
+        x0 = clip_rect.position.x;
+    }
+
+    if (x0 > clip_rect.position.x + clip_rect.size.x)
+    {
+        return;
+    }
+    else if (x1 > clip_rect.position.x + clip_rect.size.x)
+    {
+        u1 = u0 + uv_rect.size.x * ((clip_rect.position.x + clip_rect.size.x) - x0) / (x1 - x0);
+        x1 = clip_rect.position.x + clip_rect.size.x;
+    }
+
+    if (y1 < clip_rect.position.y)
+    {
+        return;
+    }
+    else if (y0 < clip_rect.position.y)
+    {
+        v0 = v1 - uv_rect.size.y * (clip_rect.position.y - y1) / (y0 - y1);
+        y0 = clip_rect.position.y;
+    }
+
+    if (y0 > clip_rect.position.y + clip_rect.size.y)
+    {
+        return;
+    }
+    else if (y1 > clip_rect.position.y + clip_rect.size.y)
+    {
+        v1 = v0 + uv_rect.size.y * (clip_rect.size.y - y0) / (y1 - y0);
+        y1 = clip_rect.position.y + clip_rect.size.y;
+    }
+
+    vertex_data.push_back({
+        {x0, y0}, color, {u0, v0}
+    });
+    vertex_data.push_back({
+        {x1, y0}, color, {u1, v0}
+    });
+    vertex_data.push_back({
+        {x0, y1}, color, {u0, v1}
+    });
+    vertex_data.push_back({
+        {x1, y1}, color, {u1, v1}
+    });
+
+    if (info.texture)
+        finish(info.texture);
+}
+
 void RenderTarget::drawRotatedSprite(std::string_view texture, glm::vec2 center, float size, float rotation, glm::u8vec4 color)
 {
     if (rotation == 0)
