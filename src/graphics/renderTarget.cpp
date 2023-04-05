@@ -41,7 +41,7 @@ struct ImageInfo
 static sp::AtlasTexture* atlas_texture;
 static std::unordered_map<string, ImageInfo> image_info;
 static std::unordered_map<sp::Font*, std::unordered_map<int, Rect>> atlas_glyphs;
-static constexpr glm::ivec2 atlas_size = {2048, 2048};
+static constexpr glm::ivec2 atlas_size = {1024, 1024};
 static constexpr glm::vec2 atlas_white_pixel = {(float(atlas_size.x)-0.5f)/float(atlas_size.x), (float(atlas_size.y)-0.5f)/float(atlas_size.y)};
 
 
