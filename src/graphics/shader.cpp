@@ -8,7 +8,7 @@ namespace sp {
 static Shader* current_shader = nullptr;
 
 static const char* vertex_shader_header_es = "#version 100\nprecision highp float;\n";
-static const char* fragment_shader_header_es = "#version 100\nprecision mediump float;\n";
+static const char* fragment_shader_header_es = "#version 100\n#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float\n#endif\n";
 static const char* vertex_shader_header = "#version 120\n";
 static const char* fragment_shader_header = "#version 120\n";
 
