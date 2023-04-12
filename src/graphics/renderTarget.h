@@ -27,6 +27,7 @@ public:
     static sp::Font* getDefaultFont();
 
     void drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color={255,255,255,255});
+    void drawSpriteClipped(std::string_view texture, glm::vec2 center, float size, sp::Rect clip_rect, glm::u8vec4 color={255,255,255,255});
     void drawRotatedSprite(std::string_view texture, glm::vec2 center, float size, float rotation, glm::u8vec4 color={255,255,255,255});
     void drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2 center, float size, float rotation);
 
