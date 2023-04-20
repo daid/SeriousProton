@@ -2,6 +2,7 @@
 #define SP2_IO_NETWORK_ADDRESS_H
 
 #include <stringImproved.h>
+#include <cstdint>
 #include <list>
 
 
