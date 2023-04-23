@@ -101,6 +101,14 @@ lua_State* Environment::getLuaState()
 {
     if (!L) {
         L = luaL_newstate();
+
+        luaL_requiref(L, LUA_TABLIBNAME, luaopen_table, 1);
+        lua_pop(L, 1);
+        luaL_requiref(L, LUA_STRLIBNAME, luaopen_string, 1);
+        lua_pop(L, 1);
+        luaL_requiref(L, LUA_MATHLIBNAME, luaopen_math, 1);
+        lua_pop(L, 1);
+
         luaL_newmetatable(L, "entity");
         lua_pushcfunction(L, luaEntityIsValid);
         lua_setfield(L, -2, "isValid");
