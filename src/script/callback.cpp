@@ -26,4 +26,14 @@ Callback& Callback::operator=(const Callback& other)
     return *this;
 }
 
+Callback::operator bool()
+{
+    lua_rawgetp(Environment::L, LUA_REGISTRYINDEX, this);
+    if (!lua_isfunction(Environment::L, -1)) {
+        lua_pop(Environment::L, 1);
+        return false;
+    }
+    return true;
+}
+
 };

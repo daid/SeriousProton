@@ -4,6 +4,7 @@
 #include "stringImproved.h"
 #include "script/conversion.h"
 #include "result.h"
+#include "resources.h"
 #include <lua/lua.hpp>
 
 
@@ -23,35 +24,16 @@ public:
         lua_setfield(L, -2, name.c_str());
     }
 
+    template<typename T> Result<T> runFile(const string& filename)
+    {
+        auto stream = getResourceStream(filename);
+        if (!stream)
+            return Result<T>::makeError("Script file not found: " + filename);
+        return runImpl<T>(stream->readAll(), filename);
+    }
+
     template<typename T> Result<T> run(const string& code) {
-        int result = luaL_loadbufferx(L, code.c_str(), code.length(), "=[string]", "t");
-        if (result) {
-            auto res = Result<T>::makeError(luaL_checkstring(L, -1));
-            lua_pop(L, 1);
-            return res;
-        }
-
-        //Get the environment table from the registry.
-        lua_rawgetp(L, LUA_REGISTRYINDEX, this);
-        //set the environment table it as 1st upvalue
-        lua_setupvalue(L, -2, 1);
-        
-        result = lua_pcall(L, 0, 1, 0);
-        if (result)
-        {
-            auto result = Result<T>::makeError(lua_tostring(L, -1));
-            lua_pop(L, 1);
-            return result;
-        }
-
-        if constexpr (!std::is_void_v<T>) {
-            auto return_value = Convert<T>::fromLua(L, -1);
-            lua_pop(L, 1);
-            return return_value;
-        } else {
-            lua_pop(L, 1);
-            return {};
-        }
+        return runImpl<T>(code, "=[string]");
     }
 
     template<typename T, typename... ARGS> Result<T> call(const string& function_name, const ARGS&... args) {
@@ -81,7 +63,39 @@ public:
             return {};
         }
     }
+
 private:
+    template<typename T> Result<T> runImpl(const string& code, const string& name="=[string]") {
+        int result = luaL_loadbufferx(L, code.c_str(), code.length(), name.c_str(), "t");
+        if (result) {
+            auto res = Result<T>::makeError(luaL_checkstring(L, -1));
+            lua_pop(L, 1);
+            return res;
+        }
+
+        //Get the environment table from the registry.
+        lua_rawgetp(L, LUA_REGISTRYINDEX, this);
+        //set the environment table it as 1st upvalue
+        lua_setupvalue(L, -2, 1);
+        
+        result = lua_pcall(L, 0, 1, 0);
+        if (result)
+        {
+            auto result = Result<T>::makeError(lua_tostring(L, -1));
+            lua_pop(L, 1);
+            return result;
+        }
+
+        if constexpr (!std::is_void_v<T>) {
+            auto return_value = Convert<T>::fromLua(L, -1);
+            lua_pop(L, 1);
+            return return_value;
+        } else {
+            lua_pop(L, 1);
+            return {};
+        }
+    }
+
     static lua_State* getLuaState();
     static lua_State* L;
 

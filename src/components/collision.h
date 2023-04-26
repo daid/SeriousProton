@@ -40,7 +40,8 @@ public:
         Static,
     };
     Type getType() const { return type; }
-    void setCircle(Type type, float radius) { if (type == this->type && shape == Shape::Circle && size.x == radius) return; this->type = type; shape = Shape::Circle; size.x = radius; physics_dirty = true; multiplayer_dirty = true; }
+    void setType(Type type) { if (type == this->type) return; this->type = type; physics_dirty = true; multiplayer_dirty = true; }
+    void setCircle(Type type, float radius) { if (type == this->type && shape == Shape::Circle && size.x == radius) return; this->type = type; shape = Shape::Circle; size.x = radius; size.y = radius; physics_dirty = true; multiplayer_dirty = true; }
     void setRectangle(Type type, glm::vec2 new_size) { if (type == this->type && shape == Shape::Rectangle && size == new_size) return; this->type = type; shape = Shape::Circle; size = new_size; physics_dirty = true; multiplayer_dirty = true; }
     glm::vec2 getSize() const { return size; }
 

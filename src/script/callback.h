@@ -17,6 +17,8 @@ public:
 
     Callback& operator=(const Callback& other);
 
+    explicit operator bool();
+
     template<typename RET, typename... ARGS> Result<RET> call(ARGS... args) {
         //Get this callback from the registry
         lua_rawgetp(Environment::L, LUA_REGISTRYINDEX, this);
@@ -32,9 +34,13 @@ public:
             lua_pop(Environment::L, 1);
             return ret;
         }
-        auto return_value = Convert<RET>::fromLua(Environment::L, -1);
-        lua_pop(Environment::L, 1);
-        return return_value;
+        if constexpr (!std::is_void_v<RET>) {
+            auto return_value = Convert<RET>::fromLua(Environment::L, -1);
+            lua_pop(Environment::L, 1);
+            return return_value;
+        } else {
+            return {};
+        }
     }
 };
 

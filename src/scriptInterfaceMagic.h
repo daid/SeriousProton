@@ -356,7 +356,7 @@ template<class T, typename FuncProto> struct call
 };
 
 class ScriptCallback;
-class ScriptObject;
+class ScriptObjectLegacy;
 template<class T> struct call<T, ScriptCallback T::* >
 {
     typedef P<PObject>* PT;

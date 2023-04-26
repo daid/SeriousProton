@@ -143,7 +143,7 @@ void Engine::runMainLoop()
                 system->update(delta);
             sp::CollisionSystem::update(delta);
             elapsedTime += delta;
-            ScriptObject::clearDestroyedObjects();
+            ScriptObjectLegacy::clearDestroyedObjects();
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();
@@ -189,7 +189,7 @@ void Engine::runMainLoop()
             engine_timing.update = engine_timing_stopwatch.restart();
             sp::CollisionSystem::update(delta);
             engine_timing.collision = engine_timing_stopwatch.restart();
-            ScriptObject::clearDestroyedObjects();
+            ScriptObjectLegacy::clearDestroyedObjects();
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();

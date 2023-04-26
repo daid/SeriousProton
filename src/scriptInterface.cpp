@@ -66,7 +66,7 @@ REGISTER_SCRIPT_FUNCTION(traceback);
 
 static int destroyScript(lua_State* L)
 {
-    ScriptObject* obj = static_cast<ScriptObject*>(lua_touserdata(L, lua_upvalueindex(1)));
+    ScriptObjectLegacy* obj = static_cast<ScriptObjectLegacy*>(lua_touserdata(L, lua_upvalueindex(1)));
     obj->destroy();
     return 0;
 }
@@ -76,16 +76,16 @@ static int destroyScript(lua_State* L)
 /// This function is provided by SeriousProton (src/scriptInterface.cpp).
 //REGISTER_SCRIPT_FUNCTION(destroyScript);//Not registered as a normal function, as it needs a reference to the ScriptObject, which is passed as an upvalue.
 
-lua_State* ScriptObject::L = NULL;
+lua_State* ScriptObjectLegacy::L = NULL;
 
-ScriptObject::ScriptObject()
+ScriptObjectLegacy::ScriptObjectLegacy()
 {
     max_cycle_count = 0;
     
     createLuaState();
 }
 
-ScriptObject::ScriptObject(string filename)
+ScriptObjectLegacy::ScriptObjectLegacy(string filename)
 {
     max_cycle_count = 0;
     
@@ -107,7 +107,7 @@ static const luaL_Reg loadedlibs[] = {
   {NULL, NULL}
 };
 
-void ScriptObject::createLuaState()
+void ScriptObjectLegacy::createLuaState()
 {
     if (L == NULL)
     {
@@ -154,7 +154,7 @@ void ScriptObject::createLuaState()
     lua_pop(L, 1);
 }
 
-bool ScriptObject::run(string filename)
+bool ScriptObjectLegacy::run(string filename)
 {
     setCycleLimit();
 
@@ -216,7 +216,7 @@ bool ScriptObject::run(string filename)
     return true;
 }
 
-void ScriptObject::registerObject(P<PObject> object, string variable_name)
+void ScriptObjectLegacy::registerObject(P<PObject> object, string variable_name)
 {
     //Get the environment table from the registry.
     lua_pushlightuserdata(L, this);
@@ -237,7 +237,7 @@ void ScriptObject::registerObject(P<PObject> object, string variable_name)
     }
 }
 
-void ScriptObject::registerObject(sp::ecs::Entity entity, string variable_name)
+void ScriptObjectLegacy::registerObject(sp::ecs::Entity entity, string variable_name)
 {
     //Get the environment table from the registry.
     lua_pushlightuserdata(L, this);
@@ -258,7 +258,7 @@ void ScriptObject::registerObject(sp::ecs::Entity entity, string variable_name)
     }
 }
 
-bool ScriptObject::runCode(string code)
+bool ScriptObjectLegacy::runCode(string code)
 {
     setCycleLimit();
 
@@ -326,7 +326,7 @@ static string luaToJSON(lua_State* L, int index)
     return "???";
 }
 
-bool ScriptObject::runCode(string code, string& json_output)
+bool ScriptObjectLegacy::runCode(string code, string& json_output)
 {
     if (!L)
         return false;
@@ -363,7 +363,7 @@ bool ScriptObject::runCode(string code, string& json_output)
     return true;
 }
 
-bool ScriptObject::callFunction(string name)
+bool ScriptObjectLegacy::callFunction(string name)
 {
     setCycleLimit();
 
@@ -391,7 +391,7 @@ static void runCyclesHook(lua_State *L, lua_Debug */*ar*/)
     lua_error(L);
 }
 
-void ScriptObject::setCycleLimit()
+void ScriptObjectLegacy::setCycleLimit()
 {
     if (max_cycle_count)
         lua_sethook(L, runCyclesHook, LUA_MASKCOUNT, max_cycle_count);
@@ -399,12 +399,12 @@ void ScriptObject::setCycleLimit()
         lua_sethook(L, NULL, 0, 0);
 }
 
-void ScriptObject::setMaxRunCycles(int count)
+void ScriptObjectLegacy::setMaxRunCycles(int count)
 {
     max_cycle_count = count;
 }
 
-ScriptObject::~ScriptObject()
+ScriptObjectLegacy::~ScriptObjectLegacy()
 {
     //Remove our environment from the registry.
     lua_pushlightuserdata(L, this);
@@ -412,12 +412,12 @@ ScriptObject::~ScriptObject()
     lua_settable(L, LUA_REGISTRYINDEX);
 }
 
-string ScriptObject::getError()
+string ScriptObjectLegacy::getError()
 {
     return error_string;
 }
 
-void ScriptObject::update(float delta)
+void ScriptObjectLegacy::update(float delta)
 {
     setCycleLimit();
 
@@ -444,7 +444,7 @@ void ScriptObject::update(float delta)
     }
 }
 
-void ScriptObject::destroy()
+void ScriptObjectLegacy::destroy()
 {
     //Remove our environment from the registry.
     lua_pushlightuserdata(L, this);
@@ -457,7 +457,7 @@ void ScriptObject::destroy()
     lua_gc(L, LUA_GCCOLLECT, 0);
 }
 
-void ScriptObject::clearDestroyedObjects()
+void ScriptObjectLegacy::clearDestroyedObjects()
 {
     if (!L)
         return;
@@ -498,7 +498,7 @@ ScriptCallback::ScriptCallback()
 
 ScriptCallback::~ScriptCallback()
 {
-    lua_State* L = ScriptObject::L;
+    lua_State* L = ScriptObjectLegacy::L;
     
     //Remove ourselves from the registry.
     lua_pushlightuserdata(L, this);
@@ -508,7 +508,7 @@ ScriptCallback::~ScriptCallback()
 
 void ScriptCallback::operator() ()
 {
-    lua_State* L = ScriptObject::L;
+    lua_State* L = ScriptObjectLegacy::L;
     
     lua_pushlightuserdata(L, this);
     lua_gettable(L, LUA_REGISTRYINDEX);
@@ -562,7 +562,7 @@ ScriptSimpleCallback::ScriptSimpleCallback()
 
 ScriptSimpleCallback::~ScriptSimpleCallback()
 {
-    lua_State* L = ScriptObject::L;
+    lua_State* L = ScriptObjectLegacy::L;
 
     //Remove ourselves from the registry.
     lua_pushlightuserdata(L, this);
@@ -577,7 +577,7 @@ ScriptSimpleCallback::ScriptSimpleCallback(const ScriptSimpleCallback& other)
 
 ScriptSimpleCallback& ScriptSimpleCallback::operator =(const ScriptSimpleCallback& other)
 {
-    lua_State* L = ScriptObject::L;
+    lua_State* L = ScriptObjectLegacy::L;
     
     //First push our own pointer on the stack, we will need this later.
     lua_pushlightuserdata(L, this);
@@ -594,7 +594,7 @@ ScriptSimpleCallback& ScriptSimpleCallback::operator =(const ScriptSimpleCallbac
 
 bool ScriptSimpleCallback::isSet()
 {
-    lua_State* L = ScriptObject::L;
+    lua_State* L = ScriptObjectLegacy::L;
     
     //First get our simple table from the registry.
     lua_pushlightuserdata(L, this);
@@ -630,7 +630,7 @@ bool ScriptSimpleCallback::isSet()
 
 void ScriptSimpleCallback::clear()
 {
-    lua_State* L = ScriptObject::L;
+    lua_State* L = ScriptObjectLegacy::L;
 
     //Remove ourselves from the registry.
     lua_pushlightuserdata(L, this);
@@ -638,9 +638,9 @@ void ScriptSimpleCallback::clear()
     lua_settable(L, LUA_REGISTRYINDEX);
 }
 
-P<ScriptObject> ScriptSimpleCallback::getScriptObject()
+P<ScriptObjectLegacy> ScriptSimpleCallback::getScriptObject()
 {
-    lua_State* L = ScriptObject::L;
+    lua_State* L = ScriptObjectLegacy::L;
     
     //First get our simple table from the registry.
     lua_pushlightuserdata(L, this);
@@ -670,7 +670,7 @@ P<ScriptObject> ScriptSimpleCallback::getScriptObject()
         lua_pop(L, 3);
         return nullptr;
     }
-    P<ScriptObject> ret = static_cast<ScriptObject*>(lua_touserdata(L, -2));
+    P<ScriptObjectLegacy> ret = static_cast<ScriptObjectLegacy*>(lua_touserdata(L, -2));
     lua_pop(L, 3);
     return ret;
 }

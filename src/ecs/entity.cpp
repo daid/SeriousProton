@@ -70,6 +70,21 @@ void Entity::destroy()
 	free_list.push_back(index);
 }
 
+string Entity::toString() const
+{
+	if (!*this)
+		return "";
+	return string(index) + ":" + string(version);
+}
+
+Entity Entity::fromString(const string& s)
+{
+	auto idx = s.find(':');
+	if (idx < 0)
+		return {};
+	return forced(s.substr(0, idx).toInt(), s.substr(idx + 1).toInt());
+}
+
 void Entity::dumpDebugInfo()
 {
 	LOG(Debug, "Entity count:", entity_version.size() - free_list.size(), " Free entities:", free_list.size());

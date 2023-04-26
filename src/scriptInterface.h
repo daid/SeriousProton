@@ -7,16 +7,16 @@
 #include "vectorUtils.h"
 
 
-class ScriptObject : public Updatable
+class ScriptObjectLegacy : public Updatable
 {
     static lua_State* L;
     
     int max_cycle_count;
     string error_string;
 public:
-    ScriptObject();
-    ScriptObject(string filename);
-    virtual ~ScriptObject();
+    ScriptObjectLegacy();
+    ScriptObjectLegacy(string filename);
+    virtual ~ScriptObjectLegacy();
     
     bool run(string filename);
     void registerObject(P<PObject> object, string variable_name);
@@ -115,7 +115,7 @@ public:
             || std::is_enum_v<Return>
             || std::is_convertible_v<std::string, Return>, "return type must be: void, bool, a number, an enum or a string (std::string or SP's).");
 
-        lua_State* L = ScriptObject::L;
+        lua_State* L = ScriptObjectLegacy::L;
 
         //Get the simple table from the registry. If it's not available, then this callback was never set to anything.
         lua_pushlightuserdata(L, this);
@@ -246,7 +246,7 @@ public:
     void clear();
     
     //Return the script object linked to this callback, if any.
-    P<ScriptObject> getScriptObject();
+    P<ScriptObjectLegacy> getScriptObject();
 };
 template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, ScriptSimpleCallback& callback);
 

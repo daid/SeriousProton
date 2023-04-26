@@ -66,6 +66,9 @@ public:
 	uint32_t getVersion() const { return version; } // You should never need this, but the multiplayer code does need it.
 	static Entity forced(uint32_t index, uint32_t version) { auto e = Entity(); e.index = index; e.version = version; return e; }
 
+	string toString() const;
+	static Entity fromString(const string& s);
+
 	static void dumpDebugInfo();
 
 	static constexpr uint32_t no_index = std::numeric_limits<uint32_t>::max();

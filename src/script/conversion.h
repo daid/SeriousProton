@@ -17,6 +17,10 @@ template<> struct Convert<int> {
     static int toLua(lua_State* L, int value) { lua_pushinteger(L, value); return 1; }
     static int fromLua(lua_State* L, int idx) { return lua_tointeger(L, idx); }
 };
+template<> struct Convert<uint32_t> {
+    static int toLua(lua_State* L, uint32_t value) { lua_pushinteger(L, value); return 1; }
+    static int fromLua(lua_State* L, uint32_t idx) { return lua_tointeger(L, idx); }
+};
 template<> struct Convert<float> {
     static int toLua(lua_State* L, float value) { lua_pushnumber(L, value); return 1; }
     static float fromLua(lua_State* L, int idx) { return lua_tonumber(L, idx); }
@@ -24,6 +28,10 @@ template<> struct Convert<float> {
 template<> struct Convert<double> {
     static int toLua(lua_State* L, double value) { lua_pushnumber(L, value); return 1; }
     static double fromLua(lua_State* L, int idx) { return lua_tonumber(L, idx); }
+};
+template<> struct Convert<string> {
+    static int toLua(lua_State* L, const string& value) { lua_pushstring(L, value.c_str()); return 1; }
+    static string fromLua(lua_State* L, int idx) { return lua_tostring(L, idx); }
 };
 template<> struct Convert<lua_CFunction> {
     static int toLua(lua_State* L, lua_CFunction value) { lua_pushcfunction(L, value); return 1; }
