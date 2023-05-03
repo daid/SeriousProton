@@ -4,6 +4,7 @@
 #include "conversion.h"
 #include "environment.h"
 #include "string.h"
+#include <unordered_map>
 
 
 namespace sp::script {
