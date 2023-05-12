@@ -73,6 +73,13 @@ static int luaEntityIndex(lua_State* L) {
     if (key[0] != '_' && luaL_getmetafield(L, -2, key) != LUA_TNIL) {
         return 1;
     }
+    //Check if this a value in the entityFunctionTable
+    lua_getfield(L, LUA_REGISTRYINDEX, "EFT");
+    lua_getfield(L, -1, key);
+    if (!lua_isnil(L, -1)) {
+        return 1;
+    }
+    lua_pop(L, 2);
 
     //Get a value from the LTC
     auto e = Convert<ecs::Entity>::fromLua(L, -2);
@@ -117,6 +124,9 @@ lua_State* Environment::getLuaState()
         lua_pop(L, 1);
         luaL_requiref(L, LUA_MATHLIBNAME, luaopen_math, 1);
         lua_pop(L, 1);
+
+        lua_newtable(L);
+        lua_setfield(L, LUA_REGISTRYINDEX, "EFT");
 
         luaL_newmetatable(L, "entity");
         lua_pushcfunction(L, luaEntityIsValid);
