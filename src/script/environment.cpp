@@ -37,6 +37,13 @@ Environment::Environment()
 {
     getLuaState();
     lua_newtable(L);
+
+    lua_newtable(L);  /* meta table for the environment, with an __index pointing to the general global table so we can access every global function */
+    lua_pushstring(L, "__index");
+    lua_pushglobaltable(L);
+    lua_rawset(L, -3);
+    lua_setmetatable(L, -2);
+
     lua_rawsetp(L, LUA_REGISTRYINDEX, this);
 }
 
@@ -102,6 +109,8 @@ lua_State* Environment::getLuaState()
     if (!L) {
         L = luaL_newstate();
 
+        luaL_requiref(L, "_G", luaopen_base, 1);
+        lua_pop(L, 1);
         luaL_requiref(L, LUA_TABLIBNAME, luaopen_table, 1);
         lua_pop(L, 1);
         luaL_requiref(L, LUA_STRLIBNAME, luaopen_string, 1);

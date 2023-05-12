@@ -16,6 +16,14 @@ public:
     Environment();
     ~Environment();
 
+    void setGlobalFuncWithEnvUpvalue(const string& name, lua_CFunction f) {
+        //Get the environment table from the registry.
+        lua_rawgetp(L, LUA_REGISTRYINDEX, this);
+        lua_pushvalue(L, -1);
+        lua_pushcclosure(L, f, 1);
+        lua_setfield(L, -2, name.c_str());
+    }
+
     template<typename T> void setGlobal(const string& name, const T& value) {
         //Get the environment table from the registry.
         lua_rawgetp(L, LUA_REGISTRYINDEX, this);
@@ -29,7 +37,10 @@ public:
         auto stream = getResourceStream(filename);
         if (!stream)
             return Result<T>::makeError("Script file not found: " + filename);
-        return runImpl<T>(stream->readAll(), filename);
+        auto code = stream->readAll();
+        stream->destroy();
+        stream = nullptr;
+        return runImpl<T>(code, "@" + filename);
     }
 
     template<typename T> Result<T> run(const string& code) {
