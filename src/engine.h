@@ -56,6 +56,7 @@ public:
 
     void runMainLoop();
     void shutdown();
+    bool isRunning() { return running; }
 private:
     void handleEvent(SDL_Event& event);
 };

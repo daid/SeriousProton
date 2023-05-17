@@ -34,9 +34,19 @@ public:
         }
         if (sparse.size() <= index)
             sparse.resize(index + 1, std::numeric_limits<uint32_t>::max());
-        sparse[index] = dense.size();
-        dense.push_back(index);
-        data.emplace_back(value);
+        if (free_dense != no_free_dense) {
+            // Reuse a free slot
+            auto new_free = dense[free_dense] & ~free_mark;
+            sparse[index] = free_dense;
+            dense[free_dense] = index;
+            data[free_dense] = value;
+            free_dense = new_free;
+        } else {
+            // Append to the data
+            sparse[index] = dense.size();
+            dense.push_back(index);
+            data.emplace_back(value);
+        }
         return true;
     }
 
@@ -48,9 +58,19 @@ public:
         }
         if (sparse.size() <= index)
             sparse.resize(index + 1, std::numeric_limits<uint32_t>::max());
-        sparse[index] = dense.size();
-        dense.push_back(index);
-        data.emplace_back(std::move(value));
+        if (free_dense != no_free_dense) {
+            // Reuse a free slot
+            auto new_free = dense[free_dense] & ~free_mark;
+            sparse[index] = free_dense;
+            dense[free_dense] = index;
+            data[free_dense] = std::move(value);
+            free_dense = new_free;
+        } else {
+            // Append to the data
+            sparse[index] = dense.size();
+            dense.push_back(index);
+            data.emplace_back(std::move(value));
+        }
         return true;
     }
 
@@ -58,41 +78,47 @@ public:
     {
         if (!has(index))
             return false;
-        uint32_t moved_index = dense.back();
-        dense[sparse[index]] = moved_index;
-        data[sparse[index]] = std::move(data.back());
-        sparse[moved_index] = sparse[index];
-        sparse[index] = std::numeric_limits<uint32_t>::max();
-        
-        dense.pop_back();
-        data.pop_back();
+        auto new_free = sparse[index];
+        sparse[index] = free_mark;
+        dense[new_free] = free_dense | free_mark;
+        free_dense = new_free;
         return true;
     }
     
     class Iterator
     {
     public:
-        Iterator(SparseSet& _set, size_t _dense_index) : set(_set), dense_index(_dense_index) {}
+        Iterator(SparseSet& _set, size_t _dense_index) : set(_set), dense_index(_dense_index) {
+            if (_dense_index == 0) skipFree();
+        }
         
         bool operator!=(const Iterator& other) const { return dense_index != other.dense_index; }
-        void operator++() { dense_index--; }
+        void operator++() { dense_index++; skipFree(); }
         std::pair<uint32_t, T&> operator*() { return {set.dense[dense_index], set.data[dense_index]}; }
         std::pair<uint32_t, const T&> operator*() const { return {set.dense[dense_index], set.data[dense_index]}; }
 
-        bool atEnd() { return dense_index == std::numeric_limits<size_t>::max(); }
+        bool atEnd() { return dense_index >= set.dense.size(); }
     private:
+        void skipFree() {
+            while(dense_index < set.dense.size() && set.dense[dense_index] & free_mark)
+                dense_index++;
+        }
+
         SparseSet& set;
         size_t dense_index;
     };
     
-    Iterator begin() { return Iterator(*this, dense.size() - 1); }
-    Iterator end() { return Iterator(*this, std::numeric_limits<size_t>::max()); }
+    Iterator begin() { return Iterator(*this, 0); }
+    Iterator end() { return Iterator(*this, dense.size()); }
 
     size_t size() { return data.size(); }
 private:
     std::vector<uint32_t> sparse;
     std::vector<uint32_t> dense;
     ChunkedVector<T> data;
+    static constexpr uint32_t free_mark = 0x80000000;
+    static constexpr uint32_t no_free_dense = std::numeric_limits<uint32_t>::max() & ~free_mark;
+    uint32_t free_dense = no_free_dense;
 };
 
 }

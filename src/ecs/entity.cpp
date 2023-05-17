@@ -85,6 +85,14 @@ Entity Entity::fromString(const string& s)
 	return forced(s.substr(0, idx).toInt(), s.substr(idx + 1).toInt());
 }
 
+void Entity::destroyAllEntities()
+{
+	for(size_t index = 0; index < entity_version.size(); index++) {
+		if (!(entity_version[index] & destroyed_flag))
+			forced(index, entity_version[index]).destroy();
+	}
+}
+
 void Entity::dumpDebugInfo()
 {
 	LOG(Debug, "Entity count:", entity_version.size() - free_list.size(), " Free entities:", free_list.size());

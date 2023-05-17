@@ -69,6 +69,8 @@ public:
 	string toString() const;
 	static Entity fromString(const string& s);
 
+	static void destroyAllEntities();
+
 	static void dumpDebugInfo();
 
 	static constexpr uint32_t no_index = std::numeric_limits<uint32_t>::max();
