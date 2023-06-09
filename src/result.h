@@ -13,12 +13,12 @@ public:
     {
     }
 
-    bool isOk()
+    bool isOk() const
     {
         return success;
     }
 
-    bool isErr()
+    bool isErr() const
     {
         return !success;
     }
@@ -33,7 +33,7 @@ public:
         return ok_value;
     }
 
-    const string& error()
+    const string& error() const
     {
         return err_value;
     }
@@ -61,17 +61,17 @@ public:
     {
     }
 
-    bool isOk()
+    bool isOk() const
     {
         return success;
     }
 
-    bool isErr()
+    bool isErr() const
     {
         return !success;
     }
 
-    const string& error()
+    const string& error() const
     {
         return err_value;
     }

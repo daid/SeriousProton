@@ -111,6 +111,16 @@ static int luaEntityNewIndex(lua_State* L) {
     return 0;
 }
 
+static int luaEntityEqual(lua_State* L) {
+    auto e1 = Convert<ecs::Entity>::fromLua(L, -2);
+    if (!e1) return 0;
+    auto e2 = Convert<ecs::Entity>::fromLua(L, -1);
+    if (!e2) return 0;
+
+    lua_pushboolean(L, e1 == e2);
+    return 1;
+}
+
 lua_State* Environment::getLuaState()
 {
     if (!L) {
@@ -126,7 +136,7 @@ lua_State* Environment::getLuaState()
         lua_pop(L, 1);
 
         lua_newtable(L);
-        lua_setfield(L, LUA_REGISTRYINDEX, "EFT");
+        lua_setfield(L, LUA_REGISTRYINDEX, "EFT");//Entity function table.
 
         luaL_newmetatable(L, "entity");
         lua_pushcfunction(L, luaEntityIsValid);
@@ -137,6 +147,8 @@ lua_State* Environment::getLuaState()
         lua_setfield(L, -2, "__index");
         lua_pushcfunction(L, luaEntityNewIndex);
         lua_setfield(L, -2, "__newindex");
+        lua_pushcfunction(L, luaEntityEqual);
+        lua_setfield(L, -2, "__eq");
         lua_pop(L, 1);
     }
     return L;
