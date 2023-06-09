@@ -23,6 +23,7 @@ template<typename T> class ComponentHandler
 {
 public:
     static void name(const char* name) {
+        component_name = name;
         ComponentRegistry::components[name] = {luaComponentGetter, luaComponentSetter};
 
         auto L = Environment::getLuaState();
@@ -32,7 +33,7 @@ public:
         lua_pushcfunction(L, luaNewIndex);
         lua_setfield(L, -2, "__newindex");
         lua_pushcfunction(L, [](lua_State* L) {
-            if (!array_count_func) luaL_error(L, "Tried to get length of component that has no array");
+            if (!array_count_func) luaL_error(L, "Tried to get length of component %s that has no array", component_name);
             auto ptr = luaToComponent(L, -1);
             if (!ptr) return 0;
             lua_pushinteger(L, array_count_func(*ptr));
@@ -62,10 +63,10 @@ public:
             if (!icptr->entity) return 0;
             auto ptr = icptr->entity.template getComponent<T>();
             if (!ptr) return 0;
-            if (array_count_func(*ptr) <= icptr->index) return luaL_error(L, "Index out of range for assignment");
+            if (array_count_func(*ptr) <= icptr->index) return luaL_error(L, "Index out of range for assignment on component %s", component_name);
             auto key = luaL_checkstring(L, -2);
             auto it = indexed_members.find(key);
-            if (it == indexed_members.end()) return luaL_error(L, "Trying to set unknown component member %s", key);
+            if (it == indexed_members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
             it->second.setter(L, *ptr, icptr->index);
             return 0;
         });
@@ -137,18 +138,18 @@ private:
                 while(lua_next(L, -2)) {
                     auto key = luaL_checkstring(L, -2);
                     auto it = indexed_members.find(key);
-                    if (it == indexed_members.end()) return luaL_error(L, "Trying to set unknown component member %s", key);
+                    if (it == indexed_members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
                     it->second.setter(L, *ptr, index - 1);
                     lua_pop(L, 1);
                 }
             } else {
-                return luaL_error(L, "Bad assignment to component, nil or table expected.");
+                return luaL_error(L, "Bad assignment to component %s, nil or table expected.", component_name);
             }
             return 0;
         }
         auto key = luaL_checkstring(L, -2);
         auto it = members.find(key);
-        if (it == members.end()) return luaL_error(L, "Trying to set unknown component member %s", key);
+        if (it == members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
         it->second.setter(L, *ptr);
         return 0;
     }
@@ -188,24 +189,25 @@ private:
                     while(lua_next(L, -2)) {
                         auto key = luaL_checkstring(L, -2);
                         auto it = indexed_members.find(key);
-                        if (it == indexed_members.end()) return luaL_error(L, "Trying to set unknown component member %s", key);
+                        if (it == indexed_members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
                         it->second.setter(L, component, index);
                         lua_pop(L, 1);
                     }
                 } else {
                     auto key = luaL_checkstring(L, -2);
                     auto it = members.find(key);
-                    if (it == members.end()) return luaL_error(L, "Trying to set unknown component member %s", key);
+                    if (it == members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
                     it->second.setter(L, component);
                 }
                 lua_pop(L, 1);
             }
         } else {
-            return luaL_error(L, "Bad assignment to component %s, nil or table expected.", key);
+            return luaL_error(L, "Bad assignment to component %s member %s, nil or table expected.", component_name, key);
         }
         return 0;
     }
 
+    static inline const char* component_name;
     static inline string array_metatable_name;
     struct IndexedComponent {
         sp::ecs::Entity entity;

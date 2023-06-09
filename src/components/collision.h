@@ -39,10 +39,15 @@ public:
         Dynamic,
         Static,
     };
+    enum class Shape {
+        Circle,
+        Rectangle,
+    };
     Type getType() const { return type; }
     void setType(Type type) { if (type == this->type) return; this->type = type; physics_dirty = true; multiplayer_dirty = true; }
     void setCircle(Type type, float radius) { if (type == this->type && shape == Shape::Circle && size.x == radius) return; this->type = type; shape = Shape::Circle; size.x = radius; size.y = radius; physics_dirty = true; multiplayer_dirty = true; }
     void setRectangle(Type type, glm::vec2 new_size) { if (type == this->type && shape == Shape::Rectangle && size == new_size) return; this->type = type; shape = Shape::Circle; size = new_size; physics_dirty = true; multiplayer_dirty = true; }
+    Shape getShape() const { return shape; }
     glm::vec2 getSize() const { return size; }
 
     glm::vec2 getVelocity() const { return linear_velocity; }
@@ -55,10 +60,7 @@ private:
     bool multiplayer_dirty = false;
 
     Type type = Type::Sensor;
-    enum class Shape {
-        Circle,
-        Rectangle,
-    } shape = Shape::Circle;
+    Shape shape = Shape::Circle;
     glm::vec2 size{1.0, 1.0};
 
     b2Body* body = nullptr;
