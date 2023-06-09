@@ -2,6 +2,7 @@
 #define STRING_IMPROVED_H
 
 #include <cstdlib>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <limits>
