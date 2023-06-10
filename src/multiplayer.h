@@ -163,8 +163,8 @@ public:
     bool isClient() { return !on_server; }
 
 #ifdef DEBUG
-#define STRINGIFY(n) #n
-#define registerMemberReplication(member, ...) registerMemberReplication_(STRINGIFY(member), member , ## __VA_ARGS__ )
+#define SP_MP_STRINGIFY(n) #n
+#define registerMemberReplication(member, ...) registerMemberReplication_(SP_MP_STRINGIFY(member), member , ## __VA_ARGS__ )
 #define F_PARAM const char* name,
 #else
 #define registerMemberReplication(member, ...) registerMemberReplication_(member , ## __VA_ARGS__ )
