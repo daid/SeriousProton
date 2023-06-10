@@ -51,6 +51,11 @@ template<> struct Convert<ecs::Entity> {
     }
 };
 
+template<typename T> struct Convert<std::optional<T>> {
+    static int toLua(lua_State* L, std::optional<T> value) { if (value.has_value()) return Convert<T>::toLua(L, value.value()); lua_pushnil(L); return 1; }
+    static std::optional<T> fromLua(lua_State* L, int idx) { if (idx <= lua_gettop(L) && !lua_isnil(L, idx)) return Convert<T>::fromLua(L, idx); return {}; }
+};
+
 template<typename RET, typename... ARGS> struct Convert<RET(*)(ARGS...)> {
     using FT = RET(*)(ARGS...);
     static int toLua(lua_State* L, FT value) {
