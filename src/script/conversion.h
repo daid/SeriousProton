@@ -4,6 +4,7 @@
 #include "stringImproved.h"
 #include "ecs/entity.h"
 #include "lua/lua.hpp"
+#include <optional>
 
 
 namespace sp::script {
