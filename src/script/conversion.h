@@ -32,7 +32,7 @@ template<> struct Convert<double> {
 };
 template<> struct Convert<string> {
     static int toLua(lua_State* L, const string& value) { lua_pushstring(L, value.c_str()); return 1; }
-    static string fromLua(lua_State* L, int idx) { return lua_tostring(L, idx); }
+    static string fromLua(lua_State* L, int idx) { auto s = lua_tostring(L, idx); if (s) return s; return ""; }
 };
 template<> struct Convert<lua_CFunction> {
     static int toLua(lua_State* L, lua_CFunction value) { lua_pushcfunction(L, value); return 1; }
