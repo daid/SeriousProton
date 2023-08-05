@@ -186,6 +186,7 @@ public:
     {
         uint32_t len = 0;
         read(len);
+        if (len == 0) { s.clear(); return; }
         if (read_index + len > buffer.size()) return;
         s.assign(reinterpret_cast<char*>(&buffer[read_index]), len);
         read_index += len;
