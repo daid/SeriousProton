@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "Updatable.h"
 #include "stringImproved.h"
+#include "seqvector.h"
 
 class MultiplayerObject;
 
@@ -107,6 +108,55 @@ template <typename T> struct multiplayerReplicationFunctions
         std::vector<T>* prev_data = *(std::vector<T>**)prev_data_ptr;
         delete prev_data;
     }
+
+    static bool isChangedSeqVector(void* data, void* prev_data_ptr)
+    {
+        sp::SeqVector<T>* ptr = (sp::SeqVector<T>*)data;
+        bool changed = false;
+        if (ptr->back().seq != ptr->last_seq)
+            changed = true;
+
+        return changed;
+    }
+
+    static void sendDataSeqVector(void* data, sp::io::DataBuffer& packet)
+    {
+        sp::SeqVector<T>* ptr = (sp::SeqVector<T>*)data;
+        uint16_t count = ptr->size();
+        unsigned int to_send = std::min(ptr->back().seq - ptr->last_seq, static_cast<unsigned int>(count));
+
+        ptr->last_seq = ptr->back().seq;
+
+        packet << count << to_send;
+        for(; to_send > 0; to_send--)
+            packet << (*ptr)[count - to_send];
+    }
+
+    static void sendWholeDataSeqVector(void* data, sp::io::DataBuffer& packet)
+    {
+        sp::SeqVector<T>* ptr = (sp::SeqVector<T>*)data;
+        auto last_seq = ptr->last_seq;
+        ptr->last_seq = ptr->front().seq - 1;
+        sendDataSeqVector(data, packet);
+        ptr->last_seq = last_seq;
+    }
+
+    static void receiveDataSeqVector(void* data, sp::io::DataBuffer& packet)
+    {
+        sp::SeqVector<T>* ptr = (sp::SeqVector<T>*)data;
+        uint16_t count;
+        unsigned int to_recv;
+        packet >> count >> to_recv;
+
+        // Remove oldest entries if local vector would grow larger than server's
+        while (ptr->size() + to_recv > count)
+            ptr->erase(ptr->begin());
+
+        ptr->resize(count);
+
+        for(unsigned int n=count - to_recv; n<count; n++)
+            packet >> (*ptr)[n];
+    }
 };
 
 template <typename T>
@@ -146,6 +196,7 @@ class MultiplayerObject : public virtual PObject
 
         bool(*isChangedFunction)(void* data, void* prev_data_ptr);
         void(*sendFunction)(void* data, sp::io::DataBuffer& packet);
+        void(*sendWholeFunction)(void* data, sp::io::DataBuffer& packet) = nullptr;
         void(*receiveFunction)(void* data, sp::io::DataBuffer& packet);
         void(*cleanupFunction)(void* prev_data_ptr);
     };
@@ -214,6 +265,25 @@ public:
         info.sendFunction = &multiplayerReplicationFunctions<T>::sendDataVector;
         info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveDataVector;
         info.cleanupFunction = &multiplayerReplicationFunctions<T>::cleanupVector;
+        memberReplicationInfo.push_back(info);
+    }
+
+    template <typename T> void registerMemberReplication_(F_PARAM sp::SeqVector<T>* member, float update_delay = 0.0f)
+    {
+        SDL_assert(!replicated);
+        SDL_assert(memberReplicationInfo.size() < 0xFFFF);
+        MemberReplicationInfo info;
+#ifdef DEBUG
+        info.name = name;
+#endif
+        info.ptr = member;
+        info.update_delay = update_delay;
+        info.update_timeout = 0.0f;
+        info.isChangedFunction = &multiplayerReplicationFunctions<T>::isChangedSeqVector;
+        info.sendFunction = &multiplayerReplicationFunctions<T>::sendDataSeqVector;
+        info.sendWholeFunction = &multiplayerReplicationFunctions<T>::sendWholeDataSeqVector;
+        info.receiveFunction = &multiplayerReplicationFunctions<T>::receiveDataSeqVector;
+        info.cleanupFunction = nullptr;
         memberReplicationInfo.push_back(info);
     }
 
