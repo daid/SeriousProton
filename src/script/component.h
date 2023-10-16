@@ -19,6 +19,23 @@ public:
     static std::unordered_map<std::string, ComponentRegistry> components;
 };
 
+namespace detail {
+    struct MemberData {
+        using GetterPtr = int(*)(lua_State*, const void*);
+        using SetterPtr = void(*)(lua_State*, void*);
+
+        GetterPtr getter;
+        SetterPtr setter;
+    };
+    struct IndexedMemberData {
+        using GetterPtr = int(*)(lua_State*, const void*, int index);
+        using SetterPtr = void(*)(lua_State*, void*, int index);
+
+        GetterPtr getter;
+        SetterPtr setter;
+    };
+}
+
 template<typename T> class ComponentHandler
 {
 public:
@@ -54,7 +71,7 @@ public:
             auto key = luaL_checkstring(L, -1);
             auto it = indexed_members.find(key);
             if (it == indexed_members.end()) return 0;
-            return it->second.getter(L, *ptr, icptr->index);
+            return it->second.getter(L, ptr, icptr->index);
         });
         lua_setfield(L, -2, "__index");
         lua_pushcfunction(L, [](lua_State* L) {
@@ -67,30 +84,15 @@ public:
             auto key = luaL_checkstring(L, -2);
             auto it = indexed_members.find(key);
             if (it == indexed_members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
-            it->second.setter(L, *ptr, icptr->index);
+            it->second.setter(L, ptr, icptr->index);
             return 0;
         });
         lua_setfield(L, -2, "__newindex");
         lua_pop(L, 1);
     }
 
-    struct MemberData {
-        using GetterPtr = int(*)(lua_State*, const T&);
-        using SetterPtr = void(*)(lua_State*, T&);
-
-        GetterPtr getter;
-        SetterPtr setter;
-    };
-    struct IndexedMemberData {
-        using GetterPtr = int(*)(lua_State*, const T&, int index);
-        using SetterPtr = void(*)(lua_State*, T&, int index);
-
-        GetterPtr getter;
-        SetterPtr setter;
-    };
-
-    static inline std::unordered_map<std::string, MemberData> members;
-    static inline std::unordered_map<std::string, IndexedMemberData> indexed_members;
+    static inline std::unordered_map<std::string, detail::MemberData> members;
+    static inline std::unordered_map<std::string, detail::IndexedMemberData> indexed_members;
     using ArrayCountPtr = int(*)(const T&);
     static inline ArrayCountPtr array_count_func = nullptr;
     using ArrayResizePtr = void(*)(T&, int size);
@@ -118,7 +120,7 @@ private:
         auto key = luaL_checkstring(L, -1);
         auto it = members.find(key);
         if (it == members.end()) return 0;
-        return it->second.getter(L, *ptr);
+        return it->second.getter(L, ptr);
     }
 
     static int luaNewIndex(lua_State* L) {
@@ -139,7 +141,7 @@ private:
                     auto key = luaL_checkstring(L, -2);
                     auto it = indexed_members.find(key);
                     if (it == indexed_members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
-                    it->second.setter(L, *ptr, index - 1);
+                    it->second.setter(L, ptr, index - 1);
                     lua_pop(L, 1);
                 }
             } else {
@@ -150,7 +152,7 @@ private:
         auto key = luaL_checkstring(L, -2);
         auto it = members.find(key);
         if (it == members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
-        it->second.setter(L, *ptr);
+        it->second.setter(L, ptr);
         return 0;
     }
 
@@ -190,14 +192,14 @@ private:
                         auto key = luaL_checkstring(L, -2);
                         auto it = indexed_members.find(key);
                         if (it == indexed_members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
-                        it->second.setter(L, component, index);
+                        it->second.setter(L, &component, index);
                         lua_pop(L, 1);
                     }
                 } else {
                     auto key = luaL_checkstring(L, -2);
                     auto it = members.find(key);
                     if (it == members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
-                    it->second.setter(L, component);
+                    it->second.setter(L, &component);
                 }
                 lua_pop(L, 1);
             }
