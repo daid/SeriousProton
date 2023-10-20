@@ -267,6 +267,7 @@ set(source_files #All SeriousProton's objects to compile
 
     src/container/sparseset.h
     src/container/chunkedvector.h
+    src/container/bitset.h
 
     src/ecs/entity.h
     src/ecs/entity.cpp

@@ -92,3 +92,11 @@ private:
 };
 
 }
+
+namespace std {
+template <> struct hash<sp::ecs::Entity> {
+	size_t operator()(const sp::ecs::Entity& e) const {
+		return hash<uint32_t>{}(e.getIndex()) + hash<uint32_t>{}(e.getVersion());
+	}
+};
+}
