@@ -45,6 +45,10 @@ public:
 };
 
 template<> struct Convert<Callback> {
+    static int toLua(lua_State* L, const Callback& callback) {
+        lua_rawgetp(L, LUA_REGISTRYINDEX, &callback);
+        return 1;
+    }
     static Callback fromLua(lua_State* L, int idx) {
         Callback result;
         luaL_checktype(L, idx, LUA_TFUNCTION);
