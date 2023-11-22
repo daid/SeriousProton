@@ -42,6 +42,27 @@ public:
             return {};
         }
     }
+
+    // Set a global in the environment of this callback. You generally do not want this.
+    //  But I need it for backwards compatibility.
+    template<typename T> void setGlobal(const char* key, const T& value) {
+        lua_rawgetp(Environment::L, LUA_REGISTRYINDEX, this);
+        if (!lua_isfunction(Environment::L, -1)) {
+            lua_pop(Environment::L, 1);
+            return;
+        }
+        lua_getupvalue(Environment::L, -1, 1);
+        if (!lua_istable(Environment::L, -1)) {
+            lua_pop(Environment::L, 2);
+            return;
+        }
+        if (Convert<T>::toLua(Environment::L, value) < 1) {
+            lua_pop(Environment::L, 2);
+            return;
+        }
+        lua_setfield(Environment::L, -2, key);
+        lua_pop(Environment::L, 2);
+    }
 };
 
 template<> struct Convert<Callback> {
