@@ -57,7 +57,7 @@ string uriDecode(const string& sSrc)
    {
       if (*pSrc == '%')
       {
-         char dec1, dec2;
+         signed char dec1, dec2;
          if (-1 != (dec1 = HEX2DEC[*(pSrc + 1)])
             && -1 != (dec2 = HEX2DEC[*(pSrc + 2)]))
          {
