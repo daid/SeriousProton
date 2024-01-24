@@ -292,6 +292,7 @@ bool Server::Connection::processIncommingData()
             auto path_query = parts[1].partition("?");
             request.method = parts[0];
             request.path = path_query.first;
+            request.query.clear();
             for(auto& param : path_query.second.split("&"))
             {
                 auto key_value = param.partition("=");
