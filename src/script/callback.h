@@ -72,7 +72,8 @@ template<> struct Convert<Callback> {
     }
     static Callback fromLua(lua_State* L, int idx) {
         Callback result;
-        luaL_checktype(L, idx, LUA_TFUNCTION);
+        if (!lua_isnil(L, idx))
+            luaL_checktype(L, idx, LUA_TFUNCTION);
         lua_pushvalue(L, idx);
         lua_rawsetp(L, LUA_REGISTRYINDEX, &result);
         return result;
