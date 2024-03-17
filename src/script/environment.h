@@ -10,6 +10,8 @@
 
 namespace sp::script {
 
+int luaErrorHandler(lua_State* L);
+
 class Environment : NonCopyable
 {
 public:
@@ -48,39 +50,41 @@ public:
     }
 
     template<typename T, typename... ARGS> Result<T> call(const string& function_name, const ARGS&... args) {
+        lua_pushcfunction(L, luaErrorHandler);
         //Try to find our function in the environment table
         lua_rawgetp(L, LUA_REGISTRYINDEX, this);
         lua_getfield(L, -1, function_name.c_str());
         if (!lua_isfunction(L, -1)) {
-            lua_pop(L, 2);
+            lua_pop(L, 3);
             return Result<T>::makeError("Not a function");
         }
         
         int arg_count = (Convert<ARGS>::toLua(Environment::L, args) + ... + 0);
-        auto result = lua_pcall(L, arg_count, 1, 0);
+        auto result = lua_pcall(L, arg_count, 1, -arg_count - 3);
         if (result)
         {
             auto result = Result<T>::makeError(lua_tostring(L, -1));
-            lua_pop(L, 2);
+            lua_pop(L, 3);
             return result;
         }
 
         if constexpr (!std::is_void_v<T>) {
             auto return_value = Convert<T>::fromLua(L, -1);
-            lua_pop(L, 2);
+            lua_pop(L, 3);
             return return_value;
         } else {
-            lua_pop(L, 2);
+            lua_pop(L, 3);
             return {};
         }
     }
 
 private:
     template<typename T> Result<T> runImpl(const string& code, const string& name="=[string]") {
+        lua_pushcfunction(L, luaErrorHandler);
         int result = luaL_loadbufferx(L, code.c_str(), code.length(), name.c_str(), "t");
         if (result) {
             auto res = Result<T>::makeError(luaL_checkstring(L, -1));
-            lua_pop(L, 1);
+            lua_pop(L, 2);
             return res;
         }
 
@@ -89,20 +93,20 @@ private:
         //set the environment table it as 1st upvalue
         lua_setupvalue(L, -2, 1);
         
-        result = lua_pcall(L, 0, 1, 0);
+        result = lua_pcall(L, 0, 1, -2);
         if (result)
         {
             auto result = Result<T>::makeError(lua_tostring(L, -1));
-            lua_pop(L, 1);
+            lua_pop(L, 2);
             return result;
         }
 
         if constexpr (!std::is_void_v<T>) {
             auto return_value = Convert<T>::fromLua(L, -1);
-            lua_pop(L, 1);
+            lua_pop(L, 2);
             return return_value;
         } else {
-            lua_pop(L, 1);
+            lua_pop(L, 2);
             return {};
         }
     }

@@ -160,4 +160,12 @@ Environment::~Environment()
     lua_rawsetp(L, LUA_REGISTRYINDEX, this);
 }
 
+int luaErrorHandler(lua_State* L)
+{
+    const char * msg = lua_tostring(L, -1);
+    luaL_traceback(L, L, msg, 2);
+    lua_remove(L, -2);
+    return 1;
+}
+
 }
