@@ -22,6 +22,9 @@ set(EXTERNALS_DIR "${PROJECT_BINARY_DIR}/externals")
 set(DOWNLOADS_DIR "${PROJECT_BINARY_DIR}/downloads")
 file(MAKE_DIRECTORY "${EXTERNAL_DIR}" "${DOWNLOADS_DIR}")
 
+# We just want C++17 for everything we build
+set(CMAKE_CXX_STANDARD 17)
+
 include("cmake/DrMingw.cmake")
 
 #--------------------------------Dependencies----------------------------------
