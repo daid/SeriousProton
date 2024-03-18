@@ -18,6 +18,12 @@
 #include "steam/steam_api_flat.h"
 #endif
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#include <mach-o/dyld.h>
+#include <libgen.h>
+#endif
+
 #ifdef DEBUG
 #include <typeinfo>
 int DEBUG_PobjCount;
@@ -29,6 +35,48 @@ Engine* engine;
 Engine::Engine()
 {
     engine = this;
+
+#ifdef __APPLE__
+    // TODO: Find a proper solution.
+    // Seems to be non-NULL even outside of a proper bundle.
+    CFBundleRef bundle = CFBundleGetMainBundle();
+    if (bundle)
+    {
+        char bundle_path[PATH_MAX], exe_path[PATH_MAX];
+
+        CFURLRef bundleURL = CFBundleCopyBundleURL(bundle);
+        CFURLGetFileSystemRepresentation(bundleURL, true, (unsigned char*)bundle_path, PATH_MAX);
+        CFRelease(bundleURL);
+
+        uint32_t size = sizeof(exe_path);
+        if (_NSGetExecutablePath(exe_path, &size) != 0)
+        {
+          fprintf(stderr, "Failed to get executable path.\n");
+          return 1;
+        }
+
+        char *exe_realpath = realpath(exe_path, NULL);
+        char *exe_dir      = dirname(exe_realpath);
+
+        if (strcmp(exe_dir, bundle_path))
+        {
+          char resources_path[PATH_MAX];
+
+          CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(bundle);
+          CFURLGetFileSystemRepresentation(resourcesURL, true, (unsigned char*)resources_path, PATH_MAX);
+          CFRelease(resourcesURL);
+
+          chdir(resources_path);
+        }
+        else
+        {
+          chdir(exe_dir);
+        }
+
+        free(exe_realpath);
+        free(exe_dir);
+    }
+#endif
 
 #ifdef STEAMSDK
     if (SteamAPI_RestartAppIfNecessary(1907040))
