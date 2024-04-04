@@ -2,7 +2,7 @@
 
 #include "io/dataBuffer.h"
 #include "ecs/entity.h"
-
+#include "multiplayer_internal.h"
 
 namespace sp::ecs {
 
