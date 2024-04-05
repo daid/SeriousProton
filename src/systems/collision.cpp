@@ -3,6 +3,7 @@
 #include "ecs/query.h"
 
 #include <glm/trigonometric.hpp>
+#include <glm/geometric.hpp>
 
 
 #if defined(__GNUC__) && !defined(__clang__)
@@ -121,7 +122,10 @@ void CollisionSystem::update(float delta)
             transform->rotation = glm::degrees(body->GetAngle());
             physics->linear_velocity = b2v(body->GetLinearVelocity());
             physics->angular_velocity = glm::degrees(body->GetAngularVelocity());
-            transform->multiplayer_dirty = true; //TODO make this condition and like, not sending every tick.
+
+            //TODO make this condition better.
+            if (glm::length(transform->position - transform->last_send_position) > 100.0f || std::abs(transform->rotation - transform->last_send_rotation) > 5.0f)
+                transform->multiplayer_dirty = true;
         }
     }
     for(auto body : remove_list) {

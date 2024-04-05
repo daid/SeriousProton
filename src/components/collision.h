@@ -5,6 +5,7 @@
 
 class b2Body;
 namespace sp {
+namespace multiplayer { class TransformReplication; }
 class CollisionSystem;
 
 // Transform component, to give an entity a position and rotation in the 3D world.
@@ -24,7 +25,11 @@ private:
     glm::vec2 position{};
     float rotation = 0.0f;
 
+    glm::vec2 last_send_position{};
+    float last_send_rotation = 0.0f;
+
     friend class sp::CollisionSystem;
+    friend class sp::multiplayer::TransformReplication;
 };
 
 // The physics component will give the entity a physical presents in the physic simulation

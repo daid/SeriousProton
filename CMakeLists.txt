@@ -285,6 +285,8 @@ set(source_files #All SeriousProton's objects to compile
     src/systems/collision.h
     src/systems/collision.cpp
 
+    src/multiplayer/collision.h
+
     cmake/glDebug.inl.in
     "${glDebug_inl}"
 )
