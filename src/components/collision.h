@@ -25,6 +25,7 @@ private:
     glm::vec2 position{};
     float rotation = 0.0f;
 
+    float last_send_time = 0.0f;
     glm::vec2 last_send_position{};
     float last_send_rotation = 0.0f;
 

@@ -1,6 +1,7 @@
 #include "systems/collision.h"
 #include "components/collision.h"
 #include "ecs/query.h"
+#include "engine.h"
 
 #include <glm/trigonometric.hpp>
 #include <glm/geometric.hpp>
@@ -109,6 +110,7 @@ void CollisionSystem::update(float delta)
     }
     
     // Go over each body in the physics world, and update the entity, or delete the body if the entity is gone.
+    auto now = engine->getElapsedTime();
     std::vector<b2Body*> remove_list;
     for(b2Body* body = world->GetBodyList(); body; body = body->GetNext()) {
         sp::ecs::Entity* entity_ptr = (sp::ecs::Entity*)body->GetUserData();
@@ -123,8 +125,12 @@ void CollisionSystem::update(float delta)
             physics->linear_velocity = b2v(body->GetLinearVelocity());
             physics->angular_velocity = glm::degrees(body->GetAngularVelocity());
 
-            //TODO make this condition better.
-            if (glm::length(transform->position - transform->last_send_position) > 100.0f || std::abs(transform->rotation - transform->last_send_rotation) > 5.0f)
+            auto position_delta = glm::length(transform->position - transform->last_send_position);
+            auto rotation_delta = std::abs(transform->rotation - transform->last_send_rotation);
+            auto time_between_updates = 1.0f - position_delta / 200.0f - rotation_delta / 100.0f;
+            if (time_between_updates < 0.05f)
+                time_between_updates = 0.05f;
+            if (transform->last_send_time + time_between_updates < now)
                 transform->multiplayer_dirty = true;
         }
     }
