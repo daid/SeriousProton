@@ -8,16 +8,7 @@ namespace sp::ecs {
 
 class ComponentReplicationBase {
 public:
-    static inline ComponentReplicationBase* first = nullptr;
-    ComponentReplicationBase* next;
     uint16_t component_index = 0;
-
-    ComponentReplicationBase() {
-        next = first;
-        first = this;
-        if (next)
-            component_index = next->component_index + 1;
-    }
 
     //Called on the server so reused component slots get properly send if an entity is destroyed and reused within the same tick.
     //  And that destroyed entities don't need to send "destroyed component" packets for each component.
@@ -77,6 +68,21 @@ public:
     {
         entity.removeComponent<T>();
     }
+};
+
+class MultiplayerReplication {
+public:
+    template<typename T> static void registerComponentReplication() {
+        auto t = new T();
+        t->component_index = list.size();
+        list.push_back(t);
+    }
+
+private:
+    static inline std::vector<ComponentReplicationBase*> list;
+
+    friend class ::GameClient;
+    friend class ::GameServer;
 };
 
 }

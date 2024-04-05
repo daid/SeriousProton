@@ -154,7 +154,7 @@ void GameServer::update(float /*gameDelta*/)
         if (ecs_entity_version[index] != sp::ecs::Entity::entity_version[index]) {
             if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag)) {
                 ecs_packet << CMD_ECS_ENTITY_DESTROY << index;
-                for(auto ecsrb = sp::ecs::ComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
+                for(auto& ecsrb : sp::ecs::MultiplayerReplication::list) {
                     ecsrb->onEntityDestroyed(index);
                 }
             }
@@ -164,7 +164,7 @@ void GameServer::update(float /*gameDelta*/)
         }
     }
     //  For each component type, check which components are added/changed/deleted and send that over.
-    for(auto ecsrb = sp::ecs::ComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next) {
+    for(auto& ecsrb : sp::ecs::MultiplayerReplication::list) {
         ecsrb->update(ecs_packet);
     }
     if (ecs_packet.getDataSize() > sizeof(CMD_ECS_UPDATE)) {
@@ -489,7 +489,7 @@ void GameServer::handleNewClient(ClientInfo& info)
             ecs_packet << CMD_ECS_ENTITY_CREATE << index;
     }
     //  For each component type, send all existing components.
-    for(auto ecsrb = sp::ecs::ComponentReplicationBase::first; ecsrb; ecsrb=ecsrb->next)
+    for(auto& ecsrb : sp::ecs::MultiplayerReplication::list)
         ecsrb->sendAll(ecs_packet);
     sendDataCounter += ecs_packet.getDataSize();
     info.socket->queue(ecs_packet);
