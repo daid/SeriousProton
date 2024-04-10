@@ -5,7 +5,7 @@
 
 class b2Body;
 namespace sp {
-namespace multiplayer { class TransformReplication; }
+namespace multiplayer { class TransformReplication; class PhysicsReplication; }
 class CollisionSystem;
 
 // Transform component, to give an entity a position and rotation in the 3D world.
@@ -76,6 +76,7 @@ private:
     bool angular_velocity_user_set = false;
 
     friend class sp::CollisionSystem;
+    friend class sp::multiplayer::PhysicsReplication;
 };
 
 }

@@ -25,6 +25,12 @@ void TransformReplication::sendAll(sp::io::DataBuffer& packet)
 
 void TransformReplication::update(sp::io::DataBuffer& packet)
 {
+    for(auto [index, data] : info) {
+        if (!sp::ecs::Entity::forced(index, data).hasComponent<sp::Transform>()) {
+            info.remove(index);
+            packet << CMD_ECS_DEL_COMPONENT << component_index << index;
+        }
+    }
     for(auto [entity, transform] : sp::ecs::Query<sp::Transform>()) {
         if (!info.has(entity.getIndex()) || transform.multiplayer_dirty) {
             info.set(entity.getIndex(), entity.getVersion());
@@ -36,12 +42,6 @@ void TransformReplication::update(sp::io::DataBuffer& packet)
             transform.last_send_position = p;
             transform.last_send_rotation = r;
             transform.last_send_time = engine->getElapsedTime();
-        }
-    }
-    for(auto [index, data] : info) {
-        if (!sp::ecs::Entity::forced(index, data).hasComponent<sp::Transform>()) {
-            info.remove(index);
-            packet << CMD_ECS_DEL_COMPONENT << component_index << index;
         }
     }
 }
@@ -56,6 +56,72 @@ void TransformReplication::receive(sp::ecs::Entity entity, sp::io::DataBuffer& p
 }
 
 void TransformReplication::remove(sp::ecs::Entity entity)
+{
+    entity.removeComponent<sp::Transform>();
+}
+
+void PhysicsReplication::onEntityDestroyed(uint32_t index)
+{
+    info.remove(index);
+}
+
+void PhysicsReplication::sendAll(sp::io::DataBuffer& packet)
+{
+    for(auto [entity, physics] : sp::ecs::Query<sp::Physics>())
+    {
+        packet << CMD_ECS_SET_COMPONENT << component_index << entity.getIndex();
+        packet << 3U << physics.type << physics.shape << physics.size.x << physics.size.y;
+        packet << physics.linear_velocity.x << physics.linear_velocity.y << physics.angular_velocity;
+    }
+}
+
+void PhysicsReplication::update(sp::io::DataBuffer& packet)
+{
+    for(auto [index, data] : info) {
+        if (!sp::ecs::Entity::forced(index, data.version).hasComponent<sp::Physics>()) {
+            info.remove(index);
+            packet << CMD_ECS_DEL_COMPONENT << component_index << index;
+        }
+    }
+    for(auto [entity, physics] : sp::ecs::Query<sp::Physics>()) {
+        if (!info.has(entity.getIndex()) || physics.multiplayer_dirty) {
+            info.set(entity.getIndex(), {entity.getVersion(), physics.linear_velocity, physics.angular_velocity});
+            packet << CMD_ECS_SET_COMPONENT << component_index << entity.getIndex();
+            packet << 3U << physics.type << physics.shape << physics.size.x << physics.size.y;
+            packet << physics.linear_velocity.x << physics.linear_velocity.y << physics.angular_velocity;
+            physics.multiplayer_dirty = false;
+        }
+        auto& i = info.get(entity.getIndex());
+        if (glm::length2(i.velocity - physics.linear_velocity) > 5.0f || glm::length2(i.angular_velocity - physics.angular_velocity) > 5.0f) {
+            info.set(entity.getIndex(), {entity.getVersion(), physics.linear_velocity, physics.angular_velocity});
+            packet << 2U << physics.linear_velocity.x << physics.linear_velocity.y << physics.angular_velocity;
+        }
+    }
+}
+
+void PhysicsReplication::receive(sp::ecs::Entity entity, sp::io::DataBuffer& packet)
+{
+    auto [flags] = packet.read<unsigned int>();
+    auto p = entity.getOrAddComponent<sp::Physics>();
+    if (flags & 1U) {
+        auto [type, shape, w, h] = packet.read<sp::Physics::Type, sp::Physics::Shape, float, float>();
+        switch(shape) {
+        case sp::Physics::Shape::Circle:
+            p.setCircle(type, w);
+            break;
+        case sp::Physics::Shape::Rectangle:
+            p.setRectangle(type, {w, h});
+            break;
+        }
+    }
+    if (flags & 2U) {
+        auto [x, y, a] = packet.read<float, float, float>();
+        p.setVelocity({x, y});
+        p.setAngularVelocity(a);
+    }
+}
+
+void PhysicsReplication::remove(sp::ecs::Entity entity)
 {
     entity.removeComponent<sp::Transform>();
 }
