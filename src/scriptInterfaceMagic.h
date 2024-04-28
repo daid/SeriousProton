@@ -701,4 +701,12 @@ public:
     } \
     ScriptClassInfo scriptClassInfo ## F ( # F , "" , registerFunctionFunction ## F , NULL );
 
+#define REGISTER_SCRIPT_FUNCTION_NAMED(F, NAME) \
+    static void registerFunctionFunction ## F (lua_State* L) { \
+        lua_pushvalue(L, -1); \
+        lua_pushcclosure(L, &F, 1); \
+        lua_setglobal(L, NAME ); \
+    } \
+    ScriptClassInfo scriptClassInfo ## F ( NAME , "" , registerFunctionFunction ## F , NULL );
+
 #endif//SCRIPT_INTERFACE_MAGIC_H
