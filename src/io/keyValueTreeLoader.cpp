@@ -20,7 +20,7 @@ KeyValueTreeLoader::KeyValueTreeLoader(const string& resource_name)
     }
     result = std::make_shared<KeyValueTree>();
 
-    LOG(Info, "Loading tree", resource_name);
+    LOG(Info, "Loading tree ", resource_name);
 
     while(stream->tell() < stream->getSize())
     {
@@ -44,7 +44,7 @@ KeyValueTreeLoader::KeyValueTreeLoader(const string& resource_name)
         }
         else if (line == "}")
         {
-            LOG(Error, "Failed to parse key value tree: Node close while no node open.", resource_name);
+            LOG(Error, "Failed to parse key value tree: Node close while no node open. ", resource_name);
             result = nullptr;
             return;
         }
@@ -54,8 +54,8 @@ KeyValueTreeLoader::KeyValueTreeLoader(const string& resource_name)
         }
         else if (line.length() > 0)
         {
-            LOG(Error, "Failed to parse line:", line);
-            result->root_nodes.clear();
+            LOG(Error, "Failed to parse line: ", line);
+            result = nullptr;
             return;
         }
     }
