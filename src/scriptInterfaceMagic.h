@@ -10,6 +10,7 @@
 #include "P.h"
 #include "stringImproved.h"
 #include "lua/lua.hpp"
+#include "scriptInterfaceSandbox.h"
 #include "glm/gtc/type_precision.hpp"
 #include <typeinfo>
 #include <optional>
@@ -196,6 +197,10 @@ struct convert<P<T>>
             P<PObject>** p = static_cast< P<PObject>** >(lua_newuserdata(L, sizeof(P<PObject>*)));
             *p = new P<PObject>();
             (**p) = ptr;
+
+            // protect the new userdata's metatable
+            protectLuaMetatable(L);
+
             lua_settable(L, -3);
 
             lua_pushlightuserdata(L, ptr);
@@ -598,6 +603,10 @@ public:
             lua_pop(L, 1);
             luaL_newmetatable(L, objectTypeName);
         }
+
+        lua_pushstring(L, "__metatable"); // protect the metatable
+        lua_pushstring(L, "sandbox");
+        lua_settable(L, metatable);
         
         lua_pushstring(L, "__gc");
         lua_pushcfunction(L, gc_collect);
