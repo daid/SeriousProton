@@ -121,6 +121,22 @@ void ScriptObject::createLuaState()
         }
     }
 
+    //Remove unsafe base functions.
+    lua_pushnil(L);
+    lua_setglobal(L, "collectgarbage");
+    lua_pushnil(L);
+    lua_setglobal(L, "dofile");
+    lua_pushnil(L);
+    lua_setglobal(L, "getmetatable");
+    lua_pushnil(L);
+    lua_setglobal(L, "loadfile");
+    lua_pushnil(L);
+    lua_setglobal(L, "load");
+    lua_pushnil(L);
+    lua_setglobal(L, "rawequal");
+    lua_pushnil(L);
+    lua_setglobal(L, "setmetatable");
+
     //Setup a new table as the first upvalue. This will be used as "global" environment for the script. And thus will prevent global namespace polution.
     lua_newtable(L);  /* environment for loaded function */
 
