@@ -101,7 +101,7 @@ void NetworkAudioRecorder::update(float /*delta*/)
 void NetworkAudioRecorder::startSending()
 {
     int error = 0;
-    encoder = opus_encoder_create(44100, 1, OPUS_APPLICATION_VOIP, &error);
+    encoder = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &error);
     if (!encoder)
     {
         LOG(ERROR) << "Failed to create opus encoder:" << error;

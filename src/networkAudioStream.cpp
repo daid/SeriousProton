@@ -13,7 +13,7 @@ NetworkAudioStream::NetworkAudioStream()
     samples.reserve(sample_rate * 10);
     
     int error = 0;
-    decoder = opus_decoder_create(sample_rate, 1, &error);
+    decoder = opus_decoder_create(48000, 1, &error);
 }
 
 void NetworkAudioStream::onMixSamples(int16_t* stream, int sample_count)
