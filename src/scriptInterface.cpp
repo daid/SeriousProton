@@ -1,4 +1,5 @@
 #include <sys/stat.h>
+#include <cstring>
 
 #include "random.h"
 #include "resources.h"
