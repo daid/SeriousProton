@@ -108,6 +108,13 @@ static const luaL_Reg loadedlibs[] = {
   {NULL, NULL}
 };
 
+static const char* safe_functions[] = {
+    "assert", "error", "getmetatable", "ipairs", "next", "pairs", "pcall",
+    "print", "rawequal", "rawget", "rawlen", "rawset", "require", "select",
+    "setmetatable", "tonumber", "tostring", "type", "xpcall",
+    NULL,
+};
+
 void ScriptObject::createLuaState()
 {
     if (L == NULL)
@@ -119,43 +126,17 @@ void ScriptObject::createLuaState()
         {
             luaL_requiref(L, lib->name, lib->func, 1);
             lua_pop(L, 1);  /* remove lib */
-
-            // for any library that isn't the global base, it will have registered a table we need to make read-only
-            if (strcmp(lib->name, "_G")) {
-                lua_getglobal(L, lib->name);
-                makeReadonlyLuaProxy(L);
-                lua_setglobal(L, lib->name);
-            }
         }
 
-        //Remove unsafe base functions.
-        lua_pushnil(L);
-        lua_setglobal(L, "collectgarbage");
-        lua_pushnil(L);
-        lua_setglobal(L, "dofile");
-        lua_pushnil(L);
-        lua_setglobal(L, "loadfile");
-        lua_pushnil(L);
-        lua_setglobal(L, "load");
-        lua_pushnil(L);
-        lua_setglobal(L, "rawequal");
-
         // Protect the metatable the string library sets on strings.
-        // This metatable points to the global `string` library, rather than the environment's proxy.
+        // This metatable points to the global `string` library, rather than the environment's copy.
         // This global string library table can't be accessed directly, but it means a function defining
         // `function string.foo(...)` can't call that function as `"some_string":foo()` since the metatable
-        // points to the global version rather than its own editable proxy.
+        // points to the global version rather than its own copy.
         // TODO see if this can be fixed without breaking the sandbox. probably not.
         lua_pushstring(L, "");
         protectLuaMetatable(L);
         lua_pop(L, 1);
-
-        // Replace the standard _G with a read-only proxy.
-        // We'll set _G in the script's environment to be that environment to act more like Lua's _G, but if the script sets `_G = nil` it'll clear that and get whatever _G exists in the global table.
-        // This is also a useful place to store the protected version of the real global table so we can use that as __index for the script environment metatable.
-        lua_pushglobaltable(L);
-        makeReadonlyLuaProxy(L);
-        lua_setglobal(L, "_G");
     }
 
     //Setup a new table as the first upvalue. This will be used as "global" environment for the script. And thus will prevent global namespace polution.
@@ -166,35 +147,62 @@ void ScriptObject::createLuaState()
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
 
-    // Register proxies for the global libraries
-    // We've made the global libraries' tables read-only, but some scripts will want to do `table.foo = function(...) ... end` to add to the standard set.
-    // Give each script its own editable proxy with a metatable pointing at the global library (which itself is a readonly proxy, since setting this local proxy to nil would reveal the global one)
+    // Copy in the safe global functions.
+    for (const char **fn = safe_functions; *fn; fn++)
+    {
+        lua_pushstring(L, *fn);
+        lua_getglobal(L, *fn);
+        lua_settable(L, -3);
+    }
+
+    // Copy in the global libraries.
     for (const luaL_Reg *lib = loadedlibs; lib->func; lib++)
     {
         if (!strcmp(lib->name, "_G")) {
             continue;
         }
 
-        lua_pushstring(L, lib->name);
-        lua_getglobal(L, lib->name);
-        makeEditableLuaProxy(L);
-        lua_rawset(L, -3);
+        // Make a table for the library.
+        lua_newtable(L);              // [env] [local]
+
+        // Set it into the script environment.
+        lua_pushstring(L, lib->name); // [env] [local] [libname]
+        lua_pushvalue(L, -2);         // [env] [local] [libname] [local]
+        lua_settable(L, -4);          // [env] [local]
+
+        // Iterate the global library.
+        lua_getglobal(L, lib->name);  // [env] [local] [global]
+        lua_pushnil(L);               // [env] [local] [global] nil
+        while (lua_next(L, -2))
+        {                             // [env] [local] [global] [key] [value]
+            if (!lua_isfunction(L, -1) && !lua_isnumber(L, -1))
+            {
+                // This doesn't trigger on anything right now; it's here in case anything gets added to any of the libraries that would potentially break the sandbox.
+                LOG(WARNING) << "ignoring non-{function,number} in " << lib->name;
+                lua_pop(L, 1);
+                continue;
+            }
+
+            // Functions and numbers are safe to share - copy the value into the script's library table
+            lua_pushvalue(L, -2); // [env] [local] [global] [key] [value] [key]
+            lua_rotate(L, -2, 1); // [env] [local] [global] [key] [key] [value]
+            lua_settable(L, -5);  // [env] [local] [global] [key]
+        }
+                       // [env] [local] [global]
+        lua_pop(L, 2); // [env]
     }
 
     //Register all global functions for our game.
     for(ScriptClassInfo* item = scriptClassInfoList; item != NULL; item = item->next)
+    {
         item->register_function(L);
 
-    // Create a metatable for the script environment.
-    // Note that unlike all other metatables we set up, this metatable is _not_ protected.
-    // This is to allow the sandboxed code to set metatable bits on its own environment, since we don't let it wrap the actual table.
-    // This isn't a security issue since the only things it allows the script to do are 1) mess with its own environment, and 2) see the read-only global table proxy in __index
+        lua_pushstring(L, item->class_name.c_str());
+        lua_getglobal(L, item->class_name.c_str());
+        lua_settable(L, -3);
+    }
+
     // TODO: probably all non-script access to the environment table should be rawget/rawset so we don't have to worry about the sandboxed code doing something funky in __index/__newindex?
-    lua_newtable(L);
-    lua_pushstring(L, "__index");
-    lua_getglobal(L, "_G");
-    lua_rawset(L, -3);
-    lua_setmetatable(L, -2);
 
     //Register the destroyScript function. This needs a reference back to the script object, we pass this as an upvalue.
     lua_pushstring(L, "destroyScript");
