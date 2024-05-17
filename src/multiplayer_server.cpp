@@ -484,9 +484,9 @@ void GameServer::handleNewClient(ClientInfo& info)
     sp::io::DataBuffer ecs_packet;
     ecs_packet << CMD_ECS_UPDATE;
     //  For each entity, check which version number we last transmitted and if it is changed, transmit creation/deletion of entities.
-    for(uint32_t index=0; index<sp::ecs::Entity::entity_version.size(); index++) {
-        if (!(sp::ecs::Entity::entity_version[index] & sp::ecs::Entity::destroyed_flag))
-            ecs_packet << CMD_ECS_ENTITY_CREATE << index;
+    for(uint32_t index=0; index<ecs_entity_version.size(); index++) {
+        if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag))
+            ecs_packet << CMD_ECS_ENTITY_CREATE << index << ecs_entity_version[index];
     }
     //  For each component type, send all existing components.
     for(auto& ecsrb : sp::ecs::MultiplayerReplication::list)

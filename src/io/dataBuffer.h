@@ -101,6 +101,11 @@ public:
         writeVLQu(i);
     }
 
+    void write(size_t i)
+    {
+        writeVLQu(i);
+    }
+
     void write(const float f)
     {
         appendRaw(&f, sizeof(f));
@@ -168,6 +173,11 @@ public:
         i = readVLQu();
     }
 
+    void read(size_t& i)
+    {
+        i = readVLQu();
+    }
+
     void read(float& f)
     {
         if (read_index + sizeof(f) > buffer.size()) { f = 0; return; }
@@ -207,6 +217,7 @@ public:
     DataBuffer& operator <<(uint16_t data) { write(data); return *this; }
     DataBuffer& operator <<(int32_t data) { write(data); return *this; }
     DataBuffer& operator <<(uint32_t data) { write(data); return *this; }
+    DataBuffer& operator <<(size_t data) { write(data); return *this; }
     DataBuffer& operator <<(float data) { write(data); return *this; }
     DataBuffer& operator <<(double data) { write(data); return *this; }
     DataBuffer& operator <<(std::string_view data) { write(data); return *this; }
@@ -218,6 +229,7 @@ public:
     DataBuffer& operator >>(uint16_t& data) { read(data); return *this; }
     DataBuffer& operator >>(int32_t& data) { read(data); return *this; }
     DataBuffer& operator >>(uint32_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(size_t& data) { read(data); return *this; }
     DataBuffer& operator >>(float& data) { read(data); return *this; }
     DataBuffer& operator >>(double& data) { read(data); return *this; }
     DataBuffer& operator >>(string& data) { read(data); return *this; }

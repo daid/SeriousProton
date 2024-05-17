@@ -279,9 +279,15 @@ void GameClient::update(float /*delta*/)
                             uint16_t component_index;
                             uint32_t index;
                             packet >> component_index >> index;
-                            if (component_index < sp::ecs::MultiplayerReplication::list.size())
-                                if (index < entity_mapping.size() && entity_mapping[index])
+                            if (component_index < sp::ecs::MultiplayerReplication::list.size()) {
+                                if (index < entity_mapping.size() && entity_mapping[index]) {
                                     sp::ecs::MultiplayerReplication::list[component_index]->receive(entity_mapping[index], packet);
+                                } else {
+                                    LOG(Error, "MP: ECS set component of unknown entity: ", index);
+                                }
+                            } else {
+                                LOG(Error, "MP: ECS set component of unknown component index: ", component_index);
+                            }
                         }
                         break;
                     case CMD_ECS_DEL_COMPONENT:
@@ -294,6 +300,8 @@ void GameClient::update(float /*delta*/)
                                     sp::ecs::MultiplayerReplication::list[component_index]->remove(entity_mapping[index]);
                         }
                         break;
+                    default:
+                        LOG(Error, "Unknown ECS command in packet?...");
                     }
                 }
                 break;
