@@ -14,6 +14,6 @@ void protectLuaMetatable(lua_State* L)
 
     lua_pushstring(L, "__metatable"); // [object] [mt] "__metatable"
     lua_pushstring(L, "sandbox");     // [object] [mt] "__metatable" "sandbox"
-    lua_settable(L, -3);              // [object] [mt]
+    lua_rawset(L, -3);                // [object] [mt]
     lua_pop(L, 1);                    // [object]
 }

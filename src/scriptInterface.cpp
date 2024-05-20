@@ -153,7 +153,7 @@ void ScriptObject::createLuaState()
     {
         lua_pushstring(L, *fn);
         lua_getglobal(L, *fn);
-        lua_settable(L, -3);
+        lua_rawset(L, -3);
     }
 
     // Copy in the global libraries.
@@ -169,7 +169,7 @@ void ScriptObject::createLuaState()
         // Set it into the script environment.
         lua_pushstring(L, lib->name); // [env] [local] [libname]
         lua_pushvalue(L, -2);         // [env] [local] [libname] [local]
-        lua_settable(L, -4);          // [env] [local]
+        lua_rawset(L, -4);            // [env] [local]
 
         // Iterate the global library.
         lua_getglobal(L, lib->name);  // [env] [local] [global]
@@ -187,7 +187,7 @@ void ScriptObject::createLuaState()
             // Functions and numbers are safe to share - copy the value into the script's library table
             lua_pushvalue(L, -2); // [env] [local] [global] [key] [value] [key]
             lua_rotate(L, -2, 1); // [env] [local] [global] [key] [key] [value]
-            lua_settable(L, -5);  // [env] [local] [global] [key]
+            lua_rawset(L, -5);    // [env] [local] [global] [key]
         }
                        // [env] [local] [global]
         lua_pop(L, 2); // [env]
@@ -200,10 +200,8 @@ void ScriptObject::createLuaState()
 
         lua_pushstring(L, item->class_name.c_str());
         lua_getglobal(L, item->class_name.c_str());
-        lua_settable(L, -3);
+        lua_rawset(L, -3);
     }
-
-    // TODO: probably all non-script access to the environment table should be rawget/rawset so we don't have to worry about the sandboxed code doing something funky in __index/__newindex?
 
     //Register the destroyScript function. This needs a reference back to the script object, we pass this as an upvalue.
     lua_pushstring(L, "destroyScript");
@@ -296,7 +294,7 @@ void ScriptObject::setVariable(string variable_name, string value)
     //Set our variable in this environment table
     lua_pushstring(L, variable_name.c_str());
     lua_pushstring(L, value.c_str());
-    lua_settable(L, -3);
+    lua_rawset(L, -3);
     
     //Pop the table
     lua_pop(L, 1);
@@ -313,7 +311,7 @@ void ScriptObject::registerObject(P<PObject> object, string variable_name)
     
     if (convert< P<PObject> >::returnType(L, object))
     {
-        lua_settable(L, -3);
+        lua_rawset(L, -3);
         //Pop the environment table
         lua_pop(L, 1);
     }else{
@@ -437,7 +435,7 @@ bool ScriptObject::callFunction(string name)
     lua_gettable(L, LUA_REGISTRYINDEX);
     //Get the function from the environment
     lua_pushstring(L, name.c_str());
-    lua_gettable(L, -2);
+    lua_rawget(L, -2);
     //Call the function
     if (lua_pcall(L, 0, 0, 0))
     {
@@ -491,7 +489,7 @@ void ScriptObject::update(float delta)
     lua_gettable(L, LUA_REGISTRYINDEX);
     // Get the update function from the script environment
     lua_pushstring(L, "update");
-    lua_gettable(L, -2);
+    lua_rawget(L, -2);
     
     // If it's a function, call it, if not, pop the environment and the function from the stack.
     if (!lua_isfunction(L, -1))
@@ -582,7 +580,7 @@ void ScriptCallback::operator() ()
         lua_pop(L, 1);
         return;
     }
-    
+
     lua_pushnil(L);
     while (lua_next(L, -2) != 0)
     {
@@ -597,7 +595,7 @@ void ScriptCallback::operator() ()
                 //Stack is [callback_table] [callback_key] [callback_entry_table] [script_pointer]
                 lua_pushvalue(L, -3);
                 lua_pushnil(L);
-                lua_settable(L, -6);
+                lua_rawset(L, -6);
                 lua_pop(L, 1);
             }else{
                 lua_pop(L, 1);
@@ -768,7 +766,7 @@ template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, Scr
 
     //Stack is now: [function_environment] [callback object pointer] [table] "script_pointer"
     lua_pushstring(L, "__script_pointer");
-    lua_gettable(L, -5);
+    lua_rawget(L, -5);
     if (lua_isnil(L, -1))
     {
         //Simple functions that do not access globals do not inherit their environment from their creator, so they have nil here.
