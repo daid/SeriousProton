@@ -11,7 +11,7 @@ namespace sp::io {
         if (game_client) {
             auto si = e.getComponent<ServerIndex>();
             if (!si)
-                packet << 0 << 0;
+                packet << sp::ecs::Entity::no_index << sp::ecs::Entity::no_index;
             else
                 packet << si->index << si->version;
         } else {
