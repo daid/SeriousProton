@@ -50,7 +50,7 @@ void TransformReplication::receive(sp::ecs::Entity entity, sp::io::DataBuffer& p
 {
     float x, y, r;
     packet >> x >> y >> r;
-    auto t = entity.getOrAddComponent<sp::Transform>();
+    auto& t = entity.getOrAddComponent<sp::Transform>();
     t.setPosition({x, y});
     t.setRotation(r);
 }
@@ -102,7 +102,7 @@ void PhysicsReplication::update(sp::io::DataBuffer& packet)
 void PhysicsReplication::receive(sp::ecs::Entity entity, sp::io::DataBuffer& packet)
 {
     auto [flags] = packet.read<unsigned int>();
-    auto p = entity.getOrAddComponent<sp::Physics>();
+    auto& p = entity.getOrAddComponent<sp::Physics>();
     if (flags & 1U) {
         auto [type, shape, w, h] = packet.read<sp::Physics::Type, sp::Physics::Shape, float, float>();
         switch(shape) {
