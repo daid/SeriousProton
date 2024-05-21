@@ -70,7 +70,7 @@ void PhysicsReplication::sendAll(sp::io::DataBuffer& packet)
     for(auto [entity, physics] : sp::ecs::Query<sp::Physics>())
     {
         packet << CMD_ECS_SET_COMPONENT << component_index << entity.getIndex();
-        packet << 3U << physics.type << physics.shape << physics.size.x << physics.size.y;
+        packet << uint32_t(3) << physics.type << physics.shape << physics.size.x << physics.size.y;
         packet << physics.linear_velocity.x << physics.linear_velocity.y << physics.angular_velocity;
     }
 }
@@ -87,21 +87,23 @@ void PhysicsReplication::update(sp::io::DataBuffer& packet)
         if (!info.has(entity.getIndex()) || physics.multiplayer_dirty) {
             info.set(entity.getIndex(), {entity.getVersion(), physics.linear_velocity, physics.angular_velocity});
             packet << CMD_ECS_SET_COMPONENT << component_index << entity.getIndex();
-            packet << 3U << physics.type << physics.shape << physics.size.x << physics.size.y;
+            packet << uint32_t(3) << physics.type << physics.shape << physics.size.x << physics.size.y;
             packet << physics.linear_velocity.x << physics.linear_velocity.y << physics.angular_velocity;
             physics.multiplayer_dirty = false;
-        }
-        auto& i = info.get(entity.getIndex());
-        if (glm::length2(i.velocity - physics.linear_velocity) > 5.0f || glm::length2(i.angular_velocity - physics.angular_velocity) > 5.0f) {
-            info.set(entity.getIndex(), {entity.getVersion(), physics.linear_velocity, physics.angular_velocity});
-            packet << 2U << physics.linear_velocity.x << physics.linear_velocity.y << physics.angular_velocity;
+        } else {
+            auto& i = info.get(entity.getIndex());
+            if (glm::length2(i.velocity - physics.linear_velocity) > 5.0f || glm::length2(i.angular_velocity - physics.angular_velocity) > 5.0f) {
+                info.set(entity.getIndex(), {entity.getVersion(), physics.linear_velocity, physics.angular_velocity});
+                packet << CMD_ECS_SET_COMPONENT << component_index << entity.getIndex();
+                packet << uint32_t(2U) << physics.linear_velocity.x << physics.linear_velocity.y << physics.angular_velocity;
+            }
         }
     }
 }
 
 void PhysicsReplication::receive(sp::ecs::Entity entity, sp::io::DataBuffer& packet)
 {
-    auto [flags] = packet.read<unsigned int>();
+    auto [flags] = packet.read<uint32_t>();
     auto& p = entity.getOrAddComponent<sp::Physics>();
     if (flags & 1U) {
         auto [type, shape, w, h] = packet.read<sp::Physics::Type, sp::Physics::Shape, float, float>();
