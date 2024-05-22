@@ -149,6 +149,8 @@ lua_State* Environment::getLuaState()
         lua_setfield(L, -2, "__newindex");
         lua_pushcfunction(L, luaEntityEqual);
         lua_setfield(L, -2, "__eq");
+        lua_pushstring(L, "sandboxed");
+        lua_setfield(L, -2, "__metatable");
         lua_pop(L, 1);
     }
     return L;

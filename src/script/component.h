@@ -57,6 +57,8 @@ public:
             return 1;
         });
         lua_setfield(L, -2, "__len");
+        lua_pushstring(L, "sandboxed");
+        lua_setfield(L, -2, "__metatable");
         lua_pop(L, 1);
         
         array_metatable_name = name + string("_array");
@@ -88,6 +90,8 @@ public:
             return 0;
         });
         lua_setfield(L, -2, "__newindex");
+        lua_pushstring(L, "sandboxed");
+        lua_setfield(L, -2, "__metatable");
         lua_pop(L, 1);
     }
 
