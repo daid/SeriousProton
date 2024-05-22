@@ -198,9 +198,6 @@ struct convert<P<T>>
             *p = new P<PObject>();
             (**p) = ptr;
 
-            // protect the new userdata's metatable
-            protectLuaMetatable(L);
-
             lua_rawset(L, -3);
 
             lua_pushlightuserdata(L, ptr);
