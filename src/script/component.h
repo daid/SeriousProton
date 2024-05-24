@@ -187,7 +187,7 @@ private:
             while(lua_next(L, -2)) {
                 if (array_count_func && lua_isinteger(L, -2)) {
                     int index = lua_tointeger(L, -2) - 1;
-                    if (index < 0) luaL_error(L, "Cannot assign indexes below 1");
+                    if (index < 0) luaL_error(L, "Cannot assign indexes below 1 on component %s", component_name);
                     if (array_count_func(component) < index + 1)
                         array_resize_func(component, index + 1);
                     luaL_checktype(L, -1, LUA_TTABLE);

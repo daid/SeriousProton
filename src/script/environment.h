@@ -24,6 +24,7 @@ public:
         lua_pushvalue(L, -1);
         lua_pushcclosure(L, f, 1);
         lua_setfield(L, -2, name.c_str());
+        lua_pop(L, 1);
     }
 
     template<typename T> void setGlobal(const string& name, const T& value) {
@@ -32,6 +33,7 @@ public:
         if (Convert<T>::toLua(L, value) != 1)
             luaL_error(L, "Trying to set global to a type that is not a single value");
         lua_setfield(L, -2, name.c_str());
+        lua_pop(L, 1);
     }
 
     template<typename T> Result<T> runFile(const string& filename)

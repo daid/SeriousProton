@@ -42,6 +42,8 @@ Environment::Environment()
     lua_pushstring(L, "__index");
     lua_pushglobaltable(L);
     lua_rawset(L, -3);
+    lua_pushstring(L, "sandbox");
+    lua_setfield(L, -2, "__metatable");
     lua_setmetatable(L, -2);
 
     lua_rawsetp(L, LUA_REGISTRYINDEX, this);
