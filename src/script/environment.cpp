@@ -68,8 +68,16 @@ static int luaEntityIndex(lua_State* L) {
         lua_pushboolean(L, static_cast<bool>(e));
         return 1;
     }
+    if (strcmp(key, "components") == 0) {
+        auto e = Convert<ecs::Entity>::fromLua(L, -2);
+        *static_cast<ecs::Entity*>(lua_newuserdata(L, sizeof(ecs::Entity))) = e;
+        luaL_getmetatable(L, "entity_components");
+        lua_setmetatable(L, -2);
+        return 1;
+    }
     auto it = ComponentRegistry::components.find(key);
     if (it != ComponentRegistry::components.end()) {
+        LOG(Debug, "Legacy script component read ", key);
         return it->second.getter(L, key);
     }
     if (key[0] != '_' && luaL_getmetafield(L, -2, key) != LUA_TNIL) {
@@ -101,6 +109,7 @@ static int luaEntityNewIndex(lua_State* L) {
     auto key = luaL_checkstring(L, -2);
     auto it = ComponentRegistry::components.find(key);
     if (it != ComponentRegistry::components.end()) {
+        LOG(Debug, "Legacy script component write ", key);
         return it->second.setter(L, key);
     }
 
@@ -110,6 +119,27 @@ static int luaEntityNewIndex(lua_State* L) {
     lua_pushvalue(L, -3);
     lua_pushvalue(L, -3);
     lua_rawset(L, -3);
+    return 0;
+}
+
+static int luaEntityComponentsIndex(lua_State* L) {
+    auto key = luaL_checkstring(L, -1);
+    auto it = ComponentRegistry::components.find(key);
+    if (it != ComponentRegistry::components.end()) {
+        return it->second.getter(L, key);
+    }
+    return 0;
+}
+
+static int luaEntityComponentsNewIndex(lua_State* L) {
+    auto e = Convert<ecs::Entity>::fromLua(L, -3);
+    if (!e) return 0;
+
+    auto key = luaL_checkstring(L, -2);
+    auto it = ComponentRegistry::components.find(key);
+    if (it != ComponentRegistry::components.end()) {
+        return it->second.setter(L, key);
+    }
     return 0;
 }
 
@@ -151,6 +181,15 @@ lua_State* Environment::getLuaState()
         lua_setfield(L, -2, "__newindex");
         lua_pushcfunction(L, luaEntityEqual);
         lua_setfield(L, -2, "__eq");
+        lua_pushstring(L, "sandboxed");
+        lua_setfield(L, -2, "__metatable");
+        lua_pop(L, 1);
+
+        luaL_newmetatable(L, "entity_components");
+        lua_pushcfunction(L, luaEntityComponentsIndex);
+        lua_setfield(L, -2, "__index");
+        lua_pushcfunction(L, luaEntityComponentsNewIndex);
+        lua_setfield(L, -2, "__newindex");
         lua_pushstring(L, "sandboxed");
         lua_setfield(L, -2, "__metatable");
         lua_pop(L, 1);

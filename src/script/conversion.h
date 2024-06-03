@@ -46,8 +46,11 @@ template<> struct Convert<ecs::Entity> {
     }
     static ecs::Entity fromLua(lua_State* L, int idx) {
         auto ptr = luaL_testudata(L, idx, "entity");
-        if (!ptr)
-            return {};
+        if (!ptr) {
+            ptr = luaL_testudata(L, idx, "entity_components");
+            if (!ptr)
+                return {};
+        }
         return *static_cast<ecs::Entity*>(ptr);
     }
 };
