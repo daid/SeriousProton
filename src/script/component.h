@@ -12,7 +12,7 @@ namespace sp::script {
 class ComponentRegistry
 {
 public:
-    using FuncPtr = int(*)(lua_State*, const char*);
+    using FuncPtr = int(*)(lua_State*, sp::ecs::Entity, const char*);
     FuncPtr getter;
     FuncPtr setter;
 
@@ -168,8 +168,7 @@ private:
         return e.getComponent<T>();
     }
 
-    static int luaComponentGetter(lua_State* L, const char* key) {
-        auto e = Convert<ecs::Entity>::fromLua(L, -2);
+    static int luaComponentGetter(lua_State* L, sp::ecs::Entity e, const char* key) {
         if (!e.hasComponent<T>()) return 0;
         *static_cast<ecs::Entity*>(lua_newuserdata(L, sizeof(ecs::Entity))) = e;
         luaL_getmetatable(L, key);
@@ -177,8 +176,7 @@ private:
         return 1;
     }
 
-    static int luaComponentSetter(lua_State* L, const char* key) {
-        auto e = Convert<ecs::Entity>::fromLua(L, -3);
+    static int luaComponentSetter(lua_State* L, sp::ecs::Entity e, const char* key) {
         if (lua_isnil(L, -1)) {
             e.removeComponent<T>();
         } else if (lua_istable(L, -1)) {
