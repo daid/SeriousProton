@@ -4,6 +4,7 @@
 #include "conversion.h"
 #include "environment.h"
 #include "string.h"
+#include "ecs/query.h"
 #include <unordered_map>
 
 
@@ -15,6 +16,8 @@ public:
     using FuncPtr = int(*)(lua_State*, sp::ecs::Entity, const char*);
     FuncPtr getter;
     FuncPtr setter;
+    using QueryFuncPtr = int(*)(lua_State*);
+    QueryFuncPtr query;
 
     static std::unordered_map<std::string, ComponentRegistry> components;
 };
@@ -41,7 +44,7 @@ template<typename T> class ComponentHandler
 public:
     static void name(const char* name) {
         component_name = name;
-        ComponentRegistry::components[name] = {luaComponentGetter, luaComponentSetter};
+        ComponentRegistry::components[name] = {luaComponentGetter, luaComponentSetter, luaComponentQuery};
 
         auto L = Environment::getLuaState();
         luaL_newmetatable(L, name);
@@ -209,6 +212,18 @@ private:
             return luaL_error(L, "Bad assignment to component %s member %s, nil or table expected.", component_name, key);
         }
         return 0;
+    }
+
+    static int luaComponentQuery(lua_State* L)
+    {
+        lua_newtable(L);
+        int index = 1;
+        for(auto [e, comp] : sp::ecs::Query<T>()) {
+            Convert<sp::ecs::Entity>::toLua(L, e);
+            lua_rawseti(L, -2, index);
+            index++;
+        }
+        return 1;
     }
 
     static inline const char* component_name;
