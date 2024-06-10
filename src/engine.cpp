@@ -178,25 +178,26 @@ void Engine::runMainLoop()
                 LOG(DEBUG) << "Object count: " << DEBUG_PobjCount << " " << updatableList.size();
 #endif
 
-            float delta = frame_timer.restart();
-            if (delta > 0.5f)
-                delta = 0.5f;
-            if (delta < 0.001f)
-                delta = 0.001f;
-            delta *= gameSpeed;
+            auto realtime_delta = frame_timer.restart();
+            auto update_delta = realtime_delta;
+            if (update_delta > 0.5f)
+                update_delta = 0.5f;
+            if (update_delta < 0.001f)
+                update_delta = 0.001f;
+            update_delta *= gameSpeed;
 
             foreach(Updatable, u, updatableList)
-                u->update(delta);
+                u->update(update_delta);
             for(auto system : systems)
-                system->update(delta);
-            sp::CollisionSystem::update(delta);
-            elapsedTime += delta;
+                system->update(update_delta);
+            sp::CollisionSystem::update(update_delta);
+            elapsedTime += update_delta;
             ScriptObjectLegacy::clearDestroyedObjects();
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();
 #endif
-            std::this_thread::sleep_for(std::chrono::duration<float>(1.f/60.f - delta));
+            std::this_thread::sleep_for(std::chrono::duration<float>(1.f/60.f - realtime_delta));
         }
     }else{
         sp::audio::Source::startAudioSystem();
