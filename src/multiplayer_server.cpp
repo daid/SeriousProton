@@ -18,7 +18,7 @@
 #if MULTIPLAYER_COLLECT_DATA_STATS
 sp::SystemTimer multiplayer_stats_dump;
 static std::unordered_map<string, int> multiplayer_stats;
-#define ADD_MULTIPLAYER_STATS(name, bytes) multiplayer_stats[name] += (bytes)
+#define ADD_MULTIPLAYER_STATS(name, bytes) do { if (bytes) { multiplayer_stats[name] += (bytes); } } while(0)
 #else
 #define ADD_MULTIPLAYER_STATS(name, bytes) do {} while(0)
 #endif
@@ -166,7 +166,7 @@ void GameServer::update(float /*gameDelta*/)
     }
     //  For each component type, check which components are added/changed/deleted and send that over.
     for(auto& ecsrb : sp::ecs::MultiplayerReplication::list) {
-#ifdef MULTIPLAYER_COLLECT_DATA_STATS
+#if MULTIPLAYER_COLLECT_DATA_STATS
         auto pre_size = ecs_packet.getDataSize();
 #endif
         ecsrb->update(ecs_packet);
