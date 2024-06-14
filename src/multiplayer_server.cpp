@@ -148,6 +148,7 @@ void GameServer::update(float /*gameDelta*/)
     //Replicate ECS data, we send this as one big packet so ECS state is always consistent on the client.
     sp::io::DataBuffer ecs_packet;
     ecs_packet << CMD_ECS_UPDATE;
+    auto empty_ecs_packet_size = ecs_packet.getDataSize();
     //  For each entity, check which version number we last transmitted and if it is changed, transmit creation/deletion of entities.
     ecs_entity_version.resize(sp::ecs::Entity::entity_version.size(), std::numeric_limits<uint32_t>::max());
     for(uint32_t index=0; index<sp::ecs::Entity::entity_version.size(); index++) {
@@ -165,10 +166,15 @@ void GameServer::update(float /*gameDelta*/)
     }
     //  For each component type, check which components are added/changed/deleted and send that over.
     for(auto& ecsrb : sp::ecs::MultiplayerReplication::list) {
+#ifdef MULTIPLAYER_COLLECT_DATA_STATS
+        auto pre_size = ecs_packet.getDataSize();
+#endif
         ecsrb->update(ecs_packet);
+        ADD_MULTIPLAYER_STATS("ECS:UPDATE:" + string(typeid(*ecsrb).name()), ecs_packet.getDataSize() - pre_size);
     }
-    if (ecs_packet.getDataSize() > sizeof(CMD_ECS_UPDATE)) {
+    if (ecs_packet.getDataSize() > empty_ecs_packet_size) {
         sendAll(ecs_packet);
+        ADD_MULTIPLAYER_STATS("ECS", ecs_packet.getDataSize());
     }
 
     std::vector<int32_t> delList;
