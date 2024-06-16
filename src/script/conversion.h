@@ -23,7 +23,7 @@ template<> struct Convert<uint32_t> {
     static int fromLua(lua_State* L, uint32_t idx) { return lua_tointeger(L, idx); }
 };
 template<> struct Convert<float> {
-    static int toLua(lua_State* L, float value) { lua_pushnumber(L, value); return 1; }
+    static int toLua(lua_State* L, float value) { lua_pushnumber(L, double(value)); return 1; }
     static float fromLua(lua_State* L, int idx) { return lua_tonumber(L, idx); }
 };
 template<> struct Convert<double> {
