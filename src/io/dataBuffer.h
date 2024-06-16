@@ -101,9 +101,9 @@ public:
         writeVLQu(i);
     }
 
-    void write(size_t i)
+    void write(uint64_t i)
     {
-        writeVLQu(i);
+        writeVLQu64(i);
     }
 
     void write(const float f)
@@ -173,9 +173,9 @@ public:
         i = readVLQu();
     }
 
-    void read(size_t& i)
+    void read(uint64_t& i)
     {
-        i = readVLQu();
+        i = readVLQu64();
     }
 
     void read(float& f)
@@ -217,7 +217,7 @@ public:
     DataBuffer& operator <<(uint16_t data) { write(data); return *this; }
     DataBuffer& operator <<(int32_t data) { write(data); return *this; }
     DataBuffer& operator <<(uint32_t data) { write(data); return *this; }
-    DataBuffer& operator <<(size_t data) { write(data); return *this; }
+    DataBuffer& operator <<(uint64_t data) { write(data); return *this; }
     DataBuffer& operator <<(float data) { write(data); return *this; }
     DataBuffer& operator <<(double data) { write(data); return *this; }
     DataBuffer& operator <<(std::string_view data) { write(data); return *this; }
@@ -229,7 +229,7 @@ public:
     DataBuffer& operator >>(uint16_t& data) { read(data); return *this; }
     DataBuffer& operator >>(int32_t& data) { read(data); return *this; }
     DataBuffer& operator >>(uint32_t& data) { read(data); return *this; }
-    DataBuffer& operator >>(size_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(uint64_t& data) { read(data); return *this; }
     DataBuffer& operator >>(float& data) { read(data); return *this; }
     DataBuffer& operator >>(double& data) { read(data); return *this; }
     DataBuffer& operator >>(string& data) { read(data); return *this; }
@@ -249,6 +249,28 @@ private:
         buffer.push_back((v & 0x7F));
     }
 
+    void writeVLQu64(uint64_t v) {
+        if (v >= (1ULL << 63))
+            buffer.push_back((v >> 63) | 0x80);
+        if (v >= (1ULL << 56))
+            buffer.push_back((v >> 56) | 0x80);
+        if (v >= (1ULL << 49))
+            buffer.push_back((v >> 49) | 0x80);
+        if (v >= (1ULL << 42))
+            buffer.push_back((v >> 42) | 0x80);
+        if (v >= (1ULL << 35))
+            buffer.push_back((v >> 35) | 0x80);
+        if (v >= (1ULL << 28))
+            buffer.push_back((v >> 28) | 0x80);
+        if (v >= (1ULL << 21))
+            buffer.push_back((v >> 21) | 0x80);
+        if (v >= (1ULL << 14))
+            buffer.push_back((v >> 14) | 0x80);
+        if (v >= (1ULL << 7))
+            buffer.push_back((v >> 7) | 0x80);
+        buffer.push_back((v & 0x7F));
+    }
+
     void writeVLQs(int32_t v) {
         if (v < 0)
             writeVLQu((uint32_t(-v) << 1) | 1);
@@ -259,6 +281,20 @@ private:
     uint32_t readVLQu()
     {
         uint32_t result{0};
+        uint8_t u;
+        do
+        {
+            result <<= 7;
+            if (read_index >= buffer.size()) { return result; }
+            u = buffer[read_index++];
+            result |= u & 0x7F;
+        } while(u & 0x80);
+        return result;
+    }
+
+    uint64_t readVLQu64()
+    {
+        uint64_t result{0};
         uint8_t u;
         do
         {
