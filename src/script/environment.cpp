@@ -64,7 +64,6 @@ static int luaEntityDestroy(lua_State* L) {
 static int luaEntityIndex(lua_State* L) {
     auto key = luaL_checkstring(L, -1);
     auto e = Convert<ecs::Entity>::fromLua(L, -2);
-    if (!e) return 0;
     if (strcmp(key, "valid") == 0) {
         lua_pushboolean(L, static_cast<bool>(e));
         return 1;
@@ -83,6 +82,7 @@ static int luaEntityIndex(lua_State* L) {
     if (key[0] != '_' && luaL_getmetafield(L, -2, key) != LUA_TNIL) {
         return 1;
     }
+    if (!e) return 0;
     //Check if this a value in the entityFunctionTable
     lua_getfield(L, LUA_REGISTRYINDEX, "EFT");
     lua_getfield(L, -1, key);
