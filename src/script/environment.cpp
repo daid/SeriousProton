@@ -37,6 +37,16 @@ Environment::Environment()
 {
     getLuaState();
     lua_newtable(L);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "_G");
+
+    for(auto s : {
+        "assert", "error", "getmetatable", "ipairs", "next", "pairs", "pcall", "print", "rawequal", "rawlen", "rawget", "rawset", "select", "setmetatable", "tonumber", "tostring", "xpcall", "type", "_VERSION",
+        "table", "string", "math"
+    }) {
+        lua_getglobal(L, s);
+        lua_setfield(L, -2, s);
+    }
 
     lua_newtable(L);  /* meta table for the environment, with an __index pointing to the general global table so we can access every global function */
     lua_pushstring(L, "__index");
@@ -182,6 +192,13 @@ lua_State* Environment::getLuaState()
         lua_pop(L, 1);
         luaL_requiref(L, LUA_MATHLIBNAME, luaopen_math, 1);
         lua_pop(L, 1);
+
+        //Protect the string metatable
+        lua_pushliteral(L, "");
+        lua_getmetatable(L, -1);
+        lua_pushstring(L, "sandboxed");
+        lua_setfield(L, -2, "__metatable");
+        lua_pop(L, 2);
 
         lua_newtable(L);
         lua_setfield(L, LUA_REGISTRYINDEX, "EFT");//Entity function table.

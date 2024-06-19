@@ -191,7 +191,8 @@ std::vector<sp::ecs::Entity> CollisionSystem::queryArea(glm::vec2 lowerBound, gl
         std::swap(aabb.upperBound.x, aabb.lowerBound.x);
     if (aabb.lowerBound.y > aabb.upperBound.y)
         std::swap(aabb.upperBound.y, aabb.lowerBound.y);
-    world->QueryAABB(&callback, aabb);
+    if (world)
+        world->QueryAABB(&callback, aabb);
     return callback.list;
 }
 
