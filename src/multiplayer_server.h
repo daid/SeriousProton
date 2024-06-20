@@ -12,6 +12,7 @@
 #include "stringImproved.h"
 #include "networkAudioStream.h"
 #include "timer.h"
+#include "seqvector.h"
 
 #include <stdint.h>
 #include <unordered_map>
