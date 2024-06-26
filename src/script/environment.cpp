@@ -33,7 +33,7 @@ public:
 
 lua_State* Environment::L = nullptr;
 
-Environment::Environment()
+Environment::Environment(Environment* parent)
 {
     getLuaState();
     lua_newtable(L);
@@ -48,10 +48,12 @@ Environment::Environment()
         lua_setfield(L, -2, s);
     }
 
-    lua_newtable(L);  /* meta table for the environment, with an __index pointing to the general global table so we can access every global function */
-    lua_pushstring(L, "__index");
-    lua_pushglobaltable(L);
-    lua_rawset(L, -3);
+    lua_newtable(L);  /* meta table for the environment, with an __index pointing to the parent environment so we can access it's data. */
+    if (parent) {
+        lua_pushstring(L, "__index");
+        lua_rawgetp(L, LUA_REGISTRYINDEX, parent);
+        lua_rawset(L, -3);
+    }
     lua_pushstring(L, "sandbox");
     lua_setfield(L, -2, "__metatable");
     lua_setmetatable(L, -2);

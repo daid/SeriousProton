@@ -15,7 +15,7 @@ int luaErrorHandler(lua_State* L);
 class Environment : NonCopyable
 {
 public:
-    Environment();
+    Environment(Environment* parent=nullptr);
     ~Environment();
 
     void setGlobalFuncWithEnvUpvalue(const string& name, lua_CFunction f) {
