@@ -131,6 +131,9 @@ void GameServer::update(float /*gameDelta*/)
 {
     sp::SystemStopwatch update_run_time_clock;    //Clock used to measure how much time this update cycle is costing us.
     
+    if (last_update_time.get() < 1.0f / 60.0f) {
+        return; // Only update 60 times per second even if the game runs at higher FPS.
+    }
     //Calculate our own delta, as we want wall-time delta, the gameDelta can be modified by the current game speed (could even be 0 on pause)
     float delta = last_update_time.restart();
 
@@ -149,6 +152,9 @@ void GameServer::update(float /*gameDelta*/)
     sp::io::DataBuffer ecs_packet;
     ecs_packet << CMD_ECS_UPDATE;
     auto empty_ecs_packet_size = ecs_packet.getDataSize();
+#if MULTIPLAYER_COLLECT_DATA_STATS
+    auto ecs_overhead_size = empty_ecs_packet_size;
+#endif
     //  For each entity, check which version number we last transmitted and if it is changed, transmit creation/deletion of entities.
     ecs_entity_version.resize(sp::ecs::Entity::entity_version.size(), std::numeric_limits<uint32_t>::max());
     for(uint32_t index=0; index<sp::ecs::Entity::entity_version.size(); index++) {
@@ -170,11 +176,14 @@ void GameServer::update(float /*gameDelta*/)
         auto pre_size = ecs_packet.getDataSize();
 #endif
         ecsrb->update(ecs_packet);
+#if MULTIPLAYER_COLLECT_DATA_STATS
         ADD_MULTIPLAYER_STATS("ECS:UPDATE:" + string(typeid(*ecsrb).name()), ecs_packet.getDataSize() - pre_size);
+        ecs_overhead_size += ecs_packet.getDataSize() - pre_size;
+#endif
     }
     if (ecs_packet.getDataSize() > empty_ecs_packet_size) {
         sendAll(ecs_packet);
-        ADD_MULTIPLAYER_STATS("ECS", ecs_packet.getDataSize());
+        ADD_MULTIPLAYER_STATS("ECS:OVERHEAD", ecs_packet.getDataSize() - ecs_overhead_size);
     }
 
     std::vector<int32_t> delList;

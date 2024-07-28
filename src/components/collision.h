@@ -17,6 +17,9 @@ public:
 
     void setPosition(glm::vec2 v) { position = v; position_user_set = true; multiplayer_dirty = true; }
     void setRotation(float angle) { rotation = angle; rotation_user_set = true; multiplayer_dirty = true; }
+    // Only use the NoReplication version if the client simulates the same movement.
+    void setPositionNoReplication(glm::vec2 v) { position = v; position_user_set = true; }
+    void setRotationNoReplication(float angle) { rotation = angle; rotation_user_set = true; }
 private:
     bool position_user_set = false;
     bool rotation_user_set = false;

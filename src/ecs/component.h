@@ -30,7 +30,8 @@ template<typename T> class ComponentStorage : public ComponentStorageBase {
 
     virtual void dumpDebugInfoImpl() override
     {
-        LOG(Debug, "Component:", typeid(T).name(), " Count: ", storage.sparseset.size());
+        if (storage.sparseset.size())
+            LOG(Debug, "Component:", typeid(T).name(), " Count: ", storage.sparseset.size());
     }
 
     SparseSet<T> sparseset;
