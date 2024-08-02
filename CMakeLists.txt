@@ -176,9 +176,6 @@ set(source_files #All SeriousProton's objects to compile
     src/script/component.h
     src/script/callback.h
     src/script/callback.cpp
-    src/scriptInterface.cpp
-    src/scriptInterfaceMagic.cpp
-    src/scriptInterfaceSandbox.cpp
     src/shaderManager.cpp
     src/soundManager.cpp
     src/stringImproved.cpp
@@ -255,9 +252,6 @@ set(source_files #All SeriousProton's objects to compile
     src/rect.h
     src/Renderable.h
     src/resources.h
-    src/scriptInterface.h
-    src/scriptInterfaceMagic.h
-    src/scriptInterfaceSandbox.h
     src/shaderManager.h
     src/soundManager.h
     src/stringImproved.h

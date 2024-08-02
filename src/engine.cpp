@@ -5,7 +5,6 @@
 #include "io/keybinding.h"
 #include "soundManager.h"
 #include "windowManager.h"
-#include "scriptInterface.h"
 #include "multiplayer_server.h"
 #include "ecs/entity.h"
 #include "systems/collision.h"
@@ -192,7 +191,6 @@ void Engine::runMainLoop()
                 system->update(update_delta);
             sp::CollisionSystem::update(update_delta);
             elapsedTime += update_delta;
-            ScriptObjectLegacy::clearDestroyedObjects();
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();
@@ -238,7 +236,6 @@ void Engine::runMainLoop()
             engine_timing.update = engine_timing_stopwatch.restart();
             sp::CollisionSystem::update(delta);
             engine_timing.collision = engine_timing_stopwatch.restart();
-            ScriptObjectLegacy::clearDestroyedObjects();
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();
