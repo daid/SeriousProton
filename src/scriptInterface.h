@@ -160,6 +160,7 @@ public:
         if (lua_pcall(L, i, 1, 0))
         {
             LOG(ERROR) << "Callback function error: " << lua_tostring(L, -1);
+            last_error = lua_tostring(L, -1);
             lua_pop(L, 2);
             if constexpr (std::is_void_v<Return>)
                 return;
@@ -232,6 +233,8 @@ public:
     
     //Return the script object linked to this callback, if any.
     P<ScriptObject> getScriptObject();
+
+    static inline string last_error;
 };
 template<> void convert<ScriptSimpleCallback>::param(lua_State* L, int& idx, ScriptSimpleCallback& callback);
 
