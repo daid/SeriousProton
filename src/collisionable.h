@@ -7,6 +7,8 @@ class b2World;
 class b2Body;
 class b2Shape;
 
+#include "box2d/box2d.h"
+
 class Collisionable;
 class CollisionManager
 {
