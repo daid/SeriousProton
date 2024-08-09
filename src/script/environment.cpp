@@ -86,11 +86,6 @@ static int luaEntityIndex(lua_State* L) {
         lua_setmetatable(L, -2);
         return 1;
     }
-    auto it = ComponentRegistry::components.find(key);
-    if (it != ComponentRegistry::components.end()) {
-        LOG(Debug, "Legacy script component read ", key);
-        return it->second.getter(L, e, key);
-    }
     if (key[0] != '_' && luaL_getmetafield(L, -2, key) != LUA_TNIL) {
         return 1;
     }
@@ -131,11 +126,6 @@ static int luaEntityNewIndex(lua_State* L) {
             lua_pop(L, 1);
         }
         return 0;
-    }
-    auto it = ComponentRegistry::components.find(key);
-    if (it != ComponentRegistry::components.end()) {
-        LOG(Debug, "Legacy script component write ", key);
-        return it->second.setter(L, e, key);
     }
 
     // Store this value in the LTC.
