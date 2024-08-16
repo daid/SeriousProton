@@ -65,6 +65,7 @@ void GameClient::update(float /*delta*/)
         {
         case sp::io::network::StreamSocket::State::Closed:
             status = Disconnected;
+            disconnect_reason = DisconnectReason::FailedToConnect;
             LOG(INFO) << "GameClient: Failed to connect";
             break;
         case sp::io::network::StreamSocket::State::Connecting:

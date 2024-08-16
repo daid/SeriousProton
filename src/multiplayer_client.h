@@ -32,6 +32,7 @@ public:
     enum class DisconnectReason : uint8_t
     {
         None = 0,
+        FailedToConnect,
         VersionMismatch,
         BadCredentials,
         TimedOut,
