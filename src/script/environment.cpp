@@ -41,7 +41,7 @@ Environment::Environment(Environment* parent)
     lua_setfield(L, -2, "_G");
 
     for(auto s : {
-        "assert", "error", "getmetatable", "ipairs", "next", "pairs", "pcall", "print", "rawequal", "rawlen", "rawget", "rawset", "select", "setmetatable", "tonumber", "tostring", "xpcall", "type", "_VERSION",
+        "assert", "error", "getmetatable", "ipairs", "next", "pairs", "pcall", "rawequal", "rawlen", "rawget", "rawset", "select", "setmetatable", "tonumber", "tostring", "xpcall", "type", "_VERSION",
         "table", "string", "math"
     }) {
         lua_getglobal(L, s);
