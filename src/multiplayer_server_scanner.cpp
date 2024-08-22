@@ -30,7 +30,7 @@ void ServerScanner::scanMasterServer(string url)
         for(unsigned int n=0; n<server_list.size(); n++)
         {
             if (removedServerCallback)
-                removedServerCallback(server_list[n].address);
+                removedServerCallback(server_list[n]);
             server_list.erase(server_list.begin() + n);
             n--;
         }
@@ -57,7 +57,7 @@ void ServerScanner::scanLocalNetwork()
     for(unsigned int n=0; n<server_list.size(); n++)
     {
         if (removedServerCallback)
-            removedServerCallback(server_list[n].address);
+            removedServerCallback(server_list[n]);
         server_list.erase(server_list.begin() + n);
         n--;
     }
@@ -82,7 +82,7 @@ void ServerScanner::update(float /*gameDelta*/)
         if (server_list[n].timeout.isExpired())
         {
             if (removedServerCallback)
-                removedServerCallback(server_list[n].address);
+                removedServerCallback(server_list[n]);
             server_list.erase(server_list.begin() + n);
             n--;
         }
@@ -108,19 +108,19 @@ void ServerScanner::update(float /*gameDelta*/)
             recv_packet >> verification >> version_nr >> name;
             if (verification == multiplayerVerficationNumber && (version_nr == version_number || version_nr == 0 || version_number == 0))
             {
-                updateServerEntry(recv_address, recv_port, name);
+                updateServerEntry(ServerType::LAN, recv_address, recv_port, name);
             }
         }
     }
 }
 
-void ServerScanner::updateServerEntry(sp::io::network::Address address, int port, string name)
+void ServerScanner::updateServerEntry(ServerType type, sp::io::network::Address address, int port, string name)
 {
     std::lock_guard<std::mutex> guard(server_list_mutex);
 
     for(unsigned int n=0; n<server_list.size(); n++)
     {
-        if (server_list[n].address == address)
+        if (server_list[n].type == type && server_list[n].address == address)
         {
             server_list[n].port = port;
             server_list[n].name = name;
@@ -131,6 +131,7 @@ void ServerScanner::updateServerEntry(sp::io::network::Address address, int port
 
     LOG(INFO) << "ServerScanner::New server: " << address.getHumanReadable()[0] << " " << port << " " << name;
     ServerInfo si;
+    si.type = type;
     si.address = address;
     si.port = port;
     si.name = name;
@@ -138,10 +139,10 @@ void ServerScanner::updateServerEntry(sp::io::network::Address address, int port
     server_list.push_back(si);
     
     if (newServerCallback)
-        newServerCallback(address, name);
+        newServerCallback(si);
 }
 
-void ServerScanner::addCallbacks(std::function<void(sp::io::network::Address, string)> newServerCallbackIn, std::function<void(sp::io::network::Address)> removedServerCallbackIn)
+void ServerScanner::addCallbacks(std::function<void(const ServerInfo&)> newServerCallbackIn, std::function<void(const ServerInfo&)> removedServerCallbackIn)
 {
     this->newServerCallback = newServerCallbackIn;
     this->removedServerCallback = removedServerCallbackIn;
@@ -208,7 +209,7 @@ void ServerScanner::masterServerScanThread()
                 
                 if (version == version_number || version == 0 || version_number == 0)
                 {
-                    updateServerEntry(address, part_port, name);
+                    updateServerEntry(ServerType::MasterServer, address, part_port, name);
                 }
             }
         }
