@@ -13,6 +13,7 @@ class ServerScanner : public Updatable
 {
 public:
     enum class ServerType {
+        Manual,
         LAN,
         MasterServer,
         SteamFriend,
@@ -21,7 +22,7 @@ public:
     {
         ServerType type;
         sp::io::network::Address address;
-        int port;
+        uint64_t port;
         string name;
 
         sp::SystemTimer timeout;
@@ -43,19 +44,20 @@ public:
 private:
     void masterServerScanThread();
     
-    void updateServerEntry(ServerType type, sp::io::network::Address address, int port, string name);
+    void updateServerEntry(const ServerInfo& info);
 
     int server_port;
     std::unique_ptr<sp::io::network::UdpSocket> socket;
     sp::SystemTimer broadcast_timer;
 
-    std::vector<struct ServerInfo> server_list;
+    std::vector<ServerInfo> server_list;
     int version_number;
     constexpr static float BroadcastTimeout = 2.0f;
     constexpr static float ServerTimeout = 30.0f;
 
     string master_server_url;
-    std::mutex server_list_mutex;
+    std::mutex master_server_list_mutex;
+    std::vector<ServerInfo> master_server_update_list;
     std::thread master_server_scan_thread;
     std::condition_variable abort_wait;
 
