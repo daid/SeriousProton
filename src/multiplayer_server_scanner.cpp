@@ -81,7 +81,7 @@ void ServerScanner::update(float /*gameDelta*/)
             recv_packet >> verification >> version_nr >> name;
             if (verification == multiplayerVerficationNumber && (version_nr == version_number || version_nr == 0 || version_number == 0))
             {
-                updateServerEntry({ServerType::LAN, recv_address, recv_port, name, {}});
+                updateServerEntry({ServerType::LAN, recv_address, uint64_t(recv_port), name, {}});
             }
         }
     }
@@ -172,7 +172,7 @@ void ServerScanner::masterServerScanThread()
                 if (version == version_number || version == 0 || version_number == 0)
                 {
                     master_server_list_mutex.lock();
-                    master_server_update_list.push_back({ServerType::MasterServer, address, part_port, name, {}});
+                    master_server_update_list.push_back({ServerType::MasterServer, address, uint64_t(part_port), name, {}});
                     master_server_list_mutex.unlock();
                 }
             }
