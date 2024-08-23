@@ -6,6 +6,7 @@
 #include "result.h"
 #include "resources.h"
 #include <lua/lua.hpp>
+#include <functional>
 
 
 namespace sp::script {
@@ -49,6 +50,52 @@ public:
 
     template<typename T> Result<T> run(const string& code) {
         return runImpl<T>(code, "=[string]");
+    }
+
+    Result<void> runWithStringResults(const string& code, std::function<void(const string&)> callback) {
+        lua_pushcfunction(L, luaErrorHandler);
+
+        // try the code as a return first
+        // syntactically `return foo(); bar()` doesn't work in Lua, so if this compiles it was definitely a single statement
+        string returncode = "return " + code + ";";
+
+        int result = luaL_loadbufferx(L, returncode.c_str(), returncode.length(), "=[string]", "t");
+        if (result) {
+            lua_pop(L, 1); // pop the returned error message, try again without `return`
+            result = luaL_loadbufferx(L, code.c_str(), code.length(), "=[string]", "t");
+            if (result) {
+                auto res = Result<void>::makeError(luaL_checkstring(L, -1));
+                lua_pop(L, 2);
+                return res;
+            }
+        }
+
+        //Get the environment table from the registry.
+        lua_rawgetp(L, LUA_REGISTRYINDEX, this);
+        //set the environment table it as 1st upvalue
+        lua_setupvalue(L, -2, 1);
+
+        int top = lua_gettop(L);
+
+        result = lua_pcall(L, 0, LUA_MULTRET, -2);
+        if (result)
+        {
+            auto result = Result<void>::makeError(lua_tostring(L, -1));
+            lua_pop(L, 2);
+            return result;
+        }
+
+        // function got popped, return value(s) got pushed; if there's still an element at `top` then it's the first return, and `newtop` is the last return.
+        int newtop = lua_gettop(L); // top - 1 + <n return values>
+
+        for (int i = top; i <= newtop; i++) {
+            const char *str = luaL_tolstring(L, i, nullptr);
+            callback(str);
+            lua_pop(L, 1); // pop the string that luaL_tolstring made
+        }
+
+        lua_pop(L, 1 + (newtop - top + 1)); // pop errorhandler + return values from stack
+        return {};
     }
 
     template<typename T, typename... ARGS> Result<T> call(const string& function_name, const ARGS&... args) {
