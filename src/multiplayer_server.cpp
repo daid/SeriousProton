@@ -59,6 +59,7 @@ GameServer::GameServer(string server_name, int version_number, int listen_port)
     if (!listen_steam.listen())
     {
         LOG(Error, "Failed to listen for steam P2P connections");
+        steam_debug_log += "listen_steam.listen failed\n";
     }
 #endif
 #if MULTIPLAYER_COLLECT_DATA_STATS

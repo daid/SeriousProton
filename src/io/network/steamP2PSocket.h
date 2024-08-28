@@ -3,6 +3,10 @@
 
 #include <io/network/streamSocket.h>
 
+#include <stringImproved.h>
+extern string steam_debug_status;
+extern string steam_debug_log;
+
 
 namespace sp {
 namespace io {

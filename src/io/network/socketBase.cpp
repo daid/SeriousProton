@@ -16,6 +16,9 @@
 static constexpr intptr_t INVALID_SOCKET = -1;
 #endif
 
+string steam_debug_status;
+string steam_debug_log;
+
 
 namespace sp {
 namespace io {

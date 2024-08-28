@@ -39,6 +39,7 @@ Engine::Engine()
     }
     SteamNetworkingUtils()->InitRelayNetworkAccess();
     LOG(Debug, "SteamID:", SteamAPI_ISteamUser_GetSteamID(SteamAPI_SteamUser()));
+    steam_debug_status = "SteamID: " + std::to_string(SteamAPI_ISteamUser_GetSteamID(SteamAPI_SteamUser()));
 #endif
 
 #ifdef WIN32

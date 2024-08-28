@@ -18,6 +18,8 @@ SteamP2PSocket::~SteamP2PSocket()
 bool SteamP2PSocket::connect(uint64_t steam_id)
 {
     close();
+    steam_debug_log += "Going to connect to steam:" + std::to_string(steam_id) + "\n";
+    steam_debug_log += "relay status: " + string(SteamNetworkingUtils()->GetRelayNetworkStatus(nullptr)) + "\n";
     SteamNetworkingIdentity id;
     id.SetSteamID64(steam_id);
     handle = SteamNetworkingSockets()->ConnectP2P(id, 0, 0, nullptr);
@@ -35,14 +37,18 @@ void SteamP2PSocket::close()
 
 StreamSocket::State SteamP2PSocket::getState()
 {
-    if (handle == 0)
+    if (handle == 0) {
+        steam_debug_status = "Socket status: no handle";
         return StreamSocket::State::Closed;
+    }
     SteamNetConnectionRealTimeStatus_t status;
     if (SteamNetworkingSockets()->GetConnectionRealTimeStatus(handle, &status, 0, nullptr) != k_EResultOK)
     {
+        steam_debug_status = "Failed to get status";
         close();
         return StreamSocket::State::Closed;
     }
+    steam_debug_status = "Socket status: " + string(status.m_eState);
     switch(status.m_eState)
     {
 	case k_ESteamNetworkingConnectionState_Connecting:

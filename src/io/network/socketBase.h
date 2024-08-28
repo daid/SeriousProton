@@ -4,6 +4,9 @@
 #include <cstdint>
 #include "nonCopyable.h"
 
+#include <stringImproved.h>
+extern string steam_debug_status;
+extern string steam_debug_log;
 
 namespace sp {
 namespace io {

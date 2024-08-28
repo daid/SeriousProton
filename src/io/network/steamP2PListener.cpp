@@ -12,6 +12,7 @@ static std::vector<uint32_t> new_connections;
 
 static void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pInfo )
 {
+    steam_debug_log += "OnSteamNetConnectionStatusChanged:" + string(pInfo->m_info.m_eState) + "\n";
     switch(pInfo->m_info.m_eState)
 	{
     case k_ESteamNetworkingConnectionState_Connecting:
@@ -39,6 +40,7 @@ bool SteamP2PListener::listen()
 {
     if (handle)
         return true;
+    steam_debug_log += "Going to create listen socket, relay status: " + string(SteamNetworkingUtils()->GetRelayNetworkStatus(nullptr)) + "\n";
     handle = SteamNetworkingSockets()->CreateListenSocketP2P(0, 0, nullptr);
     return handle != 0;
 }
