@@ -116,7 +116,7 @@ void CollisionSystem::update(float delta)
     for(b2Body* body = world->GetBodyList(); body; body = body->GetNext()) {
         sp::ecs::Entity* entity_ptr = (sp::ecs::Entity*)body->GetUserData();
         Transform* transform;
-        Physics* physics;
+        Physics* physics = nullptr;
         if (!*entity_ptr || !(physics = entity_ptr->getComponent<Physics>()) || !(transform = entity_ptr->getComponent<Transform>())) {
             delete entity_ptr;
             remove_list.push_back(body);
