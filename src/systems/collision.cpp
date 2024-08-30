@@ -116,10 +116,16 @@ void CollisionSystem::update(float delta)
     for(b2Body* body = world->GetBodyList(); body; body = body->GetNext()) {
         sp::ecs::Entity* entity_ptr = (sp::ecs::Entity*)body->GetUserData();
         Transform* transform;
-        Physics* physics;
+        Physics* physics = nullptr;
         if (!*entity_ptr || !(physics = entity_ptr->getComponent<Physics>()) || !(transform = entity_ptr->getComponent<Transform>())) {
             delete entity_ptr;
             remove_list.push_back(body);
+            if (physics) {
+                // if we have a physics component (thus only missing transform), set it so
+                // that we'll recreate the body if the entity gets a transform again later
+                physics->physics_dirty = true;
+                physics->body = nullptr;
+            }
         } else {
             transform->position = b2v(body->GetPosition());
             transform->rotation = glm::degrees(body->GetAngle());
