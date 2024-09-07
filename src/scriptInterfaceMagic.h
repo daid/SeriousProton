@@ -127,16 +127,6 @@ struct convert<T*>
         lua_pushstring(L, "__ptr");
         lua_rawget(L, idx++);
         
-        if (!lua_isuserdata(L, -1))
-        {
-            ptr = NULL;
-            if (lua_rawequal(L, -1, -2))
-                return; // GCed object, just convert to NULL
-            const char *msg = lua_pushfstring(L, "Object expected, got table");
-            luaL_argerror(L, idx-1, msg);
-            return;
-        }
-
         P<PObject>** p = static_cast< P<PObject>** >(lua_touserdata(L, -1));
         lua_pop(L, 1);
         if (p == NULL)
@@ -144,6 +134,11 @@ struct convert<T*>
             ptr = NULL;
             const char *msg = lua_pushfstring(L, "Object expected, got %s", luaL_typename(L, idx-1));
             luaL_argerror(L, idx-1, msg);
+            return;
+        }
+        if (*p == NULL)
+        {
+            ptr = NULL;
             return;
         }
         ptr = dynamic_cast<T*>(***p);
@@ -165,13 +160,6 @@ struct convert<P<T>>
         }
         lua_pushstring(L, "__ptr");
         lua_rawget(L, idx++);
-        if (!lua_isuserdata(L, -1))
-        {
-            ptr = NULL;
-            const char* msg = lua_pushfstring(L, "Object expected, got %s", lua_rawequal(L, -1, -2) ? "destroyed object" : "table");
-            luaL_argerror(L, idx-1, msg);
-            return;
-        }
         
         P<PObject>** p = static_cast< P<PObject>** >(lua_touserdata(L, -1));
         lua_pop(L, 1);
@@ -179,6 +167,13 @@ struct convert<P<T>>
         {
             ptr = NULL;
             const char *msg = lua_pushfstring(L, "Object expected, got %s", luaL_typename(L, idx-1));
+            luaL_argerror(L, idx-1, msg);
+            return;
+        }
+        if (*p == NULL)
+        {
+            ptr = NULL;
+            const char* msg = lua_pushliteral(L, "Object expected, got destroyed object");
             luaL_argerror(L, idx-1, msg);
             return;
         }
@@ -546,13 +541,10 @@ public:
         if (lua_isuserdata(L, -1)) //When a subclass is destroyed, it's metatable might call the __gc function on it's sub-metatable. So we can get nil values here, ignore that.
         {
             PT* p = static_cast< PT* >(lua_touserdata(L, -1));
-            if (*p)
+            if (*p) {
                 delete *p;
-
-            // Clear the __ptr so we don't try to deref it if Lua can still see this table
-            lua_pushstring(L, "__ptr");
-            lua_pushvalue(L, -3); // set `v.__ptr = v` for easy checking that this has happened later
-            lua_rawset(L, -4);
+                *p = nullptr;
+            }
         }
         lua_pop(L, 1);
         return 0;
