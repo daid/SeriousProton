@@ -136,6 +136,11 @@ struct convert<T*>
             luaL_argerror(L, idx-1, msg);
             return;
         }
+        if (*p == NULL)
+        {
+            ptr = NULL;
+            return;
+        }
         ptr = dynamic_cast<T*>(***p);
         //printf("ObjParam: %p\n", ptr);
     }
@@ -162,6 +167,13 @@ struct convert<P<T>>
         {
             ptr = NULL;
             const char *msg = lua_pushfstring(L, "Object expected, got %s", luaL_typename(L, idx-1));
+            luaL_argerror(L, idx-1, msg);
+            return;
+        }
+        if (*p == NULL)
+        {
+            ptr = NULL;
+            const char* msg = lua_pushliteral(L, "Object expected, got destroyed object");
             luaL_argerror(L, idx-1, msg);
             return;
         }
@@ -529,8 +541,10 @@ public:
         if (lua_isuserdata(L, -1)) //When a subclass is destroyed, it's metatable might call the __gc function on it's sub-metatable. So we can get nil values here, ignore that.
         {
             PT* p = static_cast< PT* >(lua_touserdata(L, -1));
-            if (*p)
+            if (*p) {
                 delete *p;
+                *p = nullptr;
+            }
         }
         lua_pop(L, 1);
         return 0;
