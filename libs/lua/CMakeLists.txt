@@ -16,6 +16,7 @@ set(source_files
 	ldump.c
 	lfunc.c
 	lgc.c
+	linit.c
 	llex.c
 	lmathlib.c
 	lmem.c
