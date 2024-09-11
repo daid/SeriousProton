@@ -9,6 +9,13 @@
 
 namespace sp::script {
 
+// Special class to capture all results of a run/call as a list of strings.
+class CaptureAllResults
+{
+public:
+    std::vector<string> result;
+};
+
 template<typename T> struct Convert {};
 template<> struct Convert<bool> {
     static int toLua(lua_State* L, bool value) { lua_pushboolean(L, value); return 1; }
@@ -58,6 +65,19 @@ template<> struct Convert<ecs::Entity> {
 template<typename T> struct Convert<std::optional<T>> {
     static int toLua(lua_State* L, std::optional<T> value) { if (value.has_value()) return Convert<T>::toLua(L, value.value()); lua_pushnil(L); return 1; }
     static std::optional<T> fromLua(lua_State* L, int idx) { if (idx <= lua_gettop(L) && !lua_isnil(L, idx)) return Convert<T>::fromLua(L, idx); return {}; }
+};
+
+template<> struct Convert<CaptureAllResults> {
+    static CaptureAllResults fromLua(lua_State* L, int idx) {
+        CaptureAllResults res;
+        int nres = lua_gettop(L);
+        for(int n=2; n<=nres; n++) {
+            auto s = luaL_tolstring(L, n, nullptr);
+            lua_pop(L, 1);
+            res.result.push_back(s);
+        }
+        return res;
+    }
 };
 
 template<typename RET, typename... ARGS> struct Convert<RET(*)(ARGS...)> {

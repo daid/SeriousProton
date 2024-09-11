@@ -82,11 +82,12 @@ public:
 
 private:
     template<typename T> Result<T> runImpl(const string& code, const string& name="=[string]") {
+        int stack_size = lua_gettop(L);
         lua_pushcfunction(L, luaErrorHandler);
         int result = luaL_loadbufferx(L, code.c_str(), code.length(), name.c_str(), "t");
         if (result) {
             auto res = Result<T>::makeError(luaL_checkstring(L, -1));
-            lua_pop(L, 2);
+            lua_settop(L, stack_size);
             return res;
         }
 
@@ -95,20 +96,23 @@ private:
         //set the environment table it as 1st upvalue
         lua_setupvalue(L, -2, 1);
         
-        result = lua_pcall(L, 0, 1, -2);
-        if (result)
-        {
+        int result_count = 1;
+        if constexpr (std::is_same_v<T, CaptureAllResults>) {
+            result_count = LUA_MULTRET;
+        }
+        result = lua_pcall(L, 0, result_count, -2);
+        if (result) {
             auto result = Result<T>::makeError(lua_tostring(L, -1));
-            lua_pop(L, 2);
+            lua_settop(L, stack_size);
             return result;
         }
 
         if constexpr (!std::is_void_v<T>) {
             auto return_value = Convert<T>::fromLua(L, -1);
-            lua_pop(L, 2);
+            lua_settop(L, stack_size);
             return return_value;
         } else {
-            lua_pop(L, 2);
+            lua_settop(L, stack_size);
             return {};
         }
     }
