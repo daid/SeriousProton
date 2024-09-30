@@ -562,7 +562,11 @@ void GameServer::generateCreatePacketFor(P<MultiplayerObject> obj, sp::io::DataB
     for(unsigned int n=0; n<obj->memberReplicationInfo.size(); n++)
     {
         packet << int16_t(n);
-        (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
+        if (obj->memberReplicationInfo[n].sendWholeFunction)
+            (obj->memberReplicationInfo[n].sendWholeFunction)(obj->memberReplicationInfo[n].ptr, packet);
+        else
+            (obj->memberReplicationInfo[n].sendFunction)(obj->memberReplicationInfo[n].ptr, packet);
+
     }
 }
 
