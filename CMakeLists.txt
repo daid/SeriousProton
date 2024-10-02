@@ -77,7 +77,7 @@ else()
     endif()
 endif()
 
-add_subdirectory(libs/Box2D)
+add_subdirectory(libs/box2d)
 add_subdirectory(libs/glad)
 
 # See cmake/GenerateGlDebug.cmake for details.
