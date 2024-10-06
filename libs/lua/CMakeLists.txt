@@ -41,6 +41,7 @@ add_library(lua STATIC ${source_files})
 target_include_directories(lua
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>)
+target_compile_definitions(lua PRIVATE LUA_COMPAT_MATHLIB)
 
 #--------------------------------Installation----------------------------------
 install(
