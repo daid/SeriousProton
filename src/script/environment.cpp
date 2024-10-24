@@ -138,7 +138,9 @@ static int luaEntityNewIndex(lua_State* L) {
 }
 
 static int luaEntityComponentsIndex(lua_State* L) {
-    auto e = Convert<ecs::Entity>::fromLua(L, -2);
+    auto eptr = lua_touserdata(L, -2);
+    if (!eptr) return 0;
+    auto e = *static_cast<ecs::Entity*>(eptr);
     if (!e) return 0;
 
     auto key = luaL_checkstring(L, -1);
@@ -150,7 +152,9 @@ static int luaEntityComponentsIndex(lua_State* L) {
 }
 
 static int luaEntityComponentsNewIndex(lua_State* L) {
-    auto e = Convert<ecs::Entity>::fromLua(L, -3);
+    auto eptr = lua_touserdata(L, -3);
+    if (!eptr) return 0;
+    auto e = *static_cast<ecs::Entity*>(eptr);
     if (!e) return 0;
 
     auto key = luaL_checkstring(L, -2);
@@ -195,6 +199,7 @@ lua_State* Environment::getLuaState()
         lua_newtable(L);
         lua_setfield(L, LUA_REGISTRYINDEX, "EFT");//Entity function table.
 
+        lua_pushlightuserdata(L, nullptr); // Push a "null" entity to set the metatable on
         luaL_newmetatable(L, "entity");
         lua_pushcfunction(L, luaEntityIsValid);
         lua_setfield(L, -2, "isValid");
@@ -208,6 +213,7 @@ lua_State* Environment::getLuaState()
         lua_setfield(L, -2, "__eq");
         lua_pushstring(L, "sandboxed");
         lua_setfield(L, -2, "__metatable");
+        lua_setmetatable(L, -2); // Set the metatable on lightuserdata, which applies for all lightuserdata
         lua_pop(L, 1);
 
         luaL_newmetatable(L, "entity_components");

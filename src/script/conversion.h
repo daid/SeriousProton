@@ -46,19 +46,16 @@ template<> struct Convert<lua_CFunction> {
 };
 template<> struct Convert<ecs::Entity> {
     static int toLua(lua_State* L, ecs::Entity value) {
-        *static_cast<ecs::Entity*>(lua_newuserdata(L, sizeof(ecs::Entity))) = value;
-        luaL_getmetatable(L, "entity");
-        lua_setmetatable(L, -2);
+        static_assert(sizeof(void*) == sizeof(ecs::Entity));
+        lua_pushlightuserdata(L, *reinterpret_cast<void**>(&value));
         return 1;
     }
     static ecs::Entity fromLua(lua_State* L, int idx) {
-        auto ptr = luaL_testudata(L, idx, "entity");
-        if (!ptr) {
-            ptr = luaL_testudata(L, idx, "entity_components");
-            if (!ptr)
-                return {};
-        }
-        return *static_cast<ecs::Entity*>(ptr);
+        static_assert(sizeof(void*) == sizeof(ecs::Entity));
+        if (!lua_islightuserdata(L, idx))
+            return {};
+        auto ptr = lua_touserdata(L, idx);
+        return *reinterpret_cast<ecs::Entity*>(&ptr);
     }
 };
 
