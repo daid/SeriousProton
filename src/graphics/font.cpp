@@ -68,7 +68,7 @@ Font::PreparedFontString Font::prepare(std::string_view s, int pixel_size, float
         position.x += glyph.advance * size_scale;
         if ((flags & FlagLineWrap) && position.x > area_size.x)
         {
-            //Try to wrap the line by going back to the last space character and replace that with a newline.
+            //Try to wrap the line by going back to the last space character and replace that with a newline. If a '-' is found first, keep it and just add a newline.
             for(int n=static_cast<int>(result.data.size())-2; (n > 0) && (result.data[n].char_code != 0); n--)
             {
                 if (result.data[n].char_code == ' ')
@@ -76,6 +76,16 @@ Font::PreparedFontString Font::prepare(std::string_view s, int pixel_size, float
                     result.data[n].char_code = 0;
                     index = result.data[n + 1].string_offset;
                     result.data.resize(n + 1);
+                    position.x = 0.0f;
+                    position.y += line_spacing;
+                    break;
+                }
+                if (result.data[n].char_code == '-')
+                {
+                    index = result.data[n + 1].string_offset;
+                    result.data.resize(n + 1);
+                    result.data.push_back(result.data.back());
+                    result.data.back().char_code = 0;
                     position.x = 0.0f;
                     position.y += line_spacing;
                     break;

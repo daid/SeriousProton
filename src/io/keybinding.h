@@ -121,7 +121,7 @@ private:
     static void updateKeys(int key_number, float value);
     
     static Keybinding* keybindings;
-    Keybinding* next;
+    Keybinding* next=nullptr;
     static Keybinding* rebinding_key;
     static Type rebinding_type;
     

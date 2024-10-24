@@ -487,6 +487,14 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture, glm
     {
         for(int y=0; y<tile_count.y; y++)
         {
+            if(vertex_data.size() >= std::numeric_limits<uint64_t>::max() - 4)
+            {
+                if (info.texture)
+                    finish(info.texture);
+                else
+                    finish();
+            }
+
             auto n = vertex_data.size();
             index_data.insert(index_data.end(), {
                 uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
@@ -600,6 +608,9 @@ void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
 
 void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
 {
+    if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
+        finish();
+
     auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
         uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
@@ -622,7 +633,7 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
     glm::u8vec4 color)
 {
     auto info = getTextureInfo(texture);
-    if (info.texture)
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
         finish();
     auto& uv_rect = info.uv_rect;
 
@@ -747,6 +758,9 @@ void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& p
             p2 += rect.position;
             p3 += rect.position;
 
+            if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
+                finish();
+
             auto n = vertex_data.size();
             index_data.insert(index_data.end(), {
                 uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
@@ -815,6 +829,9 @@ void RenderTarget::drawRotatedText(glm::vec2 center, float rotation, std::string
             glm::vec2 p2 = mat * glm::vec2{left, bottom} + center;
             glm::vec2 p3 = mat * glm::vec2{right, bottom} + center;
 
+            if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
+                finish();
+
             auto n = vertex_data.size();
             index_data.insert(index_data.end(), {
                 uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
@@ -845,7 +862,7 @@ void RenderTarget::drawStretched(sp::Rect rect, std::string_view texture, glm::u
 void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
     auto info = getTextureInfo(texture);
-    if (info.texture)
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 8U)
         finish();
     auto& uv_rect = info.uv_rect;
 
@@ -894,7 +911,7 @@ void RenderTarget::drawStretchedH(sp::Rect rect, std::string_view texture, glm::
 void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, glm::u8vec4 color)
 {
     auto info = getTextureInfo(texture);
-    if (info.texture)
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 8U)
         finish();
     auto& uv_rect = info.uv_rect;
 
@@ -943,7 +960,7 @@ void RenderTarget::drawStretchedV(sp::Rect rect, std::string_view texture, glm::
 void RenderTarget::drawStretchedHV(sp::Rect rect, float corner_size, std::string_view texture, glm::u8vec4 color)
 {
     auto info = getTextureInfo(texture);
-    if (info.texture)
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 16U)
         finish();
     auto& uv_rect = info.uv_rect;
 
@@ -1035,7 +1052,7 @@ void RenderTarget::drawStretchedHVClipped(sp::Rect rect, sp::Rect clip_rect, flo
         return;
 
     auto info = getTextureInfo(texture);
-    if (info.texture)
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 16U)
         finish();
     const auto& uv_rect = info.uv_rect;
 
