@@ -146,6 +146,7 @@ void Engine::runMainLoop()
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();
+            SteamGameServer_RunCallbacks();
 #endif
             std::this_thread::sleep_for(std::chrono::duration<float>(1.f/60.f - delta));
         }
@@ -190,6 +191,7 @@ void Engine::runMainLoop()
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();
+            SteamGameServer_RunCallbacks();
 #endif
 
             // Clear the window
