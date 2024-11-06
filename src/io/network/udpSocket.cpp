@@ -23,7 +23,11 @@ static inline int sendto(SOCKET s, const void* msg, size_t len, int flags, const
 #include <arpa/inet.h>
 #include <string.h>
 #include <netdb.h>
+#if defined(__APPLE__)
+static constexpr int flags = 0;
+#else
 static constexpr int flags = MSG_NOSIGNAL;
+#endif
 static constexpr intptr_t INVALID_SOCKET = -1;
 // Define IPV6_ADD_MEMBERSHIP for FreeBSD and Mac OS X
 #ifndef IPV6_ADD_MEMBERSHIP
