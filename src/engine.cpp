@@ -51,7 +51,6 @@ Engine::Engine()
         if (_NSGetExecutablePath(exe_path, &size) != 0)
         {
           fprintf(stderr, "Failed to get executable path.\n");
-          return 1;
         }
 
         char *exe_realpath = realpath(exe_path, NULL);
