@@ -2,7 +2,9 @@
 #include "multiplayer.h"
 #include "multiplayer_internal.h"
 #include "engine.h"
+#include "components/multiplayer.h"
 
+#include "ecs/multiplayer.h"
 #include "io/network/tcpSocket.h"
 #ifdef STEAMSDK
 #include "io/network/steamP2PSocket.h"
@@ -247,6 +249,62 @@ void GameClient::update(float /*delta*/)
                 reply.clear();
                 reply << CMD_ALIVE_RESP;
                 socket->send(reply);
+                break;
+            case CMD_ECS_UPDATE:
+                while(packet.available())
+                {
+                    uint8_t ecs_cmd;
+                    packet >> ecs_cmd;
+                    switch(ecs_cmd)
+                    {
+                    case CMD_ECS_ENTITY_CREATE:
+                        {
+                            uint32_t index, version;
+                            packet >> index >> version;
+                            if (index >= entity_mapping.size())
+                                entity_mapping.resize(index + 1);
+                            entity_mapping[index] = sp::ecs::Entity::create();
+                            entity_mapping[index].addComponent<ServerIndex>(index, version);
+                        }
+                        break;
+                    case CMD_ECS_ENTITY_DESTROY:
+                        {
+                            uint32_t index;
+                            packet >> index;
+                            if (index < entity_mapping.size())
+                                entity_mapping[index].destroy();
+                        }
+                        break;
+                    case CMD_ECS_SET_COMPONENT:
+                        {
+                            uint16_t component_index;
+                            uint32_t index;
+                            packet >> component_index >> index;
+                            if (component_index < sp::ecs::MultiplayerReplication::list.size()) {
+                                if (index < entity_mapping.size() && entity_mapping[index]) {
+                                    sp::ecs::MultiplayerReplication::list[component_index]->receive(entity_mapping[index], packet);
+                                } else {
+                                    LOG(Error, "MP: ECS set component of unknown entity: ", index);
+                                }
+                            } else {
+                                LOG(Error, "MP: ECS set component of unknown component index: ", component_index);
+                            }
+                        }
+                        break;
+                    case CMD_ECS_DEL_COMPONENT:
+                        {
+                            uint16_t component_index;
+                            uint32_t index;
+                            packet >> component_index >> index;
+                            if (component_index < sp::ecs::MultiplayerReplication::list.size())
+                                if (index < entity_mapping.size() && entity_mapping[index])
+                                    sp::ecs::MultiplayerReplication::list[component_index]->remove(entity_mapping[index]);
+                        }
+                        break;
+                    default:
+                        LOG(Error, "Unknown ECS command in packet?...");
+                    }
+                }
                 break;
             default:
                 LOG(ERROR) << "Unknown command from server: " << command;

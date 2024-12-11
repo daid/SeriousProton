@@ -101,6 +101,11 @@ public:
         writeVLQu(i);
     }
 
+    void write(uint64_t i)
+    {
+        writeVLQu64(i);
+    }
+
     void write(const float f)
     {
         appendRaw(&f, sizeof(f));
@@ -124,11 +129,11 @@ public:
     {
         appendRaw(other.buffer.data(), other.buffer.size());
     }
-    
-    template<typename T, typename... ARGS> void read(T& value, ARGS&... args)
-    {
-        read(value);
-        read(args...);
+
+    template<typename... T> std::tuple<T...> read() {
+        std::tuple<T...> result;
+        std::apply([this](auto&... v) { ((*this >> v), ...); }, result);
+        return result;
     }
 
     void read(bool& b)
@@ -166,6 +171,11 @@ public:
     void read(uint32_t& i)
     {
         i = readVLQu();
+    }
+
+    void read(uint64_t& i)
+    {
+        i = readVLQu64();
     }
 
     void read(float& f)
@@ -207,6 +217,7 @@ public:
     DataBuffer& operator <<(uint16_t data) { write(data); return *this; }
     DataBuffer& operator <<(int32_t data) { write(data); return *this; }
     DataBuffer& operator <<(uint32_t data) { write(data); return *this; }
+    DataBuffer& operator <<(uint64_t data) { write(data); return *this; }
     DataBuffer& operator <<(float data) { write(data); return *this; }
     DataBuffer& operator <<(double data) { write(data); return *this; }
     DataBuffer& operator <<(std::string_view data) { write(data); return *this; }
@@ -218,9 +229,13 @@ public:
     DataBuffer& operator >>(uint16_t& data) { read(data); return *this; }
     DataBuffer& operator >>(int32_t& data) { read(data); return *this; }
     DataBuffer& operator >>(uint32_t& data) { read(data); return *this; }
+    DataBuffer& operator >>(uint64_t& data) { read(data); return *this; }
     DataBuffer& operator >>(float& data) { read(data); return *this; }
     DataBuffer& operator >>(double& data) { read(data); return *this; }
     DataBuffer& operator >>(string& data) { read(data); return *this; }
+
+    template<typename T, class=typename std::enable_if_t< std::is_enum_v<T>>> DataBuffer& operator <<(T data) { write(int(data)); return *this; }
+    template<typename T, class=typename std::enable_if_t< std::is_enum_v<T>>> DataBuffer& operator >>(T& data) { int n = 0; read(n); data = T(n); return *this; }
 private:
     void writeVLQu(uint32_t v) {
         if (v >= (1 << 28))
@@ -230,6 +245,28 @@ private:
         if (v >= (1 << 14))
             buffer.push_back((v >> 14) | 0x80);
         if (v >= (1 << 7))
+            buffer.push_back((v >> 7) | 0x80);
+        buffer.push_back((v & 0x7F));
+    }
+
+    void writeVLQu64(uint64_t v) {
+        if (v >= (1ULL << 63))
+            buffer.push_back((v >> 63) | 0x80);
+        if (v >= (1ULL << 56))
+            buffer.push_back((v >> 56) | 0x80);
+        if (v >= (1ULL << 49))
+            buffer.push_back((v >> 49) | 0x80);
+        if (v >= (1ULL << 42))
+            buffer.push_back((v >> 42) | 0x80);
+        if (v >= (1ULL << 35))
+            buffer.push_back((v >> 35) | 0x80);
+        if (v >= (1ULL << 28))
+            buffer.push_back((v >> 28) | 0x80);
+        if (v >= (1ULL << 21))
+            buffer.push_back((v >> 21) | 0x80);
+        if (v >= (1ULL << 14))
+            buffer.push_back((v >> 14) | 0x80);
+        if (v >= (1ULL << 7))
             buffer.push_back((v >> 7) | 0x80);
         buffer.push_back((v & 0x7F));
     }
@@ -244,6 +281,20 @@ private:
     uint32_t readVLQu()
     {
         uint32_t result{0};
+        uint8_t u;
+        do
+        {
+            result <<= 7;
+            if (read_index >= buffer.size()) { return result; }
+            u = buffer[read_index++];
+            result |= u & 0x7F;
+        } while(u & 0x80);
+        return result;
+    }
+
+    uint64_t readVLQu64()
+    {
+        uint64_t result{0};
         uint8_t u;
         do
         {

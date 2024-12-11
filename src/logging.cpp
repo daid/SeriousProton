@@ -16,11 +16,9 @@
 #define SP_LOGGING_FALLBACK_STDIO 0
 #endif
 
-#if SP_LOGGING_FALLBACK_STDIO
 #include <cstdio>
-#else
 #include <SDL_rwops.h>
-#endif
+
 
 namespace
 {
@@ -34,28 +32,31 @@ namespace
         "[CRITICAL]: "
     };
 
-    void sdlCallback(void* userdata, int /*category*/, SDL_LogPriority priority, const char* message)
+    void stdioCallback(void* userdata, int /*category*/, SDL_LogPriority priority, const char* message)
     {
-#if SP_LOGGING_FALLBACK_STDIO
         auto stream = static_cast<FILE*>(userdata);
         auto write = [stream](const void* buffer, size_t size, size_t num)
         {
             return fwrite(buffer, size, num, stream);
         };
-#else
+        const auto& label = priority_labels[priority];
+        write(label.data(), label.size(), 1);
+        write(message, SDL_strlen(message), 1);
+        write("\n", 1, 1);
+        fflush(stream);
+    }
+
+    void sdlCallback(void* userdata, int /*category*/, SDL_LogPriority priority, const char* message)
+    {
         auto stream = static_cast<SDL_RWops*>(userdata);
         auto write = [stream](const void* buffer, size_t size, size_t num)
         {
             return SDL_RWwrite(stream, buffer, size, num);
         };
-#endif
         const auto& label = priority_labels[priority];
         write(label.data(), label.size(), 1);
         write(message, SDL_strlen(message), 1);
         write("\n", 1, 1);
-#if SP_LOGGING_FALLBACK_STDIO
-        fflush(stream);
-#endif
     }
 
     constexpr SDL_LogPriority asSDLPriority(ELogLevel level)
@@ -128,25 +129,35 @@ void Logging::setLogLevel(ELogLevel level)
 
 void Logging::setLogFile(std::string_view filename)
 {
-    SDL_LogOutputFunction current = nullptr;
-    void* current_data = nullptr;
-    SDL_LogGetOutputFunction(&current, &current_data);
-    if (current == &sdlCallback)
-    {
-#if SP_LOGGING_FALLBACK_STDIO
-        auto stream = static_cast<FILE*>(current_data);
-        fclose(stream);
-#else
-        auto stream = static_cast<SDL_RWops*>(current_data);
-        SDL_RWclose(stream);
-#endif
-    }
+    closeCurrentLogStream();
 
 #if SP_LOGGING_FALLBACK_STDIO
     auto handle = fopen(filename.data(), "wt");
+    SDL_LogSetOutputFunction(&stdioCallback, handle);
 #else
     auto handle = SDL_RWFromFile(filename.data(), "wt");
-#endif
-
     SDL_LogSetOutputFunction(&sdlCallback, handle);
+#endif
+}
+
+void Logging::setLogStdout()
+{
+    closeCurrentLogStream();
+    SDL_LogSetOutputFunction(&stdioCallback, stdout);
+}
+
+void Logging::closeCurrentLogStream()
+{
+    SDL_LogOutputFunction current = nullptr;
+    void* current_data = nullptr;
+    SDL_LogGetOutputFunction(&current, &current_data);
+    if (current == &stdioCallback) {
+        auto stream = static_cast<FILE*>(current_data);
+        if (stream != stdout)
+            fclose(stream);
+    }
+    if (current == &sdlCallback) {
+        auto stream = static_cast<SDL_RWops*>(current_data);
+        SDL_RWclose(stream);
+    }
 }

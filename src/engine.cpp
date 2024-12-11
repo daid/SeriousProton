@@ -1,13 +1,13 @@
 #include "engine.h"
 #include "random.h"
 #include "Updatable.h"
-#include "collisionable.h"
 #include "audio/source.h"
 #include "io/keybinding.h"
 #include "soundManager.h"
 #include "windowManager.h"
-#include "scriptInterface.h"
 #include "multiplayer_server.h"
+#include "ecs/entity.h"
+#include "systems/collision.h"
 
 #include <thread>
 #include <SDL.h>
@@ -15,6 +15,12 @@
 #ifdef STEAMSDK
 #include "steam/steam_api.h"
 #include "steam/steam_api_flat.h"
+#endif
+
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#include <mach-o/dyld.h>
+#include <libgen.h>
 #endif
 
 #ifdef DEBUG
@@ -28,6 +34,48 @@ Engine* engine;
 Engine::Engine()
 {
     engine = this;
+
+#ifdef __APPLE__
+    // TODO: Find a proper solution.
+    // Seems to be non-NULL even outside of a proper bundle.
+    CFBundleRef bundle = CFBundleGetMainBundle();
+    if (bundle)
+    {
+        char bundle_path[PATH_MAX], exe_path[PATH_MAX];
+
+        CFURLRef bundleURL = CFBundleCopyBundleURL(bundle);
+        CFURLGetFileSystemRepresentation(bundleURL, true, (unsigned char*)bundle_path, PATH_MAX);
+        CFRelease(bundleURL);
+
+        uint32_t size = sizeof(exe_path);
+        if (_NSGetExecutablePath(exe_path, &size) != 0)
+        {
+          fprintf(stderr, "Failed to get executable path.\n");
+          return 1;
+        }
+
+        char *exe_realpath = realpath(exe_path, NULL);
+        char *exe_dir      = dirname(exe_realpath);
+
+        if (strcmp(exe_dir, bundle_path))
+        {
+          char resources_path[PATH_MAX];
+
+          CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(bundle);
+          CFURLGetFileSystemRepresentation(resourcesURL, true, (unsigned char*)resources_path, PATH_MAX);
+          CFRelease(resourcesURL);
+
+          chdir(resources_path);
+        }
+        else
+        {
+          chdir(exe_dir);
+        }
+
+        free(exe_realpath);
+        free(exe_dir);
+    }
+#endif
 
 #ifdef STEAMSDK
     if (SteamAPI_RestartAppIfNecessary(1907040))
@@ -77,7 +125,6 @@ Engine::Engine()
     atexit(SDL_Quit);
 
     initRandom();
-    CollisionManager::initialize();
     gameSpeed = 1.0f;
     running = true;
     elapsedTime = 0.0f;
@@ -130,23 +177,25 @@ void Engine::runMainLoop()
                 LOG(DEBUG) << "Object count: " << DEBUG_PobjCount << " " << updatableList.size();
 #endif
 
-            float delta = frame_timer.restart();
-            if (delta > 0.5f)
-                delta = 0.5f;
-            if (delta < 0.001f)
-                delta = 0.001f;
-            delta *= gameSpeed;
+            auto realtime_delta = frame_timer.restart();
+            auto update_delta = realtime_delta;
+            if (update_delta > 0.5f)
+                update_delta = 0.5f;
+            if (update_delta < 0.001f)
+                update_delta = 0.001f;
+            update_delta *= gameSpeed;
 
             foreach(Updatable, u, updatableList)
-                u->update(delta);
-            elapsedTime += delta;
-            CollisionManager::handleCollisions(delta);
-            ScriptObject::clearDestroyedObjects();
+                u->update(update_delta);
+            for(auto system : systems)
+                system->update(update_delta);
+            sp::CollisionSystem::update(update_delta);
+            elapsedTime += update_delta;
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();
 #endif
-            std::this_thread::sleep_for(std::chrono::duration<float>(1.f/60.f - delta));
+            std::this_thread::sleep_for(std::chrono::duration<float>(1.f/60.f - realtime_delta));
         }
     }else{
         sp::audio::Source::startAudioSystem();
@@ -181,11 +230,12 @@ void Engine::runMainLoop()
             foreach(Updatable, u, updatableList) {
                 u->update(delta);
             }
+            for(auto system : systems)
+                system->update(delta);
             elapsedTime += delta;
             engine_timing.update = engine_timing_stopwatch.restart();
-            CollisionManager::handleCollisions(delta);
+            sp::CollisionSystem::update(delta);
             engine_timing.collision = engine_timing_stopwatch.restart();
-            ScriptObject::clearDestroyedObjects();
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();
@@ -237,6 +287,9 @@ void Engine::handleEvent(SDL_Event& event)
         }
         printf("%4d %s\n",grand_total,"All PObjects");
         printf("------------------------\n");
+
+        sp::ecs::Entity::dumpDebugInfo();
+        sp::ecs::ComponentStorageBase::dumpDebugInfo();
     }
 #endif
 

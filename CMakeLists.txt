@@ -143,7 +143,6 @@ set(source_files #All SeriousProton's objects to compile
     src/audio/sound.cpp
     src/audio/music.cpp
     src/clipboard.cpp
-    src/collisionable.cpp
     src/engine.cpp
     src/event.cpp
     src/graphics/font.cpp
@@ -171,9 +170,12 @@ set(source_files #All SeriousProton's objects to compile
     src/random.cpp
     src/Renderable.cpp
     src/resources.cpp
-    src/scriptInterface.cpp
-    src/scriptInterfaceMagic.cpp
-    src/scriptInterfaceSandbox.cpp
+    src/script/environment.cpp
+    src/script/environment.h
+    src/script/conversion.h
+    src/script/component.h
+    src/script/callback.h
+    src/script/callback.cpp
     src/shaderManager.cpp
     src/soundManager.cpp
     src/stringImproved.cpp
@@ -201,7 +203,6 @@ set(source_files #All SeriousProton's objects to compile
     src/audio/sound.h
     src/audio/music.h
     src/clipboard.h
-    src/collisionable.h
     src/dynamicLibrary.h
     src/engine.h
     src/event.h
@@ -251,9 +252,6 @@ set(source_files #All SeriousProton's objects to compile
     src/rect.h
     src/Renderable.h
     src/resources.h
-    src/scriptInterface.h
-    src/scriptInterfaceMagic.h
-    src/scriptInterfaceSandbox.h
     src/shaderManager.h
     src/soundManager.h
     src/stringImproved.h
@@ -265,6 +263,26 @@ set(source_files #All SeriousProton's objects to compile
     src/Updatable.h
     src/vectorUtils.h
     src/windowManager.h
+
+    src/container/sparseset.h
+    src/container/chunkedvector.h
+    src/container/bitset.h
+
+    src/ecs/entity.h
+    src/ecs/entity.cpp
+    src/ecs/component.h
+    src/ecs/component.cpp
+    src/ecs/query.h
+    src/ecs/multiplayer.h
+    src/ecs/system.h
+
+    src/components/collision.h
+    src/components/multiplayer.h
+    src/systems/collision.h
+    src/systems/collision.cpp
+
+    src/multiplayer/collision.h
+    src/multiplayer/collision.cpp
 
     cmake/glDebug.inl.in
     "${glDebug_inl}"

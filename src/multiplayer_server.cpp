@@ -3,6 +3,8 @@
 #include "multiplayer_internal.h"
 #include "multiplayer.h"
 #include "engine.h"
+#include "ecs/entity.h"
+#include "ecs/multiplayer.h"
 
 #include "io/http/request.h"
 
@@ -16,7 +18,7 @@
 #if MULTIPLAYER_COLLECT_DATA_STATS
 sp::SystemTimer multiplayer_stats_dump;
 static std::unordered_map<string, int> multiplayer_stats;
-#define ADD_MULTIPLAYER_STATS(name, bytes) multiplayer_stats[name] += (bytes)
+#define ADD_MULTIPLAYER_STATS(name, bytes) do { if (bytes) { multiplayer_stats[name] += (bytes); } } while(0)
 #else
 #define ADD_MULTIPLAYER_STATS(name, bytes) do {} while(0)
 #endif
@@ -129,6 +131,9 @@ void GameServer::update(float /*gameDelta*/)
 {
     sp::SystemStopwatch update_run_time_clock;    //Clock used to measure how much time this update cycle is costing us.
     
+    if (last_update_time.get() < 1.0f / 60.0f) {
+        return; // Only update 60 times per second even if the game runs at higher FPS.
+    }
     //Calculate our own delta, as we want wall-time delta, the gameDelta can be modified by the current game speed (could even be 0 on pause)
     float delta = last_update_time.restart();
 
@@ -141,6 +146,44 @@ void GameServer::update(float /*gameDelta*/)
         sp::io::DataBuffer packet;
         packet << CMD_SET_GAME_SPEED << lastGameSpeed;
         sendAll(packet);
+    }
+
+    //Replicate ECS data, we send this as one big packet so ECS state is always consistent on the client.
+    sp::io::DataBuffer ecs_packet;
+    ecs_packet << CMD_ECS_UPDATE;
+    auto empty_ecs_packet_size = ecs_packet.getDataSize();
+#if MULTIPLAYER_COLLECT_DATA_STATS
+    auto ecs_overhead_size = empty_ecs_packet_size;
+#endif
+    //  For each entity, check which version number we last transmitted and if it is changed, transmit creation/deletion of entities.
+    ecs_entity_version.resize(sp::ecs::Entity::entity_version.size(), std::numeric_limits<uint32_t>::max());
+    for(uint32_t index=0; index<sp::ecs::Entity::entity_version.size(); index++) {
+        if (ecs_entity_version[index] != sp::ecs::Entity::entity_version[index]) {
+            if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag)) {
+                ecs_packet << CMD_ECS_ENTITY_DESTROY << index;
+                for(auto& ecsrb : sp::ecs::MultiplayerReplication::list) {
+                    ecsrb->onEntityDestroyed(index);
+                }
+            }
+            ecs_entity_version[index] = sp::ecs::Entity::entity_version[index];
+            if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag))
+                ecs_packet << CMD_ECS_ENTITY_CREATE << index << ecs_entity_version[index];
+        }
+    }
+    //  For each component type, check which components are added/changed/deleted and send that over.
+    for(auto& ecsrb : sp::ecs::MultiplayerReplication::list) {
+#if MULTIPLAYER_COLLECT_DATA_STATS
+        auto pre_size = ecs_packet.getDataSize();
+#endif
+        ecsrb->update(ecs_packet);
+#if MULTIPLAYER_COLLECT_DATA_STATS
+        ADD_MULTIPLAYER_STATS("ECS:UPDATE:" + string(typeid(*ecsrb).name()), ecs_packet.getDataSize() - pre_size);
+        ecs_overhead_size += ecs_packet.getDataSize() - pre_size;
+#endif
+    }
+    if (ecs_packet.getDataSize() > empty_ecs_packet_size) {
+        sendAll(ecs_packet);
+        ADD_MULTIPLAYER_STATS("ECS:OVERHEAD", ecs_packet.getDataSize() - ecs_overhead_size);
     }
 
     std::vector<int32_t> delList;
@@ -451,6 +494,20 @@ void GameServer::handleNewClient(ClientInfo& info)
     }
 
     onNewClient(info.client_id);
+
+    //Replicate ECS data, we send this as one big packet so ECS state is always consistent on the client.
+    sp::io::DataBuffer ecs_packet;
+    ecs_packet << CMD_ECS_UPDATE;
+    //  For each entity, check which version number we last transmitted and if it is changed, transmit creation/deletion of entities.
+    for(uint32_t index=0; index<ecs_entity_version.size(); index++) {
+        if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag))
+            ecs_packet << CMD_ECS_ENTITY_CREATE << index << ecs_entity_version[index];
+    }
+    //  For each component type, send all existing components.
+    for(auto& ecsrb : sp::ecs::MultiplayerReplication::list)
+        ecsrb->sendAll(ecs_packet);
+    sendDataCounter += ecs_packet.getDataSize();
+    info.socket->queue(ecs_packet);
 
     //On a new client, first create all the already existing objects. And update all the values.
     for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)

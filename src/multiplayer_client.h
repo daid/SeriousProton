@@ -6,6 +6,7 @@
 #include "multiplayer_server.h"
 #include "networkAudioStream.h"
 #include "timer.h"
+#include "ecs/entity.h"
 
 #include <stdint.h>
 #include <thread>
@@ -20,6 +21,8 @@ class GameClient : public Updatable
 {
     constexpr static float no_data_disconnect_time = 20;
 public:
+    std::vector<sp::ecs::Entity> entity_mapping;
+
     enum Status
     {
         Connecting,

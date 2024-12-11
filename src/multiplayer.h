@@ -5,44 +5,46 @@
 #include <stdint.h>
 #include "Updatable.h"
 #include "stringImproved.h"
+#include "ecs/entity.h"
+#include "multiplayer_internal.h"
 
 class MultiplayerObject;
 
 
-#define REGISTER_MULTIPLAYER_ENUM(type) \
-    static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const type& e) { return packet << int8_t(e); } \
-    static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, type& mw) { int8_t tmp; packet >> tmp; mw = type(tmp); return packet; }
-
-
 #define REGISTER_MULTIPLAYER_CLASS(className, name) MultiplayerClassListItem MultiplayerClassListItem ## className(name, createMultiplayerObject<className>);
 
-template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::vec<2, T, Q>& v)
-{
-    return packet << v.x << v.y;
-}
-template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::vec<2, T, Q>& v)
-{
-    return packet >> v.x >> v.y;
-}
-template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::vec<3, T, Q>& v)
-{
-    return packet << v.x << v.y << v.z;
-}
-template<typename T, glm::qualifier Q> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::vec<3, T, Q>& v)
-{
-    return packet >> v.x >> v.y >> v.z;
-}
-template<typename T1, typename T2> static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const std::pair<T1, T2>& pair)
-{
-    return packet << pair.first << pair.second;
-}
-template<typename T1, typename T2> static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, std::pair<T1, T2>& pair)
-{
-    return packet >> pair.first >> pair.second;
-}
+namespace sp::io {
+    template<typename T, glm::qualifier Q> static inline DataBuffer& operator << (DataBuffer& packet, const glm::vec<2, T, Q>& v)
+    {
+        return packet << v.x << v.y;
+    }
+    template<typename T, glm::qualifier Q> static inline DataBuffer& operator >> (DataBuffer& packet, glm::vec<2, T, Q>& v)
+    {
+        return packet >> v.x >> v.y;
+    }
+    template<typename T, glm::qualifier Q> static inline DataBuffer& operator << (DataBuffer& packet, const glm::vec<3, T, Q>& v)
+    {
+        return packet << v.x << v.y << v.z;
+    }
+    template<typename T, glm::qualifier Q> static inline DataBuffer& operator >> (DataBuffer& packet, glm::vec<3, T, Q>& v)
+    {
+        return packet >> v.x >> v.y >> v.z;
+    }
+    template<typename T1, typename T2> static inline DataBuffer& operator << (DataBuffer& packet, const std::pair<T1, T2>& pair)
+    {
+        return packet << pair.first << pair.second;
+    }
+    template<typename T1, typename T2> static inline DataBuffer& operator >> (DataBuffer& packet, std::pair<T1, T2>& pair)
+    {
+        return packet >> pair.first >> pair.second;
+    }
 
-static inline sp::io::DataBuffer& operator << (sp::io::DataBuffer& packet, const glm::u8vec4& c) { return packet << c.r << c.g << c.b << c.a; } \
-static inline sp::io::DataBuffer& operator >> (sp::io::DataBuffer& packet, glm::u8vec4& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
+    static inline DataBuffer& operator << (DataBuffer& packet, const glm::u8vec4& c) { return packet << c.r << c.g << c.b << c.a; } \
+    static inline DataBuffer& operator >> (DataBuffer& packet, glm::u8vec4& c) { packet >> c.r >> c.g >> c.b >> c.a; return packet; }
+
+    DataBuffer& operator << (DataBuffer& packet, const sp::ecs::Entity& e);
+    DataBuffer& operator >> (DataBuffer& packet, sp::ecs::Entity& e);
+}
 
 template <typename T> struct multiplayerReplicationFunctions
 {
@@ -124,6 +126,9 @@ bool multiplayerReplicationFunctions<T>::isChanged(void* data, void* prev_data_p
 
 template <> bool multiplayerReplicationFunctions<string>::isChanged(void* data, void* prev_data_ptr);
 
+template <> void multiplayerReplicationFunctions<sp::ecs::Entity>::sendData(void* data, sp::io::DataBuffer& packet);
+template <> void multiplayerReplicationFunctions<sp::ecs::Entity>::receiveData(void* data, sp::io::DataBuffer& packet);
+
 //In between class that handles all the nasty synchronization of objects between server and client.
 //I'm assuming that it should be a pure virtual class though.
 class MultiplayerObject : public virtual PObject
@@ -158,8 +163,8 @@ public:
     bool isClient() { return !on_server; }
 
 #ifdef DEBUG
-#define STRINGIFY(n) #n
-#define registerMemberReplication(member, ...) registerMemberReplication_(STRINGIFY(member), member , ## __VA_ARGS__ )
+#define SP_MP_STRINGIFY(n) #n
+#define registerMemberReplication(member, ...) registerMemberReplication_(SP_MP_STRINGIFY(member), member , ## __VA_ARGS__ )
 #define F_PARAM const char* name,
 #else
 #define registerMemberReplication(member, ...) registerMemberReplication_(member , ## __VA_ARGS__ )
@@ -237,8 +242,6 @@ public:
             if (memberReplicationInfo[n].ptr == data)
                 memberReplicationInfo[n].update_timeout = 0.0f;
     }
-
-    void registerCollisionableReplication(float object_significant_range = -1);
 
     int32_t getMultiplayerId() { return multiplayerObjectId; }
     const string& getMultiplayerClassIdentifier() { return multiplayerClassIdentifier; }

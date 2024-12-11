@@ -88,6 +88,8 @@ private:
     int32_t nextObjectId;
     std::unordered_map<int32_t, P<MultiplayerObject> > objectMap;
 
+    std::vector<uint32_t> ecs_entity_version;
+
     string master_server_url;
     std::thread master_server_update_thread;
     MasterServerState master_server_state = MasterServerState::Disabled;
