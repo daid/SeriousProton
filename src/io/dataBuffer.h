@@ -106,6 +106,13 @@ public:
         writeVLQu64(i);
     }
 
+#ifdef __MACOS__
+    void write(size_t& i)
+    {
+        writeVLQu64(i);
+    }
+#endif
+
     void write(const float f)
     {
         appendRaw(&f, sizeof(f));
