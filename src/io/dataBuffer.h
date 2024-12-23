@@ -178,6 +178,13 @@ public:
         i = readVLQu64();
     }
 
+#ifdef __MACOS__
+    void read(size_t& i)
+    {
+        i = readVLQu64();
+    }
+#endif
+
     void read(float& f)
     {
         if (read_index + sizeof(f) > buffer.size()) { f = 0; return; }
@@ -233,6 +240,11 @@ public:
     DataBuffer& operator >>(float& data) { read(data); return *this; }
     DataBuffer& operator >>(double& data) { read(data); return *this; }
     DataBuffer& operator >>(string& data) { read(data); return *this; }
+
+#ifdef __MACOS__
+    DataBuffer& operator <<(size_t data) { write(uint64_t(data)); return *this; }
+    DataBuffer& operator >>(size_t& data) { read(data); return *this; }
+#endif
 
     template<typename T, class=typename std::enable_if_t< std::is_enum_v<T>>> DataBuffer& operator <<(T data) { write(int(data)); return *this; }
     template<typename T, class=typename std::enable_if_t< std::is_enum_v<T>>> DataBuffer& operator >>(T& data) { int n = 0; read(n); data = T(n); return *this; }
