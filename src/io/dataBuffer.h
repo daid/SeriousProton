@@ -65,6 +65,8 @@ public:
         write(value);
         write(std::forward<ARGS>(args)...);
     }
+
+    void write() {}
     
     void write(bool b)
     {
