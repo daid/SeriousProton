@@ -106,7 +106,7 @@ public:
         writeVLQu64(i);
     }
 
-#ifdef __MACOS__
+#ifdef __APPLE__
     void write(size_t& i)
     {
         writeVLQu64(i);
@@ -185,7 +185,7 @@ public:
         i = readVLQu64();
     }
 
-#ifdef __MACOS__
+#ifdef __APPLE__
     void read(size_t& i)
     {
         i = readVLQu64();
@@ -248,7 +248,7 @@ public:
     DataBuffer& operator >>(double& data) { read(data); return *this; }
     DataBuffer& operator >>(string& data) { read(data); return *this; }
 
-#ifdef __MACOS__
+#ifdef __APPLE__
     DataBuffer& operator <<(size_t data) { write(uint64_t(data)); return *this; }
     DataBuffer& operator >>(size_t& data) { read(data); return *this; }
 #endif
