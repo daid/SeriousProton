@@ -134,7 +134,10 @@ bool FreetypeFont::getGlyphInfo(int char_code, int pixel_size, Font::GlyphInfo& 
         
         info.bounds = Rect({0, 0}, {0, 0});
         info.advance = 0;
-        
+
+        if (static_cast<FT_Face>(ft_face)->size->metrics.x_ppem != pixel_size)
+            FT_Set_Pixel_Sizes(static_cast<FT_Face>(ft_face), 0, pixel_size);
+
         int glyph_index = FT_Get_Char_Index(face, char_code);
         if (glyph_index == 0 || FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT) != 0)
         {

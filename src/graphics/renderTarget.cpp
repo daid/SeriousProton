@@ -663,14 +663,13 @@ void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment alig
 {
     if (!font)
         font = default_font;
-    auto prepared = font->prepare(text, 32, font_size, rect.size, align, flags);
-    drawText(rect, prepared, font_size, color, flags);
+    auto prepared = font->prepare(text, 32, font_size, color, rect.size, align, flags);
+    drawText(rect, prepared, flags);
 }
 
-void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& prepared, float font_size, glm::u8vec4 color, int flags)
+void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& prepared, int flags)
 {
     auto& ags = atlas_glyphs[prepared.getFont()];
-    float size_scale = font_size / 32.0f;
     for(auto gd : prepared.data)
     {
         Font::GlyphInfo glyph;
@@ -694,6 +693,7 @@ void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& p
             {
                 uv_rect = it->second;
             }
+            float size_scale = gd.size / 32.0f;
 
             float u0 = uv_rect.position.x;
             float v0 = uv_rect.position.y;
@@ -767,13 +767,13 @@ void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& p
                 uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
             });
             vertex_data.push_back({
-                p0, color, {u0, v0}});
+                p0, gd.color, {u0, v0}});
             vertex_data.push_back({
-                p2, color, {u0, v1}});
+                p2, gd.color, {u0, v1}});
             vertex_data.push_back({
-                p1, color, {u1, v0}});
+                p1, gd.color, {u1, v0}});
             vertex_data.push_back({
-                p3, color, {u1, v1}});
+                p3, gd.color, {u1, v1}});
         }
     }
 }
@@ -782,7 +782,7 @@ void RenderTarget::drawRotatedText(glm::vec2 center, float rotation, std::string
 {
     if (!font)
         font = default_font;
-    auto prepared = font->prepare(text, 32, font_size, {0.0f, 0.0f}, sp::Alignment::Center, 0);
+    auto prepared = font->prepare(text, 32, font_size, color, {0.0f, 0.0f}, sp::Alignment::Center, 0);
 
     auto sin = std::sin(-glm::radians(rotation));
     auto cos = std::cos(-glm::radians(rotation));

@@ -27,17 +27,21 @@ public:
             glm::vec2 position;
             int char_code;
             int string_offset;
+            float size;
+            glm::u8vec4 color;
         };
         std::vector<GlyphData> data;
 
         glm::vec2 getUsedAreaSize() const;
         Font* getFont() const;
 
+        void append(std::string_view s, float text_size, glm::u8vec4 color);
+        void finish();
     private:
+        float next_position_x = 0.0f;
         Font* font = nullptr;
         Alignment alignment;
         int pixel_size;
-        float text_size;
         glm::vec2 area_size;
         int flags;
 
@@ -45,11 +49,10 @@ public:
         int getLineCount() const;
         size_t lastLineCharacterCount() const;
 
-        void alignAll();
-
         friend class Font;
     };
-    PreparedFontString prepare(std::string_view s, int pixel_size, float text_size, glm::vec2 area_size, Alignment alignment, int flags=0);
+    PreparedFontString start(int pixel_size, glm::vec2 area_size, Alignment alignment, int flags=0);
+    PreparedFontString prepare(std::string_view s, int pixel_size, float text_size, glm::u8vec4 color, glm::vec2 area_size, Alignment alignment, int flags=0);
 
     class CharacterInfo
     {
