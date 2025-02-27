@@ -215,7 +215,7 @@ glm::vec2 Font::PreparedFontString::getUsedAreaSize() const
     float max_y = 0.0f;
     for(auto& d : data) {
         max_x = std::max(max_x, d.position.x);
-        max_y = std::max(max_y, d.position.y);
+        max_y = std::max(max_y, (float(getLineCount()) + 0.3f) * d.size);
     }
 
     glm::vec2 result(max_x, max_y);
