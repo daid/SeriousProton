@@ -165,6 +165,29 @@ static int luaEntityComponentsNewIndex(lua_State* L) {
     return luaL_error(L, "Tried to set non-exsisting component %s", key);
 }
 
+static int luaEntityComponentsPairs(lua_State* L) {
+    auto eptr = lua_touserdata(L, -1);
+    if (!eptr) return 0;
+    auto e = *static_cast<ecs::Entity*>(eptr);
+    if (!e) return 0;
+
+    lua_newtable(L);
+    int tbl = lua_gettop(L);
+
+    for (auto entry : ComponentRegistry::components) {
+        int n = entry.second.getter(L, e, entry.first.c_str());
+        if (n == 1) {
+            lua_setfield(L, tbl, entry.first.c_str());
+        }
+    }
+
+    lua_settop(L, tbl);
+    lua_getglobal(L, "next");
+    lua_rotate(L, 2, -1);
+    lua_pushnil(L);
+    return 3; // next, tbl, nil
+}
+
 static int luaEntityEqual(lua_State* L) {
     auto e1 = Convert<ecs::Entity>::fromLua(L, -2);
     if (!e1) return 0;
@@ -221,6 +244,8 @@ lua_State* Environment::getLuaState()
         lua_setfield(L, -2, "__index");
         lua_pushcfunction(L, luaEntityComponentsNewIndex);
         lua_setfield(L, -2, "__newindex");
+        lua_pushcfunction(L, luaEntityComponentsPairs);
+        lua_setfield(L, -2, "__pairs");
         lua_pushstring(L, "sandboxed");
         lua_setfield(L, -2, "__metatable");
         lua_pop(L, 1);
