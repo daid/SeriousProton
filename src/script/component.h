@@ -52,6 +52,8 @@ public:
         lua_setfield(L, -2, "__index");
         lua_pushcfunction(L, luaNewIndex);
         lua_setfield(L, -2, "__newindex");
+        lua_pushcfunction(L, luaPairs);
+        lua_setfield(L, -2, "__pairs");
         lua_pushcfunction(L, [](lua_State* L) {
             if (!array_count_func) luaL_error(L, "Tried to get length of component %s that has no array", component_name);
             auto ptr = luaToComponent(L, -1);
@@ -93,6 +95,27 @@ public:
             return 0;
         });
         lua_setfield(L, -2, "__newindex");
+        lua_pushcfunction(L, [](lua_State* L) {
+            IndexedComponent* icptr = static_cast<IndexedComponent*>(lua_touserdata(L, -1));
+            if (!icptr) return 0;
+            if (!icptr->entity) return 0;
+            auto ptr = icptr->entity.template getComponent<T>();
+            if (!ptr) return 0;
+            if (array_count_func(*ptr) <= icptr->index) return luaL_error(L, "Index out of range for pairs on component %s", component_name);
+
+            lua_newtable(L);
+            int tbl = lua_gettop(L);
+            for (auto mem : indexed_members) {
+                mem.second.getter(L, ptr, icptr->index);
+                lua_setfield(L, tbl, mem.first.c_str());
+            }
+            lua_settop(L, tbl);
+            lua_getglobal(L, "next");
+            lua_rotate(L, 2, -1);
+            lua_pushnil(L);
+            return 3; // next, tbl, nil
+        });
+        lua_setfield(L, -2, "__pairs");
         lua_pushstring(L, "sandboxed");
         lua_setfield(L, -2, "__metatable");
         lua_pop(L, 1);
@@ -161,6 +184,39 @@ private:
         if (it == members.end()) return luaL_error(L, "Trying to set unknown component %s member %s", component_name, key);
         it->second.setter(L, ptr);
         return 0;
+    }
+
+    static int luaPairs(lua_State* L) {
+        auto eptr = lua_touserdata(L, -1);
+        if (!eptr) return 0;
+        auto e = *static_cast<ecs::Entity*>(eptr);
+        if (!e) return 0;
+        auto ptr = e.getComponent<T>();
+        if (!ptr) return 0;
+
+        lua_newtable(L);
+        int tbl = lua_gettop(L);
+        if (array_count_func) {
+            int count = array_count_func(*ptr);
+            for (int i = 0; i < count; i++) {
+                auto ic = static_cast<IndexedComponent*>(lua_newuserdata(L, sizeof(IndexedComponent)));
+                ic->entity = e;
+                ic->index = i;
+                luaL_getmetatable(L, array_metatable_name.c_str());
+                lua_setmetatable(L, -2);
+                lua_seti(L, tbl, i + 1);
+            }
+        }
+        for (auto mem : members) {
+            mem.second.getter(L, ptr);
+            lua_setfield(L, tbl, mem.first.c_str());
+        }
+
+        lua_settop(L, tbl);
+        lua_getglobal(L, "next");
+        lua_rotate(L, 2, -1);
+        lua_pushnil(L);
+        return 3; // next, tbl, nil
     }
 
     static T* luaToComponent(lua_State* L, int index) {
