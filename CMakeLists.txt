@@ -59,7 +59,7 @@ else()
     #    * 'bundled'
     message(STATUS "GLM version used: BUNDLED")
     
-    set(GLM_VERSION "0.9.9.8")
+    set(GLM_VERSION "1.0.1")
     set(GLM_URL "https://github.com/g-truc/glm")
 	include(FetchContent)
 	FetchContent_Declare(
@@ -344,6 +344,7 @@ find_package(Threads REQUIRED)
 
 target_compile_definitions(seriousproton_deps
     INTERFACE
+        GLM_ENABLE_EXPERIMENTAL=1
         $<$<BOOL:${MSVC}>:NOMINMAX;_CRT_SECURE_NO_WARNINGS>
         $<$<CONFIG:Debug>:DEBUG>
         # Windows: Backwards compatibility with Win7 SP1: https://docs.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt
