@@ -137,6 +137,47 @@ static int luaEntityNewIndex(lua_State* L) {
     return 0;
 }
 
+static int luaEntityPairsNext(lua_State* L) {
+    lua_settop(L, 2); // ensure we have a (possibly nil) key, as we may have been called with just (entity)
+
+    auto e = Convert<ecs::Entity>::fromLua(L, 1);
+    if (!e) return 0;
+
+    if (lua_type(L, 2) == LUA_TNIL) {
+        // nil => first call; return components first
+        lua_pop(L, 1);
+        lua_pushstring(L, "components");
+        *static_cast<ecs::Entity*>(lua_newuserdata(L, sizeof(ecs::Entity))) = e;
+        luaL_getmetatable(L, "entity_components");
+        lua_setmetatable(L, -2);
+        return 2;
+    }
+    if (lua_type(L, 2) == LUA_TSTRING && !strcmp(lua_tostring(L, 2), "components")) {
+        // second call, give lua_next a nil to get the first LTC key.
+        // from the third call onwards, we'll pass the previous key directly to lua_next.
+        lua_pop(L, 1);
+        lua_pushnil(L);
+    }
+
+    auto ltc = e.getComponent<LuaTableComponent>();
+    if (!ltc) return 0;
+
+    lua_rawgetp(L, LUA_REGISTRYINDEX, ltc);
+    lua_rotate(L, 2, -1);
+
+    return lua_next(L, -2) ? 2 : 0;
+}
+
+static int luaEntityPairs(lua_State* L) {
+    auto e = Convert<ecs::Entity>::fromLua(L, 1);
+    if (!e) return 0;
+
+    lua_pushcfunction(L, luaEntityPairsNext);
+    lua_pushvalue(L, -2);
+    lua_pushnil(L);
+    return 3;
+}
+
 static int luaEntityComponentsIndex(lua_State* L) {
     auto eptr = lua_touserdata(L, -2);
     if (!eptr) return 0;
@@ -163,6 +204,29 @@ static int luaEntityComponentsNewIndex(lua_State* L) {
         return it->second.setter(L, e, key);
     }
     return luaL_error(L, "Tried to set non-exsisting component %s", key);
+}
+
+static int luaEntityComponentsPairs(lua_State* L) {
+    auto eptr = lua_touserdata(L, -1);
+    if (!eptr) return 0;
+    auto e = *static_cast<ecs::Entity*>(eptr);
+    if (!e) return 0;
+
+    lua_newtable(L);
+    int tbl = lua_gettop(L);
+
+    for (auto entry : ComponentRegistry::components) {
+        int n = entry.second.getter(L, e, entry.first.c_str());
+        if (n == 1) {
+            lua_setfield(L, tbl, entry.first.c_str());
+        }
+    }
+
+    lua_settop(L, tbl);
+    lua_getglobal(L, "next");
+    lua_rotate(L, 2, -1);
+    lua_pushnil(L);
+    return 3; // next, tbl, nil
 }
 
 static int luaEntityEqual(lua_State* L) {
@@ -209,6 +273,8 @@ lua_State* Environment::getLuaState()
         lua_setfield(L, -2, "__index");
         lua_pushcfunction(L, luaEntityNewIndex);
         lua_setfield(L, -2, "__newindex");
+        lua_pushcfunction(L, luaEntityPairs);
+        lua_setfield(L, -2, "__pairs");
         lua_pushcfunction(L, luaEntityEqual);
         lua_setfield(L, -2, "__eq");
         lua_pushstring(L, "sandboxed");
@@ -221,6 +287,8 @@ lua_State* Environment::getLuaState()
         lua_setfield(L, -2, "__index");
         lua_pushcfunction(L, luaEntityComponentsNewIndex);
         lua_setfield(L, -2, "__newindex");
+        lua_pushcfunction(L, luaEntityComponentsPairs);
+        lua_setfield(L, -2, "__pairs");
         lua_pushstring(L, "sandboxed");
         lua_setfield(L, -2, "__metatable");
         lua_pop(L, 1);
