@@ -109,7 +109,7 @@ public:
     }
 
 #ifdef __APPLE__
-    void write(size_t& i)
+    void write(size_t i)
     {
         writeVLQu64(i);
     }
