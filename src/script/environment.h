@@ -51,6 +51,8 @@ public:
         return runImpl<T>(code, "=[string]");
     }
 
+    bool isFunction(const string& function_name);
+
     template<typename T, typename... ARGS> Result<T> call(const string& function_name, const ARGS&... args) {
         lua_pushcfunction(L, luaErrorHandler);
         //Try to find our function in the environment table

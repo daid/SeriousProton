@@ -234,6 +234,16 @@ Environment::~Environment()
     lua_rawsetp(L, LUA_REGISTRYINDEX, this);
 }
 
+bool Environment::isFunction(const string& function_name)
+{
+    //Try to find our function in the environment table
+    lua_rawgetp(L, LUA_REGISTRYINDEX, this);
+    lua_getfield(L, -1, function_name.c_str());
+    bool result = lua_isfunction(L, -1);
+    lua_pop(L, 2);
+    return result;
+}
+
 int luaErrorHandler(lua_State* L)
 {
     const char * msg = lua_tostring(L, -1);
