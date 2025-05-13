@@ -28,7 +28,8 @@ public:
         }
         //If it exists, push the arguments with it, can run it.
         int arg_count = (Convert<ARGS>::toLua(Environment::L, args) + ... + 0);
-        int result = lua_pcall(Environment::L, arg_count, 1, 0);
+        int ret_count = std::is_void_v<RET> ? 0 : 1;
+        int result = lua_pcall(Environment::L, arg_count, ret_count, 0);
         if (result) {
             auto ret = Result<RET>::makeError(lua_tostring(Environment::L, -1));
             lua_pop(Environment::L, 1);
