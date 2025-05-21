@@ -67,7 +67,7 @@ void CollisionSystem::update(float delta)
             }
 
             b2BodyDef bodyDef;
-            bodyDef.type = physics.type == Physics::Type::Dynamic ? b2_dynamicBody : b2_kinematicBody;
+            bodyDef.type = physics.type == Physics::Type::Static ? b2_kinematicBody : b2_dynamicBody;
             bodyDef.userData = ptr;
             bodyDef.allowSleep = false;
             bodyDef.position = v2b(transform.position);
