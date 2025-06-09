@@ -23,6 +23,7 @@ GameClient::GameClient(int version_number, sp::io::network::Address server, int 
     status = Connecting;
 
     no_data_timeout.start(no_data_disconnect_time);
+    heartbeat_timer.start(heartbeat_time);
     auto sock = std::make_unique<sp::io::network::TcpSocket>();
     sock->setBlocking(false);
     sock->connect(server, port_nr);
@@ -40,6 +41,7 @@ GameClient::GameClient(int version_number, uint64_t steam_id)
     status = Connecting;
 
     no_data_timeout.start(no_data_disconnect_time);
+    heartbeat_timer.start(heartbeat_time);
     auto sock = std::make_unique<sp::io::network::SteamP2PSocket>();
     sock->connect(steam_id);
     socket = std::move(sock);
@@ -96,6 +98,7 @@ void GameClient::update(float /*delta*/)
     while(socket->receive(packet))
     {
         no_data_timeout.start(no_data_disconnect_time);
+        heartbeat_timer.start(heartbeat_time);
 
         command_t command;
         packet >> command;
@@ -250,6 +253,9 @@ void GameClient::update(float /*delta*/)
                 reply << CMD_ALIVE_RESP;
                 socket->send(reply);
                 break;
+            case CMD_ALIVE_RESP:
+                // do nothing
+                break;
             case CMD_ECS_UPDATE:
                 while(packet.available())
                 {
@@ -312,6 +318,14 @@ void GameClient::update(float /*delta*/)
         case Disconnected:
             break;
         }
+    }
+
+    if (status == Connected && heartbeat_timer.isExpired())
+    {
+        heartbeat_timer.start(heartbeat_time);
+        sp::io::DataBuffer ping;
+        ping << CMD_ALIVE;
+        socket->send(ping);
     }
 
     if (socket->getState() == sp::io::network::StreamSocket::State::Closed || no_data_timeout.isExpired())

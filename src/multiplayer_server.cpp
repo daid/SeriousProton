@@ -423,7 +423,14 @@ void GameServer::update(float /*gameDelta*/)
                         {
                             clientList[n].ping = static_cast<int32_t>(clientList[n].round_trip_start_time.get() * 1000.0f);
                         }
-                    break;
+                        break;
+                    case CMD_ALIVE:
+                        {
+                            sp::io::DataBuffer response_packet;
+                            response_packet << CMD_ALIVE_RESP;
+                            clientList[n].socket->queue(response_packet);
+                        }
+                        break;
                     default:
                         LOG(ERROR) << "Unknown command from client: " << command;
                     }
