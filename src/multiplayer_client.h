@@ -19,6 +19,9 @@ extern P<GameClient> game_client;
 
 class GameClient : public Updatable
 {
+    // if the server doesn't send us any data for this long, send a packet to see if it's still there
+    constexpr static float heartbeat_time = 0.5;
+    // if the server doesn't send us any data for this long, disconnect
     constexpr static float no_data_disconnect_time = 20;
 public:
     std::vector<sp::ecs::Entity> entity_mapping;
@@ -52,6 +55,7 @@ private:
     int32_t client_id;
     Status status;
     sp::SystemTimer no_data_timeout;
+    sp::SystemTimer heartbeat_timer;
     NetworkAudioStreamManager audio_stream_manager;
 
     DisconnectReason disconnect_reason{ DisconnectReason::Unknown };
