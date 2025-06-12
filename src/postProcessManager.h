@@ -31,6 +31,7 @@ public:
     virtual void onPointerLeave(sp::io::Pointer::ID id) override;
     virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id) override;
     virtual void onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id) override;
+    virtual void onMouseWheelScroll(glm::vec2 position, float value) override;
     virtual void onPointerUp(glm::vec2 position, sp::io::Pointer::ID id) override;
     virtual void onTextInput(const string& text) override;
     virtual void onTextInput(sp::TextInputEvent e) override;

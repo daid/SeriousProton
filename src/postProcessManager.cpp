@@ -106,6 +106,11 @@ void PostProcessor::onPointerUp(glm::vec2 position, sp::io::Pointer::ID id)
     chain->onPointerUp(position, id);
 }
 
+void PostProcessor::onMouseWheelScroll(glm::vec2 position, float value)
+{
+    chain->onMouseWheelScroll(position, value);
+}
+
 void PostProcessor::onTextInput(const string& text)
 {
     chain->onTextInput(text);
