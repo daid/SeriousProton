@@ -15,6 +15,8 @@ Keybinding* Keybinding::keybindings = nullptr;
 Keybinding* Keybinding::rebinding_key = nullptr;
 Keybinding::Type Keybinding::rebinding_type;
 
+float Keybinding::deadzone = 0.05f;
+
 Keybinding::Keybinding(const string& name)
 : name(name), label(name.substr(0, 1).upper() + name.substr(1).lower())
 {
@@ -172,6 +174,11 @@ void Keybinding::removeKey(int index)
 void Keybinding::clearKeys()
 {
     bindings.clear();
+}
+
+void Keybinding::setDeadzone(float new_deadzone)
+{
+    deadzone = new_deadzone;
 }
 
 bool Keybinding::isBound() const
@@ -477,7 +484,7 @@ void Keybinding::addBinding(int key, bool inverted)
 
 void Keybinding::setValue(float value)
 {
-    if (value < 0.05f && value > -0.05f)//Add a tiny dead zone by default. Assists in gamepads that give off "almost zero" in neutral.
+    if (value < Keybinding::deadzone && value > -Keybinding::deadzone)//Add a tiny dead zone by default. Assists in gamepads that give off "almost zero" in neutral.
         value = 0.0;
     if (this->value < 0.5f && value >= 0.5f)
         down_event = true;
