@@ -183,7 +183,7 @@ private:
         if (lua_isnil(L, -1)) {
             e.removeComponent<T>();
         } else if (lua_istable(L, -1)) {
-            auto& component = e.addComponent<T>();
+            auto& component = e.getOrAddComponent<T>();
             lua_pushnil(L);
             while(lua_next(L, -2)) {
                 if (array_count_func && lua_isinteger(L, -2)) {
