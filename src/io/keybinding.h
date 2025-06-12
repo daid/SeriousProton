@@ -62,6 +62,8 @@ public:
     void removeKey(int index);
     void clearKeys();
 
+    static void setDeadzone(float deadzone);
+
     // Get the name of the key in the same format as used for setKey and friends. Returns empty string if the index as no set key.
     string getKey(int index) const;
     Type getKeyType(int index) const;
@@ -105,6 +107,7 @@ private:
     };
     std::vector<Binding> bindings;
 
+    static float deadzone;
     float value;
     bool down_event;
     bool up_event;
