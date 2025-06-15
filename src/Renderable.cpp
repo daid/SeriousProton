@@ -68,6 +68,15 @@ void RenderLayer::onPointerUp(glm::vec2 position, sp::io::Pointer::ID id)
         link->onPointerUp(position, id);
 }
 
+void RenderLayer::onMouseWheelScroll(glm::vec2 position, float value)
+{
+    if (active)
+        foreach (Renderable, r, renderableList)
+            r->onMouseWheelScroll(position, value);
+    if (link)
+        link->onMouseWheelScroll(position, value);
+}
+
 void RenderLayer::onTextInput(const string& text)
 {
     if (active)

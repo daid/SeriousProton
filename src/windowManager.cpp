@@ -252,6 +252,9 @@ void Window::handleEvent(const SDL_Event& event)
             render_chain->onPointerMove(mapPixelToCoords({event.button.x, event.button.y}), sp::io::Pointer::mouse);
         }
         break;
+    case SDL_MOUSEWHEEL:
+        render_chain->onMouseWheelScroll(mapPixelToCoords({event.wheel.mouseX, event.wheel.mouseY}), event.wheel.preciseY);
+        break;
     case SDL_FINGERDOWN:
         render_chain->onPointerDown(sp::io::Pointer::Button::Touch, {event.tfinger.x * current_virtual_size.x, event.tfinger.y * current_virtual_size.y}, event.tfinger.fingerId);
         break;
