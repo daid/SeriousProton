@@ -228,13 +228,15 @@ void Engine::runMainLoop()
             sp::SystemStopwatch engine_timing_stopwatch;
             foreach(Updatable, u, updatableList) {
                 u->update(delta);
+                engine_timing["update:" + string(typeid(**u).name())] = engine_timing_stopwatch.restart();
             }
-            for(auto system : systems)
+            for(auto system : systems) {
                 system->update(delta);
+                engine_timing[typeid(*system).name()] = engine_timing_stopwatch.restart();
+            }
             elapsedTime += delta;
-            engine_timing.update = engine_timing_stopwatch.restart();
             sp::CollisionSystem::update(delta);
-            engine_timing.collision = engine_timing_stopwatch.restart();
+            engine_timing["collision"] = engine_timing_stopwatch.restart();
             soundManager->updateTick();
 #ifdef STEAMSDK
             SteamAPI_RunCallbacks();
@@ -243,10 +245,10 @@ void Engine::runMainLoop()
             // Clear the window
             for(auto window : Window::all_windows)
                 window->render();
-            engine_timing.render = engine_timing_stopwatch.restart();
-            engine_timing.server_update = 0.0f;
+            engine_timing["rendering"] = engine_timing_stopwatch.restart();
+            engine_timing["server_update"] = 0.0f;
             if (game_server)
-                engine_timing.server_update = game_server->getUpdateTime();
+                engine_timing["server_update"] = game_server->getUpdateTime();
             
             last_engine_timing = engine_timing;
 

@@ -398,6 +398,8 @@ void RenderTarget::drawLine(const std::initializer_list<glm::vec2>& points, glm:
 
 void RenderTarget::drawLine(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
+    if (points.size() < 1)
+        return;
     if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - points.size())
         finish();
     auto n = lines_vertex_data.size();

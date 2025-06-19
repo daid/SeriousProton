@@ -18,14 +18,8 @@ extern Engine* engine;
 class Engine
 {
 public:
-    class EngineTiming
-    {
-    public:
-        float update;
-        float collision;
-        float render;
-        float server_update;
-    };
+    using EngineTiming = std::map<string, float>;
+    
 private:
     bool running;
     
