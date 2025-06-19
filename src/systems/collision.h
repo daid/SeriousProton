@@ -2,6 +2,7 @@
 
 #include "ecs/entity.h"
 #include <glm/vec2.hpp>
+#include "graphics/renderTarget.h"
 
 
 namespace sp {
@@ -17,6 +18,7 @@ class CollisionSystem
 public:
     static void update(float delta);
     static void addHandler(CollisionHandler* handler) { handlers.push_back(handler); }
+    static void drawDebug(sp::RenderTarget& renderer, glm::vec2 origin, float scale);
 
     static std::vector<sp::ecs::Entity> queryArea(glm::vec2 lowerBound, glm::vec2 upperBound);
 private:

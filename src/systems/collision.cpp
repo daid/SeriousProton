@@ -3,6 +3,7 @@
 #include "ecs/query.h"
 #include "engine.h"
 #include "random.h"
+#include "vectorUtils.h"
 
 #include <glm/trigonometric.hpp>
 #include <glm/geometric.hpp>
@@ -31,8 +32,80 @@ static inline b2Vec2 v2b(glm::vec2 v)
 
 static b2World* world;
 
-
 namespace sp {
+
+
+class CollisionDebug : public b2Draw {
+    sp::RenderTarget& renderer;
+    glm::vec2 origin;
+    float scale;
+
+    glm::vec2 unbox(const b2Vec2 vertex) {
+        return origin + b2v(vertex) * scale;
+    }
+
+    std::vector<glm::vec2> unbox(const b2Vec2* vertices, int32 vertex_count, bool loop = false) {
+        std::vector<glm::vec2> points;
+        for (int32 i = 0; i < vertex_count; i++) {
+            points.push_back(unbox(vertices[i]));
+        }
+        if (loop)
+            points.push_back(points.front());
+        return points;
+    }
+
+    glm::u8vec4 unbox(const b2Color& color, int alpha_divisor = 1) {
+        return glm::u8vec4(255*color.r, 255*color.g, 255*color.b, 255*color.a/alpha_divisor);
+    }
+
+public:
+    CollisionDebug(sp::RenderTarget& renderer, glm::vec2 origin, float scale)
+        : renderer(renderer), origin(origin), scale(scale) {
+        m_drawFlags = 0x1F;
+    }
+
+    void DrawPolygon(const b2Vec2* vertices, int32 vertex_count, const b2Color& color) override {
+        renderer.drawLine(unbox(vertices, vertex_count, true), unbox(color));
+    }
+    void DrawSolidPolygon(const b2Vec2* vertices, int32 vertex_count, const b2Color& color) override {
+        auto points = unbox(vertices, vertex_count);
+        // TODO this assumes the polygon is convex. is it always?
+        std::vector<uint16_t> indices;
+        for (int i = 1; i < points.size(); i++) {
+            indices.push_back(0);
+            indices.push_back(i-1);
+            indices.push_back(i);
+        }
+        renderer.drawTriangles(points, indices, unbox(color, 2));
+    }
+    void DrawCircle(const b2Vec2& center, float32 radius, const b2Color& color) override {
+        renderer.drawCircleOutline(unbox(center), radius * scale * BOX2D_SCALE, 2.0f, unbox(color));
+    }
+    void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color) override {
+        // TODO what is axis?
+        renderer.fillCircle(unbox(center), radius * BOX2D_SCALE * scale, unbox(color, 2));
+    }
+    void DrawSegment(const b2Vec2& start, const b2Vec2& end, const b2Color& color) override {
+        renderer.drawLine(unbox(start), unbox(end), unbox(color));
+    }
+    void DrawTransform(const b2Transform& transform) override {
+        auto center = unbox(transform.p);
+        auto x = glm::normalize(b2v(transform.q.GetXAxis()));
+        auto y = glm::normalize(b2v(transform.q.GetYAxis()));
+
+        renderer.drawLine(center, center + x * (250.0f * scale), {255, 0, 0, 255});
+        renderer.drawLine(center, center + y * (250.0f * scale), {0, 255, 0, 255});
+    }
+};
+
+void CollisionSystem::drawDebug(sp::RenderTarget& renderer, glm::vec2 origin, float scale) {
+    CollisionDebug debug(renderer, origin, scale);
+
+    world->SetDebugDraw(&debug);
+    world->DrawDebugData();
+    world->SetDebugDraw(nullptr);
+}
+
 
 std::vector<CollisionHandler*> CollisionSystem::handlers;
 
