@@ -71,7 +71,7 @@ public:
         auto points = unbox(vertices, vertex_count);
         // TODO this assumes the polygon is convex. is it always?
         std::vector<uint16_t> indices;
-        for (int i = 1; i < points.size(); i++) {
+        for (auto i = 2U; i < points.size(); i++) {
             indices.push_back(0);
             indices.push_back(i-1);
             indices.push_back(i);
