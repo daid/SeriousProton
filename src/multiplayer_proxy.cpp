@@ -34,6 +34,7 @@ GameServerProxy::GameServerProxy(sp::io::network::Address hostname, int hostPort
     }
 
     no_data_timeout.start(noDataDisconnectTime);
+    heartbeat_timer.start(heartbeatTime);
 }
 
 GameServerProxy::GameServerProxy(string password, int listenPort, string proxyName)
@@ -57,6 +58,7 @@ GameServerProxy::GameServerProxy(string password, int listenPort, string proxyNa
     }
 
     no_data_timeout.start(noDataDisconnectTime);
+    heartbeat_timer.start(heartbeatTime);
 }
 
 GameServerProxy::~GameServerProxy()
@@ -78,6 +80,7 @@ void GameServerProxy::update(float delta)
         while(mainSocket->receive(packet))
         {
             no_data_timeout.start(noDataDisconnectTime);
+            heartbeat_timer.start(heartbeatTime);
             command_t command;
             packet >> command;
             switch(command)
@@ -102,6 +105,8 @@ void GameServerProxy::update(float delta)
                     mainSocket->send(reply);
                 }
                 sendAll(packet);
+                break;
+            case CMD_ALIVE_RESP:
                 break;
             case CMD_CREATE:
             case CMD_DELETE:
@@ -145,6 +150,15 @@ void GameServerProxy::update(float delta)
                 break;
             }
         }
+
+        if (heartbeat_timer.isExpired())
+        {
+            heartbeat_timer.start(heartbeatTime);
+            sp::io::DataBuffer ping;
+            ping << CMD_ALIVE;
+            mainSocket->send(ping);
+        }
+
         if (mainSocket->getState() == sp::io::network::StreamSocket::State::Closed || no_data_timeout.isExpired())
         {
             LOG(INFO) << "Disconnected proxy";
@@ -195,6 +209,7 @@ void GameServerProxy::update(float delta)
                     {
                         mainSocket = std::move(info.socket);
                         no_data_timeout.start(noDataDisconnectTime);
+                        heartbeat_timer.start(heartbeatTime);
                     }
                     break;
                 case CMD_CLIENT_SEND_AUTH:
@@ -240,6 +255,13 @@ void GameServerProxy::update(float delta)
                     }
                     break;
                 case CMD_ALIVE_RESP:
+                    break;
+                case CMD_ALIVE:
+                    {
+                        sp::io::DataBuffer reply;
+                        reply << CMD_ALIVE_RESP;
+                        info.socket->send(reply);
+                    }
                     break;
                 default:
                     LOG(ERROR) << "Unknown command from client: " << command;

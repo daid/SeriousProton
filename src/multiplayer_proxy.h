@@ -6,7 +6,12 @@
 
 class GameServerProxy : public Updatable
 {
+    sp::SystemTimer heartbeat_timer;
     sp::SystemTimer no_data_timeout;
+
+    // if the server doesn't send us any data for this long, send a packet to see if it's still there
+    constexpr static float heartbeatTime = 0.5;
+    // if the server doesn't send us any data for this long, disconnect
     constexpr static float noDataDisconnectTime = 20.0f;
 
     sp::io::network::UdpSocket broadcast_listen_socket;
