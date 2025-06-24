@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <thread>
+#include <functional>
 
 
 static const int defaultServerPort = 35666;
@@ -129,6 +130,7 @@ private:
     void generateCreatePacketFor(P<MultiplayerObject> obj, sp::io::DataBuffer& packet);
     void generateDeletePacketFor(int32_t id, sp::io::DataBuffer& packet);
     
+    void replicateInitialData(std::function<void(sp::io::DataBuffer&)> send_packet);
     void handleNewClient(ClientInfo& info);
     void handleNewProxy(ClientInfo& info, int32_t temp_id);
     

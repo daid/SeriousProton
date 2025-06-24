@@ -116,6 +116,7 @@ void GameServerProxy::update(float delta)
             case CMD_AUDIO_COMM_START:
             case CMD_AUDIO_COMM_DATA:
             case CMD_AUDIO_COMM_STOP:
+            case CMD_ECS_UPDATE:
                 sendAll(packet);
                 break;
             case CMD_PROXY_TO_CLIENTS:
@@ -147,6 +148,9 @@ void GameServerProxy::update(float delta)
                         }
                     }
                 }
+                break;
+            default:
+                LOG(ERROR) << "Unknown command from server: " << command;
                 break;
             }
         }
