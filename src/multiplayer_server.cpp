@@ -487,6 +487,38 @@ void GameServer::update(float /*gameDelta*/)
     update_run_time = update_run_time_clock.get();
 }
 
+void GameServer::replicateInitialData(std::function<void(sp::io::DataBuffer&)> send_packet)
+{
+    //Replicate ECS data, we send this as one big packet so ECS state is always consistent on the client.
+    sp::io::DataBuffer ecs_packet;
+    ecs_packet << CMD_ECS_UPDATE;
+    //  For each entity, check which version number we last transmitted and if it is changed, transmit creation/deletion of entities.
+    for(uint32_t index=0; index<ecs_entity_version.size(); index++) {
+        if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag))
+            ecs_packet << CMD_ECS_ENTITY_CREATE << index << ecs_entity_version[index];
+    }
+    //  For each component type, send all existing components.
+    for(auto& ecsrb : sp::ecs::MultiplayerReplication::list)
+        ecsrb->sendAll(ecs_packet);
+
+    sendDataCounter += ecs_packet.getDataSize();
+    send_packet(ecs_packet);
+
+    //On a new client, first create all the already existing objects. And update all the values.
+    for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
+    {
+        P<MultiplayerObject> obj = i->second;
+        if (obj && obj->replicated)
+        {
+            sp::io::DataBuffer packet;
+            generateCreatePacketFor(obj, packet);
+
+            sendDataCounter += packet.getDataSize();
+            send_packet(packet);
+        }
+    }
+}
+
 void GameServer::handleNewClient(ClientInfo& info)
 {
     {
@@ -501,33 +533,9 @@ void GameServer::handleNewClient(ClientInfo& info)
     }
 
     onNewClient(info.client_id);
-
-    //Replicate ECS data, we send this as one big packet so ECS state is always consistent on the client.
-    sp::io::DataBuffer ecs_packet;
-    ecs_packet << CMD_ECS_UPDATE;
-    //  For each entity, check which version number we last transmitted and if it is changed, transmit creation/deletion of entities.
-    for(uint32_t index=0; index<ecs_entity_version.size(); index++) {
-        if (!(ecs_entity_version[index] & sp::ecs::Entity::destroyed_flag))
-            ecs_packet << CMD_ECS_ENTITY_CREATE << index << ecs_entity_version[index];
-    }
-    //  For each component type, send all existing components.
-    for(auto& ecsrb : sp::ecs::MultiplayerReplication::list)
-        ecsrb->sendAll(ecs_packet);
-    sendDataCounter += ecs_packet.getDataSize();
-    info.socket->queue(ecs_packet);
-
-    //On a new client, first create all the already existing objects. And update all the values.
-    for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
-    {
-        P<MultiplayerObject> obj = i->second;
-        if (obj && obj->replicated)
-        {
-            sp::io::DataBuffer packet;
-            generateCreatePacketFor(obj, packet);
-            sendDataCounter += packet.getDataSize();
-            info.socket->queue(packet);
-        }
-    }
+    replicateInitialData([&](auto& packet) {
+        info.socket->queue(packet);
+    });
 }
 
 void GameServer::handleNewProxy(ClientInfo& info, int32_t temp_id)
@@ -545,20 +553,14 @@ void GameServer::handleNewProxy(ClientInfo& info, int32_t temp_id)
         info.socket->queue(packet);
     }
 
-    onNewClient(info.proxy_ids.back());
+    sp::io::DataBuffer target_packet;
+    target_packet << CMD_PROXY_TO_CLIENTS << info.proxy_ids.back();
 
-    //On a new client, first create all the already existing objects. And update all the values.
-    for(std::unordered_map<int32_t, P<MultiplayerObject> >::iterator i=objectMap.begin(); i != objectMap.end(); i++)
-    {
-        P<MultiplayerObject> obj = i->second;
-        if (obj && obj->replicated)
-        {
-            sp::io::DataBuffer packet;
-            generateCreatePacketFor(obj, packet);
-            sendDataCounter += packet.getDataSize();
-            info.socket->queue(packet);
-        }
-    }
+    onNewClient(info.proxy_ids.back());
+    replicateInitialData([&](auto& packet) {
+        info.socket->queue(target_packet);
+        info.socket->queue(packet);
+    });
 }
 
 
