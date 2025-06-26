@@ -85,7 +85,7 @@ void Font::PreparedFontString::append(std::string_view s, float text_size, glm::
                 if (data[n].char_code == ' ')
                 {
                     data[n].char_code = 0;
-                    index = data[n + 1].string_offset;
+                    index = data[n + 1].string_offset - string_offset;
                     data.resize(n + 1);
                     next_position_x = 0.0f;
                     break;
