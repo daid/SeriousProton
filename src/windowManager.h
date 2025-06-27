@@ -18,6 +18,7 @@ public:
 
     glm::vec2 getVirtualSize() const { return current_virtual_size; }
     void render();
+    void swapBuffers();
 
     Mode getMode() { return mode; }
     void setMode(Mode mode);
