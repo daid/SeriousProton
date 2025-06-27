@@ -121,7 +121,7 @@ static int luaEntityNewIndex(lua_State* L) {
             auto component_key = luaL_checkstring(L, -2);
             auto it = ComponentRegistry::components.find(component_key);
             if (it == ComponentRegistry::components.end())
-                return luaL_error(L, "Tried to set non-exsisting component %s", component_key);
+                return luaL_error(L, "Tried to set non-existing component %s", component_key);
             it->second.setter(L, e, key);
             lua_pop(L, 1);
         }
@@ -189,7 +189,7 @@ static int luaEntityComponentsIndex(lua_State* L) {
     if (it != ComponentRegistry::components.end()) {
         return it->second.getter(L, e, key);
     }
-    return 0;
+    return luaL_error(L, "Tried to get non-existing component %s", key);
 }
 
 static int luaEntityComponentsNewIndex(lua_State* L) {
@@ -203,7 +203,7 @@ static int luaEntityComponentsNewIndex(lua_State* L) {
     if (it != ComponentRegistry::components.end()) {
         return it->second.setter(L, e, key);
     }
-    return luaL_error(L, "Tried to set non-exsisting component %s", key);
+    return luaL_error(L, "Tried to set non-existing component %s", key);
 }
 
 static int luaEntityComponentsPairs(lua_State* L) {

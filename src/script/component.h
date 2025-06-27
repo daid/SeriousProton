@@ -77,7 +77,7 @@ public:
             if (array_count_func(*ptr) <= icptr->index) return 0;
             auto key = luaL_checkstring(L, -1);
             auto it = indexed_members.find(key);
-            if (it == indexed_members.end()) return 0;
+            if (it == indexed_members.end()) return luaL_error(L, "Trying to get unknown component %s member %s", component_name, key);
             return it->second.getter(L, ptr, icptr->index);
         });
         lua_setfield(L, -2, "__index");
@@ -149,7 +149,7 @@ private:
         }
         auto key = luaL_checkstring(L, -1);
         auto it = members.find(key);
-        if (it == members.end()) return 0;
+        if (it == members.end()) return luaL_error(L, "Trying to get unknown component %s member %s", component_name, key);
         return it->second.getter(L, ptr);
     }
 
