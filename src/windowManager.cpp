@@ -218,6 +218,7 @@ void Window::create()
             exit(1);
         }
     }
+    SDL_GL_MakeCurrent(static_cast<SDL_Window*>(window), gl_context);
     if (SDL_GL_SetSwapInterval(-1))
         SDL_GL_SetSwapInterval(1);
     setupView();
