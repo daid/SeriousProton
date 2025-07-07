@@ -608,6 +608,19 @@ void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
     }
 }
 
+void RenderTarget::outlineRect(const sp::Rect& rect, glm::u8vec4 color)
+{
+    std::vector<glm::vec2> points;
+    points.reserve(5);
+    points.emplace_back(rect.position);
+    points.emplace_back(glm::vec2(rect.position.x + rect.size.x, rect.position.y));
+    points.emplace_back(rect.position + rect.size);
+    points.emplace_back(glm::vec2(rect.position.x, rect.position.y + rect.size.y));
+    points.emplace_back(rect.position);
+
+    drawLine(points, color);
+}
+
 void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
 {
     if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
@@ -627,7 +640,6 @@ void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
     vertex_data.push_back({
         {rect.position.x + rect.size.x, rect.position.y + rect.size.y}, color, atlas_white_pixel});
 }
-
 
 void RenderTarget::drawTexturedQuad(std::string_view texture,
     glm::vec2 p0, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3,

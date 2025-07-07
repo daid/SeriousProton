@@ -44,6 +44,7 @@ public:
     void drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color);
     void drawTriangles(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& indices, glm::u8vec4 color);
     void fillCircle(glm::vec2 center, float radius, glm::u8vec4 color);
+    void outlineRect(const sp::Rect& rect, glm::u8vec4 color);
     void fillRect(const sp::Rect& rect, glm::u8vec4 color);
 
     void drawTexturedQuad(std::string_view texture,
