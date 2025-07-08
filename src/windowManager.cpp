@@ -80,8 +80,11 @@ void Window::render()
     sp::RenderTarget target{current_virtual_size, {w, h}};
     render_chain->render(target);
     target.finish();
+}
 
-    // Display things on screen
+void Window::swapBuffers()
+{
+    SDL_GL_MakeCurrent(static_cast<SDL_Window*>(window), gl_context);
     SDL_GL_SwapWindow(static_cast<SDL_Window*>(window));
 }
 
@@ -215,6 +218,7 @@ void Window::create()
             exit(1);
         }
     }
+    SDL_GL_MakeCurrent(static_cast<SDL_Window*>(window), gl_context);
     if (SDL_GL_SetSwapInterval(-1))
         SDL_GL_SetSwapInterval(1);
     setupView();

@@ -247,6 +247,10 @@ void Engine::runMainLoop()
             for(auto window : Window::all_windows)
                 window->render();
             engine_timing["rendering"] = engine_timing_stopwatch.restart();
+            for (auto window : Window::all_windows)
+                window->swapBuffers();
+            engine_timing_stopwatch.restart(); // skip vsync interval in timing
+
             engine_timing["server_update"] = 0.0f;
             if (game_server)
                 engine_timing["server_update"] = game_server->getUpdateTime();
