@@ -121,7 +121,7 @@ bool UdpSocket::joinMulticast(int group_nr)
                 memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
                 
                 struct ip_mreq mreq;
-                mreq.imr_multiaddr.s_addr = htonl((239 << 24) | (192 << 16) | (group_nr));
+                mreq.imr_multiaddr.s_addr = htonl((239 << 24) | (255 << 16) | (group_nr));
                 mreq.imr_interface.s_addr = server_addr.sin_addr.s_addr;
                 
                 success = success && ::setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&mreq), sizeof(mreq)) == 0;
