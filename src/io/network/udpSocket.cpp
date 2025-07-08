@@ -131,6 +131,7 @@ bool UdpSocket::joinMulticast(int group_nr)
     else
     {
         struct ipv6_mreq mreq;
+        memset(&mreq, 0, sizeof(mreq));
         mreq.ipv6mr_interface = 0;
         mreq.ipv6mr_multiaddr.s6_addr[0] = 0xff;
         mreq.ipv6mr_multiaddr.s6_addr[1] = 0x08;
