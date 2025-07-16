@@ -125,8 +125,8 @@ const string& Catalogue::trn(int n, const string& context, const string& singula
     auto form = plural_expression->evaluate(n);
     if (form < 0)
         form = 0;
-    if (form > nplurals)
-        form = nplurals;
+    if (form > nplurals - 1)
+        form = nplurals - 1;
     if (form > (int)it->second.size() - 1)
         form = it->second.size() - 1;
 
