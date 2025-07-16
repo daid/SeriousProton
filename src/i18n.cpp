@@ -53,6 +53,28 @@ const string& tr(const string& context, const string& input)
     return input;
 }
 
+const string& trn(int n, const string& singular, const string& plural)
+{
+    auto catalogue = i18n::Catalogue::get();
+    if (catalogue)
+        return catalogue->trn(n, singular, plural);
+
+    LOG(ERROR) << "trn called before the catalogue is loaded!";
+    SDL_assert(false);
+    return singular;
+}
+
+const string& trn(int n, const string& context, const string& singular, const string& plural)
+{
+    auto catalogue = i18n::Catalogue::get();
+    if (catalogue)
+        return catalogue->trn(n, context, singular, plural);
+
+    LOG(ERROR) << "trn called before the catalogue is loaded!";
+    SDL_assert(false);
+    return singular;
+}
+
 namespace i18n {
 
 std::unique_ptr<Catalogue> Catalogue::instance;
@@ -80,7 +102,35 @@ const string& Catalogue::tr(const string& context, const string& input) const
     const auto it = cit->second.find(input);
     if (it == cit->second.end())
         return input;
-    return it->second;
+    return it->second[0];
+}
+
+const string& Catalogue::trn(int n, const string& singular, const string& plural) const
+{
+    return trn(n, "", singular, plural);
+}
+
+const string& Catalogue::trn(int n, const string& context, const string& singular, const string& plural) const
+{
+    const auto cit = entries.find(context);
+    if (cit == entries.end())
+        return n == 1 ? singular : plural;
+    const auto it = cit->second.find(singular);
+    if (it == cit->second.end())
+        return n == 1 ? singular : plural;
+
+    if (nplurals < 2 || !plural_expression)
+        return it->second[0];
+
+    auto form = plural_expression->evaluate(n);
+    if (form < 0)
+        form = 0;
+    if (form > nplurals)
+        form = nplurals;
+    if (form > (int)it->second.size() - 1)
+        form = it->second.size() - 1;
+
+    return it->second[form];
 }
 
 Catalogue::Catalogue() = default;
@@ -169,11 +219,12 @@ bool Catalogue::load_resource(const string& resource_name)
 
             if (!origonal.empty())
             {
+                // TODO how are plural forms encoded here?
                 int context_index = origonal.find("\x04");
                 if (context_index > -1)
-                    entries[origonal.substr(0, context_index)][origonal.substr(context_index + 1)] = translated;
+                    entries[origonal.substr(0, context_index)][origonal.substr(context_index + 1)] = {translated};
                 else
-                    entries[""][origonal] = translated;
+                    entries[""][origonal] = {translated};
             }
         }
         return true;
@@ -182,6 +233,7 @@ bool Catalogue::load_resource(const string& resource_name)
     if (resource_name.endswith(".po"))
     {
         string origonal;
+        std::vector<string> translated_pl;
         string translated;
         string context;
         string* target = &origonal;
@@ -193,13 +245,19 @@ bool Catalogue::load_resource(const string& resource_name)
             string line_contents;
             if (line.endswith("\""))
             {
-                if (target == &translated && !line.startswith("\""))
+                if (target == &translated && !line.startswith("\"") && !line.startswith("msgstr["))
                 {
+                    if (context.empty() && origonal.empty())
+                    {
+                        process_headers(translated);
+                    }
                     if (!origonal.empty() && !translated.empty())
                     {
-                        entries[context][origonal] = translated;
+                        translated_pl.push_back(translated);
+                        entries[context][origonal] = translated_pl;
                     }
                     context = "";
+                    translated_pl = {};
                 }
                 if (line.startswith("msgid \""))
                 {
@@ -207,19 +265,46 @@ bool Catalogue::load_resource(const string& resource_name)
                     target = &origonal;
                     line_contents = line.substr(7, -1);
                 }
-                if (line.startswith("msgctxt \""))
+                else if (line.startswith("msgctxt \""))
                 {
                     context = "";
+                    translated_pl = {};
                     target = &context;
                     line_contents = line.substr(9, -1);
                 }
-                if (line.startswith("msgstr \""))
+                else if (line.startswith("msgstr \""))
                 {
                     translated = "";
                     target = &translated;
                     line_contents = line.substr(8, -1);
                 }
-                if (line.startswith("\""))
+                else if (line.startswith("msgstr["))
+                {
+                    auto close_idx = line.find("] \"");
+                    if (close_idx < 0) {
+                        LOG(ERROR) << "msgstr[ with no closing ] on the line?";
+                        continue;
+                    }
+                    auto idx_str = line.substr(7, close_idx);
+                    line_contents = line.substr(close_idx+3, -1);
+
+                    if (!idx_str.isdigit()) {
+                        LOG(ERROR) << "msgstr[] with non-digit index?";
+                        continue;
+                    }
+
+
+                    auto idx_val = (unsigned int)idx_str.toInt();
+                    if (idx_val > 0)
+                        translated_pl.push_back(translated);
+                    if (idx_val != translated_pl.size()) {
+                        LOG(ERROR) << "Out-of-sequence msgstr[]! " << idx_val << " vs " << translated_pl.size();
+                        continue;
+                    }
+                    translated = "";
+                    target = &translated;
+                }
+                else if (line.startswith("\""))
                 {
                     line_contents = line.substr(1, -1);
                 }
@@ -243,16 +328,46 @@ bool Catalogue::load_resource(const string& resource_name)
             }
         }
         if (context.empty() && origonal.empty()) {
-            // file headers
+            process_headers(translated);
         }
         else if (!origonal.empty() && !translated.empty())
         {
-            entries[context][origonal] = translated;
+            translated_pl.push_back(translated);
+            entries[context][origonal] = translated_pl;
         }
         return true;
     }
 
     return false;
+}
+
+void Catalogue::process_headers(const string& headers) {
+    for (auto hdr : headers.split('\n')) {
+        auto parts = hdr.split(':', 1);
+        if (parts.size() < 2) continue;
+
+        if (parts[0] == "Plural-Forms") {
+            for (auto elem : parts[1].split(";")) {
+                auto kv = elem.split('=', 1);
+                if (kv.size() < 2) continue;
+
+                auto key = kv[0].strip();
+                if (key == "nplurals") {
+                    nplurals = kv[1].toInt();
+                    if (nplurals < 1) {
+                        LOG(ERROR) << "Invalid nplurals value: " << kv[1];
+                        nplurals = 1;
+                    }
+                } else if (key == "plural") {
+                    string error;
+                    plural_expression = CExpression::parse(kv[1], error);
+                    if (!plural_expression) {
+                        LOG(ERROR) << "Failed to parse plural expression: " << error;
+                    }
+                }
+            }
+        }
+    }
 }
 
 }//!namespace i18n

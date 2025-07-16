@@ -155,6 +155,7 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/renderTexture.cpp
     src/graphics/shader.cpp
     src/graphics/opengl.cpp
+    src/i18n/cexpression.cpp
     src/i18n.cpp
     src/keyValueTree.cpp
     src/logging.cpp
@@ -217,6 +218,7 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/renderTexture.h
     src/graphics/shader.h
     src/graphics/opengl.h
+    src/i18n/cexpression.h
     src/i18n.h
     src/keyValueTree.h
     
