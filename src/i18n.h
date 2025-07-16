@@ -44,8 +44,7 @@ private:
     Catalogue();
 
     bool load_resource(const string& resource);
-    std::unordered_map<string, string> entries;
-    std::unordered_map<string, std::unordered_map<string, string>> context_entries;
+    std::unordered_map<string, std::unordered_map<string, string>> entries;
 
     static std::unique_ptr<Catalogue> instance;
 };

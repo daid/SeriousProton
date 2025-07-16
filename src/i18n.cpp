@@ -69,16 +69,13 @@ void reset()
 
 const string& Catalogue::tr(const string& input) const
 {
-    const auto it = entries.find(input);
-    if (it != entries.end())
-        return it->second;
-    return input;
+    return tr("", input);
 }
 
 const string& Catalogue::tr(const string& context, const string& input) const
 {
-    const auto cit = context_entries.find(context);
-    if (cit == context_entries.end())
+    const auto cit = entries.find(context);
+    if (cit == entries.end())
         return input;
     const auto it = cit->second.find(input);
     if (it == cit->second.end())
@@ -174,9 +171,9 @@ bool Catalogue::load_resource(const string& resource_name)
             {
                 int context_index = origonal.find("\x04");
                 if (context_index > -1)
-                    context_entries[origonal.substr(0, context_index)][origonal.substr(context_index + 1)] = translated;
+                    entries[origonal.substr(0, context_index)][origonal.substr(context_index + 1)] = translated;
                 else
-                    entries[origonal] = translated;
+                    entries[""][origonal] = translated;
             }
         }
         return true;
@@ -200,14 +197,7 @@ bool Catalogue::load_resource(const string& resource_name)
                 {
                     if (!origonal.empty() && !translated.empty())
                     {
-                        if (!context.empty())
-                        {
-                            context_entries[context][origonal] = translated;
-                        }
-                        else
-                        {
-                            entries[origonal] = translated;
-                        }
+                        entries[context][origonal] = translated;
                     }
                     context = "";
                 }
@@ -252,12 +242,12 @@ bool Catalogue::load_resource(const string& resource_name)
                 }
             }
         }
-        if (!origonal.empty() && !translated.empty())
+        if (context.empty() && origonal.empty()) {
+            // file headers
+        }
+        else if (!origonal.empty() && !translated.empty())
         {
-            if (!context.empty())
-                context_entries[context][origonal] = translated;
-            else
-                entries[origonal] = translated;
+            entries[context][origonal] = translated;
         }
         return true;
     }
