@@ -144,6 +144,7 @@ set(source_files #All SeriousProton's objects to compile
     src/audio/music.cpp
     src/clipboard.cpp
     src/engine.cpp
+    src/expr/cexpression.cpp
     src/event.cpp
     src/graphics/font.cpp
     src/graphics/freetypefont.cpp
@@ -155,7 +156,6 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/renderTexture.cpp
     src/graphics/shader.cpp
     src/graphics/opengl.cpp
-    src/i18n/cexpression.cpp
     src/i18n.cpp
     src/keyValueTree.cpp
     src/logging.cpp
@@ -206,6 +206,7 @@ set(source_files #All SeriousProton's objects to compile
     src/clipboard.h
     src/dynamicLibrary.h
     src/engine.h
+    src/expr/cexpression.h
     src/event.h
     src/graphics/alignment.h
     src/graphics/font.h
@@ -218,7 +219,6 @@ set(source_files #All SeriousProton's objects to compile
     src/graphics/renderTexture.h
     src/graphics/shader.h
     src/graphics/opengl.h
-    src/i18n/cexpression.h
     src/i18n.h
     src/keyValueTree.h
     

@@ -4,7 +4,7 @@
 #include "stringImproved.h"
 #include <unordered_map>
 #include <memory>
-#include "i18n/cexpression.h"
+#include "expr/cexpression.h"
 
 //Translate a string with a loaded translation.
 // If no translation was loaded, return the origonal string unmodified.
@@ -50,7 +50,7 @@ private:
     bool load_resource(const string& resource);
     void process_headers(const string& headers);
     int nplurals = 1;
-    std::unique_ptr<CExpression> plural_expression;
+    std::unique_ptr<sp::expr::CExpression> plural_expression;
     std::unordered_map<string, std::unordered_map<string, std::vector<string>>> entries;
 
     static std::unique_ptr<Catalogue> instance;

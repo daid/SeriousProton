@@ -1,16 +1,16 @@
-#include "i18n/cexpression.h"
+#include "expr/cexpression.h"
 
 #include <optional>
 #include <memory>
 
-namespace i18n {
+namespace sp::expr {
 
 typedef std::unique_ptr<CExpression> Node;
 
 enum class TokenType {
     Invalid,
     Integer,
-    N,
+    Identifier,
     Multiply,
     Divide,
     Modulo,
@@ -39,7 +39,9 @@ public:
     TokenType token_type = TokenType::Invalid; // Type of current token
     unsigned int start_idx = 0;                // Start index of current token
 
-    ParseContext(const string& input) : input(input) {}
+    const IdentifierContext& ident_ctx;
+
+    ParseContext(const string& input, const IdentifierContext& ident_ctx) : input(input), ident_ctx(ident_ctx) {}
 
     bool advance() { // Advance to the next token; return true if there is a valid token (including an EOF token), false if the input was invalid
         while (peek() == ' ')
@@ -57,7 +59,6 @@ public:
                 token_type = TokenType::TYPE; \
                 return true;
 
-            TOK_SINGLE('n', N);
             TOK_SINGLE('?', Question);
             TOK_SINGLE(':', Colon);
             TOK_SINGLE('%', Modulo);
@@ -113,6 +114,13 @@ public:
                     token_type = TokenType::Integer;
                     return true;
                 }
+                if (isalpha(peek()) || peek() == '_') {
+                    while (isalnum(peek()) || peek() == '_') {
+                        current_idx++;
+                    }
+                    token_type = TokenType::Identifier;
+                    return true;
+                }
 
                 current_idx++;
                 set_error("unexpected character '" + token_text() + "'");
@@ -158,7 +166,7 @@ public:
 
     void set_error(string message) { // Set an error at the current position in the input
         error = string("at {index}: {message}").format({
-            {"index", current_idx},
+            {"index", start_idx},
             {"message", message},
         });
     }
@@ -170,22 +178,34 @@ public:
 std::optional<Node> parse_parens(ParseContext& ctx);
 
 // n 1234
-class NNode : public CExpression {
-    int evaluate(int n) override { return n; }
+class IdentifierNode : public CExpression {
+    string ident;
+public:
+    IdentifierNode(string ident) : ident(ident) {}
+    int evaluate(const IdentifierContext& context) override {
+        return context.get_identifier_value(ident).value_or(0);
+    }
 };
 
 class IntegerNode : public CExpression {
     int value;
 public:
     IntegerNode(int value) : value(value) {}
-    int evaluate(int n) override { return value; }
+    int evaluate(const IdentifierContext& context) override { return value; }
 };
 
 std::optional<Node> parse_value(ParseContext& ctx) {
     switch (ctx.token_type) {
-        case TokenType::N:
-            if (!ctx.advance()) return {};
-            return Node(new NNode());
+        case TokenType::Identifier:
+            {
+                auto value = ctx.token_text();
+                if (!ctx.ident_ctx.identifier_exists(value)) {
+                    ctx.set_error("name '" + value + "' does not exist");
+                    return {};
+                }
+                if (!ctx.advance()) return {};
+                return Node(new IdentifierNode(value));
+            }
         case TokenType::Integer:
             {
                 auto value = ctx.token_text().toInt();
@@ -206,8 +226,8 @@ class BinaryNode : public CExpression {
     Node lhs, rhs;
 public:
     BinaryNode(TokenType operation, Node lhs, Node rhs) : operation(operation), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
-    int evaluate(int n) override {
-        auto left = lhs->evaluate(n);
+    int evaluate(const IdentifierContext& ctx) override {
+        auto left = lhs->evaluate(ctx);
 
         // boolean op short-circuiting
         if (operation == TokenType::BoolAnd && !left)
@@ -215,7 +235,7 @@ public:
         if (operation == TokenType::BoolOr && left)
             return 1;
 
-        auto right = rhs->evaluate(n);
+        auto right = rhs->evaluate(ctx);
 
         switch (operation) {
             case TokenType::Multiply:  return left * right;
@@ -273,7 +293,7 @@ class TernaryNode : public CExpression {
     Node condition, if_true, if_false;
 public:
     TernaryNode(Node condition, Node if_true, Node if_false) : condition(std::move(condition)), if_true(std::move(if_true)), if_false(std::move(if_false)) {}
-    int evaluate(int n) override { return condition->evaluate(n) ? if_true->evaluate(n) : if_false->evaluate(n); }
+    int evaluate(const IdentifierContext& ctx) override { return condition->evaluate(ctx) ? if_true->evaluate(ctx) : if_false->evaluate(ctx); }
 };
 
 std::optional<Node> parse_ternary(ParseContext& ctx) {
@@ -310,8 +330,8 @@ std::optional<Node> parse_parens(ParseContext& ctx) {
 }
 
 // Parse entrypoint
-std::unique_ptr<CExpression> CExpression::parse(const string& input, string& error) {
-    auto ctx = ParseContext(input);
+std::unique_ptr<CExpression> CExpression::parse(const string& input, const IdentifierContext& ident_ctx, string& error) {
+    auto ctx = ParseContext(input, ident_ctx);
 
     if (!ctx.advance()) {
         error = ctx.error;

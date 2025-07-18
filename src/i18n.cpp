@@ -77,6 +77,20 @@ const string& trn(int n, const string& context, const string& singular, const st
 
 namespace i18n {
 
+class I18NIdentifierContext : public sp::expr::IdentifierContext
+{
+    int n;
+public:
+    I18NIdentifierContext(int n) : n(n) {}
+
+    std::optional<int> get_identifier_value(const string& ident) const override {
+        if (ident == "n")
+            return n;
+
+        return {};
+    }
+};
+
 std::unique_ptr<Catalogue> Catalogue::instance;
 
 bool load(const string& resource_name)
@@ -122,7 +136,7 @@ const string& Catalogue::trn(int n, const string& context, const string& singula
     if (nplurals < 2 || !plural_expression)
         return it->second[0];
 
-    auto form = plural_expression->evaluate(n);
+    auto form = plural_expression->evaluate(I18NIdentifierContext(n));
     if (form < 0)
         form = 0;
     if (form > nplurals - 1)
@@ -360,7 +374,7 @@ void Catalogue::process_headers(const string& headers) {
                     }
                 } else if (key == "plural") {
                     string error;
-                    plural_expression = CExpression::parse(kv[1], error);
+                    plural_expression = sp::expr::CExpression::parse(kv[1], I18NIdentifierContext(0), error);
                     if (!plural_expression) {
                         LOG(ERROR) << "Failed to parse plural expression: " << error;
                     }
