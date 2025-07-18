@@ -4,13 +4,15 @@
 #include "stringImproved.h"
 #include <unordered_map>
 #include <memory>
-
+#include "expr/cexpression.h"
 
 //Translate a string with a loaded translation.
 // If no translation was loaded, return the origonal string unmodified.
 // There functions are not in the i18n namespace to prevent very long identifiers.
 const string& tr(const string& input);
 const string& tr(const string& context, const string& input);
+const string& trn(int n, const string& singular, const string& plural);
+const string& trn(int n, const string& context, const string& singular, const string& plural);
 
 //Mark a string for translation without actually translating it.
 // This can be used in case the actual translation needs to happen in a different part of the code
@@ -37,6 +39,8 @@ public:
 
     const string& tr(const string& input) const;
     const string& tr(const string& context, const string& input) const;
+    const string& trn(int n, const string& singular, const string& plural) const;
+    const string& trn(int n, const string& context, const string& singular, const string& plural) const;
 
     ~Catalogue();
 
@@ -44,8 +48,10 @@ private:
     Catalogue();
 
     bool load_resource(const string& resource);
-    std::unordered_map<string, string> entries;
-    std::unordered_map<string, std::unordered_map<string, string>> context_entries;
+    void process_headers(const string& headers);
+    int nplurals = 1;
+    std::unique_ptr<sp::expr::CExpression> plural_expression;
+    std::unordered_map<string, std::unordered_map<string, std::vector<string>>> entries;
 
     static std::unique_ptr<Catalogue> instance;
 };
