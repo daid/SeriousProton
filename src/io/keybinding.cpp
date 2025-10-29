@@ -36,14 +36,18 @@ Keybinding::Keybinding(const string& name)
 Keybinding::Keybinding(const string& name, const string& default_key)
 : Keybinding(name)
 {
+    default_bindings.emplace_back(default_key);
     addKey(default_key);
 }
 
 Keybinding::Keybinding(const string& name, const std::initializer_list<const string>& default_keys)
 : Keybinding(name)
 {
-    for(const string& key : default_keys)
+    for (const string& key : default_keys)
+    {
+        default_bindings.emplace_back(key);
         addKey(key);
+    }
 }
 
 Keybinding::~Keybinding()
@@ -399,7 +403,7 @@ void Keybinding::loadKeybindings(const string& filename)
         else if (entry["key"].is_array())
         {
             keybinding->clearKeys();
-            for(const auto& key_entry : entry["key"])
+            for (const auto& key_entry : entry["key"])
             {
                 if (key_entry.is_string())
                     keybinding->addKey(key_entry.get<std::string>());
@@ -410,6 +414,7 @@ void Keybinding::loadKeybindings(const string& filename)
             keybinding->bindings.clear();
         }
     }
+    LOG(Info, "Keybindings loaded from ", filename);
 }
 
 void Keybinding::saveKeybindings(const string& filename)
@@ -427,6 +432,7 @@ void Keybinding::saveKeybindings(const string& filename)
 
     std::ofstream file(filename);
     file << obj.dump();
+    LOG(Info, "Keybindings saved to ", filename);
 }
 
 Keybinding* Keybinding::getByName(const string& name)

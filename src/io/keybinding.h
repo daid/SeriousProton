@@ -95,10 +95,13 @@ public:
     static std::vector<Keybinding*> listAllByCategory(const string& category);
 
     static void setVirtualKey(int index, float value);
+
+    std::vector<string> getDefaultBindings() { return default_bindings; }
 private:
     string name;
     string category;
     string label;
+    std::vector<string> default_bindings;
 
     struct Binding
     {
