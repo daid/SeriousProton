@@ -12,7 +12,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-override"
 #endif//__GNUC__
-#include "Box2D/Box2D.h"
+#include "box2d/box2d.h"
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif//__GNUC__
@@ -59,7 +59,7 @@ void CollisionSystem::update(float delta)
             physics.physics_dirty = false;
             sp::ecs::Entity* ptr;
             if (physics.body) {
-                ptr = (sp::ecs::Entity*)physics.body->GetUserData();
+                ptr = (sp::ecs::Entity*)physics.body->GetUserData().pointer;
                 world->DestroyBody(physics.body);
             } else {
                 ptr = new sp::ecs::Entity();
@@ -68,7 +68,7 @@ void CollisionSystem::update(float delta)
 
             b2BodyDef bodyDef;
             bodyDef.type = physics.type == Physics::Type::Static ? b2_kinematicBody : b2_dynamicBody;
-            bodyDef.userData = ptr;
+            bodyDef.userData.pointer = (uintptr_t)ptr;
             bodyDef.allowSleep = false;
             bodyDef.position = v2b(transform.position);
             bodyDef.angle = glm::radians(transform.rotation);
@@ -115,7 +115,7 @@ void CollisionSystem::update(float delta)
     auto now = engine->getElapsedTime();
     std::vector<b2Body*> remove_list;
     for(b2Body* body = world->GetBodyList(); body; body = body->GetNext()) {
-        sp::ecs::Entity* entity_ptr = (sp::ecs::Entity*)body->GetUserData();
+        sp::ecs::Entity* entity_ptr = (sp::ecs::Entity*)body->GetUserData().pointer;
         Transform* transform;
         Physics* physics = nullptr;
         if (!*entity_ptr || !(physics = entity_ptr->getComponent<Physics>()) || !(transform = entity_ptr->getComponent<Transform>())) {
@@ -159,8 +159,8 @@ void CollisionSystem::update(float delta)
             {
                 force += contact->GetManifold()->points[n].normalImpulse * BOX2D_SCALE;
             }
-            auto a = (sp::ecs::Entity*)contact->GetFixtureA()->GetBody()->GetUserData();
-            auto b = (sp::ecs::Entity*)contact->GetFixtureB()->GetBody()->GetUserData();
+            auto a = (sp::ecs::Entity*)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
+            auto b = (sp::ecs::Entity*)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
             
             for(auto handler : handlers)
             {
@@ -184,7 +184,7 @@ public:
 	/// @return false to terminate the query.
 	virtual bool ReportFixture(b2Fixture* fixture) override
 	{
-        auto ptr = (sp::ecs::Entity*)fixture->GetBody()->GetUserData();
+        auto ptr = (sp::ecs::Entity*)fixture->GetBody()->GetUserData().pointer;
         if (*ptr)
             list.push_back(*ptr);
         return true;
