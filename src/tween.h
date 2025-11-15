@@ -146,7 +146,7 @@ public:
         const float t = normalizeTime(time_now, time_start, time_end);
         // TODO: Approximate to avoid use of inefficient sqrt in loops
         if (t < 0.5f)
-            return tweenApply(0.5f * (1.0f - sqrt(1.0f - 4.0f * (t * t))), value0, value1);
+            return tweenApply(0.5f * (1.0f - sqrtf(1.0f - 4.0f * (t * t))), value0, value1);
 
         return tweenApply(0.5f * (sqrtf(-((2.0f * t) - 3.0f) * ((2.0f * t) - 1.0f)) + 1.0f), value0, value1);
     }
@@ -187,7 +187,7 @@ public:
     static inline T easeInElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply(sin(13.0f * PI_2 * t) * powf(10.0f * (t - 1.0f), 2.0f), value0, value1);
+        return tweenApply(sinf(13.0f * PI_2 * t) * powf(10.0f * (t - 1.0f), 2.0f), value0, value1);
     }
     static inline T easeOutElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
@@ -204,16 +204,16 @@ public:
         return tweenApply(0.5f * (sinf(-13.0f * PI_2 * ((2.0f * t - 1.0f) + 1.0f)) * powf(-10.0f * (2.0f * t - 1.0f) + 2.0f, 2.0f)), value0, value1);
     }
 
-    // Modeled after the overshooting cubic y = x^3-x*sin(x*pi)
+    // Modeled after the overshooting cubic y = x^3-x*sinf(x*pi)
     static inline T easeInBack(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply((t * t * t) - t * sin(t * PI), value0, value1);
+        return tweenApply((t * t * t) - t * sinf(t * PI), value0, value1);
     }
     static inline T easeOutBack(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = 1.0f - normalizeTime(time_now, time_start, time_end);
-        return tweenApply(1.0f - ((t * t * t) - t * sin(t * PI)), value0, value1);
+        return tweenApply(1.0f - ((t * t * t) - t * sinf(t * PI)), value0, value1);
     }
     static inline T easeInOutBack(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
@@ -221,10 +221,10 @@ public:
         float f = 2.0f * t;
 
         if (t < 0.5f)
-            return tweenApply(0.5f * ((f * f * f) - (f * sin(f * PI))), value0, value1);
+            return tweenApply(0.5f * ((f * f * f) - (f * sinf(f * PI))), value0, value1);
 
         f = 1.0f - (f - 1.0f);
-        return tweenApply(0.5f * (1.0f - ((f * f * f) - (f * sin(f * PI)))) + 0.5f, value0, value1);
+        return tweenApply(0.5f * (1.0f - ((f * f * f) - (f * sinf(f * PI)))) + 0.5f, value0, value1);
     }
 
     /* CSS-style cubic Bezier curve-based easing with two control-point
