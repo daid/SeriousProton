@@ -2,7 +2,6 @@
 
 #include <glm/gtc/type_precision.hpp>
 #include <algorithm>
-#include <cmath>
 
 // Tweening functions, for non-linear animations and effects.
 
@@ -33,17 +32,17 @@ public:
     static inline T easeInSine(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply(sin((t - 1.0f) * PI_2), value0, value1);
+        return tweenApply(sinf((t - 1.0f) * PI_2), value0, value1);
     }
     static inline T easeOutSine(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply(sin((t * PI_2)), value0, value1);
+        return tweenApply(sinf((t * PI_2)), value0, value1);
     }
     static inline T easeInOutSine(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply(0.5f * (1.0f - cos(t * PI)), value0, value1);
+        return tweenApply(0.5f * (1.0f - cosf(t * PI)), value0, value1);
     }
 
     // Quadratic
@@ -134,22 +133,22 @@ public:
     {
         const float t = normalizeTime(time_now, time_start, time_end);
         // TODO: Approximate to avoid use of inefficient sqrt in loops
-        return tweenApply(1.0f - std::sqrtf(1.0f - (t * t)), value0, value1);
+        return tweenApply(1.0f - sqrtf(1.0f - (t * t)), value0, value1);
     }
     static inline T easeOutCircular(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         float t = normalizeTime(time_now, time_start, time_end) - 1.0f;
         // TODO: Approximate to avoid use of inefficient sqrt in loops
-        return tweenApply(std::sqrtf((2.0f - t) * t), value0, value1);
+        return tweenApply(sqrtf((2.0f - t) * t), value0, value1);
     }
     static inline T easeInOutCircular(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
         // TODO: Approximate to avoid use of inefficient sqrt in loops
         if (t < 0.5f)
-            return tweenApply(0.5f * (1.0f - std::sqrtf(1.0f - 4.0f * (t * t))), value0, value1);
+            return tweenApply(0.5f * (1.0f - sqrt(1.0f - 4.0f * (t * t))), value0, value1);
 
-        return tweenApply(0.5f * (std::sqrtf(-((2.0f * t) - 3.0f) * ((2.0f * t) - 1.0f)) + 1.0f), value0, value1);
+        return tweenApply(0.5f * (sqrtf(-((2.0f * t) - 3.0f) * ((2.0f * t) - 1.0f)) + 1.0f), value0, value1);
     }
 
     static inline T easeInExponential(float time_now, float time_start, float time_end, const T& value0, const T& value1)
@@ -188,21 +187,21 @@ public:
     static inline T easeInElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply(sin(13.0f * PI_2 * t) * std::powf(10.0f * (t - 1.0f), 2.0f), value0, value1);
+        return tweenApply(sin(13.0f * PI_2 * t) * powf(10.0f * (t - 1.0f), 2.0f), value0, value1);
     }
     static inline T easeOutElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply((-13.0f * PI_2 * (t + 1.0f)) * std::powf((-10.0f * t) + 1.0f, 2.0f), value0, value1);
+        return tweenApply((-13.0f * PI_2 * (t + 1.0f)) * powf((-10.0f * t) + 1.0f, 2.0f), value0, value1);
     }
     static inline T easeInOutElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
 
         if (t < 0.5f)
-            return tweenApply(0.5f * sin(13.0f * PI_2 * (2.0f * t)) * std::powf(10.0f * ((2.0f * t) - 1.0f), 2.0f), value0, value1);
+            return tweenApply(0.5f * sinf(13.0f * PI_2 * (2.0f * t)) * powf(10.0f * ((2.0f * t) - 1.0f), 2.0f), value0, value1);
 
-        return tweenApply(0.5f * (sin(-13.0f * PI_2 * ((2.0f * t - 1.0f) + 1.0f)) * std::powf(-10.0f * (2.0f * t - 1.0f) + 2.0f, 2.0f)), value0, value1);
+        return tweenApply(0.5f * (sinf(-13.0f * PI_2 * ((2.0f * t - 1.0f) + 1.0f)) * powf(-10.0f * (2.0f * t - 1.0f) + 2.0f, 2.0f)), value0, value1);
     }
 
     // Modeled after the overshooting cubic y = x^3-x*sin(x*pi)
@@ -287,9 +286,9 @@ public:
         for (int i = 0; i < 4; ++i)
         {
             const float x = sampleCurveX(s) - t;
-            if (std::fabs(x) < epsilon) break;
+            if (fabsf(x) < epsilon) break;
             const float d = sampleCurveDerivativeX(s);
-            if (std::fabs(d) < epsilon) break;
+            if (fabsf(d) < epsilon) break;
 
             s -= x / d;
             if (s < 0.0f)
@@ -305,7 +304,7 @@ public:
         }
 
         // If Newton's didn't converge, bisect.
-        if (std::fabs(sampleCurveX(s) - t) >= epsilon)
+        if (fabsf(sampleCurveX(s) - t) >= epsilon)
         {
             float s0 = 0.0f;
             float s1 = 1.0f;
