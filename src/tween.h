@@ -61,7 +61,7 @@ public:
     // https://easings.net/#easeOutQuad
     static inline T easeOutQuad(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
-        const float t = 1.0f - normalizeTime(time_now, time_start, time_end);
+        const float t = normalizeTime(time_now, time_start, time_end);
         return tweenApply(-(t * (t - 2.0f)), value0, value1);
     }
     // https://easings.net/#easeInOutQuad
