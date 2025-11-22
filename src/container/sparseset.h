@@ -43,7 +43,7 @@ public:
             free_dense = new_free;
         } else {
             // Append to the data
-            sparse[index] = dense.size();
+            sparse[index] = static_cast<uint32_t>(dense.size());
             dense.push_back(index);
             data.emplace_back(value);
         }
@@ -67,7 +67,7 @@ public:
             free_dense = new_free;
         } else {
             // Append to the data
-            sparse[index] = dense.size();
+            sparse[index] = static_cast<uint32_t>(dense.size());
             dense.push_back(index);
             data.emplace_back(std::move(value));
         }
