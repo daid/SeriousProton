@@ -99,6 +99,10 @@ template <> void multiplayerReplicationFunctions<sp::ecs::Entity>::receiveData(v
         *e = sp::ecs::Entity{};
 }
 
+// Explicit template instantiation to ensure symbols are exported
+template void multiplayerReplicationFunctions<sp::ecs::Entity>::sendData(void*, sp::io::DataBuffer&);
+template void multiplayerReplicationFunctions<sp::ecs::Entity>::receiveData(void*, sp::io::DataBuffer&);
+
 void MultiplayerObject::sendClientCommand(sp::io::DataBuffer& packet)
 {
     if (game_server)

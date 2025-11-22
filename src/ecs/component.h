@@ -23,6 +23,9 @@ protected:
 };
 
 template<typename T> class ComponentStorage : public ComponentStorageBase {
+public:
+    ComponentStorage() : ComponentStorageBase() {}
+private:
     void destroy(uint32_t index) override
     {
         sparseset.remove(index);
@@ -36,11 +39,12 @@ template<typename T> class ComponentStorage : public ComponentStorageBase {
 
     SparseSet<T> sparseset;
 
-    static inline ComponentStorage<T> storage;
+    static ComponentStorage<T> storage;
 
     friend class Entity;
     template<class, class...> friend class Query;
     friend class ComponentReplication<T>;
 };
 
+template<typename T> inline ComponentStorage<T> ComponentStorage<T>::storage{};
 }
