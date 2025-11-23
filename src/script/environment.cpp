@@ -32,6 +32,25 @@ public:
 
 
 lua_State* Environment::L = nullptr;
+Environment* Environment::current_environment = nullptr;
+
+/// void destroyScript()
+/// Destroys the currently running script.
+/// Use this to clean up scripts that are no longer needed, such as when their associated entity is destroyed.
+/// This function works only when called from within a script created with Script().
+/// The script is not destroyed immediately, but is marked for removal after the current update cycle completes.
+/// Example:
+/// function update(delta)
+///     if not my_ship:isValid() then
+///         destroyScript()
+///         return
+///     end
+/// end
+static int luaDestroyScript(lua_State*)
+{
+    Environment::destroyCurrentEnvironment();
+    return 0;
+}
 
 Environment::Environment(Environment* parent)
 {
@@ -47,6 +66,10 @@ Environment::Environment(Environment* parent)
         lua_getglobal(L, s);
         lua_setfield(L, -2, s);
     }
+
+    // Register destroyScript for this environment
+    lua_pushcfunction(L, luaDestroyScript);
+    lua_setfield(L, -2, "destroyScript");
 
     lua_newtable(L);  /* meta table for the environment, with an __index pointing to the parent environment so we can access it's data. */
     if (parent) {

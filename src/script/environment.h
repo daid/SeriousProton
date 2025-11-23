@@ -1,5 +1,4 @@
-#ifndef SP_SCRIPT_ENVIRONMENT
-#define SP_SCRIPT_ENVIRONMENT
+#pragma once
 
 #include "stringImproved.h"
 #include "script/conversion.h"
@@ -17,6 +16,12 @@ class Environment : NonCopyable
 public:
     Environment(Environment* parent=nullptr);
     ~Environment();
+
+    // Manage script self-destruction.
+    static void setCurrentEnvironment(Environment* env) { current_environment = env; }
+    static Environment* getCurrentEnvironment() { return current_environment; }
+    static void destroyCurrentEnvironment() { if (current_environment) current_environment->marked_for_destruction = true; }
+    bool isMarkedForDestruction() const { return marked_for_destruction; }
 
     void setGlobalFuncWithEnvUpvalue(const string& name, lua_CFunction f) {
         //Get the environment table from the registry.
@@ -121,6 +126,8 @@ private:
 
     static lua_State* getLuaState();
     static lua_State* L;
+    static Environment* current_environment;
+    bool marked_for_destruction = false;
 
     template<typename T> friend class ComponentHandler;
     friend class LuaTableComponent;
@@ -128,5 +135,3 @@ private:
 };
 
 }
-
-#endif//SP_SCRIPT_ENVIRONMENT
