@@ -44,7 +44,8 @@ bool RenderLayer::onPointerDown(sp::io::Pointer::Button button, glm::vec2 positi
 {
     if (active)
         foreach(Renderable, r, renderableList)
-            r->onPointerDown(button, position, id);
+            if (r->onPointerDown(button, position, id))
+                return true;
     if (link)
         return link->onPointerDown(button, position, id);
     return false;
