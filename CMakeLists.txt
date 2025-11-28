@@ -177,6 +177,8 @@ set(source_files #All SeriousProton's objects to compile
     src/script/component.h
     src/script/callback.h
     src/script/callback.cpp
+    src/script/coroutine.h
+    src/script/coroutine.cpp
     src/shaderManager.cpp
     src/soundManager.cpp
     src/stringImproved.cpp

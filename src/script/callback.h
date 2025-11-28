@@ -4,6 +4,7 @@
 #include "result.h"
 #include "script/conversion.h"
 #include "script/environment.h"
+#include "script/coroutine.h"
 
 
 namespace sp::script {
@@ -42,6 +43,40 @@ public:
         } else {
             return {};
         }
+    }
+
+    /** Run the callback as coroutine.
+        Coroutine functions can be yielded and resumed later.
+        While they are yielded, other lua functions can run.
+        This makes coroutines perfect for scripted sequences.
+     */
+    template<typename... ARGS> Result<CoroutinePtr> callCoroutine(ARGS... args)
+    {
+        //Get this callback from the registry
+        lua_rawgetp(Environment::L, LUA_REGISTRYINDEX, this);
+        if (!lua_isfunction(Environment::L, -1)) {
+            lua_pop(Environment::L, 1);
+            return Result<CoroutinePtr>::makeError("Callback not set.");
+        }
+
+        lua_State* lua = lua_newthread(Environment::L);
+        lua_rotate(Environment::L, -2, 1);
+        lua_xmove(Environment::L, lua, 1);
+
+        //If it exists, push the arguments with it, can run it.
+        int arg_count = (Convert<ARGS>::toLua(lua, args) + ... + 0);
+        int nresults = 0;
+        int result = lua_resume(lua, nullptr, arg_count, &nresults);
+        if (result == LUA_YIELD)
+            return std::make_shared<Coroutine>(lua);
+        if (result) {
+            auto ret = Result<CoroutinePtr>::makeError(lua_tostring(lua, -1));
+            lua_pop(lua, 1);
+            return ret;
+        }
+        //Coroutine didn't yield. So no state to store for it.
+        lua_pop(lua, 1);//pop the coroutine off the main stack.
+        return {nullptr};
     }
 
     // Set a global in the environment of this callback. You generally do not want this.

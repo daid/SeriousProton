@@ -125,6 +125,7 @@ private:
     template<typename T> friend class ComponentHandler;
     friend class LuaTableComponent;
     friend class Callback;
+    friend class Coroutine;
 };
 
 }
