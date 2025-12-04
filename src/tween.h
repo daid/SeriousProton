@@ -36,7 +36,7 @@ public:
     static inline T easeInSine(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply(sinf((t - 1.0f) * PI_2), value0, value1);
+        return tweenApply(1.0f - cosf(t * PI_2), value0, value1);
     }
     // https://easings.net/#easeOutSine
     static inline T easeOutSine(float time_now, float time_start, float time_end, const T& value0, const T& value1)
@@ -109,7 +109,7 @@ public:
     static inline T easeOutQuartic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end) - 1.0f;
-        return tweenApply(((t * t * t) * (1.0f - t)) + 1.0f, value0, value1);
+        return tweenApply(1.0f - (t * t * t * t), value0, value1);
     }
     // https://easings.net/#easeInOutQuartic
     static inline T easeInOutQuartic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
@@ -186,8 +186,8 @@ public:
     // https://easings.net/#easeOutCircular
     static inline T easeOutCircular(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
-        float t = normalizeTime(time_now, time_start, time_end) - 1.0f;
-        return tweenApply(sqrtf((2.0f - t) * t), value0, value1);
+        const float t = normalizeTime(time_now, time_start, time_end) - 1.0f;
+        return tweenApply(sqrtf(1.0f - (t * t)), value0, value1);
     }
     // https://easings.net/#easeInOutCircular
     static inline T easeInOutCircular(float time_now, float time_start, float time_end, const T& value0, const T& value1)
@@ -209,8 +209,8 @@ public:
     // https://easings.net/#easeOutElastic
     static inline T easeOutElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
-        float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply((-13.0f * PI_2 * (t + 1.0f)) * powf((-10.0f * t) + 1.0f, 2.0f), value0, value1);
+        const float t = normalizeTime(time_now, time_start, time_end);
+        return tweenApply(sinf(-13.0f * PI_2 * (t + 1.0f)) * powf(2.0f, -10.0f * t) + 1.0f, value0, value1);
     }
     // https://easings.net/#easeInOutElastic
     static inline T easeInOutElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
@@ -239,7 +239,7 @@ public:
     // https://easings.net/#easeInOutBack
     static inline T easeInOutBack(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
-        const float t = 1.0f - normalizeTime(time_now, time_start, time_end);
+        const float t = normalizeTime(time_now, time_start, time_end);
         float f = 2.0f * t;
 
         if (t < 0.5f)
