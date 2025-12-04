@@ -150,36 +150,30 @@ public:
     // https://easings.net/#easeInExponential
     static inline T easeInExponential(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
-        float t = normalizeTime(time_now, time_start, time_end);
-        if (t == 0.0f) return t;
+        const float t = normalizeTime(time_now, time_start, time_end);
+        if (t == 0.0f) return value0;
 
-        t = 10.0f * (t - 1.0f);
-        return tweenApply(t * t, value0, value1);
+        return tweenApply(powf(2.0f, 10.0f * (t - 1.0f)), value0, value1);
     }
     // https://easings.net/#easeOutExponential
     static inline T easeOutExponential(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
-        float t = normalizeTime(time_now, time_start, time_end) - 1.0f;
-        if (t == 1.0f) return t;
+        const float t = normalizeTime(time_now, time_start, time_end);
+        if (t == 1.0f) return value1;
 
-        t = -10.0f * t;
-        return tweenApply(1.0f - (t * t), value0, value1);
+        return tweenApply(1.0f - powf(2.0f, -10.0f * t), value0, value1);
     }
     // https://easings.net/#easeInOutExponential
     static inline T easeInOutExponential(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        if (t == 0.0f || t == 1.0f) return t;
-
-        float f = (-20.0f * t) + 10.0f;
+        if (t == 0.0f) return value0;
+        if (t == 1.0f) return value1;
 
         if (t < 0.5f)
-        {
-            f = (20.0f * t) - 10.0f;
-            return tweenApply(0.5f * (t * t), value0, value1);
-        }
+            return tweenApply(0.5f * powf(2.0f, (20.0f * t) - 10.0f), value0, value1);
 
-        return tweenApply(-0.5f * (f * f) + 1.0f, value0, value1);
+        return tweenApply(0.5f * (2.0f - powf(2.0f, (-20.0f * t) + 10.0f)), value0, value1);
     }
 
     // More gradual curve resembling a quarter oval
