@@ -199,28 +199,36 @@ public:
         return tweenApply(0.5f * (sqrtf(-((2.0f * t) - 3.0f) * ((2.0f * t) - 1.0f)) + 1.0f), value0, value1);
     }
 
+    // These functions intentionally overshoot the 0-1 range.
+
     // Damped sine wave resembling a bounce
     // https://easings.net/#easeInElastic
     static inline T easeInElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply(sinf(13.0f * PI_2 * t) * powf(10.0f * (t - 1.0f), 2.0f), value0, value1);
+        return tweenApply(-powf(2.0f, 10.0f * t - 10.0f) * sinf((t * 10.0f - 10.75f) * (PI * 2.0f) / 3.0f), value0, value1);
     }
     // https://easings.net/#easeOutElastic
     static inline T easeOutElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
-        return tweenApply(sinf(-13.0f * PI_2 * (t + 1.0f)) * powf(2.0f, -10.0f * t) + 1.0f, value0, value1);
+        if (t == 0.0f)
+            return tweenApply(0.0f, value0, value1);
+        if (t == 1.0f)
+            return tweenApply(1.0f, value0, value1);
+
+        return tweenApply(powf(2.0f, -10.0f * t) * sinf((t * 10.0f - 0.75f) * (PI * 2.0f) / 3.0f) + 1.0f, value0, value1);
     }
     // https://easings.net/#easeInOutElastic
     static inline T easeInOutElastic(float time_now, float time_start, float time_end, const T& value0, const T& value1)
     {
         const float t = normalizeTime(time_now, time_start, time_end);
+        const float elasticity = (PI * 2.0f) / 4.5f;
 
         if (t < 0.5f)
-            return tweenApply(0.5f * sinf(13.0f * PI_2 * (2.0f * t)) * powf(10.0f * ((2.0f * t) - 1.0f), 2.0f), value0, value1);
+            return tweenApply(-(powf(2.0f, 20.0f * t - 10.0f) * sinf((20.0f * t - 11.125f) * elasticity)) / 2.0f, value0, value1);
 
-        return tweenApply(0.5f * (sinf(-13.0f * PI_2 * ((2.0f * t - 1.0f) + 1.0f)) * powf(-10.0f * (2.0f * t - 1.0f) + 2.0f, 2.0f)), value0, value1);
+        return tweenApply((powf(2.0f, -20.0f * t + 10.0f) * sinf((20.0f * t - 11.125f) * elasticity)) / 2.0f + 1.0f, value0, value1);
     }
 
     // Overshooting version of cubic
