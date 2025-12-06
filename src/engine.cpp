@@ -117,7 +117,12 @@ Engine::Engine()
     SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 #endif
-    SDL_Init(SDL_INIT_EVERYTHING);
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+    {
+        const char* sdl_error{SDL_GetError()};
+        LOG(Error, "SDL error in Engine initialization: ", sdl_error);
+        SDL_ClearError();
+    }
     SDL_ShowCursor(false);
     SDL_StopTextInput();
 

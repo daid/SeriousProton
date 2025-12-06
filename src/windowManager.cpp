@@ -436,38 +436,96 @@ void Window::setupView()
 glm::ivec2 Window::calculateWindowSize() const
 {
     int display_nr = 0;
-    for(auto w : all_windows)
+
+    for (auto w : all_windows)
     {
-        if (w == this)
-            break;
-        display_nr ++;
+        if (w == this) break;
+        display_nr++;
     }
 
     // Create the window of the application
     auto windowWidth = static_cast<int>(minimal_virtual_size.x);
     auto windowHeight = static_cast<int>(minimal_virtual_size.y);
 
-    SDL_Rect rect{0,0,0,0};
-    if (SDL_GetDisplayBounds(display_nr, &rect))
+    SDL_Rect rect{0, 0, 0, 0};
+    const glm::ivec2 fallback_dimensions{640, 480};
+    const int fallback_size = 240;
+    const int display_bounds = SDL_GetDisplayBounds(display_nr, &rect);
+
+    // Return SDL_Error if SDL_GetDisplayBounds fails
+    if (display_bounds >= 0)
     {
+        if (rect.w == 0 || rect.h == 0)
+            LOG(Debug, "SDL_GetDisplayBounds(display_nr, &rect) succeeded, but at least one rect dimension is still 0. display_nr: ", display_nr, ", rect.w,h: ", rect.w, ",", rect.h);
+
         display_nr = 0;
-        SDL_GetDisplayBounds(display_nr, &rect);
+        const int display_zero_bounds = SDL_GetDisplayBounds(display_nr, &rect);
+
+        if (display_zero_bounds >= 0)
+        {
+            if (rect.w == 0 || rect.h == 0)
+                LOG(Debug, "SDL_GetDisplayBounds(0, &rect) succeeded, but at least one rect dimension is still 0. rect.w,h: ", rect.w, ",", rect.h);
+        }
+        else
+        {
+            const char* sdl_error{SDL_GetError()};
+            LOG(Error, "SDL error in Window::calculateWindowSize() at SDL_GetDisplayBounds(0, &rect): ", sdl_error);
+            SDL_ClearError();
+        }
     }
-    if (mode != Mode::Window && rect.w && rect.h)
+    else
     {
-        return {rect.w, rect.h};
+        LOG(Debug, "SDL_GetDisplayBounds(display_nr, &rect) returned ", display_bounds, ". display_nr: ", display_nr);
+        const char* sdl_error{SDL_GetError()};
+        LOG(Error, "SDL error in Window::calculateWindowSize() at SDL_GetDisplayBounds(display_nr, &rect): ", sdl_error);
+        SDL_ClearError();
+    }
+
+    // Warn if the rect is too small to use
+    if (rect.w < fallback_size || rect.h < fallback_size) LOG(Warning, "SDL_GetDisplayBounds() returned a rect with at least one dimension < ", fallback_size, ": ", rect.w, ",", rect.h);
+
+    if (mode != Mode::Window)
+    {
+        if (rect.w >= fallback_size && rect.h >= fallback_size)
+            return {rect.w, rect.h};
+        else
+        {
+            LOG(Debug, "Calculated window size has at least one dimension of < ", fallback_size, ": ", rect.w, ",", rect.h, "\nFalling back to ", fallback_dimensions.x, ",", fallback_dimensions.y, ".");
+            return fallback_dimensions;
+        }
     }
 
     int scale = 2;
-    while(windowWidth * scale < int(rect.w) && windowHeight * scale < int(rect.h))
-        scale += 1;
+    int count = 0;
+    int max_attempts = 128;
+    while ((windowWidth * scale < int(rect.w) && windowHeight * scale < int(rect.h)) && count < max_attempts)
+    {
+        LOG(Info, "scale++ count: ", count);
+        count++;
+        scale++;
+    }
+    if (count >= max_attempts) LOG(Warning, "Window::calculateWindowSize() couldn't solve scale in ", max_attempts, "attempts: ", scale);
+
     windowWidth *= scale - 1;
     windowHeight *= scale - 1;
+    LOG(Debug, "Window dimensions before scaling loop: ", windowWidth, ",", windowHeight);
 
-    while(windowWidth >= int(rect.w) || windowHeight >= int(rect.h) - 100)
+    count = 0;
+    max_attempts = 16;
+    while ((windowWidth >= int(rect.w) || windowHeight >= int(rect.h) - 100) && count < max_attempts)
     {
+        LOG(Info, "* 0.9f count: ", count);
+        count++;
         windowWidth = static_cast<int>(std::floor(windowWidth * 0.9f));
         windowHeight = static_cast<int>(std::floor(windowHeight * 0.9f));
     }
+    if (count >= max_attempts) LOG(Warning, "Window::calculateWindowSize() couldn't solve windowWidth and windowHeight in ", max_attempts, " attempts: ", windowWidth, ",", windowHeight);
+
+    if (windowWidth < fallback_size || windowHeight < fallback_size)
+    {
+        LOG(Debug, "Window::calculateWindowSize() reported at least one window dimension of < ", fallback_size, ": ", windowWidth, ",", windowHeight, "\nFalling back to ", fallback_dimensions.x, ",", fallback_dimensions.y, ".");
+        return fallback_dimensions;
+    }
+
     return {windowWidth, windowHeight};
 }
