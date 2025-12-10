@@ -500,7 +500,6 @@ glm::ivec2 Window::calculateWindowSize() const
     int max_attempts = 128;
     while ((windowWidth * scale < int(rect.w) && windowHeight * scale < int(rect.h)) && count < max_attempts)
     {
-        LOG(Info, "scale++ count: ", count);
         count++;
         scale++;
     }
@@ -514,7 +513,6 @@ glm::ivec2 Window::calculateWindowSize() const
     max_attempts = 16;
     while ((windowWidth >= int(rect.w) || windowHeight >= int(rect.h) - 100) && count < max_attempts)
     {
-        LOG(Info, "* 0.9f count: ", count);
         count++;
         windowWidth = static_cast<int>(std::floor(windowWidth * 0.9f));
         windowHeight = static_cast<int>(std::floor(windowHeight * 0.9f));
