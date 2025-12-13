@@ -243,10 +243,22 @@ void Window::handleEvent(const SDL_Event& event)
         }
         break;
     case SDL_MOUSEMOTION:
-        if (mouse_button_down_mask)
-            render_chain->onPointerDrag(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
+        // In relative mouse mode, pass raw delta values (xrel/yrel)
+        if (SDL_GetRelativeMouseMode())
+        {
+            if (mouse_button_down_mask)
+                render_chain->onPointerDrag({static_cast<float>(event.motion.xrel), static_cast<float>(event.motion.yrel)}, sp::io::Pointer::mouse);
+            else
+                render_chain->onPointerMove({static_cast<float>(event.motion.xrel), static_cast<float>(event.motion.yrel)}, sp::io::Pointer::mouse);
+        }
+        // Use normal mouse mode, pass absolute x/y values with coordinate mapping
         else
-            render_chain->onPointerMove(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
+        {
+            if (mouse_button_down_mask)
+                render_chain->onPointerDrag(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
+            else
+                render_chain->onPointerMove(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
+        }
         break;
     case SDL_MOUSEBUTTONUP:
         mouse_button_down_mask &=~(1 << int(event.button.button));
