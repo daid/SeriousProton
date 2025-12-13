@@ -243,10 +243,22 @@ void Window::handleEvent(const SDL_Event& event)
         }
         break;
     case SDL_MOUSEMOTION:
-        if (mouse_button_down_mask)
-            render_chain->onPointerDrag(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
+        // In relative mouse mode, pass raw delta values (xrel/yrel)
+        if (SDL_GetRelativeMouseMode())
+        {
+            if (mouse_button_down_mask)
+                render_chain->onRelativeDrag({static_cast<float>(event.motion.xrel), static_cast<float>(event.motion.yrel)}, sp::io::Pointer::mouse);
+            else
+                render_chain->onRelativeMove({event.motion.xrel, event.motion.yrel}, sp::io::Pointer::mouse);
+        }
+        // In normal mouse mode, pass absolute x/y values with coordinate mapping
         else
-            render_chain->onPointerMove(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
+        {
+            if (mouse_button_down_mask)
+                render_chain->onPointerDrag(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
+            else
+                render_chain->onPointerMove(mapPixelToCoords({event.motion.x, event.motion.y}), sp::io::Pointer::mouse);
+        }
         break;
     case SDL_MOUSEBUTTONUP:
         mouse_button_down_mask &=~(1 << int(event.button.button));
@@ -263,7 +275,10 @@ void Window::handleEvent(const SDL_Event& event)
         render_chain->onPointerDown(sp::io::Pointer::Button::Touch, {event.tfinger.x * current_virtual_size.x, event.tfinger.y * current_virtual_size.y}, event.tfinger.fingerId);
         break;
     case SDL_FINGERMOTION:
-        render_chain->onPointerDrag({event.tfinger.x * current_virtual_size.x, event.tfinger.y * current_virtual_size.y}, event.tfinger.fingerId);
+        if (SDL_GetRelativeMouseMode())
+            render_chain->onRelativeDrag({event.tfinger.dx * current_virtual_size.x, event.tfinger.dy * current_virtual_size.y}, event.tfinger.fingerId);
+        else
+            render_chain->onPointerDrag({event.tfinger.x * current_virtual_size.x, event.tfinger.y * current_virtual_size.y}, event.tfinger.fingerId);
         break;
     case SDL_FINGERUP:
         render_chain->onPointerUp({event.tfinger.x * current_virtual_size.x, event.tfinger.y * current_virtual_size.y}, event.tfinger.fingerId);

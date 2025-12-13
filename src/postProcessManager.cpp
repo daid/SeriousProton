@@ -101,6 +101,16 @@ void PostProcessor::onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id)
     chain->onPointerDrag(position, id);
 }
 
+bool PostProcessor::onRelativeMove(glm::vec2 raw_delta, sp::io::Pointer::ID id)
+{
+    return chain->onRelativeMove(raw_delta, id);
+}
+
+void PostProcessor::onRelativeDrag(glm::vec2 raw_delta, sp::io::Pointer::ID id)
+{
+    chain->onRelativeDrag(raw_delta, id);
+}
+
 void PostProcessor::onPointerUp(glm::vec2 position, sp::io::Pointer::ID id)
 {
     chain->onPointerUp(position, id);

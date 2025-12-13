@@ -60,6 +60,25 @@ void RenderLayer::onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id)
         link->onPointerDrag(position, id);
 }
 
+bool RenderLayer::onRelativeMove(glm::vec2 raw_delta, sp::io::Pointer::ID id)
+{
+    if (active)
+        foreach(Renderable, r, renderableList)
+            r->onRelativeMove(raw_delta, id);
+    if (link)
+        return link->onRelativeMove(raw_delta, id);
+    return false;
+}
+
+void RenderLayer::onRelativeDrag(glm::vec2 raw_delta, sp::io::Pointer::ID id)
+{
+    if (active)
+        foreach(Renderable, r, renderableList)
+            r->onRelativeDrag(raw_delta, id);
+    if (link)
+        link->onRelativeDrag(raw_delta, id);
+}
+
 void RenderLayer::onPointerUp(glm::vec2 position, sp::io::Pointer::ID id)
 {
     if (active)

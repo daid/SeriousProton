@@ -1,5 +1,4 @@
-#ifndef RENDERABLE_H
-#define RENDERABLE_H
+#pragma once
 
 #include "graphics/renderTarget.h"
 #include "io/pointer.h"
@@ -20,7 +19,9 @@ public:
     virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id) { return false; }
     virtual void onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id) {}
     virtual void onPointerUp(glm::vec2 position, sp::io::Pointer::ID id) {}
-    virtual void onMouseWheelScroll(glm::vec2 position, float value) {};
+    virtual bool onRelativeMove(glm::vec2 raw_delta, sp::io::Pointer::ID id) { return false; }
+    virtual void onRelativeDrag(glm::vec2 raw_delta, sp::io::Pointer::ID id) {}
+    virtual void onMouseWheelScroll(glm::vec2 position, float value) {}
     virtual void onTextInput(const string& text) {}
     virtual void onTextInput(sp::TextInputEvent e) {}
 };
@@ -44,6 +45,8 @@ public:
     virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id) override;
     virtual void onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id) override;
     virtual void onPointerUp(glm::vec2 position, sp::io::Pointer::ID id) override;
+    virtual bool onRelativeMove(glm::vec2 raw_delta, sp::io::Pointer::ID id) override;
+    virtual void onRelativeDrag(glm::vec2 raw_delta, sp::io::Pointer::ID id) override;
     virtual void onMouseWheelScroll(glm::vec2 position, float value) override;
     virtual void onTextInput(const string& text) override;
     virtual void onTextInput(sp::TextInputEvent e) override;
@@ -68,7 +71,9 @@ class Renderable: public virtual PObject
         virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id) { return false; }
         virtual void onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id) {}
         virtual void onPointerUp(glm::vec2 position, sp::io::Pointer::ID id) {}
-        virtual void onMouseWheelScroll(glm::vec2 position, float value) {};
+        virtual bool onRelativeMove(glm::vec2 raw_delta, sp::io::Pointer::ID id) { return false; }
+        virtual void onRelativeDrag(glm::vec2 raw_delta, sp::io::Pointer::ID id) {}
+        virtual void onMouseWheelScroll(glm::vec2 position, float value) {}
         virtual void onTextInput(const string& text) {}
         virtual void onTextInput(sp::TextInputEvent e) {}
     protected:
@@ -76,4 +81,3 @@ class Renderable: public virtual PObject
         RenderLayer* layer;
 };
 
-#endif // RENDERABLE_H

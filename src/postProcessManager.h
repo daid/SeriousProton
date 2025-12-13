@@ -1,5 +1,4 @@
-#ifndef POST_PROCESS_MANAGER_H
-#define POST_PROCESS_MANAGER_H
+#pragma once
 
 #include "graphics/shader.h"
 #include "graphics/renderTexture.h"
@@ -31,6 +30,8 @@ public:
     virtual void onPointerLeave(sp::io::Pointer::ID id) override;
     virtual bool onPointerDown(sp::io::Pointer::Button button, glm::vec2 position, sp::io::Pointer::ID id) override;
     virtual void onPointerDrag(glm::vec2 position, sp::io::Pointer::ID id) override;
+    virtual bool onRelativeMove(glm::vec2 raw_delta, sp::io::Pointer::ID id) override;
+    virtual void onRelativeDrag(glm::vec2 raw_delta, sp::io::Pointer::ID id) override;
     virtual void onMouseWheelScroll(glm::vec2 position, float value) override;
     virtual void onPointerUp(glm::vec2 position, sp::io::Pointer::ID id) override;
     virtual void onTextInput(const string& text) override;
@@ -39,4 +40,3 @@ public:
     void setUniform(string name, float value);
 };
 
-#endif//POST_PROCESS_MANAGER_H
