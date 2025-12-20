@@ -268,14 +268,14 @@ string Keybinding::getHumanReadableKeyName(int index) const
             }
             break;
         case joystick_axis_mask:
-            return "Axis: " + string(data & 0xff);
+            return "Axis " + string(data & 0xff);
         case joystick_button_mask:
-            return "Button: " + string(data & 0xff);
+            return "Button " + string(data & 0xff);
         case mouse_movement_mask:
             switch(data)
             {
-            case 0: return "X";
-            case 1: return "Y";
+            case 0: return "Mouse X";
+            case 1: return "Mouse Y";
             }
             break;
         case mouse_wheel_mask:
