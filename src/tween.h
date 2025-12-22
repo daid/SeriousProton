@@ -199,6 +199,44 @@ public:
         return tweenApply(0.5f * (sqrtf(-((2.0f * t) - 3.0f) * ((2.0f * t) - 1.0f)) + 1.0f), value0, value1);
     }
 
+    // Sugar for glm::smoothstep.
+    static inline T easeInOutSmoothstep(float time_now, float time_start, float time_end, const T& value0, const T& value1)
+    {
+        return tweenApply(glm::smoothstep(0.0f, 1.0f, normalizeTime(time_now, time_start, time_end)), value0, value1);
+    }
+
+    // Ken Perlin's smootherstep function.
+    // Smooth acceleration and deceleration with no sudden changes.
+    // https://en.wikipedia.org/wiki/Smoothstep
+    static inline T easeInOutSmootherstep(float time_now, float time_start, float time_end, const T& value0, const T& value1)
+    {
+        const float t = normalizeTime(time_now, time_start, time_end);
+        return tweenApply(t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f), value0, value1);
+    }
+
+    // Precise inverse smoothstep: Reverses smoothstep interpolation curve.
+    // Produces the opposite acceleration profile (fast start/end, slow middle).
+    // https://en.wikipedia.org/wiki/Smoothstep#Inverse_Smoothstep
+    static inline T easeInOutInverseSmoothstep(float time_now, float time_start, float time_end, const T& value0, const T& value1)
+    {
+        const float t = normalizeTime(time_now, time_start, time_end);
+        return tweenApply(0.5f - sinf(asinf(1.0f - 2.0f * t) / 3.0f), value0, value1);
+    }
+
+    // Fast inverse smoothstep: Approximate using polynomial + Newton-Raphson.
+    // About 3-5x faster than exact version, but with larger error tolerances.
+    // https://iradicator.com/fast-inverse-smoothstep/
+    static inline T easeInOutFastInverseSmoothstep(float time_now, float time_start, float time_end, const T& value0, const T& value1)
+    {
+        float yn = 2.0f * normalizeTime(time_now, time_start, time_end) - 1.0f;
+        float t = -0.25f * yn * yn * yn;
+
+        // Newton-Raphson refinement
+        t -= (t * (4.0f * t * t - 3.0f) + yn) / (12.0f * t * t - 3.0f);
+
+        return tweenApply(t + 0.5f, value0, value1);
+    }
+
     // These functions intentionally overshoot the 0-1 range.
 
     // Damped sine wave resembling a bounce
