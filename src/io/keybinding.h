@@ -108,6 +108,7 @@ private:
     std::vector<Binding> bindings;
 
     static float deadzone;
+    static constexpr float threshold = 0.5f;
     float value;
     bool down_event;
     bool up_event;
@@ -115,7 +116,7 @@ private:
     string getKeyInternal(int index) const;
     void addBinding(int key, bool inverted);
 
-    void setValue(float value);
+    void setValue(float new_value, int key_type = 0);
     void postUpdate();
     
     static void allPostUpdate();
