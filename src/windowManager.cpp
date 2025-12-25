@@ -124,6 +124,20 @@ void Window::setTitle(string title)
     SDL_SetWindowTitle(static_cast<SDL_Window*>(window), title.c_str());
 }
 
+void Window::setIcon(const char* icon_path)
+{
+    SDL_Surface* icon_surface = SDL_LoadBMP(icon_path);
+    if (!icon_surface)
+    {
+        LOG(Warning, "Couldn't load application icon at ", icon_path, ". SDL_Error: ", SDL_GetError());
+        return;
+    }
+
+    // Set the window icon, then free the surface.
+    SDL_SetWindowIcon(static_cast<SDL_Window*>(window), icon_surface);
+    SDL_FreeSurface(icon_surface);
+}
+
 glm::vec2 Window::mapPixelToCoords(const glm::ivec2 point) const
 {
     int w, h;
