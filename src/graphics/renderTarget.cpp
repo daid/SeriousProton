@@ -713,10 +713,11 @@ void RenderTarget::drawText(sp::Rect rect, const sp::Font::PreparedFontString& p
             float v0 = uv_rect.position.y;
             float u1 = uv_rect.position.x + uv_rect.size.x;
             float v1 = uv_rect.position.y + uv_rect.size.y;
-            
+
             float left = gd.position.x + glyph.bounds.position.x * size_scale;
             float right = left + glyph.bounds.size.x * size_scale;
-            float top = gd.position.y - glyph.bounds.position.y * size_scale;
+            // Adjust font baseline if set.
+            float top = gd.position.y - glyph.bounds.position.y * size_scale + (prepared.getFont()->getBaselineOffset() * gd.size / 32.0f);
             float bottom = top + glyph.bounds.size.y * size_scale;
 
             if (flags & Font::FlagClip)
@@ -832,10 +833,11 @@ void RenderTarget::drawRotatedText(glm::vec2 center, float rotation, std::string
             float v0 = uv_rect.position.y;
             float u1 = uv_rect.position.x + uv_rect.size.x;
             float v1 = uv_rect.position.y + uv_rect.size.y;
-            
+
             float left = gd.position.x + glyph.bounds.position.x * size_scale;
             float right = left + glyph.bounds.size.x * size_scale;
-            float top = gd.position.y - glyph.bounds.position.y * size_scale;
+            // Adjust font baseline if set.
+            float top = gd.position.y - glyph.bounds.position.y * size_scale + (prepared.getFont()->getBaselineOffset() * gd.size / 32.0f);
             float bottom = top + glyph.bounds.size.y * size_scale;
 
             glm::vec2 p0 = mat * glm::vec2{left, top} + center;
