@@ -20,7 +20,7 @@ float Keybinding::deadzone = 0.05f;
 Keybinding::Keybinding(const string& name)
 : name(name), label(name.substr(0, 1).upper() + name.substr(1).lower())
 {
-    value = 0.0;
+    value = 0.0f;
     down_event = false;
     up_event = false;
 
@@ -326,7 +326,7 @@ string Keybinding::getHumanReadableKeyName(int index) const
 
 bool Keybinding::get() const
 {
-    return value > 0.5f || down_event;
+    return value > threshold || down_event;
 }
 
 bool Keybinding::getDown() const
@@ -482,15 +482,30 @@ void Keybinding::addBinding(int key, bool inverted)
     bindings.push_back({key, inverted});
 }
 
-void Keybinding::setValue(float value)
+void Keybinding::setValue(float new_value, int key_type)
 {
-    if (value < Keybinding::deadzone && value > -Keybinding::deadzone)//Add a tiny dead zone by default. Assists in gamepads that give off "almost zero" in neutral.
-        value = 0.0;
-    if (this->value < 0.5f && value >= 0.5f)
-        down_event = true;
-    if (this->value >= 0.5f && value < 0.5f)
-        up_event = true;
-    this->value = value;
+    // Handle axes that return negative values.
+    float threshold_value = fabs(new_value);
+
+    // Add a deadzone by default to prevent inputs that emit non-zero jitter at
+    // rest from triggering events.
+    if (threshold_value < deadzone)
+    {
+        threshold_value = 0.0f;
+        new_value = 0.0f;
+    }
+
+    // Transition between keydown/up only for buttons and non-movement axes.
+    // Can't avoid game_controller axes because some have axes on buttons and
+    // triggers.
+    if ((key_type & type_mask) != mouse_movement_mask && (key_type & type_mask) != joystick_axis_mask)
+    {
+        if (this->value < threshold && threshold_value >= threshold) down_event = true;
+        if (this->value >= threshold && threshold_value < threshold) up_event = true;
+    }
+
+    // Set the keybind's value to the new value.
+    this->value = new_value;
 }
 
 void Keybinding::postUpdate()
@@ -671,7 +686,7 @@ void Keybinding::handleEvent(const SDL_Event& event)
             //Focus lost, release all keys.
             for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
                 if (keybinding->bindings.size() > 0)
-                    keybinding->setValue(0.0);
+                    keybinding->setValue(0.0f);
         }
         break;
     default:
@@ -683,7 +698,7 @@ void Keybinding::updateKeys(int key_number, float value)
 {
     if (rebinding_key)
     {
-        if ((value > 0.5f || value < -0.5f) && (key_number & (static_cast<int>(rebinding_type) << 16)))
+        if ((value > threshold || value < -threshold) && (key_number & (static_cast<int>(rebinding_type) << 16)))
         {
             rebinding_key->addBinding(key_number, value < 0.0f);
             rebinding_key = nullptr;
@@ -697,9 +712,9 @@ void Keybinding::updateKeys(int key_number, float value)
             if (bind.key == key_number)
             {
                 if (bind.inverted)
-                    keybinding->setValue(-value);
+                    keybinding->setValue(-value, key_number);
                 else
-                    keybinding->setValue(value);
+                    keybinding->setValue(value, key_number);
             }
         }
     }
