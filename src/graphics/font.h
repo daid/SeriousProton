@@ -72,6 +72,12 @@ public:
     virtual float getLineSpacing(int pixel_size) = 0;
     virtual float getBaseline(int pixel_size) = 0;
     virtual float getKerning(int previous_char_code, int current_char_code) = 0;
+
+    virtual void setBaselineOffset(float offset) { baseline_offset = offset; }
+    virtual float getBaselineOffset() const { return baseline_offset; }
+
+private:
+    float baseline_offset = 0.0f;
 };
 
 }
