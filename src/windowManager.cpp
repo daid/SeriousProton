@@ -15,10 +15,16 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
+#include <filesystem>
+#include <thread>
 #include <SDL.h>
 #include <stdlib.h>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
+
 sp::io::Keybinding fullscreen_key{"FULLSCREEN"};
+sp::io::Keybinding screenshot_key{"SCREENSHOT"};
 
 static string getFromEnvironment(const char* key, string default_value) {
     auto value = getenv(key);
@@ -26,7 +32,6 @@ static string getFromEnvironment(const char* key, string default_value) {
         return default_value;
     return value;
 }
-
 
 PVector<Window> Window::all_windows;
 void* Window::gl_context = nullptr;
@@ -80,12 +85,56 @@ void Window::render()
     sp::RenderTarget target{current_virtual_size, {w, h}};
     render_chain->render(target);
     target.finish();
+
+    if (screenshot_key.getDown()) saveScreenshotToFile(w, h);
 }
 
 void Window::swapBuffers()
 {
     SDL_GL_MakeCurrent(static_cast<SDL_Window*>(window), gl_context);
     SDL_GL_SwapWindow(static_cast<SDL_Window*>(window));
+}
+
+void Window::saveScreenshotToFile(int width, int height)
+{
+    // Get actual viewport size if width or height are 0.
+    if (width == 0 || height == 0)
+    {
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        width = viewport[2];
+        height = viewport[3];
+    }
+
+    // Allocate buffer for RGB pixel data and capture from framebuffer.
+    auto pixels = std::make_shared<std::vector<unsigned char>>(width * height * 3);
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels->data());
+
+    // Generate filename.
+    auto now = time(nullptr);
+    char filename[64];
+    strftime(filename, sizeof(filename), "screenshot_%Y%m%d_%H%M%S.png", localtime(&now));
+
+    // Launch background thread to flip, encode, and write the screenshot
+    // without blocking the render thread.
+    std::thread([pixels, width, height, filename]()
+    {
+        // OpenGL origin is bottom-left, PNG origin is top-left, so flip the
+        // image vertically.
+        std::vector<unsigned char> flipped(width * height * 3);
+        for (int y = 0; y < height; y++)
+            memcpy(&flipped[y * width * 3], &(*pixels)[(height - 1 - y) * width * 3], width * 3);
+
+        // Generate full screenshot path. stb adds the .png extension.
+        const string output_directory = ".";
+        string full_path = output_directory + "/" + filename;
+
+        // Write PNG.
+        if (stbi_write_png(full_path.c_str(), width, height, 3, flipped.data(), width * 3))
+            LOG(Info, "Screenshot saved to ", full_path);
+        else
+            LOG(Error, "Failed to save screenshot to ", full_path);
+    }).detach();
 }
 
 void Window::setMode(Mode new_mode)
