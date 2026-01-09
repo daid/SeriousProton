@@ -1,0 +1,7 @@
+return {
+  default = {
+    ROOT = {"."},
+    pattern = "test_",
+    verbose = true,
+  },
+}

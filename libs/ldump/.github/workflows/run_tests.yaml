@@ -1,0 +1,33 @@
+name: Run tests
+on: [push]
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        luaVersion: ["5.4", "5.3", "5.2", "5.1", "luajit-openresty"]
+
+    # would not test on windows, the leafo-gh-actions-lua bugs out even with presetup
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Lua
+      uses: leafo/gh-actions-lua@v10
+      with:
+        luaVersion: ${{ matrix.luaVersion }}
+        buildCache: false
+
+    - name: Setup Luarocks
+      uses: leafo/gh-actions-luarocks@v4
+
+    - name: Setup busted
+      run: luarocks install busted
+
+    - name: Run Busted
+      run: busted -v
+
+    - name: Run Busted in safety mode
+      run: LDUMP_TEST_SAFETY=1 busted -v
