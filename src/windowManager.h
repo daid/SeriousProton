@@ -1,5 +1,4 @@
-#ifndef WINDOW_MANAGER_H
-#define WINDOW_MANAGER_H
+#pragma once
 
 #include "P.h"
 #include "Renderable.h"
@@ -19,6 +18,8 @@ public:
     glm::vec2 getVirtualSize() const { return current_virtual_size; }
     void render();
     void swapBuffers();
+    // Writes framebuffer to PNG
+    void saveScreenshotToFile(int width, int height);
 
     Mode getMode() { return mode; }
     void setMode(Mode mode);
@@ -50,4 +51,3 @@ private:
     glm::ivec2 calculateWindowSize() const;
 };
 
-#endif//WINDOW_MANAGER_H
