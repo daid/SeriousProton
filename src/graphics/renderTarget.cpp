@@ -17,6 +17,7 @@
 namespace sp {
 
 static sp::Font* default_font = nullptr;
+static RenderTarget::LineDrawingMode line_drawing_mode = RenderTarget::LineDrawingMode::Quad;
 
 static sp::Shader* shader = nullptr;
 static sp::Shader* wide_line_shader = nullptr;
@@ -252,6 +253,16 @@ sp::Font* RenderTarget::getDefaultFont()
     return default_font;
 }
 
+void RenderTarget::setLineDrawingMode(LineDrawingMode mode)
+{
+    line_drawing_mode = mode;
+}
+
+RenderTarget::LineDrawingMode RenderTarget::getLineDrawingMode()
+{
+    return line_drawing_mode;
+}
+
 void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color)
 {
     auto info = getTextureInfo(texture);
@@ -484,11 +495,43 @@ void RenderTarget::drawGLLineBlendAdd(const std::vector<glm::vec2>& points, glm:
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+void RenderTarget::drawGLCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color, size_t point_count)
+{
+    // Use automatic point count if 0
+    size_t actual_point_count = (point_count == 0)
+        ? calculateCirclePointCount(radius * static_cast<float>(physical_size.x) / virtual_size.x)
+        : point_count;
+
+    shape_points_buffer.clear();
+    shape_points_buffer.reserve(actual_point_count + 1);
+
+    for (size_t idx = 0; idx <= actual_point_count; ++idx)
+    {
+        float f = static_cast<float>(idx) / static_cast<float>(actual_point_count) * static_cast<float>(M_PI) * 2.0f;
+        shape_points_buffer.emplace_back(center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius});
+    }
+
+    drawGLLine(shape_points_buffer, color);
+}
+
+void RenderTarget::drawGLRectOutline(const sp::Rect& rect, glm::u8vec4 color)
+{
+    shape_points_buffer.clear();
+    shape_points_buffer.reserve(5);
+    shape_points_buffer.emplace_back(rect.position);
+    shape_points_buffer.emplace_back(glm::vec2(rect.position.x + rect.size.x, rect.position.y));
+    shape_points_buffer.emplace_back(rect.position + rect.size);
+    shape_points_buffer.emplace_back(glm::vec2(rect.position.x, rect.position.y + rect.size.y));
+    shape_points_buffer.emplace_back(rect.position);
+
+    drawGLLine(shape_points_buffer, color);
+}
+
 // Generates a quad for a line segment.
 // uv.x = AA flag (0 or 1), uv.y = signed distance from center (-1 to 1)
 static void generateLineQuad(
     glm::vec2 start, glm::vec2 end, float half_width,
-    glm::u8vec4 start_color, glm::u8vec4 end_color, bool antialiased,
+    glm::u8vec4 start_color, glm::u8vec4 end_color, RenderTarget::LineAntialiasingMode antialiased,
     std::vector<RenderTarget::VertexData>& vertices,
     std::vector<uint16_t>& indices)
 {
@@ -501,7 +544,7 @@ static void generateLineQuad(
     glm::vec2 perp{-dir.y, dir.x};
 
     glm::vec2 offset = perp * half_width;
-    float aa_flag = antialiased ? 1.0f : 0.0f;
+    float aa_flag = (antialiased == RenderTarget::LineAntialiasingMode::Enabled) ? 1.0f : 0.0f;
 
     auto n = vertices.size();
     if (n >= std::numeric_limits<uint16_t>::max() - 4U) return;
@@ -520,7 +563,7 @@ static void generateLineQuad(
 }
 
 // Generate a bevel join triangle to connect line segments.
-static void generateBevelJoin(glm::vec2 joint_point, float half_width, glm::vec2 prev_dir, glm::vec2 next_dir, glm::u8vec4 color, bool antialiased, std::vector<RenderTarget::VertexData>& vertices, std::vector<uint16_t>& indices)
+static void generateBevelJoin(glm::vec2 joint_point, float half_width, glm::vec2 prev_dir, glm::vec2 next_dir, glm::u8vec4 color, RenderTarget::LineAntialiasingMode antialiased, std::vector<RenderTarget::VertexData>& vertices, std::vector<uint16_t>& indices)
 {
     // Calculate perpendiculars for both segments.
     glm::vec2 prev_perp{-prev_dir.y, prev_dir.x};
@@ -533,7 +576,7 @@ static void generateBevelJoin(glm::vec2 joint_point, float half_width, glm::vec2
     if (std::abs(cross) < 0.001f) return;
 
     // Pass anti-aliasing flag as coordinate value.
-    float aa_flag = antialiased ? 1.0f : 0.0f;
+    float aa_flag = (antialiased == RenderTarget::LineAntialiasingMode::Enabled) ? 1.0f : 0.0f;
 
     // Bail if there are more vertices than we can count.
     auto n = vertices.size();
@@ -560,14 +603,25 @@ static void generateBevelJoin(glm::vec2 joint_point, float half_width, glm::vec2
 }
 
 // Single-color line segment
-void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 color, bool antialiased)
+void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 color, LineAntialiasingMode antialiased)
 {
+    if (line_drawing_mode == LineDrawingMode::GL)
+    {
+        drawGLLine(start, end, color);
+        return;
+    }
     drawLine(start, end, width, color, color, antialiased);
 }
 
 // Gradient line segment
-void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 start_color, glm::u8vec4 end_color, bool antialiased)
+void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 start_color, glm::u8vec4 end_color, LineAntialiasingMode antialiased)
 {
+    if (line_drawing_mode == LineDrawingMode::GL)
+    {
+        drawGLLine(start, end, start_color, end_color);
+        return;
+    }
+
     if (quad_lines_vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
         finish();
 
@@ -576,20 +630,26 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, float width, glm::u8
     float half_width = virtual_width * 0.5f;
 
     // For AA, add 20% extra width to accommodate the soft edge.
-    if (antialiased) half_width *= 1.2f;
+    if (antialiased == LineAntialiasingMode::Enabled) half_width *= 1.2f;
 
     generateLineQuad(start, end, half_width, start_color, end_color, antialiased, quad_lines_vertex_data, quad_lines_index_data);
 }
 
 // Multi-segment line with bevel joins
-void RenderTarget::drawLine(const std::vector<glm::vec2>& points, float width, glm::u8vec4 color, bool antialiased)
+void RenderTarget::drawLine(const std::vector<glm::vec2>& points, float width, glm::u8vec4 color, LineAntialiasingMode antialiased)
 {
     if (points.size() < 2) return;
+
+    if (line_drawing_mode == LineDrawingMode::GL)
+    {
+        drawGLLine(points, color);
+        return;
+    }
 
     // Convert screen-space pixel width to virtual coordinate width.
     const float virtual_width = width * virtual_size.x / static_cast<float>(physical_size.x);
     float half_width = virtual_width * 0.5f;
-    if (antialiased) half_width *= 1.2f;
+    if (antialiased == LineAntialiasingMode::Enabled) half_width *= 1.2f;
 
     // Draw each segment and add bevel joins between them.
     for (size_t i = 0; i < points.size() - 1; ++i)
@@ -625,7 +685,7 @@ void RenderTarget::drawLine(const std::vector<glm::vec2>& points, float width, g
     }
 }
 
-void RenderTarget::drawLineBlendAdd(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 color, bool antialiased)
+void RenderTarget::drawLineBlendAdd(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 color, LineAntialiasingMode antialiased)
 {
     finish();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -634,7 +694,7 @@ void RenderTarget::drawLineBlendAdd(glm::vec2 start, glm::vec2 end, float width,
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2>& points, float width, glm::u8vec4 color, bool antialiased)
+void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2>& points, float width, glm::u8vec4 color, LineAntialiasingMode antialiased)
 {
     if (points.size() < 2) return;
     finish();
@@ -661,8 +721,14 @@ void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color, size_t point_count, bool antialiased)
+void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color, size_t point_count, LineAntialiasingMode antialiased)
 {
+    if (line_drawing_mode == LineDrawingMode::GL)
+    {
+        drawGLCircleOutline(center, radius, thickness, color, point_count);
+        return;
+    }
+
     // Stroke from radius inward (outer edge at radius, inner edge at radius - thickness)
     // This matches the previous triangle-strip implementation behavior
     float stroke_radius = radius - thickness * 0.5f;
@@ -823,8 +889,14 @@ void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color,
     }
 }
 
-void RenderTarget::drawRectOutline(const sp::Rect& rect, float width, glm::u8vec4 color, bool antialiased)
+void RenderTarget::drawRectOutline(const sp::Rect& rect, float width, glm::u8vec4 color, LineAntialiasingMode antialiased)
 {
+    if (line_drawing_mode == LineDrawingMode::GL)
+    {
+        drawGLRectOutline(rect, color);
+        return;
+    }
+
     // Buffer points
     shape_points_buffer.clear();
     shape_points_buffer.reserve(5);
