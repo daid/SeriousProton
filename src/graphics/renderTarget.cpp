@@ -43,14 +43,15 @@ static std::vector<uint16_t> quad_lines_index_data;
 // Circle/rect point generation buffer
 static thread_local std::vector<glm::vec2> shape_points_buffer;
 
-// Calculate optimal point count for a circle based on its screen-space radius
-static size_t calculateCirclePointCount(float radius, float points_per_pixel = 0.5f)
+// Calculate optimal point count for a circle based on its screen-space radius.
+// Uses square root scaling: small circles get relatively more points per
+// circumference than large circles, since large curves need less detail.
+static size_t calculateCirclePointCount(float screen_radius)
 {
-    size_t count = static_cast<size_t>(std::ceil(2.0f * static_cast<float>(M_PI) * radius * points_per_pixel));
+    size_t count = static_cast<size_t>(std::ceil(4.0f * std::sqrt(screen_radius)));
     // Clamp between reasonable bounds
     return std::max(static_cast<size_t>(16), std::min(count, static_cast<size_t>(360)));
 }
-
 
 struct ImageInfo
 {
@@ -58,6 +59,7 @@ struct ImageInfo
     glm::ivec2 size;
     Rect uv_rect;
 };
+
 static sp::AtlasTexture* atlas_texture;
 static std::unordered_map<string, ImageInfo> image_info;
 static std::unordered_map<sp::Font*, std::unordered_map<int, Rect>> atlas_glyphs;
