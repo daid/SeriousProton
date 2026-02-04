@@ -17,20 +17,41 @@
 namespace sp {
 
 static sp::Font* default_font = nullptr;
+static RenderTarget::LineDrawingMode line_drawing_mode = RenderTarget::LineDrawingMode::Quad;
 
 static sp::Shader* shader = nullptr;
+static sp::Shader* quad_line_shader = nullptr;
 static unsigned int vertices_vbo = 0;
 static unsigned int indices_vbo = 0;
 
+// Vertex buffers
 static std::vector<RenderTarget::VertexData> vertex_data;
 static std::vector<uint16_t> index_data;
 
+// GL lines buffers
 static std::vector<RenderTarget::VertexData> lines_vertex_data;
 static std::vector<uint16_t> lines_index_data;
 
+// Point buffers
 static std::vector<RenderTarget::VertexData> points_vertex_data;
 static std::vector<uint16_t> points_index_data;
 
+// Anti-aliased quad line buffers
+static std::vector<RenderTarget::VertexData> quad_lines_vertex_data;
+static std::vector<uint16_t> quad_lines_index_data;
+
+// Circle/rect point generation buffer
+static thread_local std::vector<glm::vec2> shape_points_buffer;
+
+// Calculate optimal point count for a circle based on its screen-space radius.
+// Uses square root scaling: small circles get relatively more points per
+// circumference than large circles, since large curves need less detail.
+static size_t calculateCirclePointCount(float screen_radius)
+{
+    size_t count = static_cast<size_t>(std::ceil(4.0f * std::sqrt(screen_radius)));
+    // Clamp between reasonable bounds
+    return std::max(static_cast<size_t>(16), std::min(count, static_cast<size_t>(360)));
+}
 
 struct ImageInfo
 {
@@ -38,6 +59,7 @@ struct ImageInfo
     glm::ivec2 size;
     Rect uv_rect;
 };
+
 static sp::AtlasTexture* atlas_texture;
 static std::unordered_map<string, ImageInfo> image_info;
 static std::unordered_map<sp::Font*, std::unordered_map<int, Rect>> atlas_glyphs;
@@ -167,6 +189,30 @@ void main()
     gl_FragColor = texture2D(u_texture, v_texcoords) * v_color;
 }
 )");
+    if (!quad_line_shader)
+        quad_line_shader = new Shader("quadlineshader", R"(
+[vertex]
+uniform mat3 u_projection;
+
+attribute vec2 a_position;
+attribute vec4 a_color;
+
+varying vec4 v_color;
+
+void main()
+{
+    v_color = a_color;
+    gl_Position = vec4(u_projection * vec3(a_position, 1.0), 1.0);
+}
+
+[fragment]
+varying vec4 v_color;
+
+void main()
+{
+    gl_FragColor = v_color;
+}
+)");
     if (!vertices_vbo)
     {
         glGenBuffers(1, &vertices_vbo);
@@ -198,19 +244,29 @@ sp::Font* RenderTarget::getDefaultFont()
     return default_font;
 }
 
+void RenderTarget::setLineDrawingMode(LineDrawingMode mode)
+{
+    line_drawing_mode = mode;
+}
+
+RenderTarget::LineDrawingMode RenderTarget::getLineDrawingMode()
+{
+    return line_drawing_mode;
+}
+
 void RenderTarget::drawSprite(std::string_view texture, glm::vec2 center, float size, glm::u8vec4 color)
 {
     auto info = getTextureInfo(texture);
     if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
         finish();
-    
+
     auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
     });
     size *= 0.5f;
-    glm::vec2 offset{size / float(info.size.y) * float(info.size.x), size};
+    glm::vec2 offset{size / static_cast<float>(info.size.y) * static_cast<float>(info.size.x), size};
     vertex_data.push_back({
         {center.x - offset.x, center.y - offset.y},
         color, {info.uv_rect.position.x, info.uv_rect.position.y}});
@@ -239,7 +295,7 @@ void RenderTarget::drawSpriteClipped(std::string_view texture, glm::vec2 center,
 
     auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
     });
 
@@ -357,7 +413,7 @@ void RenderTarget::drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
+void RenderTarget::drawGLLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
 {
     if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2U)
         finish();
@@ -369,7 +425,7 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color)
     });
 }
 
-void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color)
+void RenderTarget::drawGLLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color)
 {
     if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2U)
         finish();
@@ -381,7 +437,7 @@ void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_co
     });
 }
 
-void RenderTarget::drawLine(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
+void RenderTarget::drawGLLine(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color)
 {
     if (lines_index_data.size() >= std::numeric_limits<uint16_t>::max() - points.size())
         finish();
@@ -396,7 +452,7 @@ void RenderTarget::drawLine(const std::initializer_list<glm::vec2>& points, glm:
     }
 }
 
-void RenderTarget::drawLine(const std::vector<glm::vec2>& points, glm::u8vec4 color)
+void RenderTarget::drawGLLine(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
     if (points.size() < 1)
         return;
@@ -413,7 +469,7 @@ void RenderTarget::drawLine(const std::vector<glm::vec2>& points, glm::u8vec4 co
     }
 }
 
-void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2>& points, glm::u8vec4 color)
+void RenderTarget::drawGLLineBlendAdd(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
     finish();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -430,15 +486,224 @@ void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2>& points, glm::u
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+void RenderTarget::drawGLCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color, size_t point_count)
+{
+    // Don't draw for invalid thickness or radius values.
+    if (thickness <= 0.0f || radius <= 0.0f) return;
+
+    // Use automatic point count if 0.
+    size_t actual_point_count = (point_count == 0)
+        ? calculateCirclePointCount(radius * static_cast<float>(physical_size.x) / virtual_size.x)
+        : point_count;
+
+    // Draw multiple concentric circles in screen pixels to fill the thickness.
+    size_t circle_count = std::max(static_cast<size_t>(1), static_cast<size_t>(std::ceil(thickness)));
+
+    for (size_t circle_idx = 0; circle_idx < circle_count; ++circle_idx)
+    {
+        float current_radius = radius - virtual_size.x / static_cast<float>(physical_size.x) * static_cast<float>(circle_idx);
+        if (current_radius <= 0.0f) break;
+
+        shape_points_buffer.clear();
+        shape_points_buffer.reserve(actual_point_count + 1);
+
+        for (size_t idx = 0; idx <= actual_point_count; ++idx)
+        {
+            float f = static_cast<float>(idx) / static_cast<float>(actual_point_count) * static_cast<float>(M_PI) * 2.0f;
+            shape_points_buffer.emplace_back(center + glm::vec2{std::sin(f) * current_radius, std::cos(f) * current_radius});
+        }
+
+        drawGLLine(shape_points_buffer, color);
+    }
+}
+
+void RenderTarget::drawGLRectOutline(const sp::Rect& rect, glm::u8vec4 color)
+{
+    shape_points_buffer.clear();
+    shape_points_buffer.reserve(5);
+    shape_points_buffer.emplace_back(rect.position);
+    shape_points_buffer.emplace_back(glm::vec2(rect.position.x + rect.size.x, rect.position.y));
+    shape_points_buffer.emplace_back(rect.position + rect.size);
+    shape_points_buffer.emplace_back(glm::vec2(rect.position.x, rect.position.y + rect.size.y));
+    shape_points_buffer.emplace_back(rect.position);
+
+    drawGLLine(shape_points_buffer, color);
+}
+
+// Generates a quad for a line segment.
+static void generateLineQuad(
+    glm::vec2 start, glm::vec2 end, float half_width,
+    glm::u8vec4 start_color, glm::u8vec4 end_color,
+    std::vector<RenderTarget::VertexData>& vertices,
+    std::vector<uint16_t>& indices)
+{
+    glm::vec2 dir = end - start;
+    float len = glm::length(dir);
+    if (len < 0.0001f) return;
+
+    // Normalize and calculate perpendicular offset
+    dir /= len;
+    glm::vec2 perp{-dir.y, dir.x};
+
+    glm::vec2 offset = perp * half_width;
+
+    auto n = vertices.size();
+    if (n >= std::numeric_limits<uint16_t>::max() - 4U) return;
+
+    // Four corners of the quad:
+    vertices.push_back({start - offset, start_color, {}});
+    vertices.push_back({start + offset, start_color, {}});
+    vertices.push_back({end - offset, end_color, {}});
+    vertices.push_back({end + offset, end_color, {}});
+
+    // Quad triangles
+    indices.insert(indices.end(), {
+        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
+    });
+}
+
+// Generate a bevel join triangle to connect line segments.
+static void generateBevelJoin(glm::vec2 joint_point, float half_width, glm::vec2 prev_dir, glm::vec2 next_dir, glm::u8vec4 color, std::vector<RenderTarget::VertexData>& vertices, std::vector<uint16_t>& indices)
+{
+    // Calculate perpendiculars for both segments.
+    glm::vec2 prev_perp{-prev_dir.y, prev_dir.x};
+    glm::vec2 next_perp{-next_dir.y, next_dir.x};
+
+    // Determine which side needs the bevel (based on turn direction).
+    float cross = prev_dir.x * next_dir.y - prev_dir.y * next_dir.x;
+
+    // Skip if segments are nearly parallel.
+    if (std::abs(cross) < 0.001f) return;
+
+    // Bail if there are more vertices than we can count.
+    auto n = vertices.size();
+    if (n >= std::numeric_limits<uint16_t>::max() - 3U) return;
+
+    // Left turn: bevel on the right side (negative perpendicular)
+    if (cross > 0)
+    {
+        vertices.push_back({joint_point, color, {}});
+        vertices.push_back({joint_point - prev_perp * half_width, color, {}});
+        vertices.push_back({joint_point - next_perp * half_width, color, {}});
+    }
+    // Right turn: bevel on the left side (positive perpendicular)
+    else
+    {
+        vertices.push_back({joint_point, color, {}});
+        vertices.push_back({joint_point + prev_perp * half_width, color, {}});
+        vertices.push_back({joint_point + next_perp * half_width, color, {}});
+    }
+
+    indices.insert(indices.end(), {
+        uint16_t(n), uint16_t(n + 1), uint16_t(n + 2),
+    });
+}
+
+// Single-color line segment
+void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 color)
+{
+    if (line_drawing_mode == LineDrawingMode::GL)
+    {
+        drawGLLine(start, end, color);
+        return;
+    }
+    drawLine(start, end, width, color, color);
+}
+
+// Gradient line segment
+void RenderTarget::drawLine(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 start_color, glm::u8vec4 end_color)
+{
+    if (line_drawing_mode == LineDrawingMode::GL)
+    {
+        drawGLLine(start, end, start_color, end_color);
+        return;
+    }
+
+    if (quad_lines_vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 4U)
+        finish();
+
+    // Convert screen-space pixel width to virtual coordinate width.
+    float virtual_width = width * virtual_size.x / static_cast<float>(physical_size.x);
+    float half_width = virtual_width * 0.5f;
+
+    generateLineQuad(start, end, half_width, start_color, end_color, quad_lines_vertex_data, quad_lines_index_data);
+}
+
+// Multi-segment line with bevel joins
+void RenderTarget::drawLine(const std::vector<glm::vec2>& points, float width, glm::u8vec4 color)
+{
+    if (points.size() < 2) return;
+
+    if (line_drawing_mode == LineDrawingMode::GL)
+    {
+        drawGLLine(points, color);
+        return;
+    }
+
+    // Convert screen-space pixel width to virtual coordinate width.
+    const float virtual_width = width * virtual_size.x / static_cast<float>(physical_size.x);
+    float half_width = virtual_width * 0.5f;
+
+    // Draw each segment and add bevel joins between them.
+    for (size_t i = 0; i < points.size() - 1; ++i)
+    {
+        if (quad_lines_vertex_data.size() >= std::numeric_limits<uint16_t>::max() - 7U)
+            finish();
+
+        glm::vec2 start = points[i];
+        glm::vec2 end = points[i + 1];
+
+        // Generate the line segment quad.
+        generateLineQuad(start, end, half_width, color, color, quad_lines_vertex_data, quad_lines_index_data);
+
+        // Add bevel join if there's a next segment.
+        if (i + 2 < points.size())
+        {
+            glm::vec2 next_end = points[i + 2];
+
+            // Calculate direction vectors.
+            glm::vec2 curr_dir = end - start;
+            glm::vec2 next_dir = next_end - end;
+            const float curr_len = glm::length(curr_dir);
+            const float next_len = glm::length(next_dir);
+
+            // Skip joining if current or next lines are of neglible size.
+            if (curr_len > 0.0001f && next_len > 0.0001f)
+            {
+                curr_dir /= curr_len;
+                next_dir /= next_len;
+                generateBevelJoin(end, half_width, curr_dir, next_dir, color, quad_lines_vertex_data, quad_lines_index_data);
+            }
+        }
+    }
+}
+
+void RenderTarget::drawLineBlendAdd(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 color)
+{
+    finish();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    drawLine(start, end, width, color);
+    finish();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2>& points, float width, glm::u8vec4 color)
+{
+    if (points.size() < 2) return;
+    finish();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    drawLine(points, width, color);
+    finish();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
 void RenderTarget::drawPoint(glm::vec2 position, glm::u8vec4 color)
 {
     if (points_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2U)
         finish();
-    auto n = points_vertex_data.size();
     points_vertex_data.push_back({position, color, atlas_white_pixel});
-    points_index_data.insert(points_index_data.end(), {
-        uint16_t(n)
-    });
+    points_index_data.insert(points_index_data.end(), {uint16_t(points_vertex_data.size())});
 }
 
 void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color)
@@ -450,29 +715,33 @@ void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color)
+void RenderTarget::drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color, size_t point_count)
 {
-    constexpr size_t point_count = 50;
-
-    if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - point_count * 2)
-        finish();
-
-    auto n = vertex_data.size();
-    for(auto idx=0u; idx<point_count;idx++)
+    if (line_drawing_mode == LineDrawingMode::GL)
     {
-        float f = float(idx) / float(point_count) * static_cast<float>(M_PI) * 2.0f;
-        vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, atlas_white_pixel});
-        vertex_data.push_back({center + glm::vec2{std::sin(f) * (radius - thickness), std::cos(f) * (radius - thickness)}, color, atlas_white_pixel});
+        drawGLCircleOutline(center, radius, thickness, color, point_count);
+        return;
     }
-    for(auto idx=0u; idx<point_count;idx++)
+
+    // Stroke from radius inward (outer edge at radius, inner edge at radius - thickness)
+    float stroke_radius = radius - thickness * 0.5f;
+
+    // Calculate screen-space radius for dynamic point count.
+    // Use automatic point count if 0, otherwise use specified count.
+    size_t actual_point_count = (point_count == 0)
+        ? calculateCirclePointCount(radius * static_cast<float>(physical_size.x) / virtual_size.x)
+        : point_count;
+
+    shape_points_buffer.clear();
+    shape_points_buffer.reserve(actual_point_count + 1);
+
+    for (size_t idx = 0; idx <= actual_point_count; ++idx)
     {
-        auto n0 = n + idx * 2;
-        auto n1 = n + ((idx + 1) % point_count) * 2;
-        index_data.insert(index_data.end(), {
-            uint16_t(n0 + 0), uint16_t(n0 + 1), uint16_t(n1 + 0),
-            uint16_t(n0 + 1), uint16_t(n1 + 1), uint16_t(n1 + 0),
-        });
+        float f = static_cast<float>(idx) / static_cast<float>(actual_point_count) * static_cast<float>(M_PI) * 2.0f;
+        shape_points_buffer.emplace_back(center + glm::vec2{std::sin(f) * stroke_radius, std::cos(f) * stroke_radius});
     }
+
+    drawLine(shape_points_buffer, thickness, color);
 }
 
 void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture, glm::vec2 offset)
@@ -499,7 +768,7 @@ void RenderTarget::drawTiled(const sp::Rect& rect, std::string_view texture, glm
 
             auto n = vertex_data.size();
             index_data.insert(index_data.end(), {
-                uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+                uint16_t(n), uint16_t(n + 1), uint16_t(n + 2),
                 uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
             });
             glm::vec2 p0 = rect.position + glm::vec2(increment.x * x, increment.y * y) - offset;
@@ -584,23 +853,28 @@ void RenderTarget::drawTriangles(const std::vector<glm::vec2>& points, const std
     for(auto& p : points)
         vertex_data.push_back({p, color, atlas_white_pixel});
     for(auto idx : indices)
-        index_data.push_back(static_cast<uint16_t>(n + idx));
+        index_data.push_back(uint16_t(n + idx));
 }
 
-void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
+void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color, size_t point_count)
 {
-    const unsigned int point_count = 50;
+    // Calculate screen-space radius for dynamic point count.
+    // Use automatic point count if 0, otherwise use specified count.
+    // TODO: DRY with outline
+    size_t actual_point_count = (point_count == 0)
+        ? calculateCirclePointCount(radius * static_cast<float>(physical_size.x) / virtual_size.x)
+        : point_count;
 
-    if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - point_count)
+    if (vertex_data.size() >= std::numeric_limits<uint16_t>::max() - actual_point_count)
         finish();
 
     auto n = vertex_data.size();
-    for(unsigned int idx=0; idx<point_count;idx++)
+    for (size_t idx = 0; idx < actual_point_count; idx++)
     {
-        float f = float(idx) / float(point_count) * static_cast<float>(M_PI) * 2.0f;
+        float f = static_cast<float>(idx) / static_cast<float>(actual_point_count) * static_cast<float>(M_PI) * 2.0f;
         vertex_data.push_back({center + glm::vec2{std::sin(f) * radius, std::cos(f) * radius}, color, atlas_white_pixel});
     }
-    for(unsigned int idx=2; idx<point_count;idx++)
+    for (size_t idx = 2; idx < actual_point_count; idx++)
     {
         index_data.insert(index_data.end(), {
             uint16_t(n), uint16_t(n + idx - 1), uint16_t(n + idx),
@@ -608,17 +882,24 @@ void RenderTarget::fillCircle(glm::vec2 center, float radius, glm::u8vec4 color)
     }
 }
 
-void RenderTarget::outlineRect(const sp::Rect& rect, glm::u8vec4 color)
+void RenderTarget::drawRectOutline(const sp::Rect& rect, float width, glm::u8vec4 color)
 {
-    std::vector<glm::vec2> points;
-    points.reserve(5);
-    points.emplace_back(rect.position);
-    points.emplace_back(glm::vec2(rect.position.x + rect.size.x, rect.position.y));
-    points.emplace_back(rect.position + rect.size);
-    points.emplace_back(glm::vec2(rect.position.x, rect.position.y + rect.size.y));
-    points.emplace_back(rect.position);
+    if (line_drawing_mode == LineDrawingMode::GL)
+    {
+        drawGLRectOutline(rect, color);
+        return;
+    }
 
-    drawLine(points, color);
+    // Buffer points
+    shape_points_buffer.clear();
+    shape_points_buffer.reserve(5);
+    shape_points_buffer.emplace_back(rect.position);
+    shape_points_buffer.emplace_back(glm::vec2(rect.position.x + rect.size.x, rect.position.y));
+    shape_points_buffer.emplace_back(rect.position + rect.size);
+    shape_points_buffer.emplace_back(glm::vec2(rect.position.x, rect.position.y + rect.size.y));
+    shape_points_buffer.emplace_back(rect.position);
+
+    drawLine(shape_points_buffer, width, color);
 }
 
 void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
@@ -628,17 +909,13 @@ void RenderTarget::fillRect(const sp::Rect& rect, glm::u8vec4 color)
 
     auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
     });
-    vertex_data.push_back({
-        {rect.position.x, rect.position.y}, color, atlas_white_pixel});
-    vertex_data.push_back({
-        {rect.position.x, rect.position.y + rect.size.y}, color, atlas_white_pixel});
-    vertex_data.push_back({
-        {rect.position.x + rect.size.x, rect.position.y}, color, atlas_white_pixel});
-    vertex_data.push_back({
-        {rect.position.x + rect.size.x, rect.position.y + rect.size.y}, color, atlas_white_pixel});
+    vertex_data.push_back({{rect.position.x, rect.position.y}, color, atlas_white_pixel});
+    vertex_data.push_back({{rect.position.x, rect.position.y + rect.size.y}, color, atlas_white_pixel});
+    vertex_data.push_back({{rect.position.x + rect.size.x, rect.position.y}, color, atlas_white_pixel});
+    vertex_data.push_back({{rect.position.x + rect.size.x, rect.position.y + rect.size.y}, color, atlas_white_pixel});
 }
 
 void RenderTarget::drawTexturedQuad(std::string_view texture,
@@ -653,30 +930,25 @@ void RenderTarget::drawTexturedQuad(std::string_view texture,
 
     auto n = vertex_data.size();
     index_data.insert(index_data.end(), {
-        uint16_t(n + 0), uint16_t(n + 1), uint16_t(n + 2),
+        uint16_t(n), uint16_t(n + 1), uint16_t(n + 2),
         uint16_t(n + 1), uint16_t(n + 3), uint16_t(n + 2),
     });
-    uv0.x = uv_rect.position.x + uv_rect.size.x * uv0.x;
-    uv0.y = uv_rect.position.y + uv_rect.size.y * uv0.y;
-    uv1.x = uv_rect.position.x + uv_rect.size.x * uv1.x;
-    uv1.y = uv_rect.position.y + uv_rect.size.y * uv1.y;
-    uv2.x = uv_rect.position.x + uv_rect.size.x * uv2.x;
-    uv2.y = uv_rect.position.y + uv_rect.size.y * uv2.y;
-    uv3.x = uv_rect.position.x + uv_rect.size.x * uv3.x;
-    uv3.y = uv_rect.position.y + uv_rect.size.y * uv3.y;
-    vertex_data.push_back({p0, color, uv0});
-    vertex_data.push_back({p1, color, uv1});
-    vertex_data.push_back({p3, color, uv3});
-    vertex_data.push_back({p2, color, uv2});
 
-    if (info.texture)
-        finish(info.texture);
+    vertex_data.push_back({p0, color,
+        {uv_rect.position.x + uv_rect.size.x * uv0.x, uv_rect.position.y + uv_rect.size.y * uv0.y}});
+    vertex_data.push_back({p1, color,
+        {uv_rect.position.x + uv_rect.size.x * uv1.x, uv_rect.position.y + uv_rect.size.y * uv1.y}});
+    vertex_data.push_back({p3, color,
+        {uv_rect.position.x + uv_rect.size.x * uv3.x, uv_rect.position.y + uv_rect.size.y * uv3.y}});
+    vertex_data.push_back({p2, color,
+        {uv_rect.position.x + uv_rect.size.x * uv2.x, uv_rect.position.y + uv_rect.size.y * uv2.y}});
+
+    if (info.texture) finish(info.texture);
 }
 
 void RenderTarget::drawText(sp::Rect rect, std::string_view text, Alignment align, float font_size, sp::Font* font, glm::u8vec4 color, int flags)
 {
-    if (!font)
-        font = default_font;
+    if (!font) font = default_font;
     auto prepared = font->prepare(text, 32, font_size, color, rect.size, align, flags);
     drawText(rect, prepared, flags);
 }
@@ -1222,11 +1494,42 @@ void RenderTarget::applyBuffer(sp::Texture* texture, std::vector<VertexData> &da
 
 void RenderTarget::finish(sp::Texture* texture)
 {
-    
     applyBuffer(texture, vertex_data, index_data, GL_TRIANGLES);
     applyBuffer(texture, lines_vertex_data, lines_index_data, GL_LINES);
     applyBuffer(texture, points_vertex_data, points_index_data, GL_POINTS);
-    
+
+    // Draw quad-based wide lines
+    if (quad_lines_vertex_data.size())
+    {
+        quad_line_shader->bind();
+
+        glm::mat3 project_matrix{1.0f};
+        project_matrix[0][0] = 2.0f / static_cast<float>(virtual_size.x);
+        project_matrix[1][1] = -2.0f / static_cast<float>(virtual_size.y);
+        project_matrix[2][0] = -1.0f;
+        project_matrix[2][1] = 1.0f;
+        glUniformMatrix3fv(quad_line_shader->getUniformLocation("u_projection"), 1, GL_FALSE, glm::value_ptr(project_matrix));
+
+        glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(VertexData) * quad_lines_vertex_data.size(), quad_lines_vertex_data.data(), GL_DYNAMIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * quad_lines_index_data.size(), quad_lines_index_data.data(), GL_DYNAMIC_DRAW);
+
+        glVertexAttribPointer(quad_line_shader->getAttributeLocation("a_position"), 2, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(sizeof(VertexData)), (void*)0);
+        glEnableVertexAttribArray(quad_line_shader->getAttributeLocation("a_position"));
+        glVertexAttribPointer(quad_line_shader->getAttributeLocation("a_color"), 4, GL_UNSIGNED_BYTE, GL_TRUE, static_cast<GLsizei>(sizeof(VertexData)), (void*)offsetof(VertexData, color));
+        glEnableVertexAttribArray(quad_line_shader->getAttributeLocation("a_color"));
+
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(quad_lines_index_data.size()), GL_UNSIGNED_SHORT, nullptr);
+
+        quad_lines_vertex_data.clear();
+        quad_lines_index_data.clear();
+
+        // Re-bind the standard shader for subsequent operations
+        shader->bind();
+        glUniformMatrix3fv(shader->getUniformLocation("u_projection"), 1, GL_FALSE, glm::value_ptr(project_matrix));
+    }
+
     glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_NONE);
 }

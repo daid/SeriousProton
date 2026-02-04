@@ -1,5 +1,4 @@
-#ifndef SP_GRAPHICS_RENDERTARGET_H
-#define SP_GRAPHICS_RENDERTARGET_H
+#pragma once
 
 #include <glm/vec2.hpp>
 #include <glm/gtc/type_precision.hpp>
@@ -31,21 +30,41 @@ public:
     void drawRotatedSprite(std::string_view texture, glm::vec2 center, float size, float rotation, glm::u8vec4 color={255,255,255,255});
     void drawRotatedSpriteBlendAdd(std::string_view texture, glm::vec2 center, float size, float rotation);
 
-    void drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color);
-    void drawLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color);
-    void drawLine(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color);
-    void drawLine(const std::vector<glm::vec2>& points, glm::u8vec4 color);
-    void drawLineBlendAdd(const std::vector<glm::vec2>& points, glm::u8vec4 color);
-    void drawPoint(glm::vec2 position, glm::u8vec4 color);
+    // Line drawing mode preference
+    enum class LineDrawingMode {
+        Quad,
+        GL
+    };
+    static void setLineDrawingMode(LineDrawingMode mode);
+    static LineDrawingMode getLineDrawingMode();
+
+    // Quad-based line drawing
+    // Width is in screen-space pixels
+    void drawLine(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 color);
+    void drawLine(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 start_color, glm::u8vec4 end_color);
+    void drawLine(const std::vector<glm::vec2>& points, float width, glm::u8vec4 color);
+    void drawLineBlendAdd(glm::vec2 start, glm::vec2 end, float width, glm::u8vec4 color);
+    void drawLineBlendAdd(const std::vector<glm::vec2>& points, float width, glm::u8vec4 color);
     void drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color);
-    void drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color);
+    // Circle point_count=0 uses automatic calculation based on points per pixel
+    void drawCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color, size_t point_count = 0);
+    void fillCircle(glm::vec2 center, float radius, glm::u8vec4 color, size_t point_count = 0);
     void drawTiled(const sp::Rect& rect, std::string_view texture, glm::vec2 offset={0,0});
+    void drawRectOutline(const sp::Rect& rect, float width, glm::u8vec4 color);
+    void fillRect(const sp::Rect& rect, glm::u8vec4 color);
+    void drawPoint(glm::vec2 position, glm::u8vec4 color);
     void drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color);
     void drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color);
     void drawTriangles(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& indices, glm::u8vec4 color);
-    void fillCircle(glm::vec2 center, float radius, glm::u8vec4 color);
-    void outlineRect(const sp::Rect& rect, glm::u8vec4 color);
-    void fillRect(const sp::Rect& rect, glm::u8vec4 color);
+
+    // GL_LINES primitive drawing (deprecated: no portable line width support)
+    void drawGLLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 color);
+    void drawGLLine(glm::vec2 start, glm::vec2 end, glm::u8vec4 start_color, glm::u8vec4 end_color);
+    void drawGLLine(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color);
+    void drawGLLine(const std::vector<glm::vec2>& points, glm::u8vec4 color);
+    void drawGLLineBlendAdd(const std::vector<glm::vec2>& points, glm::u8vec4 color);
+    void drawGLCircleOutline(glm::vec2 center, float radius, float thickness, glm::u8vec4 color, size_t point_count = 0);
+    void drawGLRectOutline(const sp::Rect& rect, glm::u8vec4 color);
 
     void drawTexturedQuad(std::string_view texture,
         glm::vec2 p0, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3,
@@ -89,5 +108,3 @@ private:
 };
 
 }
-
-#endif//SP_GRAPHICS_RENDERTARGET_H
