@@ -50,12 +50,12 @@ public:
     // * name of a keyboard key ("Space", "Left", "A")
     // * "joy:[id]:axis:[axis]" for a joystick axis, where id is the index of the joystick and axis is the axis number.
     // * "joy:[id]:button:[button]" for a joystick button, where id is the index of the joystick and axis is the button number.
-    // * "gamecontroller:[id]:axis:[axis], where axis is "leftx", "lefty", "rightx", "righty", "lefttrigger", or "righttrigger"
-    // * "gamecontroller:[id]:button:[button], where button is one of "a", "b", "x", "y", "back", "guide", "start", "leftstick", "rightstick", "leftshoulder", "rightshoulder", "dpup", "dpdown", "dpleft", "dpright"
+    // * "gamecontroller:[id]:axis:[axis]", where axis is "leftx", "lefty", "rightx", "righty", "lefttrigger", or "righttrigger"
+    // * "gamecontroller:[id]:button:[button]", where button is one of "a", "b", "x", "y", "back", "guide", "start", "leftstick", "rightstick", "leftshoulder", "rightshoulder", "dpup", "dpdown", "dpleft", "dpright"
     // * "mouse:[axis]", where axis is one of "x", "y" for mouse direction binding.
-    // * "pointer:[id], where id is 0 to 4 for left, right, middle mouse button, or a touchscreen press.
-    // * "wheel:[dir], where dir is one of "x", "y" for mouse wheel binding. Note that these are never held down and generate only up and down events.
-    // * "virtual:[id], where id is the number of a virtual key, controlled by setVirtualKey, and the virtual touchscreen controls.
+    // * "pointer:[id]", where id is 0 to 4 for left, right, middle mouse button, or a touchscreen press.
+    // * "wheel:[dir]", where dir is one of "x", "y" for mouse wheel binding. Note that these are never held down and generate only up and down events.
+    // * "virtual:[id]", where id is the number of a virtual key, controlled by setVirtualKey, and the virtual touchscreen controls.
     void setKey(const string& key);
     void setKeys(const std::initializer_list<const string>& keys);
     void addKey(const string& key, bool inverted=false);
