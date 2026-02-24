@@ -58,6 +58,7 @@ void Font::PreparedFontString::append(std::string_view s, float text_size, glm::
             /*.string_offset =*/ int(string_offset + index),
             /*.size =*/ text_size,
             /*.color =*/ color,
+            /*.descender =*/ 0.0f,
         });
         previous_char_code = char_info.code;
         index += char_info.consumed_bytes;
@@ -74,8 +75,10 @@ void Font::PreparedFontString::append(std::string_view s, float text_size, glm::
         {
             glyph.advance = 0;
             glyph.bounds.size.x = 0;
+            glyph.descender = 0.0f;
         }
 
+        data.back().descender = glyph.descender * text_size / float(pixel_size);
         next_position_x += glyph.advance * text_size / float(pixel_size);
         if ((flags & FlagLineWrap) && next_position_x > area_size.x)
         {
@@ -126,6 +129,7 @@ void Font::PreparedFontString::finish()
             /*.string_offset =*/ 0,
             /*.size =*/ 0.0f,
             /*.color =*/ {255,255,255,255},
+            /*.descender =*/ 0.0f,
         });
     } else {
         data.push_back({
@@ -134,6 +138,7 @@ void Font::PreparedFontString::finish()
             /*.string_offset =*/ data.back().string_offset + 1,
             /*.size =*/ data.back().size,
             /*.color =*/ data.back().color,
+            /*.descender =*/ data.back().descender,
         });
     }
 
@@ -215,7 +220,7 @@ glm::vec2 Font::PreparedFontString::getUsedAreaSize() const
     float max_y = 0.0f;
     for(auto& d : data) {
         max_x = std::max(max_x, d.position.x);
-        max_y = std::max(max_y, d.position.y);
+        max_y = std::max(max_y, d.position.y + d.descender);
     }
 
     glm::vec2 result(max_x, max_y);

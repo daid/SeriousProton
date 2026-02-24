@@ -812,6 +812,7 @@ void RenderTarget::drawRotatedText(glm::vec2 center, float rotation, std::string
         {
             glyph.advance = 0.0f;
             glyph.bounds.size.x = 0.0f;
+            glyph.descender = 0.0f;
         }
 
         if (glyph.bounds.size.x > 0.0f)
