@@ -255,6 +255,7 @@ string Keybinding::getHumanReadableKeyName(int index) const
     {
         int key = bindings[index].key;
         int data = key & ~type_mask;
+        string sign = bindings[index].inverted ? "-" : "+";
         switch(key & type_mask)
         {
         case keyboard_mask:
@@ -272,21 +273,21 @@ string Keybinding::getHumanReadableKeyName(int index) const
             }
             break;
         case joystick_axis_mask:
-            return "Axis " + string(data & 0xff);
+            return "Axis " + string(data & 0xff) + sign;
         case joystick_button_mask:
             return "Button " + string(data & 0xff);
         case mouse_movement_mask:
             switch(data)
             {
-            case 0: return "Mouse X";
-            case 1: return "Mouse Y";
+            case 0: return "Mouse X" + sign;
+            case 1: return "Mouse Y" + sign;
             }
             break;
         case mouse_wheel_mask:
             switch(data)
             {
-            case 0: return "Wheel Sideways";
-            case 1: return "Wheel";
+            case 0: return "Wheel Sideways" + sign;
+            case 1: return "Wheel" + sign;
             }
             break;
         case game_controller_button_mask:
@@ -312,12 +313,12 @@ string Keybinding::getHumanReadableKeyName(int index) const
         case game_controller_axis_mask:
             switch(data & 0xff)
             {
-            case SDL_CONTROLLER_AXIS_LEFTX: return "X Axis";
-            case SDL_CONTROLLER_AXIS_LEFTY: return "Y Axis";
-            case SDL_CONTROLLER_AXIS_RIGHTX: return "X Axis Right";
-            case SDL_CONTROLLER_AXIS_RIGHTY: return "Y Axis Right";
-            case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return "Trigger Axis Left";
-            case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return "Trigger Axis Right";
+            case SDL_CONTROLLER_AXIS_LEFTX: return "X Axis" + sign;
+            case SDL_CONTROLLER_AXIS_LEFTY: return "Y Axis" + sign;
+            case SDL_CONTROLLER_AXIS_RIGHTX: return "X Axis Right" + sign;
+            case SDL_CONTROLLER_AXIS_RIGHTY: return "Y Axis Right" + sign;
+            case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return "Trigger Axis Left" + sign;
+            case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return "Trigger Axis Right" + sign;
             }
             break;
         case virtual_mask:
