@@ -84,6 +84,7 @@ void GameServer::connectToProxy(sp::io::network::Address address, int port)
         LOG(ERROR) << "Failed to connect to proxy";
         return;
     }
+    proxy_address = address.getHumanReadable()[0];
 
     ClientInfo info;
     socket->setBlocking(false);
@@ -718,7 +719,10 @@ void GameServer::runMasterServerUpdateThread()
     sp::io::http::Request http(hostname, port);
     while(!isDestroyed() && master_server_url != "")
     {
-        auto response = http.post(uri, "port=" + string(listen_port) + "&name=" + server_name + "&version=" + string(version_number));
+        string body = "port=" + string(listen_port) + "&name=" + server_name + "&version=" + string(version_number);
+        if (proxy_address != "")
+            body += "&ip=" + proxy_address;
+        auto response = http.post(uri, body);
         if (response.status != 200)
         {
             LOG(WARNING) << "Failed to register at master server " << master_server_url << " (status " << response.status << ")";
