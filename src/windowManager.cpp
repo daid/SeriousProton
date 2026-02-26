@@ -8,6 +8,8 @@
 #endif
 
 #include "graphics/opengl.h"
+#include "graphics/image.h"
+#include "resources.h"
 #include "Updatable.h"
 #include "Renderable.h"
 #include "postProcessManager.h"
@@ -124,12 +126,27 @@ void Window::setTitle(string title)
     SDL_SetWindowTitle(static_cast<SDL_Window*>(window), title.c_str());
 }
 
-void Window::setIcon(const char* icon_path)
+void Window::setIcon(string icon_name)
 {
-    SDL_Surface* icon_surface = SDL_LoadBMP(icon_path);
+    sp::Image image;
+    if (!image.loadFromStream(getResourceStream(icon_name)))
+    {
+        LOG(Warning, "Couldn't load application icon ", icon_name);
+        return;
+    }
+
+    auto size = image.getSize();
+    SDL_Surface* icon_surface = SDL_CreateRGBSurfaceWithFormatFrom(
+        image.getPtr(),
+        size.x, size.y,
+        32,
+        size.x * 4,
+        SDL_PIXELFORMAT_RGBA32
+    );
+
     if (!icon_surface)
     {
-        LOG(Warning, "Couldn't load application icon at ", icon_path, ". SDL_Error: ", SDL_GetError());
+        LOG(Warning, "Couldn't create SDL surface for application icon ", icon_name, ". SDL_Error: ", SDL_GetError());
         return;
     }
 

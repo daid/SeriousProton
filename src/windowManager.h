@@ -26,7 +26,7 @@ public:
     void setFSAA(int fsaa);
 
     void setTitle(string title);
-    void setIcon(const char* icon_path);
+    void setIcon(string icon_name);
 
     glm::vec2 mapPixelToCoords(glm::ivec2 point) const;
     glm::ivec2 mapCoordsToPixel(glm::vec2 point) const;
