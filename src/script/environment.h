@@ -1,5 +1,4 @@
-#ifndef SP_SCRIPT_ENVIRONMENT
-#define SP_SCRIPT_ENVIRONMENT
+#pragma once
 
 #include "stringImproved.h"
 #include "script/conversion.h"
@@ -82,6 +81,8 @@ public:
         }
     }
 
+    static lua_State* getL() { return L; }
+
 private:
     template<typename T> Result<T> runImpl(const string& code, const string& name="=[string]") {
         int stack_size = lua_gettop(L);
@@ -129,5 +130,3 @@ private:
 };
 
 }
-
-#endif//SP_SCRIPT_ENVIRONMENT
