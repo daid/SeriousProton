@@ -311,7 +311,7 @@ void Engine::handleEvent(SDL_Event& event)
 #ifdef __EMSCRIPTEN__
         if (!audio_started)
         {
-            audio::AudioSource::startAudioSystem();
+            sp::audio::AudioSource::startAudioSystem();
             audio_started = true;
         }
 #endif
@@ -325,7 +325,7 @@ void Engine::handleEvent(SDL_Event& event)
 #ifdef __EMSCRIPTEN__
         if (!audio_started)
         {
-            audio::AudioSource::startAudioSystem();
+            sp::audio::AudioSource::startAudioSystem();
             audio_started = true;
         }
 #endif
