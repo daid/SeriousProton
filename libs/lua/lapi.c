@@ -452,12 +452,21 @@ l_sinline void *touserdata (const TValue *o) {
   }
 }
 
-
+l_sinline uint64_t touserdatau64 (const TValue *o) {
+  switch (ttype(o)) {
+    case LUA_TLIGHTUSERDATA: return o->value_.i;
+    default: return 0;
+  }
+}
 LUA_API void *lua_touserdata (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   return touserdata(o);
 }
 
+LUA_API uint64_t lua_touserdatau64 (lua_State *L, int idx) {
+  const TValue *o = index2value(L, idx);
+  return touserdatau64(o);
+}
 
 LUA_API lua_State *lua_tothread (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
@@ -616,6 +625,16 @@ LUA_API void lua_pushboolean (lua_State *L, int b) {
 LUA_API void lua_pushlightuserdata (lua_State *L, void *p) {
   lua_lock(L);
   setpvalue(s2v(L->top.p), p);
+  api_incr_top(L);
+  lua_unlock(L);
+}
+
+
+LUA_API void lua_pushlightuserdatau64 (lua_State *L, uint64_t u) {
+  lua_lock(L);
+  TValue *io=s2v(L->top.p);
+  val_(io).i=(u);
+  settt_(io, LUA_VLIGHTUSERDATA);
   api_incr_top(L);
   lua_unlock(L);
 }
