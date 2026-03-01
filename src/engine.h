@@ -1,5 +1,4 @@
-#ifndef ENGINE_H
-#define ENGINE_H
+#pragma once
 
 #include <unordered_map>
 #include "stringImproved.h"
@@ -19,23 +18,26 @@ class Engine
 {
 public:
     using EngineTiming = std::map<string, float>;
-    
+
 private:
     bool running;
-    
+
     std::unordered_map<string, P<PObject> > objectMap;
     float elapsedTime;
     float gameSpeed;
-    
+
     EngineTiming last_engine_timing;
 #ifdef WIN32
     std::unique_ptr<DynamicLibrary> exchndl;
+#endif
+#ifdef __EMSCRIPTEN__
+    bool audio_started = false;
 #endif
     std::vector<sp::ecs::System*> systems;
 public:
     Engine();
     ~Engine();
-    
+
     void setGameSpeed(float speed);
     float getGameSpeed();
     float getElapsedTime();
@@ -43,7 +45,7 @@ public:
 
     void registerObject(string name, P<PObject> obj);
     P<PObject> getObject(string name);
-    
+
     template<class T> void registerSystem() {
         systems.push_back(new T());
     }
@@ -54,5 +56,3 @@ public:
 private:
     void handleEvent(SDL_Event& event);
 };
-
-#endif//ENGINE_H
