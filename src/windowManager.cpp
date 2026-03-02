@@ -8,6 +8,8 @@
 #endif
 
 #include "graphics/opengl.h"
+#include "graphics/image.h"
+#include "resources.h"
 #include "Updatable.h"
 #include "Renderable.h"
 #include "postProcessManager.h"
@@ -153,6 +155,35 @@ void Window::setFSAA(int new_fsaa)
 void Window::setTitle(string title)
 {
     SDL_SetWindowTitle(static_cast<SDL_Window*>(window), title.c_str());
+}
+
+void Window::setIcon(string icon_name)
+{
+    sp::Image image;
+    if (!image.loadFromStream(getResourceStream(icon_name)))
+    {
+        LOG(Warning, "Couldn't load application icon ", icon_name);
+        return;
+    }
+
+    auto size = image.getSize();
+    SDL_Surface* icon_surface = SDL_CreateRGBSurfaceWithFormatFrom(
+        image.getPtr(),
+        size.x, size.y,
+        32,
+        size.x * 4,
+        SDL_PIXELFORMAT_RGBA32
+    );
+
+    if (!icon_surface)
+    {
+        LOG(Warning, "Couldn't create SDL surface for application icon ", icon_name, ". SDL_Error: ", SDL_GetError());
+        return;
+    }
+
+    // Set the window icon, then free the surface.
+    SDL_SetWindowIcon(static_cast<SDL_Window*>(window), icon_surface);
+    SDL_FreeSurface(icon_surface);
 }
 
 glm::vec2 Window::mapPixelToCoords(const glm::ivec2 point) const
