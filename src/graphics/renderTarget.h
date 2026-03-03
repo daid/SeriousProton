@@ -1,5 +1,4 @@
-#ifndef SP_GRAPHICS_RENDERTARGET_H
-#define SP_GRAPHICS_RENDERTARGET_H
+#pragma once
 
 #include <glm/vec2.hpp>
 #include <glm/gtc/type_precision.hpp>
@@ -70,6 +69,24 @@ public:
     void drawStretchedHVClipped(sp::Rect rect, sp::Rect clip_rect, float corner_size, std::string_view texture, glm::u8vec4 color={255,255,255,255});
 
     void finish();
+
+    // Functions for using rect masks with glScissor to clip a render.
+
+    // Stack nested rects to determine the mask's bounds.
+    void pushScissorRect(sp::Rect virtual_rect);
+    // Remove a nested rect from the mask.
+    void popScissorRect();
+
+    // Functions for translating nested renders between virtual and real pixels.
+
+    // Stack nested translation vectors to determine their offsets relative to
+    // the container and each other.
+    void pushTranslation(glm::vec2 virtual_offset);
+    // Remove a nested translation vector.
+    void popTranslation();
+    // Get the total translation vector from the top of the stack.
+    glm::vec2 getTranslation() const;
+
     struct VertexData
     {
         glm::vec2 position;
@@ -89,5 +106,3 @@ private:
 };
 
 }
-
-#endif//SP_GRAPHICS_RENDERTARGET_H

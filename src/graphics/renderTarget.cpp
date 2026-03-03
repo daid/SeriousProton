@@ -10,6 +10,7 @@
 #include "vectorUtils.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <variant>
+#include <array>
 
 #include <SDL_assert.h>
 
@@ -31,6 +32,9 @@ static std::vector<uint16_t> lines_index_data;
 static std::vector<RenderTarget::VertexData> points_vertex_data;
 static std::vector<uint16_t> points_index_data;
 
+static std::vector<std::array<GLint, 4>> scissor_stack;
+static std::vector<glm::vec2> translation_stack;
+static glm::vec2 current_translation{0.0f, 0.0f};
 
 struct ImageInfo
 {
@@ -1222,7 +1226,6 @@ void RenderTarget::applyBuffer(sp::Texture* texture, std::vector<VertexData> &da
 
 void RenderTarget::finish(sp::Texture* texture)
 {
-    
     applyBuffer(texture, vertex_data, index_data, GL_TRIANGLES);
     applyBuffer(texture, lines_vertex_data, lines_index_data, GL_LINES);
     applyBuffer(texture, points_vertex_data, points_index_data, GL_POINTS);
@@ -1241,9 +1244,119 @@ glm::ivec2 RenderTarget::getPhysicalSize()
     return physical_size;
 }
 
-glm::ivec2 RenderTarget::virtualToPixelPosition(glm::vec2 v)
+glm::ivec2 RenderTarget::virtualToPixelPosition(glm::vec2 virtual_position)
 {
-    return {v.x * physical_size.x / virtual_size.x, v.y * physical_size.y / virtual_size.y};
+    return {virtual_position.x * physical_size.x / virtual_size.x, virtual_position.y * physical_size.y / virtual_size.y};
+}
+
+static void applyProjectionMatrix(glm::vec2 virtual_size, glm::vec2 translation)
+{
+    // Simple pan reprojection of translated virtual coordinates to pixels via
+    // shader.
+    // Not sure if this will conflict with other shader operations!
+    glm::mat3 m{1.0f};
+    m[0][0] = 2.0f / virtual_size.x;
+    m[1][1] = -2.0f / virtual_size.y;
+    m[2][0] = -1.0f + (2.0f * translation.x / virtual_size.x);
+    m[2][1] = 1.0f - (2.0f * translation.y / virtual_size.y);
+    glUniformMatrix3fv(shader->getUniformLocation("u_projection"), 1, GL_FALSE, glm::value_ptr(m));
+}
+
+void RenderTarget::pushScissorRect(sp::Rect virtual_rect)
+{
+    // Flush geometry
+    finish();
+
+    // Apply the current translation (if any) so the clipped region aligns to
+    // the translated visual position.
+    glm::vec2 adj = virtual_rect.position + current_translation;
+    glm::ivec2 px_min = virtualToPixelPosition(adj);
+    glm::ivec2 px_max = virtualToPixelPosition(adj + virtual_rect.size);
+    GLint px = px_min.x;
+    GLint py = px_min.y;
+    GLint pw = px_max.x - px_min.x;
+    GLint ph = px_max.y - px_min.y;
+
+    // Convert coordinates to OpenGL bottom-left origin.
+    GLint py_gl = physical_size.y - (py + ph);
+
+    // Add the scissor rect.
+    std::array<GLint, 4> new_rect = {px, py_gl, pw, ph};
+
+    // If nested, intersect this rect with the previous rect in the stack.
+    // Newly stacked rects shouldn't expand the active clipping region.
+    if (!scissor_stack.empty())
+    {
+        const auto& prev = scissor_stack.back();
+        GLint ix = std::max(new_rect[0], prev[0]);
+        GLint iy = std::max(new_rect[1], prev[1]);
+        GLint ix2 = std::min(new_rect[0] + new_rect[2], prev[0] + prev[2]);
+        GLint iy2 = std::min(new_rect[1] + new_rect[3], prev[1] + prev[3]);
+        new_rect[0] = ix;
+        new_rect[1] = iy;
+        new_rect[2] = std::max(0, ix2 - ix);
+        new_rect[3] = std::max(0, iy2 - iy);
+    }
+
+    // Clip the render to the scissor rect.
+    scissor_stack.push_back(new_rect);
+    glScissor(new_rect[0], new_rect[1], new_rect[2], new_rect[3]);
+    glEnable(GL_SCISSOR_TEST);
+}
+
+void RenderTarget::popScissorRect()
+{
+    // Flush geometry
+    finish();
+
+    // Pop the top scissor rect.
+    if (!scissor_stack.empty()) scissor_stack.pop_back();
+
+    // If that was the last rect, or there weren't any, stop clipping.
+    // Otherwise, clip to the back rect.
+    if (scissor_stack.empty())
+        glDisable(GL_SCISSOR_TEST);
+    else
+    {
+        const auto& top = scissor_stack.back();
+        glScissor(top[0], top[1], top[2], top[3]);
+    }
+}
+
+void RenderTarget::pushTranslation(glm::vec2 offset)
+{
+    // Flush geometry
+    finish();
+
+    // Push a translation onto the stack and add it to the current translation
+    // value.
+    translation_stack.push_back(offset);
+    current_translation += offset;
+
+    // Reproject with the new translation value.
+    applyProjectionMatrix(virtual_size, current_translation);
+}
+
+void RenderTarget::popTranslation()
+{
+    // Flush geometry
+    finish();
+
+    // Pop a translation off the stack (if there is one) and remove it from the
+    // current translation value.
+    if (!translation_stack.empty())
+    {
+        current_translation -= translation_stack.back();
+        translation_stack.pop_back();
+    }
+
+    // Reproject with the new translation value.
+    applyProjectionMatrix(virtual_size, current_translation);
+}
+
+glm::vec2 RenderTarget::getTranslation() const
+{
+    return current_translation;
 }
 
 }
