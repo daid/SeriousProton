@@ -29,8 +29,9 @@ public:
 
         Joystick = JoystickButton | JoystickAxis,
         Controller = ControllerButton | ControllerAxis,
+        Mouse = Pointer | MouseMovement | MouseWheel,
 
-        Default = Keyboard | Pointer | Joystick | Controller | Virtual,
+        Default = Keyboard | Virtual | Joystick | Controller | Mouse,
     };
 
     //Create a keybinding, and optionally set the default key(s). See setKey for documentation on key naming.
