@@ -70,10 +70,14 @@ public:
     bool getRepeating() const { return repeating; };
     // Set the delay between the first and second repeated down event, in
     // milliseconds.
-    static void setRepeatDelay(int ms);
+    static void setRepeatDelay(unsigned int ms);
+    // Return the repeat delay, in milliseconds.
+    unsigned int getRepeatDelay() const { return repeat_delay_ms; };
     // Set the interval between repeated down events while held, in
     // milliseconds.
-    static void setRepeatInterval(int ms);
+    static void setRepeatInterval(unsigned int ms);
+    // Return the repeat interval, in milliseconds.
+    unsigned int getRepeatInterval() const { return repeat_interval_ms; };
 
     // Get the name of the key in the same format as used for setKey and friends. Returns empty string if the index as no set key.
     string getKey(int index) const;
@@ -116,9 +120,9 @@ private:
     std::vector<string> default_bindings;
 
     static bool global_repeating;
-    static int repeat_delay_ms;    // pause before the second event while held
-    static int repeat_interval_ms; // interval between repeated events (default 40ms = 25/second)
-    int repeat_last_ticks = 0;
+    static unsigned int repeat_delay_ms; // pause before the second event while held
+    static unsigned int repeat_interval_ms; // interval between repeated events
+    unsigned int repeat_last_ticks = 0;
     bool repeat_started = false;
     int repeat_key_type = 0; // type mask of the input that triggered the current press
 

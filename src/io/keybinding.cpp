@@ -18,8 +18,8 @@ Keybinding::Type Keybinding::rebinding_type;
 
 float Keybinding::deadzone = 0.05f;
 bool Keybinding::global_repeating = false;
-int Keybinding::repeat_delay_ms = 0;
-int Keybinding::repeat_interval_ms = 40;
+unsigned int Keybinding::repeat_delay_ms = 0;
+unsigned int Keybinding::repeat_interval_ms = 40;
 
 Keybinding::Keybinding(const string& name)
 : name(name), label(name.substr(0, 1).upper() + name.substr(1).lower())
@@ -194,12 +194,12 @@ void Keybinding::setRepeating(bool repeating)
     global_repeating = repeating;
 }
 
-void Keybinding::setRepeatDelay(int ms)
+void Keybinding::setRepeatDelay(unsigned int ms)
 {
     repeat_delay_ms = ms;
 }
 
-void Keybinding::setRepeatInterval(int ms)
+void Keybinding::setRepeatInterval(unsigned int ms)
 {
     repeat_interval_ms = ms;
 }
@@ -531,7 +531,7 @@ void Keybinding::setValue(float new_value, int key_type)
         if (this->value < threshold && threshold_value >= threshold)
         {
             down_event = true;
-            repeat_last_ticks = static_cast<int>(SDL_GetTicks());
+            repeat_last_ticks = SDL_GetTicks();
             repeat_started = false;
             repeat_key_type = key_type & type_mask;
         }
@@ -564,13 +564,13 @@ void Keybinding::allPostUpdate()
 
     if (global_repeating)
     {
-        const int now = static_cast<int>(SDL_GetTicks());
+        const unsigned int now = SDL_GetTicks();
         for (Keybinding* keybinding = keybindings; keybinding; keybinding = keybinding->next)
         {
             // Apply global_repeating to keyboard binds only.
             if (keybinding->value < threshold || keybinding->repeat_key_type != keyboard_mask)
                 continue;
-            const int wait = keybinding->repeat_started
+            const unsigned int wait = keybinding->repeat_started
                 ? repeat_interval_ms
                 : repeat_delay_ms + repeat_interval_ms;
             // Apply repeating behavior.
