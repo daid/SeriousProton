@@ -349,6 +349,11 @@ float Keybinding::getValue() const
     return value;
 }
 
+float Keybinding::getRawValue() const
+{
+    return raw_value;
+}
+
 void Keybinding::startUserRebind(Type bind_type)
 {
     rebinding_key = this;
@@ -489,6 +494,11 @@ void Keybinding::addBinding(int key, bool inverted)
     bindings.push_back({key, inverted});
 }
 
+void Keybinding::clearValue()
+{
+    this->value = 0.0f;
+}
+
 void Keybinding::setValue(float new_value, int key_type)
 {
     // Handle axes that return negative values.
@@ -511,14 +521,19 @@ void Keybinding::setValue(float new_value, int key_type)
         if (this->value >= threshold && threshold_value < threshold) up_event = true;
     }
 
-    // Set the keybind's value to the new value.
+    // Set the keybind's value and raw value to the new value.
+    this->raw_value = new_value;
     this->value = new_value;
+
 }
 
 void Keybinding::postUpdate()
 {
     if (down_event)
+    {
+        clearValue();
         down_event = false;
+    }
     else if (up_event)
         up_event = false;
 }

@@ -77,6 +77,7 @@ public:
     bool getDown() const; //True for 1 update cycle when the key is pressed.
     bool getUp() const; //True for 1 update cycle when the key is released.
     float getValue() const; //Returns a value in the range -1 to 1 for this keybinding. On keyboard keys this is always 0 or 1, but for joysticks this can be anywhere in the range -1.0 to 1.0
+    float getRawValue() const; //Returns a value in the range -1 to 1 for this keybinding. Returns a value if a key is pressed, regardless of whether the OS is currently sending a signal
 
     // Start a binding process from the user. The next button pressed by the user will be bound to this key.
     // Note that this will add on top of the already existing binds, so clearKeys() need to be called if you want to bind a single key.
@@ -113,6 +114,7 @@ private:
     static float deadzone;
     static constexpr float threshold = 0.5f;
     float value;
+    float raw_value;
     bool down_event;
     bool up_event;
 
@@ -120,6 +122,7 @@ private:
     void addBinding(int key, bool inverted);
 
     void setValue(float new_value, int key_type = 0);
+    void clearValue(); // sets a keybind's value to zero (but not not its raw value)
     void postUpdate();
     
     static void allPostUpdate();
