@@ -8,6 +8,8 @@ namespace sp::ecs {
 std::vector<uint32_t> Entity::entity_version;
 std::vector<uint32_t> Entity::free_list;
 
+std::function<void(Entity)> Entity::pre_destroy_callback;
+
 Entity Entity::create()
 {
 	Entity e;
@@ -63,6 +65,11 @@ void Entity::destroy()
 {
 	if (!*this)
 		return;
+	if (pre_destroy_callback) {
+		pre_destroy_callback(*this);
+		if (!*this)
+			return;
+	}
 	ComponentStorageBase::destroyAll(index);
 	
 	// By increasing the version number, everything else will know this entity no longer exists.
