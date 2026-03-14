@@ -67,7 +67,7 @@ public:
     // delay intervals (true) or are continuous (false, default).
     static void setRepeating(bool repeating);
     // Return true if keyboard repeating behavior is enabled.
-    bool getRepeating() const { return repeating; };
+    bool getRepeating() const { return global_repeating; };
     // Set the delay between the first and second repeated down event, in
     // milliseconds.
     static void setRepeatDelay(unsigned int ms);
@@ -116,7 +116,6 @@ private:
     string name;
     string category;
     string label;
-    bool repeating = false;
     std::vector<string> default_bindings;
 
     static bool global_repeating;
