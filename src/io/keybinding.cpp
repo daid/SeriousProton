@@ -6,6 +6,7 @@
 #include <fstream>
 #include <unordered_set>
 #include <SDL_events.h>
+#include <SDL_timer.h>
 
 
 namespace sp {
@@ -16,6 +17,9 @@ Keybinding* Keybinding::rebinding_key = nullptr;
 Keybinding::Type Keybinding::rebinding_type;
 
 float Keybinding::deadzone = 0.05f;
+bool Keybinding::global_repeating = false;
+int Keybinding::repeat_delay_ms = 0;
+int Keybinding::repeat_interval_ms = 40;
 
 Keybinding::Keybinding(const string& name)
 : name(name), label(name.substr(0, 1).upper() + name.substr(1).lower())
@@ -185,6 +189,21 @@ void Keybinding::setDeadzone(float new_deadzone)
     deadzone = new_deadzone;
 }
 
+void Keybinding::setRepeating(bool repeating)
+{
+    global_repeating = repeating;
+}
+
+void Keybinding::setRepeatDelay(int ms)
+{
+    repeat_delay_ms = ms;
+}
+
+void Keybinding::setRepeatInterval(int ms)
+{
+    repeat_interval_ms = ms;
+}
+
 bool Keybinding::isBound() const
 {
     return bindings.size() > 0;
@@ -346,6 +365,8 @@ bool Keybinding::getUp() const
 
 float Keybinding::getValue() const
 {
+    if (global_repeating && repeat_key_type == keyboard_mask)
+        return down_event ? value : 0.0f;
     return value;
 }
 
@@ -507,8 +528,19 @@ void Keybinding::setValue(float new_value, int key_type)
     // triggers.
     if ((key_type & type_mask) != mouse_movement_mask && (key_type & type_mask) != joystick_axis_mask)
     {
-        if (this->value < threshold && threshold_value >= threshold) down_event = true;
-        if (this->value >= threshold && threshold_value < threshold) up_event = true;
+        if (this->value < threshold && threshold_value >= threshold)
+        {
+            down_event = true;
+            repeat_last_ticks = static_cast<int>(SDL_GetTicks());
+            repeat_started = false;
+            repeat_key_type = key_type & type_mask;
+        }
+        if (this->value >= threshold && threshold_value < threshold)
+        {
+            up_event = true;
+            repeat_started = false;
+            repeat_key_type = 0;
+        }
     }
 
     // Set the keybind's value to the new value.
@@ -527,9 +559,30 @@ static int release_mouse = 0;
 
 void Keybinding::allPostUpdate()
 {
-    for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
+    for (Keybinding* keybinding = keybindings; keybinding; keybinding = keybinding->next)
         keybinding->postUpdate();
-    
+
+    if (global_repeating)
+    {
+        const int now = static_cast<int>(SDL_GetTicks());
+        for (Keybinding* keybinding = keybindings; keybinding; keybinding = keybinding->next)
+        {
+            // Apply global_repeating to keyboard binds only.
+            if (keybinding->value < threshold || keybinding->repeat_key_type != keyboard_mask)
+                continue;
+            const int wait = keybinding->repeat_started
+                ? repeat_interval_ms
+                : repeat_delay_ms + repeat_interval_ms;
+            // Apply repeating behavior.
+            if (now - keybinding->repeat_last_ticks >= wait)
+            {
+                keybinding->down_event = true;
+                keybinding->repeat_last_ticks = now;
+                keybinding->repeat_started = true;
+            }
+        }
+    }
+
     if (release_mouse & (1 << 0))
         updateKeys(0 | mouse_wheel_mask, 0.0);
     if (release_mouse & (1 << 1))
