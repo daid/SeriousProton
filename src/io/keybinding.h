@@ -138,7 +138,6 @@ public:
     float getContinuousValue() const { return continuous_value * sensitivity; }
     // Discrete: single step applied once per press.
     bool isDiscreteStepDown() const { return discrete_step_down; }
-    bool getDiscreteStepDown() const { return discrete_step_down; }
     bool isDiscreteStepUp() const { return discrete_step_up; }
     // Returns discrete_step_size when a Discrete bind fired this frame, 0 otherwise.
     float getDiscreteValue() const { return discrete_step_down ? discrete_step_size : 0.0f; }
