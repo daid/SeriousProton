@@ -5,6 +5,7 @@
 #include <io/json.h>
 #include <fstream>
 #include <unordered_set>
+#include <algorithm>
 #include <SDL_events.h>
 
 
@@ -14,6 +15,7 @@ namespace io {
 Keybinding* Keybinding::keybindings = nullptr;
 Keybinding* Keybinding::rebinding_key = nullptr;
 Keybinding::Type Keybinding::rebinding_type;
+Keybinding::Interaction Keybinding::rebinding_interaction = Keybinding::Interaction::None;
 
 float Keybinding::deadzone = 0.05f;
 
@@ -244,9 +246,16 @@ string Keybinding::getKeyInternal(int index) const
 
 Keybinding::Type Keybinding::getKeyType(int index) const
 {
-    if (index < 0 || index >= int(bindings.size()))
+    if (index < 0 || index >= static_cast<int>(bindings.size()))
         return Type::None;
     return static_cast<Type>((bindings[index].key & type_mask) >> 16);
+}
+
+Keybinding::Interaction Keybinding::getInteraction(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(bindings.size()))
+        return Interaction::None;
+    return bindings[index].interaction;
 }
 
 string Keybinding::getHumanReadableKeyName(int index) const
@@ -349,10 +358,11 @@ float Keybinding::getValue() const
     return value;
 }
 
-void Keybinding::startUserRebind(Type bind_type)
+void Keybinding::startUserRebind(Type bind_type, Interaction bind_interaction)
 {
     rebinding_key = this;
     rebinding_type = bind_type;
+    rebinding_interaction = bind_interaction;
 }
 
 bool Keybinding::isUserRebinding() const
@@ -399,7 +409,27 @@ void Keybinding::loadKeybindings(const string& filename)
             continue;
         if (entry["key"].is_string())
         {
-            keybinding->setKey(entry["key"].get<std::string>());
+            string key_str = entry["key"].get<std::string>();
+            Interaction inter = Interaction::None;
+            const std::vector<std::pair<string, Interaction>> interaction_names = {
+                {"Sustained", Interaction::Sustained},
+                {"Stepped",   Interaction::Stepped},
+                {"Axis0",     Interaction::Axis0},
+                {"Axis1",     Interaction::Axis1},
+            };
+            for (const auto& pair : interaction_names)
+            {
+                string suffix = ":" + pair.first;
+                if (key_str.endswith(suffix))
+                {
+                    key_str = key_str.substr(0, key_str.length() - suffix.length());
+                    inter = pair.second;
+                    break;
+                }
+            }
+            keybinding->setKey(key_str);
+            if (!keybinding->bindings.empty())
+                keybinding->bindings.back().interaction = inter;
         }
         else if (entry["key"].is_array())
         {
@@ -407,13 +437,39 @@ void Keybinding::loadKeybindings(const string& filename)
             for (const auto& key_entry : entry["key"])
             {
                 if (key_entry.is_string())
-                    keybinding->addKey(key_entry.get<std::string>());
+                {
+                    string key_str = key_entry.get<std::string>();
+                    Interaction inter = Interaction::None;
+                    const std::vector<std::pair<string, Interaction>> interaction_names = {
+                        {"Sustained", Interaction::Sustained},
+                        {"Stepped",   Interaction::Stepped},
+                        {"Axis0",     Interaction::Axis0},
+                        {"Axis1",     Interaction::Axis1},
+                    };
+                    for (const auto& pair : interaction_names)
+                    {
+                        string suffix = ":" + pair.first;
+                        if (key_str.endswith(suffix))
+                        {
+                            key_str = key_str.substr(0, key_str.length() - suffix.length());
+                            inter = pair.second;
+                            break;
+                        }
+                    }
+                    keybinding->addKey(key_str);
+                    if (!keybinding->bindings.empty())
+                        keybinding->bindings.back().interaction = inter;
+                }
             }
         }
         else
         {
             keybinding->bindings.clear();
         }
+        if (entry.contains("step") && entry["step"].is_number())
+            keybinding->step_size = entry["step"].get<float>();
+        if (entry.contains("sens") && entry["sens"].is_number())
+            keybinding->sensitivity = entry["sens"].get<float>();
     }
     LOG(Info, "Keybindings loaded from ", filename);
 }
@@ -426,8 +482,30 @@ void Keybinding::saveKeybindings(const string& filename)
         nlohmann::json data;
         nlohmann::json keys;
         for(unsigned int index=0; index<keybinding->bindings.size(); index++)
-            keys.push_back(keybinding->getKey(index).c_str());
+        {
+            string key_str = keybinding->getKey(index);
+            Interaction inter = keybinding->bindings[index].interaction;
+            if (inter != Interaction::None)
+            {
+                string interaction_name;
+                switch (inter)
+                {
+                case Interaction::Sustained: interaction_name = "Sustained"; break;
+                case Interaction::Stepped:   interaction_name = "Stepped"; break;
+                case Interaction::Axis0:     interaction_name = "Axis0"; break;
+                case Interaction::Axis1:     interaction_name = "Axis1"; break;
+                default: break;
+                }
+                if (!interaction_name.empty())
+                    key_str += ":" + interaction_name;
+            }
+            keys.push_back(key_str.c_str());
+        }
         data["key"] = keys;
+        if (keybinding->step_size != 0.1f)
+            data["step"] = keybinding->step_size;
+        if (keybinding->sensitivity != 1.0f)
+            data["sens"] = keybinding->sensitivity;
         obj[keybinding->name] = data;
     }
 
@@ -476,7 +554,7 @@ void Keybinding::setVirtualKey(int index, float value)
     updateKeys(virtual_mask | index, value);
 }
 
-void Keybinding::addBinding(int key, bool inverted)
+void Keybinding::addBinding(int key, bool inverted, Interaction interaction)
 {
     for(auto& bind : bindings)
     {
@@ -486,7 +564,40 @@ void Keybinding::addBinding(int key, bool inverted)
             return;
         }
     }
-    bindings.push_back({key, inverted});
+    bindings.push_back({key, inverted, interaction});
+}
+
+void Keybinding::setValue(float new_value, int key_type, Interaction bind_interaction, float prev_bind_value)
+{
+    // Run existing per-key threshold/event logic first (delegate to 2-param overload).
+    setValue(new_value, key_type);
+
+    // Per-interaction state update.
+    float threshold_value = fabs(new_value);
+    if (threshold_value < deadzone)
+        threshold_value = 0.0f;
+    float prev_threshold = fabs(prev_bind_value);
+    if (prev_threshold < deadzone)
+        prev_threshold = 0.0f;
+
+    switch (bind_interaction)
+    {
+    case Interaction::Sustained:
+        sustained_value = new_value;
+        break;
+    case Interaction::Stepped:
+        if (prev_threshold < threshold && threshold_value >= threshold) stepped_down = true;
+        if (prev_threshold >= threshold && threshold_value < threshold) stepped_up = true;
+        break;
+    case Interaction::Axis0:
+        axis0_value = std::clamp(new_value, 0.0f, 1.0f);
+        break;
+    case Interaction::Axis1:
+        axis1_value = new_value;
+        break;
+    default:
+        break;
+    }
 }
 
 void Keybinding::setValue(float new_value, int key_type)
@@ -521,6 +632,9 @@ void Keybinding::postUpdate()
         down_event = false;
     else if (up_event)
         up_event = false;
+
+    stepped_down = false;
+    stepped_up = false;
 }
 
 static int release_mouse = 0;
@@ -723,21 +837,20 @@ void Keybinding::updateKeys(int key_number, float value)
     {
         if ((value > threshold || value < -threshold) && (key_number & (static_cast<int>(rebinding_type) << 16)))
         {
-            rebinding_key->addBinding(key_number, value < 0.0f);
+            rebinding_key->addBinding(key_number, value < 0.0f, rebinding_interaction);
             rebinding_key = nullptr;
         }
     }
 
     for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
     {
-        for(const auto& bind : keybinding->bindings)
+        for(auto& bind : keybinding->bindings)
         {
             if (bind.key == key_number)
             {
-                if (bind.inverted)
-                    keybinding->setValue(-value, key_number);
-                else
-                    keybinding->setValue(value, key_number);
+                float v = bind.inverted ? -value : value;
+                keybinding->setValue(v, key_number, bind.interaction, bind.last_value);
+                bind.last_value = (fabs(v) < deadzone) ? 0.0f : v;
             }
         }
     }
@@ -751,6 +864,16 @@ bool operator&(const Keybinding::Type a, const Keybinding::Type b)
 Keybinding::Type operator|(const Keybinding::Type a, const Keybinding::Type b)
 {
     return static_cast<Keybinding::Type>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+bool operator&(Keybinding::Interaction a, Keybinding::Interaction b)
+{
+    return static_cast<int>(a) & static_cast<int>(b);
+}
+
+Keybinding::Interaction operator|(Keybinding::Interaction a, Keybinding::Interaction b)
+{
+    return static_cast<Keybinding::Interaction>(static_cast<int>(a) | static_cast<int>(b));
 }
 
 }//namespace io

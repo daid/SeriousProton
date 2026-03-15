@@ -15,6 +15,9 @@ namespace io {
 class Keybinding : sp::NonCopyable
 {
 public:
+    // Key type, indicative of the input (device) method.
+    // What is being used to trigger this bind?
+    // User input upon binding should define the type.
     enum class Type {
         None = 0,
         Keyboard = (1 << 0),
@@ -34,7 +37,41 @@ public:
         Default = Keyboard | Virtual | Joystick | Controller | Mouse,
     };
 
-    //Create a keybinding, and optionally set the default key(s). See setKey for documentation on key naming.
+    // Key interaction, indicative of the output (control) method.
+    // How does this bind trigger its bound control?
+    // The control should define its interaction, not the user.
+    enum class Interaction {
+        // No defined interaction. Equivalent to Sustained but should
+        // emit a warning.
+        None = 0,
+
+        // Default. Binary actions that fire continuously at a steady
+        // rate each update while onDown/non-zero and stop on onUp;
+        // momentary controls, digital steering.
+        // EE examples: Missile tube firing controls.
+        Sustained = (1 << 0),
+
+        // Binary actions that fire once onDown/past a threshold
+        // regardless of time held; encoders, toggle switches,
+        // controls with detent-only values.
+        // EE examples: Most buttons, warp factor slider, scan sliders.
+        Stepped = (1 << 1),
+
+        // Actions with variable values between 0 and 1, typically
+        // with deadzones at 0 and 1. Linear triggers and
+        // potentiometers, pressure-sensitive buttons, unidirectional
+        // throttles.
+        // EE examples: Combat manevuer forward boost, jump distance slider.
+        Axis0 = (1 << 3),
+
+        // Actions with variable values between -1 and 1, typically
+        // with a deadzone at 0. Steering axes, bidirectional
+        // throttles.
+        // EE examples: Helms rotation, impulse throttle.
+        Axis1 = (1 << 4)
+    };
+
+    // Create a keybinding, and optionally set the default key(s). See setKey for documentation on key naming.
     Keybinding(const string& name);
     Keybinding(const string& name, const string& default_key);
     Keybinding(const string& name, const std::initializer_list<const string>& default_keys);
@@ -43,6 +80,9 @@ public:
     const string& getName() const { return name; }
     const string& getLabel() const { return label; }
     const string& getCategory() const { return category; }
+    // Get the Keybinding::Interaction of this bind. Returns None if the index
+    // is out of range.
+    Interaction getInteraction(int index) const;
     void setLabel(const string& label) { this->label = label; }
     void setLabel(const string& category, const string& label) { this->category = category; this->label = label; }
 
@@ -65,23 +105,49 @@ public:
 
     static void setDeadzone(float deadzone);
 
-    // Get the name of the key in the same format as used for setKey and friends. Returns empty string if the index as no set key.
+    // Get the name of the key in the same format as used for setKey and friends.
+    // Returns empty string if the index as no set key.
     string getKey(int index) const;
+    // Get the Keybinding::Type of this bind. Returns None if the index is out
+    // of range.
     Type getKeyType(int index) const;
-    // Get a human readable name of the key for display purposes.
+    // Get a human-readable name of the key for display purposes.
     string getHumanReadableKeyName(int index) const;
 
     // Returns true if there is anything bound to this keybinding.
     bool isBound() const;
 
-    bool get() const; //True when this key is currently being pressed.
-    bool getDown() const; //True for 1 update cycle when the key is pressed.
-    bool getUp() const; //True for 1 update cycle when the key is released.
-    float getValue() const; //Returns a value in the range -1 to 1 for this keybinding. On keyboard keys this is always 0 or 1, but for joysticks this can be anywhere in the range -1.0 to 1.0
+    // Returns true when this key is currently being pressed.
+    bool get() const;
+    // Returns true for 1 update cycle when the key is pressed.
+    bool getDown() const;
+    // Returns true for 1 update cycle when the key is released.
+    bool getUp() const;
+    // Returns a value in the range -1 to 1 for this keybinding. On keyboard keys this is always 0 or 1, but for joysticks this can be anywhere in the range -1.0 to 1.0
+    float getValue() const;
+
+    void setSupportedInteractions(Interaction i) { supported_interactions = i; }
+    Interaction getSupportedInteractions() const { return supported_interactions; }
+
+    // Per-interaction aggregate query methods.
+    // Sustained: raw value multiplied by sensitivity.
+    float getSustainedValue() const { return sustained_value * sensitivity; }
+    bool getSteppedDown() const { return stepped_down; }
+    bool getSteppedUp() const { return stepped_up; }
+    // Returns step_size when a Stepped bind fired this frame, 0 otherwise.
+    float getSteppedValue() const { return stepped_down ? step_size : 0.0f; }
+    float getAxis0Value() const { return axis0_value; }
+    float getAxis1Value() const { return axis1_value; }
+
+    // Per-keybinding Stepped / Sustained configuration.
+    float getStepSize() const { return step_size; }
+    void setStepSize(float v) { step_size = v; }
+    float getSensitivity() const { return sensitivity; }
+    void setSensitivity(float v) { sensitivity = v; }
 
     // Start a binding process from the user. The next button pressed by the user will be bound to this key.
     // Note that this will add on top of the already existing binds, so clearKeys() need to be called if you want to bind a single key.
-    void startUserRebind(Type bind_type=Type::Default);
+    void startUserRebind(Type bind_type = Type::Default, Interaction bind_interaction = Interaction::None);
     bool isUserRebinding() const;
 
     static int joystickCount();
@@ -108,18 +174,29 @@ private:
     {
         int key;
         bool inverted;
+        Interaction interaction = Interaction::None;
+        float last_value = 0.0f;
     };
     std::vector<Binding> bindings;
+    Interaction supported_interactions = Interaction::None;
 
     static float deadzone;
     static constexpr float threshold = 0.5f;
     float value;
     bool down_event;
     bool up_event;
+    float sustained_value = 0.0f;
+    bool stepped_down = false;
+    bool stepped_up = false;
+    float axis0_value = 0.0f;
+    float axis1_value = 0.0f;
+    float step_size = 0.1f;
+    float sensitivity = 1.0f;
 
     string getKeyInternal(int index) const;
-    void addBinding(int key, bool inverted);
+    void addBinding(int key, bool inverted, Interaction interaction = Interaction::None);
 
+    void setValue(float new_value, int key_type, Interaction bind_interaction, float prev_bind_value);
     void setValue(float new_value, int key_type = 0);
     void postUpdate();
     
@@ -132,6 +209,7 @@ private:
     Keybinding* next=nullptr;
     static Keybinding* rebinding_key;
     static Type rebinding_type;
+    static Interaction rebinding_interaction;
     
     static constexpr int type_mask = 0xfff << 16;
     static constexpr int keyboard_mask = static_cast<int>(Type::Keyboard) << 16;
@@ -149,6 +227,9 @@ private:
 
 bool operator&(const Keybinding::Type a, const Keybinding::Type b);
 Keybinding::Type operator|(const Keybinding::Type a, const Keybinding::Type b);
+
+bool operator&(Keybinding::Interaction a, Keybinding::Interaction b);
+Keybinding::Interaction operator|(Keybinding::Interaction a, Keybinding::Interaction b);
 
 }//namespace io
 }//namespace sp
