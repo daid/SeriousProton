@@ -17,7 +17,7 @@ class Keybinding : sp::NonCopyable
 public:
     // Key type, indicative of the input (device) method.
     // What is being used to trigger this bind?
-    // User input upon binding should define the type.
+    // The user's input defines the input type upon binding.
     enum class Type {
         None = 0,
         Keyboard = (1 << 0),
@@ -37,36 +37,40 @@ public:
         Default = Keyboard | Virtual | Joystick | Controller | Mouse,
     };
 
-    // Key interaction, indicative of the output (control) method.
+    // Key interaction types, indicative of the output (control) method.
     // How does this bind trigger its bound control?
-    // The control should define its interaction, not the user.
+    // The control should define available interactions, not the user.
     enum class Interaction {
-        // No defined interaction. Equivalent to Sustained but should
-        // emit a warning.
+        // No defined interaction. Equivalent to Continuous but should emit a
+        // warning.
         None = 0,
 
-        // Default. Binary actions that fire continuously at a steady
-        // rate each update while onDown/non-zero and stop on onUp;
-        // momentary controls, digital steering.
+        // Default. Binary actions that fire continuously at a steady rate each
+        // update while onDown/non-zero and stop on onUp; momentary controls,
+        // digital steering.
         // EE examples: Missile tube firing controls.
-        Sustained = (1 << 0),
+        Continuous = (1 << 0),
 
-        // Binary actions that fire once onDown/past a threshold
-        // regardless of time held; encoders, toggle switches,
-        // controls with detent-only values.
+        // Binary actions that fire once onDown/past a threshold regardless of
+        // time held; encoders, toggle switches, controls with detent-only
+        // values.
         // EE examples: Most buttons, warp factor slider, scan sliders.
-        Stepped = (1 << 1),
+        Discrete = (1 << 1),
 
-        // Actions with variable values between 0 and 1, typically
-        // with deadzones at 0 and 1. Linear triggers and
-        // potentiometers, pressure-sensitive buttons, unidirectional
-        // throttles.
+        // Binary actions that fire once onDown/past a threshold, waits for a
+        // period, and then fires the action repeatedly on an interval.
+        // Alternative to both Discrete and Continuous interactions, for
+        // backward compatibility with pre-legacy SFML behaviors.
+        Repeating = (1 << 2),
+
+        // Actions with variable values between 0 and 1, typically with
+        // deadzones at 0 and 1. Linear triggers and potentiometers,
+        // pressure-sensitive buttons, unidirectional throttles.
         // EE examples: Combat manevuer forward boost, jump distance slider.
         Axis0 = (1 << 3),
 
-        // Actions with variable values between -1 and 1, typically
-        // with a deadzone at 0. Steering axes, bidirectional
-        // throttles.
+        // Actions with variable values between -1 and 1, typically with a
+        // deadzone at 0. Steering axes, bidirectional throttles.
         // EE examples: Helms rotation, impulse throttle.
         Axis1 = (1 << 4)
     };
@@ -130,23 +134,35 @@ public:
     Interaction getSupportedInteractions() const { return supported_interactions; }
 
     // Per-interaction aggregate query methods.
-    // Sustained: raw value multiplied by sensitivity.
-    float getSustainedValue() const { return sustained_value * sensitivity; }
-    bool getSteppedDown() const { return stepped_down; }
-    bool getSteppedUp() const { return stepped_up; }
-    // Returns step_size when a Stepped bind fired this frame, 0 otherwise.
-    float getSteppedValue() const { return stepped_down ? step_size : 0.0f; }
+    // Continuous: sustained value sent every frame and multiplied by sensitivity.
+    float getContinuousValue() const { return continuous_value * sensitivity; }
+    // Discrete: single step applied once per press.
+    bool isDiscreteStepDown() const { return discrete_step_down; }
+    bool getDiscreteStepDown() const { return discrete_step_down; }
+    bool isDiscreteStepUp() const { return discrete_step_up; }
+    // Returns discrete_step_size when a Discrete bind fired this frame, 0 otherwise.
+    float getDiscreteValue() const { return discrete_step_down ? discrete_step_size : 0.0f; }
+    // Repeating: single discrete step applied once, then repeatedly on an
+    // interval after a delay.
+    bool isRepeatReady() const { return repeat_ready; }
+    // Axis0: axis value from 0.0 to 1.0, dead at extremities.
     float getAxis0Value() const { return axis0_value; }
+    // Axis1: axis value from -1.0 to 1.0, dead at 0.0.
     float getAxis1Value() const { return axis1_value; }
 
-    // Per-keybinding Stepped / Sustained configuration.
-    float getStepSize() const { return step_size; }
-    void setStepSize(float v) { step_size = v; }
-    float getSensitivity() const { return sensitivity; }
-    void setSensitivity(float v) { sensitivity = v; }
+    // Per-keybinding configuration.
+    float getDiscreteStepSize() const { return discrete_step_size; }
+    void setDiscreteStepSize(float v) { discrete_step_size = v; }
+    float getRepeatDelay() const { return repeat_delay; }
+    void setRepeatDelay(unsigned int v) { repeat_delay = v; }
+    float getRepeatInterval() const { return repeat_interval; }
+    void setRepeatInterval(unsigned int v) { repeat_interval = v; }
+    float getContinuousSensitivity() const { return sensitivity; }
+    void setContinuousSensitivity(float v) { sensitivity = v; }
 
-    // Start a binding process from the user. The next button pressed by the user will be bound to this key.
-    // Note that this will add on top of the already existing binds, so clearKeys() need to be called if you want to bind a single key.
+    // Start a binding process from the user. The next button pressed by the
+    // user will be bound to this key. This will add on top of the existing
+    // binds, so clearKeys() must be called in order to bind only one input.
     void startUserRebind(Type bind_type = Type::Default, Interaction bind_interaction = Interaction::None);
     bool isUserRebinding() const;
 
@@ -180,18 +196,30 @@ private:
     std::vector<Binding> bindings;
     Interaction supported_interactions = Interaction::None;
 
+    // Deadzone tolerance.
     static float deadzone;
-    static constexpr float threshold = 0.5f;
+    // Discrete input step size
+    static float discrete_step_size;
+    // Discrete input +/- threshold.
+    static float threshold;
+    // Repeating input delay after first event, in milliseconds.
+    static unsigned int repeat_delay;
+    // Repeating input interval after second event, in milliseconds.
+    static unsigned int repeat_interval;
+    // Continuous input sensitivity factor.
+    static float sensitivity;
+
     float value;
     bool down_event;
     bool up_event;
-    float sustained_value = 0.0f;
-    bool stepped_down = false;
-    bool stepped_up = false;
+    float continuous_value = 0.0f;
+    bool discrete_step_down = false;
+    bool discrete_step_up = false;
+    bool repeat_ready = false;
+    unsigned int repeat_hold_ticks = 0; // SDL ticks at initial press (0 = not held)
+    bool repeat_started = false; // true after first repeat has fired
     float axis0_value = 0.0f;
     float axis1_value = 0.0f;
-    float step_size = 0.1f;
-    float sensitivity = 1.0f;
 
     string getKeyInternal(int index) const;
     void addBinding(int key, bool inverted, Interaction interaction = Interaction::None);

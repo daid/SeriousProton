@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <SDL_events.h>
+#include <SDL_timer.h>
 
 
 namespace sp {
@@ -18,6 +19,11 @@ Keybinding::Type Keybinding::rebinding_type;
 Keybinding::Interaction Keybinding::rebinding_interaction = Keybinding::Interaction::None;
 
 float Keybinding::deadzone = 0.05f;
+float Keybinding::discrete_step_size = 0.1f;
+float Keybinding::threshold = 0.5f;
+unsigned int Keybinding::repeat_delay = 500; // ms
+unsigned int Keybinding::repeat_interval = 40; // ms
+float Keybinding::sensitivity = 1.0f;
 
 Keybinding::Keybinding(const string& name)
 : name(name), label(name.substr(0, 1).upper() + name.substr(1).lower())
@@ -402,21 +408,24 @@ void Keybinding::loadKeybindings(const string& filename)
 
     auto json = parsed_json.value();
 
-    for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
+    const std::vector<std::pair<string, Interaction>> interaction_names = {
+        {"Continuous", Interaction::Continuous},
+        {"Discrete", Interaction::Discrete},
+        {"Repeating", Interaction::Repeating},
+        {"Axis0", Interaction::Axis0},
+        {"Axis1", Interaction::Axis1},
+    };
+
+    for (Keybinding* keybinding = keybindings; keybinding; keybinding = keybinding->next)
     {
         const auto& entry = json[keybinding->name];
-        if (!entry.is_object())
-            continue;
+        if (!entry.is_object()) continue;
+
         if (entry["key"].is_string())
         {
             string key_str = entry["key"].get<std::string>();
             Interaction inter = Interaction::None;
-            const std::vector<std::pair<string, Interaction>> interaction_names = {
-                {"Sustained", Interaction::Sustained},
-                {"Stepped",   Interaction::Stepped},
-                {"Axis0",     Interaction::Axis0},
-                {"Axis1",     Interaction::Axis1},
-            };
+
             for (const auto& pair : interaction_names)
             {
                 string suffix = ":" + pair.first;
@@ -427,7 +436,9 @@ void Keybinding::loadKeybindings(const string& filename)
                     break;
                 }
             }
+
             keybinding->setKey(key_str);
+
             if (!keybinding->bindings.empty())
                 keybinding->bindings.back().interaction = inter;
         }
@@ -440,12 +451,6 @@ void Keybinding::loadKeybindings(const string& filename)
                 {
                     string key_str = key_entry.get<std::string>();
                     Interaction inter = Interaction::None;
-                    const std::vector<std::pair<string, Interaction>> interaction_names = {
-                        {"Sustained", Interaction::Sustained},
-                        {"Stepped",   Interaction::Stepped},
-                        {"Axis0",     Interaction::Axis0},
-                        {"Axis1",     Interaction::Axis1},
-                    };
                     for (const auto& pair : interaction_names)
                     {
                         string suffix = ":" + pair.first;
@@ -457,19 +462,27 @@ void Keybinding::loadKeybindings(const string& filename)
                         }
                     }
                     keybinding->addKey(key_str);
+
                     if (!keybinding->bindings.empty())
                         keybinding->bindings.back().interaction = inter;
                 }
             }
         }
-        else
-        {
-            keybinding->bindings.clear();
-        }
-        if (entry.contains("step") && entry["step"].is_number())
-            keybinding->step_size = entry["step"].get<float>();
-        if (entry.contains("sens") && entry["sens"].is_number())
-            keybinding->sensitivity = entry["sens"].get<float>();
+        else keybinding->bindings.clear();
+
+        // Get step size and threshold on discrete inputs.
+        if (entry.contains("discrete") && entry["discrete_step"].is_number())
+            keybinding->discrete_step_size = entry["discrete_step"].get<float>();
+        if (entry.contains("discrete") && entry["discrete_threshold"].is_number())
+            keybinding->threshold = entry["discrete_threshold"].get<float>();
+        // Get delay values on repeating inputs.
+        if (entry.contains("repeat") && entry["repeat_delay"].is_number())
+            keybinding->repeat_delay = entry["repeat_delay"].get<int>();
+        if (entry.contains("repeat") && entry["repeat_interval"].is_number())
+            keybinding->repeat_interval = entry["repeat_interval"].get<int>();
+        // Get sensitivity value on continuous inputs.
+        if (entry.contains("continuous") && entry["continuous_sensitivity"].is_number())
+            keybinding->sensitivity = entry["continuous_sensitivity"].get<float>();
     }
     LOG(Info, "Keybindings loaded from ", filename);
 }
@@ -490,10 +503,11 @@ void Keybinding::saveKeybindings(const string& filename)
                 string interaction_name;
                 switch (inter)
                 {
-                case Interaction::Sustained: interaction_name = "Sustained"; break;
-                case Interaction::Stepped:   interaction_name = "Stepped"; break;
-                case Interaction::Axis0:     interaction_name = "Axis0"; break;
-                case Interaction::Axis1:     interaction_name = "Axis1"; break;
+                case Interaction::Continuous: interaction_name = "Continuous"; break;
+                case Interaction::Discrete: interaction_name = "Discrete"; break;
+                case Interaction::Repeating: interaction_name = "Repeating"; break;
+                case Interaction::Axis0: interaction_name = "Axis0"; break;
+                case Interaction::Axis1: interaction_name = "Axis1"; break;
                 default: break;
                 }
                 if (!interaction_name.empty())
@@ -502,10 +516,19 @@ void Keybinding::saveKeybindings(const string& filename)
             keys.push_back(key_str.c_str());
         }
         data["key"] = keys;
-        if (keybinding->step_size != 0.1f)
-            data["step"] = keybinding->step_size;
+
+        // If interaction properties are defined, serialize them.
+        // TODO: Move defaults to consts.
+        if (keybinding->discrete_step_size != 0.1f)
+            data["discrete_step"] = keybinding->discrete_step_size;
+        if (keybinding->threshold != 0.5f)
+            data["discrete_threshold"] = keybinding->threshold;
+        if (keybinding->repeat_delay != 500)
+            data["repeat_delay"] = keybinding->repeat_delay;
+        if (keybinding->repeat_interval != 40)
+            data["repeat_interval"] = keybinding->repeat_interval;
         if (keybinding->sensitivity != 1.0f)
-            data["sens"] = keybinding->sensitivity;
+            data["continuous_sensitivity"] = keybinding->sensitivity;
         obj[keybinding->name] = data;
     }
 
@@ -574,26 +597,45 @@ void Keybinding::setValue(float new_value, int key_type, Interaction bind_intera
 
     // Per-interaction state update.
     float threshold_value = fabs(new_value);
-    if (threshold_value < deadzone)
-        threshold_value = 0.0f;
+    if (threshold_value < deadzone) threshold_value = 0.0f;
     float prev_threshold = fabs(prev_bind_value);
-    if (prev_threshold < deadzone)
-        prev_threshold = 0.0f;
+    if (prev_threshold < deadzone) prev_threshold = 0.0f;
 
     switch (bind_interaction)
     {
-    case Interaction::Sustained:
-        sustained_value = new_value;
+    case Interaction::Continuous:
+        continuous_value = new_value;
+        LOG(Debug, "Continuous: ", continuous_value);
         break;
-    case Interaction::Stepped:
-        if (prev_threshold < threshold && threshold_value >= threshold) stepped_down = true;
-        if (prev_threshold >= threshold && threshold_value < threshold) stepped_up = true;
+    case Interaction::Discrete:
+        if (prev_threshold < threshold && threshold_value >= threshold)
+            discrete_step_down = true;
+        if (prev_threshold >= threshold && threshold_value < threshold)
+            discrete_step_up = true;
+        LOG(Debug, "Discrete: down ", discrete_step_down ? "true" : "false", " up ", discrete_step_up ? "true" : "false");
+        break;
+    case Interaction::Repeating:
+        if (prev_threshold < threshold && threshold_value >= threshold)
+        {
+            repeat_ready = true;
+            repeat_hold_ticks = SDL_GetTicks();
+            repeat_started = false;
+        }
+
+        if (prev_threshold >= threshold && threshold_value < threshold)
+        {
+            repeat_hold_ticks = 0;
+            repeat_started = false;
+        }
+        LOG(Debug, "Repeating: ready ", repeat_ready ? "true" : "false", " up ", discrete_step_up ? "true" : "false", "\nhold ticks: ", repeat_hold_ticks, " started: ", repeat_started ? "true" : "false");
         break;
     case Interaction::Axis0:
         axis0_value = std::clamp(new_value, 0.0f, 1.0f);
+        LOG(Debug, "Axis0: ", axis0_value, " (", new_value, ")");
         break;
     case Interaction::Axis1:
         axis1_value = new_value;
+        LOG(Debug, "Axis1: ", axis1_value);
         break;
     default:
         break;
@@ -633,8 +675,9 @@ void Keybinding::postUpdate()
     else if (up_event)
         up_event = false;
 
-    stepped_down = false;
-    stepped_up = false;
+    discrete_step_down = false;
+    discrete_step_up = false;
+    repeat_ready = false;
 }
 
 static int release_mouse = 0;
@@ -643,7 +686,28 @@ void Keybinding::allPostUpdate()
 {
     for(Keybinding* keybinding = keybindings; keybinding; keybinding=keybinding->next)
         keybinding->postUpdate();
-    
+
+    unsigned int now = SDL_GetTicks();
+    for (Keybinding* keybinding = keybindings; keybinding; keybinding = keybinding->next)
+    {
+        if (keybinding->repeat_hold_ticks == 0)
+            continue;
+        bool has_repeating = false;
+        for (const auto& bind : keybinding->bindings)
+            if (bind.interaction == Interaction::Repeating) { has_repeating = true; break; }
+        if (!has_repeating)
+            continue;
+        const unsigned int wait = keybinding->repeat_started
+            ? repeat_interval
+            : repeat_delay + repeat_interval;
+        if (now - keybinding->repeat_hold_ticks >= wait)
+        {
+            keybinding->repeat_ready = true;
+            keybinding->repeat_hold_ticks = now;
+            keybinding->repeat_started = true;
+        }
+    }
+
     if (release_mouse & (1 << 0))
         updateKeys(0 | mouse_wheel_mask, 0.0);
     if (release_mouse & (1 << 1))
