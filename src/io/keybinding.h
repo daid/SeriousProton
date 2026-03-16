@@ -152,9 +152,9 @@ public:
     // Per-keybinding configuration.
     float getDiscreteStepSize() const { return discrete_step_size; }
     void setDiscreteStepSize(float v) { discrete_step_size = v; }
-    float getRepeatDelay() const { return repeat_delay; }
+    unsigned int getRepeatDelay() const { return repeat_delay; }
     void setRepeatDelay(unsigned int v) { repeat_delay = v; }
-    float getRepeatInterval() const { return repeat_interval; }
+    unsigned int getRepeatInterval() const { return repeat_interval; }
     void setRepeatInterval(unsigned int v) { repeat_interval = v; }
     float getContinuousSensitivity() const { return sensitivity; }
     void setContinuousSensitivity(float v) { sensitivity = v; }
