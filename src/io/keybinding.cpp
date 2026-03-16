@@ -594,14 +594,12 @@ void Keybinding::addBinding(int key, bool inverted, Interaction interaction)
 
 void Keybinding::setValue(float new_value, int key_type, Interaction bind_interaction, float prev_bind_value)
 {
-    // Run existing per-key threshold/event logic first (delegate to 2-param overload).
+    // Run existing per-key threshold/event logic.
     setValue(new_value, key_type);
 
     // Per-interaction state update.
-    float threshold_value = fabs(new_value);
-    if (threshold_value < deadzone) threshold_value = 0.0f;
-    float prev_threshold = fabs(prev_bind_value);
-    if (prev_threshold < deadzone) prev_threshold = 0.0f;
+    float threshold_value = fabs(new_value) < deadzone ? 0.0f : new_value;
+    float prev_threshold = fabs(prev_bind_value) < deadzone ? 0.0f : prev_bind_value;
 
     switch (bind_interaction)
     {
