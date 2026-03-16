@@ -163,6 +163,8 @@ public:
     // user will be bound to this key. This will add on top of the existing
     // binds, so clearKeys() must be called in order to bind only one input.
     void startUserRebind(Type bind_type = Type::Default, Interaction bind_interaction = Interaction::None);
+    // Cancel any in-progress user rebind, regardless of which keybinding started it.
+    static void cancelUserRebind();
     bool isUserRebinding() const;
 
     static int joystickCount();

@@ -374,6 +374,11 @@ void Keybinding::startUserRebind(Type bind_type, Interaction bind_interaction)
     rebinding_interaction = bind_interaction;
 }
 
+void Keybinding::cancelUserRebind()
+{
+    rebinding_key = nullptr;
+}
+
 bool Keybinding::isUserRebinding() const
 {
     return rebinding_key == this;
