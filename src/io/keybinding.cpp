@@ -16,6 +16,7 @@ namespace io {
 
 Keybinding* Keybinding::keybindings = nullptr;
 Keybinding* Keybinding::rebinding_key = nullptr;
+Keybinding* Keybinding::rebinding_cancel_key = nullptr;
 Keybinding::Type Keybinding::rebinding_type;
 Keybinding::Interaction Keybinding::rebinding_interaction = Keybinding::Interaction::None;
 
@@ -377,6 +378,12 @@ void Keybinding::startUserRebind(Type bind_type, Interaction bind_interaction)
 void Keybinding::cancelUserRebind()
 {
     rebinding_key = nullptr;
+    rebinding_cancel_key = nullptr;
+}
+
+void Keybinding::setUserRebindCancelKey(Keybinding* cancel_key)
+{
+    rebinding_cancel_key = cancel_key;
 }
 
 bool Keybinding::isUserRebinding() const
@@ -908,8 +915,22 @@ void Keybinding::updateKeys(int key_number, float value)
     {
         if ((value > threshold || value < -threshold) && (key_number & (static_cast<int>(rebinding_type) << 16)))
         {
-            rebinding_key->addBinding(key_number, value < 0.0f, rebinding_interaction);
+            bool cancelled = false;
+            if (rebinding_cancel_key)
+            {
+                for (auto& bind : rebinding_cancel_key->bindings)
+                {
+                    if (bind.key == key_number)
+                    {
+                        cancelled = true;
+                        break;
+                    }
+                }
+            }
+            if (!cancelled)
+                rebinding_key->addBinding(key_number, value < 0.0f, rebinding_interaction);
             rebinding_key = nullptr;
+            rebinding_cancel_key = nullptr;
         }
     }
 

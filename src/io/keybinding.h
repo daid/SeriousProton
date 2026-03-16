@@ -165,6 +165,9 @@ public:
     void startUserRebind(Type bind_type = Type::Default, Interaction bind_interaction = Interaction::None);
     // Cancel any in-progress user rebind, regardless of which keybinding started it.
     static void cancelUserRebind();
+    // Set a keybinding whose bound keys cancel (rather than capture) an active
+    // rebind when pressed. Pass nullptr to clear. Only checked during a rebind.
+    static void setUserRebindCancelKey(Keybinding* cancel_key);
     bool isUserRebinding() const;
 
     static int joystickCount();
@@ -237,6 +240,7 @@ private:
     static Keybinding* keybindings;
     Keybinding* next=nullptr;
     static Keybinding* rebinding_key;
+    static Keybinding* rebinding_cancel_key;
     static Type rebinding_type;
     static Interaction rebinding_interaction;
     
