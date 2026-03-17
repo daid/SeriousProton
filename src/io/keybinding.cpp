@@ -194,6 +194,12 @@ void Keybinding::clearKeys()
     bindings.clear();
 }
 
+Keybinding::Interaction Keybinding::getDefaultInteraction(Type type) const
+{
+    auto it = type_default_interactions.find(static_cast<int>(type));
+    return (it != type_default_interactions.end()) ? it->second : default_interaction;
+}
+
 void Keybinding::setDeadzone(float new_deadzone)
 {
     deadzone = new_deadzone;
@@ -617,7 +623,10 @@ void Keybinding::setValue(float new_value, int key_type, Interaction bind_intera
     float threshold_value = fabs(new_value) < deadzone ? 0.0f : new_value;
     float prev_threshold = fabs(prev_bind_value) < deadzone ? 0.0f : prev_bind_value;
 
-    switch (bind_interaction)
+    Interaction effective = getDefaultInteraction(static_cast<Type>((key_type & type_mask) >> 16));
+    if (bind_interaction != Interaction::None)
+        effective = bind_interaction;
+    switch (effective)
     {
     case Interaction::Continuous:
         continuous_value = new_value;

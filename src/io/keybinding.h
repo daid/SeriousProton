@@ -3,6 +3,7 @@
 #include <stringImproved.h>
 #include <nonCopyable.h>
 #include <io/pointer.h>
+#include <unordered_map>
 
 //Forward declare the event structure, so we can pass it by reference to the keybindings, without exposing all SDL stuff.
 union SDL_Event;
@@ -158,6 +159,13 @@ public:
     void setRepeatInterval(unsigned int v) { repeat_interval = v; }
     float getContinuousSensitivity() const { return sensitivity; }
     void setContinuousSensitivity(float v) { sensitivity = v; }
+    // Default interaction used when a binding has Interaction::None.
+    // Allows controls to define sensible behavior for undecorated key presses.
+    // Per-type overrides take priority over the global default.
+    Interaction getDefaultInteraction() const { return default_interaction; }
+    void setDefaultInteraction(Interaction i) { default_interaction = i; }
+    Interaction getDefaultInteraction(Type type) const;
+    void setDefaultInteraction(Type type, Interaction i) { type_default_interactions[static_cast<int>(type)] = i; }
 
     // Start a binding process from the user. The next button pressed by the
     // user will be bound to this key. This will add on top of the existing
@@ -218,6 +226,8 @@ private:
     };
     std::vector<Binding> bindings;
     Interaction supported_interactions = Interaction::None;
+    Interaction default_interaction = Interaction::None;
+    std::unordered_map<int, Interaction> type_default_interactions;
 
     // Deadzone tolerance.
     static float deadzone;
