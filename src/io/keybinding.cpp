@@ -20,6 +20,12 @@ Keybinding* Keybinding::rebinding_cancel_key = nullptr;
 Keybinding::Type Keybinding::rebinding_type;
 Keybinding::Interaction Keybinding::rebinding_interaction = Keybinding::Interaction::None;
 
+bool Keybinding::rebinding_preview_mode = false;
+Keybinding* Keybinding::rebinding_preview_target = nullptr;
+int Keybinding::rebinding_preview_key = 0;
+bool Keybinding::rebinding_preview_inverted = false;
+Keybinding::Interaction Keybinding::rebinding_preview_interaction = Keybinding::Interaction::None;
+
 float Keybinding::deadzone = 0.05f;
 float Keybinding::discrete_step_size = 0.1f;
 float Keybinding::threshold = 0.5f;
@@ -264,87 +270,89 @@ Keybinding::Interaction Keybinding::getInteraction(int index) const
     return bindings[index].interaction;
 }
 
+string Keybinding::keyNameForRaw(int key, bool inverted)
+{
+    int data = key & ~type_mask;
+    string sign = inverted ? "-" : "+";
+    switch(key & type_mask)
+    {
+    case keyboard_mask:
+        return SDL_GetKeyName(data);
+    case pointer_mask:
+        switch(Pointer::Button(data))
+        {
+        case Pointer::Button::Touch: return tr("pointer_input", "Touchscreen");
+        case Pointer::Button::Left: return tr("pointer_input", "Left button");
+        case Pointer::Button::Middle: return tr("pointer_input", "Middle button");
+        case Pointer::Button::Right: return tr("pointer_input", "Right button");
+        case Pointer::Button::X1: return tr("pointer_input", "X1 button");
+        case Pointer::Button::X2: return tr("pointer_input", "X2 button");
+        default: break;
+        }
+        break;
+    case joystick_axis_mask:
+        return tr("joystick_input", "Axis {number_plus_minus}").format({
+            {"number_plus_minus", string(data & 0xff) + sign}
+        });
+    case joystick_button_mask:
+        return tr("joystick_input", "Button {button_name}").format({
+            {"button_name", string(data & 0xff)}
+        });
+    case mouse_movement_mask:
+        switch(data)
+        {
+        case 0: return tr("mouse_input", "X axis{sign}").format({{"sign", sign}});
+        case 1: return tr("mouse_input", "Y axis{sign}").format({{"sign", sign}});
+        }
+        break;
+    case mouse_wheel_mask:
+        switch(data)
+        {
+        case 0: return tr("mouse_input", "Wheel sideways{sign}").format({{"sign", sign}});
+        case 1: return tr("mouse_input", "Wheel{sign}").format({{"sign", sign}});
+        }
+        break;
+    case game_controller_button_mask:
+        switch(data & 0xff)
+        {
+        case SDL_CONTROLLER_BUTTON_A: return "A";
+        case SDL_CONTROLLER_BUTTON_B: return "B";
+        case SDL_CONTROLLER_BUTTON_X: return "X";
+        case SDL_CONTROLLER_BUTTON_Y: return "Y";
+        case SDL_CONTROLLER_BUTTON_BACK: return tr("controller_input", "Back");
+        case SDL_CONTROLLER_BUTTON_GUIDE: return tr("controller_input", "Guide");
+        case SDL_CONTROLLER_BUTTON_START: return tr("controller_input", "Start");
+        case SDL_CONTROLLER_BUTTON_LEFTSTICK: return tr("controller_input_left", "L stick button");
+        case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return tr("controller_input_right", "R stick button");
+        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return tr("controller_input_left", "L shoulder");
+        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return tr("controller_input_right", "R shoulder");
+        case SDL_CONTROLLER_BUTTON_DPAD_UP: return tr("controller_input_dpad", "Pad up");
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return tr("controller_input_dpad", "Pad down");
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return tr("controller_input_dpad", "Pad left");
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return tr("controller_input_dpad", "Pad right");
+        }
+        break;
+    case game_controller_axis_mask:
+        switch(data & 0xff)
+        {
+        case SDL_CONTROLLER_AXIS_LEFTX: return tr("controller_input_left", "L stick X axis{sign}").format({{"sign", sign}});
+        case SDL_CONTROLLER_AXIS_LEFTY: return tr("controller_input_left", "L stick Y axis{sign}").format({{"sign", sign}});
+        case SDL_CONTROLLER_AXIS_RIGHTX: return tr("controller_input_right", "R stick X axis{sign}").format({{"sign", sign}});
+        case SDL_CONTROLLER_AXIS_RIGHTY: return tr("controller_input_right", "R stick Y axis{sign}").format({{"sign", sign}});
+        case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return tr("controller_input_left", "L trigger{sign}").format({{"sign", sign}});
+        case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return tr("controller_input_right", "R trigger{sign}").format({{"sign", sign}});
+        }
+        break;
+    case virtual_mask:
+        return tr("virtual_input", "Virtual-{number}").format({{"number", string(data & 0xff)}});
+    }
+    return tr("unknown_input", "Unknown");
+}
+
 string Keybinding::getHumanReadableKeyName(int index) const
 {
     if (index >= 0 && index < static_cast<int>(bindings.size()))
-    {
-        int key = bindings[index].key;
-        int data = key & ~type_mask;
-        string sign = bindings[index].inverted ? "-" : "+";
-        switch(key & type_mask)
-        {
-        case keyboard_mask:
-            return SDL_GetKeyName(data);
-        case pointer_mask:
-            switch(Pointer::Button(data))
-            {
-            case Pointer::Button::Touch: return tr("pointer_input", "Touchscreen");
-            case Pointer::Button::Left: return tr("pointer_input", "Left button");
-            case Pointer::Button::Middle: return tr("pointer_input", "Middle button");
-            case Pointer::Button::Right: return tr("pointer_input", "Right button");
-            case Pointer::Button::X1: return tr("pointer_input", "X1 button");
-            case Pointer::Button::X2: return tr("pointer_input", "X2 button");
-            default: break;
-            }
-            break;
-        case joystick_axis_mask:
-            return tr("joystick_input", "Axis {number_plus_minus}").format({
-                {"number_plus_minus", string(data & 0xff) + sign}
-            });
-        case joystick_button_mask:
-            return tr("joystick_input", "Button {button_name}").format({
-                {"button_name", string(data & 0xff)}
-            });
-        case mouse_movement_mask:
-            switch(data)
-            {
-            case 0: return tr("mouse_input", "X axis{sign}").format({{"sign", sign}});
-            case 1: return tr("mouse_input", "Y axis{sign}").format({{"sign", sign}});
-            }
-            break;
-        case mouse_wheel_mask:
-            switch(data)
-            {
-            case 0: return tr("mouse_input", "Wheel sideways{sign}").format({{"sign", sign}});
-            case 1: return tr("mouse_input", "Wheel{sign}").format({{"sign", sign}});
-            }
-            break;
-        case game_controller_button_mask:
-            switch(data & 0xff)
-            {
-            case SDL_CONTROLLER_BUTTON_A: return "A";
-            case SDL_CONTROLLER_BUTTON_B: return "B";
-            case SDL_CONTROLLER_BUTTON_X: return "X";
-            case SDL_CONTROLLER_BUTTON_Y: return "Y";
-            case SDL_CONTROLLER_BUTTON_BACK: return tr("controller_input", "Back");
-            case SDL_CONTROLLER_BUTTON_GUIDE: return tr("controller_input", "Guide");
-            case SDL_CONTROLLER_BUTTON_START: return tr("controller_input", "Start");
-            case SDL_CONTROLLER_BUTTON_LEFTSTICK: return tr("controller_input_left", "L stick button");
-            case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return tr("controller_input_right", "R stick button");
-            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return tr("controller_input_left", "L shoulder");
-            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return tr("controller_input_right", "R shoulder");
-            case SDL_CONTROLLER_BUTTON_DPAD_UP: return tr("controller_input_dpad", "Pad up");
-            case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return tr("controller_input_dpad", "Pad down");
-            case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return tr("controller_input_dpad", "Pad left");
-            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return tr("controller_input_dpad", "Pad right");
-            }
-            break;
-        case game_controller_axis_mask:
-            switch(data & 0xff)
-            {
-            case SDL_CONTROLLER_AXIS_LEFTX: return tr("controller_input_left", "L stick X axis{sign}").format({{"sign", sign}});
-            case SDL_CONTROLLER_AXIS_LEFTY: return tr("controller_input_left", "L stick Y axis{sign}").format({{"sign", sign}});
-            case SDL_CONTROLLER_AXIS_RIGHTX: return tr("controller_input_right", "R stick X axis{sign}").format({{"sign", sign}});
-            case SDL_CONTROLLER_AXIS_RIGHTY: return tr("controller_input_right", "R stick Y axis{sign}").format({{"sign", sign}});
-            case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return tr("controller_input_left", "L trigger{sign}").format({{"sign", sign}});
-            case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return tr("controller_input_right", "R trigger{sign}").format({{"sign", sign}});
-            }
-            break;
-        case virtual_mask:
-            return tr("virtual_input", "Virtual-{number}").format({{"number", string(data & 0xff)}});
-        }
-        return tr("unknown_input", "Unknown");
-    }
+        return keyNameForRaw(bindings[index].key, bindings[index].inverted);
     return "";
 }
 
@@ -379,6 +387,7 @@ void Keybinding::cancelUserRebind()
 {
     rebinding_key = nullptr;
     rebinding_cancel_key = nullptr;
+    rebinding_preview_mode = false;
 }
 
 void Keybinding::setUserRebindCancelKey(Keybinding* cancel_key)
@@ -911,7 +920,18 @@ void Keybinding::handleEvent(const SDL_Event& event)
 
 void Keybinding::updateKeys(int key_number, float value)
 {
-    if (rebinding_key)
+    if (rebinding_preview_mode && rebinding_preview_target)
+    {
+        if ((value > threshold || value < -threshold) && (key_number & (static_cast<int>(rebinding_type) << 16)))
+        {
+            rebinding_preview_key = key_number;
+            rebinding_preview_inverted = value < 0.0f;
+            rebinding_preview_interaction = rebinding_interaction;
+            rebinding_preview_mode = false;
+            rebinding_key = nullptr;
+        }
+    }
+    else if (rebinding_key)
     {
         if ((value > threshold || value < -threshold) && (key_number & (static_cast<int>(rebinding_type) << 16)))
         {
@@ -945,6 +965,70 @@ void Keybinding::updateKeys(int key_number, float value)
                 bind.last_value = (fabs(v) < deadzone) ? 0.0f : v;
             }
         }
+    }
+}
+
+void Keybinding::startUserRebindPreview(Type bind_type, Interaction bind_interaction)
+{
+    rebinding_preview_target = this;
+    rebinding_preview_key = 0;
+    rebinding_preview_inverted = false;
+    rebinding_preview_interaction = bind_interaction;
+    rebinding_preview_mode = true;
+    rebinding_key = this;
+    rebinding_type = bind_type;
+    rebinding_interaction = bind_interaction;
+}
+
+bool Keybinding::hasPendingRebind() const
+{
+    return rebinding_preview_target == this && rebinding_preview_key != 0;
+}
+
+string Keybinding::getPendingRebindKeyName() const
+{
+    if (!hasPendingRebind()) return "";
+    return keyNameForRaw(rebinding_preview_key, rebinding_preview_inverted);
+}
+
+Keybinding::Type Keybinding::getPendingRebindKeyType() const
+{
+    if (!hasPendingRebind()) return Type::None;
+    return static_cast<Type>((rebinding_preview_key & type_mask) >> 16);
+}
+
+int Keybinding::getPendingRebindRawKey() const
+{
+    return hasPendingRebind() ? rebinding_preview_key : 0;
+}
+
+int Keybinding::getRawKeyNumber(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(bindings.size())) return 0;
+    return bindings[index].key;
+}
+
+void Keybinding::setPendingRebindInteraction(Interaction interaction)
+{
+    if (rebinding_preview_target == this)
+        rebinding_preview_interaction = interaction;
+}
+
+void Keybinding::commitPendingRebind()
+{
+    if (!hasPendingRebind()) return;
+    addBinding(rebinding_preview_key, rebinding_preview_inverted, rebinding_preview_interaction);
+    rebinding_preview_key = 0;
+    rebinding_preview_target = nullptr;
+}
+
+void Keybinding::discardPendingRebind()
+{
+    if (rebinding_preview_target == this)
+    {
+        rebinding_preview_key = 0;
+        rebinding_preview_target = nullptr;
+        rebinding_preview_mode = false;
     }
 }
 

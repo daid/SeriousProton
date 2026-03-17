@@ -170,6 +170,25 @@ public:
     static void setUserRebindCancelKey(Keybinding* cancel_key);
     bool isUserRebinding() const;
 
+    // Preview-mode rebind: captures key without committing it to bindings.
+    void startUserRebindPreview(Type bind_type = Type::Default, Interaction bind_interaction = Interaction::None);
+    // Returns true if a key was captured in preview mode for this keybinding.
+    bool hasPendingRebind() const;
+    // Returns a human-readable name of the previewed key. Empty string if no pending.
+    string getPendingRebindKeyName() const;
+    // Returns the key type of the previewed key. None if no pending.
+    Type getPendingRebindKeyType() const;
+    // Returns the raw key number of the pending rebind. 0 if no pending.
+    int getPendingRebindRawKey() const;
+    // Returns the raw key number of the binding at the given index. 0 if out of range.
+    int getRawKeyNumber(int index) const;
+    // Updates the interaction stored in the pending rebind.
+    void setPendingRebindInteraction(Interaction interaction);
+    // Adds the pending key to this binding's list and clears the pending state.
+    void commitPendingRebind();
+    // Discards the pending key without adding it.
+    void discardPendingRebind();
+
     static int joystickCount();
     static int gamepadCount();
 
@@ -243,6 +262,14 @@ private:
     static Keybinding* rebinding_cancel_key;
     static Type rebinding_type;
     static Interaction rebinding_interaction;
+
+    static bool rebinding_preview_mode;
+    static Keybinding* rebinding_preview_target;
+    static int rebinding_preview_key;
+    static bool rebinding_preview_inverted;
+    static Interaction rebinding_preview_interaction;
+
+    static string keyNameForRaw(int key, bool inverted);
     
     static constexpr int type_mask = 0xfff << 16;
     static constexpr int keyboard_mask = static_cast<int>(Type::Keyboard) << 16;
