@@ -723,8 +723,10 @@ void Keybinding::allPostUpdate()
         for (const auto& bind : keybinding->bindings)
         {
             if (bind.interaction == Interaction::Repeating)
+            {
                 has_repeating = true;
-            break;
+                break;
+            }
         }
         if (!has_repeating) continue;
 
