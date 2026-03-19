@@ -637,14 +637,22 @@ void Keybinding::handleEvent(const SDL_Event& event)
         //event.tfinger.x, event.tfinger.x
         updateKeys(int(io::Pointer::Button::Touch) | pointer_mask, 0.0);
         break;
+
+    // To avoid competition between SDL_JOY... and SDL_CONTROLLER... events,
+    // skip joystick events for devices that also open as game controllers.
+    // Especially can't treat GC axes like joysticks because GCs report 0 at
+    // rest and joysticks report -1.
     case SDL_JOYBUTTONDOWN:
-        updateKeys(int(event.jbutton.button) | int(event.jbutton.which) << 8 | joystick_button_mask, 1.0);
+        if (!SDL_GameControllerFromInstanceID(event.jbutton.which))
+            updateKeys(static_cast<int>(event.jbutton.button) | static_cast<int>(event.jbutton.which) << 8 | joystick_button_mask, 1.0f);
         break;
     case SDL_JOYBUTTONUP:
-        updateKeys(int(event.jbutton.button) | int(event.jbutton.which) << 8 | joystick_button_mask, 0.0);
+        if (!SDL_GameControllerFromInstanceID(event.jbutton.which))
+            updateKeys(static_cast<int>(event.jbutton.button) | static_cast<int>(event.jbutton.which) << 8 | joystick_button_mask, 0.0f);
         break;
     case SDL_JOYAXISMOTION:
-        updateKeys(int(event.jaxis.axis) | int(event.jaxis.which) << 8 | joystick_axis_mask, float(event.jaxis.value) / 32768.0f);
+        if (!SDL_GameControllerFromInstanceID(event.jaxis.which))
+            updateKeys(static_cast<int>(event.jaxis.axis) | static_cast<int>(event.jaxis.which) << 8 | joystick_axis_mask, static_cast<float>(event.jaxis.value) / 32768.0f);
         break;
     case SDL_JOYDEVICEADDED:
         if (!SDL_IsGameController(event.jdevice.which))
@@ -656,6 +664,7 @@ void Keybinding::handleEvent(const SDL_Event& event)
                 LOG(Warning, "Failed to open joystick...");
         }
         break;
+
     case SDL_JOYDEVICEREMOVED:
         for(int button=0; button<32; button++)
             updateKeys(int(button) | int(event.jdevice.which) << 8 | joystick_button_mask, 0.0);
