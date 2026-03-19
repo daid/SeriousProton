@@ -194,6 +194,18 @@ void Keybinding::clearKeys()
     bindings.clear();
 }
 
+bool Keybinding::getKeyInverted(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(bindings.size())) return false;
+    return bindings[index].inverted;
+}
+
+void Keybinding::setKeyInverted(int index, bool inverted)
+{
+    if (index < 0 || index >= static_cast<int>(bindings.size())) return;
+    bindings[index].inverted = inverted;
+}
+
 Keybinding::Interaction Keybinding::getDefaultInteraction(Type type) const
 {
     auto it = type_default_interactions.find(static_cast<int>(type));
@@ -680,10 +692,10 @@ void Keybinding::setValue(float new_value, int key_type)
         new_value = 0.0f;
     }
 
-    // Transition between keydown/up only for buttons and non-movement axes.
+    // Transition between keydown/up.
     // Can't avoid game_controller axes because some have axes on buttons and
-    // triggers.
-    if ((key_type & type_mask) != mouse_movement_mask && (key_type & type_mask) != joystick_axis_mask)
+    // triggers. Joystick axes also generate down/up events on threshold crossings.
+    if ((key_type & type_mask) != mouse_movement_mask)
     {
         if (this->value < threshold && threshold_value >= threshold) down_event = true;
         if (this->value >= threshold && threshold_value < threshold) up_event = true;
@@ -1023,6 +1035,17 @@ void Keybinding::setPendingRebindInteraction(Interaction interaction)
 {
     if (rebinding_preview_target == this)
         rebinding_preview_interaction = interaction;
+}
+
+bool Keybinding::getPendingRebindInverted() const
+{
+    return (rebinding_preview_target == this) ? rebinding_preview_inverted : false;
+}
+
+void Keybinding::setPendingRebindInverted(bool inverted)
+{
+    if (rebinding_preview_target == this)
+        rebinding_preview_inverted = inverted;
 }
 
 void Keybinding::commitPendingRebind()

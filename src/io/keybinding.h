@@ -107,6 +107,9 @@ public:
     void addKey(const string& key, bool inverted=false);
     void removeKey(int index);
     void clearKeys();
+    // Returns true if the binding at index has its axis inverted.
+    bool getKeyInverted(int index) const;
+    void setKeyInverted(int index, bool inverted);
 
     static void setDeadzone(float deadzone);
 
@@ -192,6 +195,9 @@ public:
     int getRawKeyNumber(int index) const;
     // Updates the interaction stored in the pending rebind.
     void setPendingRebindInteraction(Interaction interaction);
+    // Returns/sets whether the pending rebind axis is inverted.
+    bool getPendingRebindInverted() const;
+    void setPendingRebindInverted(bool inverted);
     // Adds the pending key to this binding's list and clears the pending state.
     void commitPendingRebind();
     // Discards the pending key without adding it.
