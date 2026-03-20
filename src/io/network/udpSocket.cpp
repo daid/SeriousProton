@@ -121,7 +121,7 @@ bool UdpSocket::joinMulticast(int group_nr)
                 memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
                 
                 struct ip_mreq mreq;
-                mreq.imr_multiaddr.s_addr = htonl((239 << 24) | (255 << 16) | (group_nr));
+                mreq.imr_multiaddr.s_addr = htonl((239 << 24) | (192 << 16) | (group_nr));
                 mreq.imr_interface.s_addr = server_addr.sin_addr.s_addr;
                 
                 success = success && ::setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&mreq), sizeof(mreq)) == 0;
@@ -282,7 +282,7 @@ bool UdpSocket::receive(DataBuffer& buffer, Address& address, int& port)
     return received_size > 0;
 }
 
-bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int port)
+bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int port, bool is_sacn)
 {
     if (handle == INVALID_SOCKET)
     {
@@ -300,7 +300,7 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
             ::setsockopt(handle, IPPROTO_IP, IP_MULTICAST_IF, reinterpret_cast<const char*>(&server_addr.sin_addr), sizeof(server_addr.sin_addr));
 
             memset(&server_addr, 0, sizeof(server_addr));
-            server_addr.sin_addr.s_addr = htonl((239 << 24) | (192 << 16) | (group_nr));
+            server_addr.sin_addr.s_addr = htonl((239 << 24) | ((is_sacn ? 255 : 192) << 16) | (group_nr));
             
             server_addr.sin_family = AF_INET;
             server_addr.sin_port = htons(port);
@@ -318,7 +318,8 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
 
             memset(&server_addr, 0, sizeof(server_addr));
             server_addr.sin6_addr.s6_addr[0] = 0xff;
-            server_addr.sin6_addr.s6_addr[1] = 0x08;
+            server_addr.sin6_addr.s6_addr[1] = is_sacn ? 0x18 : 0x08;
+            server_addr.sin6_addr.s6_addr[12] = is_sacn ? 0x83 : 0x00;
             server_addr.sin6_addr.s6_addr[14] = group_nr >> 8;
             server_addr.sin6_addr.s6_addr[15] = group_nr;
             server_addr.sin6_family = AF_INET6;
@@ -332,9 +333,9 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
     return success;
 }
 
-bool UdpSocket::sendMulticast(const DataBuffer& buffer, int group_nr, int port)
+bool UdpSocket::sendMulticast(const DataBuffer& buffer, int group_nr, int port, bool is_sacn)
 {
-    return sendMulticast(buffer.getData(), buffer.getDataSize(), group_nr, port);
+    return sendMulticast(buffer.getData(), buffer.getDataSize(), group_nr, port, is_sacn);
 }
 
 bool UdpSocket::sendBroadcast(const void* data, size_t size, int port)
