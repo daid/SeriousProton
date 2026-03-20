@@ -88,6 +88,9 @@ public:
     // Get the Keybinding::Interaction of this bind. Returns None if the index
     // is out of range.
     Interaction getInteraction(int index) const;
+    // Set the Keybinding::Interaction of this bind. No-op if the index is out
+    // of range.
+    void setInteraction(int index, Interaction i);
     void setLabel(const string& label) { this->label = label; }
     void setLabel(const string& category, const string& label) { this->category = category; this->label = label; }
 

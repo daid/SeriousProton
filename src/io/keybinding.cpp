@@ -288,6 +288,13 @@ Keybinding::Interaction Keybinding::getInteraction(int index) const
     return bindings[index].interaction;
 }
 
+void Keybinding::setInteraction(int index, Interaction i)
+{
+    if (index < 0 || index >= static_cast<int>(bindings.size()))
+        return;
+    bindings[index].interaction = i;
+}
+
 string Keybinding::keyNameForRaw(int key, bool inverted)
 {
     int data = key & ~type_mask;
