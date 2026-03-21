@@ -72,10 +72,10 @@ public:
 
     // Functions for using rect masks with glScissor to clip a render.
 
-    // Stack nested rects to determine the mask's bounds.
-    void pushScissorRect(sp::Rect virtual_rect);
-    // Remove a nested rect from the mask.
-    void popScissorRect();
+    // Stack nested rects to determine the clip region's bounds.
+    void pushClipRegion(sp::Rect virtual_rect);
+    // Remove a nested rect from the clip region.
+    void popClipRegion();
 
     // Functions for translating nested renders between virtual and real pixels.
 

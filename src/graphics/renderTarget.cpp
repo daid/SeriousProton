@@ -32,7 +32,7 @@ static std::vector<uint16_t> lines_index_data;
 static std::vector<RenderTarget::VertexData> points_vertex_data;
 static std::vector<uint16_t> points_index_data;
 
-static std::vector<std::array<GLint, 4>> scissor_stack;
+static std::vector<std::array<GLint, 4>> clip_region_stack;
 static std::vector<glm::vec2> translation_stack;
 static glm::vec2 current_translation{0.0f, 0.0f};
 
@@ -1262,7 +1262,7 @@ static void applyProjectionMatrix(glm::vec2 virtual_size, glm::vec2 translation)
     glUniformMatrix3fv(shader->getUniformLocation("u_projection"), 1, GL_FALSE, glm::value_ptr(m));
 }
 
-void RenderTarget::pushScissorRect(sp::Rect virtual_rect)
+void RenderTarget::pushClipRegion(sp::Rect virtual_rect)
 {
     // Flush geometry
     finish();
@@ -1280,14 +1280,14 @@ void RenderTarget::pushScissorRect(sp::Rect virtual_rect)
     // Convert coordinates to OpenGL bottom-left origin.
     GLint py_gl = physical_size.y - (py + ph);
 
-    // Add the scissor rect.
+    // Add the clip region.
     std::array<GLint, 4> new_rect = {px, py_gl, pw, ph};
 
     // If nested, intersect this rect with the previous rect in the stack.
     // Newly stacked rects shouldn't expand the active clipping region.
-    if (!scissor_stack.empty())
+    if (!clip_region_stack.empty())
     {
-        const auto& prev = scissor_stack.back();
+        const auto& prev = clip_region_stack.back();
         GLint ix = std::max(new_rect[0], prev[0]);
         GLint iy = std::max(new_rect[1], prev[1]);
         GLint ix2 = std::min(new_rect[0] + new_rect[2], prev[0] + prev[2]);
@@ -1298,27 +1298,27 @@ void RenderTarget::pushScissorRect(sp::Rect virtual_rect)
         new_rect[3] = std::max(0, iy2 - iy);
     }
 
-    // Clip the render to the scissor rect.
-    scissor_stack.push_back(new_rect);
+    // Clip the render to the clip region.
+    clip_region_stack.push_back(new_rect);
     glScissor(new_rect[0], new_rect[1], new_rect[2], new_rect[3]);
     glEnable(GL_SCISSOR_TEST);
 }
 
-void RenderTarget::popScissorRect()
+void RenderTarget::popClipRegion()
 {
     // Flush geometry
     finish();
 
-    // Pop the top scissor rect.
-    if (!scissor_stack.empty()) scissor_stack.pop_back();
+    // Pop the top clip region.
+    if (!clip_region_stack.empty()) clip_region_stack.pop_back();
 
     // If that was the last rect, or there weren't any, stop clipping.
     // Otherwise, clip to the back rect.
-    if (scissor_stack.empty())
+    if (clip_region_stack.empty())
         glDisable(GL_SCISSOR_TEST);
     else
     {
-        const auto& top = scissor_stack.back();
+        const auto& top = clip_region_stack.back();
         glScissor(top[0], top[1], top[2], top[3]);
     }
 }
