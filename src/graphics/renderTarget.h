@@ -77,16 +77,6 @@ public:
     // Remove a nested rect from the clip region.
     void popClipRegion();
 
-    // Functions for translating nested renders between virtual and real pixels.
-
-    // Stack nested translation vectors to determine their offsets relative to
-    // the container and each other.
-    void pushTranslation(glm::vec2 virtual_offset);
-    // Remove a nested translation vector.
-    void popTranslation();
-    // Get the total translation vector from the top of the stack.
-    glm::vec2 getTranslation() const;
-
     struct VertexData
     {
         glm::vec2 position;

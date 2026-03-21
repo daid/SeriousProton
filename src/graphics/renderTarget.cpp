@@ -33,8 +33,6 @@ static std::vector<RenderTarget::VertexData> points_vertex_data;
 static std::vector<uint16_t> points_index_data;
 
 static std::vector<std::array<GLint, 4>> clip_region_stack;
-static std::vector<glm::vec2> translation_stack;
-static glm::vec2 current_translation{0.0f, 0.0f};
 
 struct ImageInfo
 {
@@ -1249,29 +1247,13 @@ glm::ivec2 RenderTarget::virtualToPixelPosition(glm::vec2 virtual_position)
     return {virtual_position.x * physical_size.x / virtual_size.x, virtual_position.y * physical_size.y / virtual_size.y};
 }
 
-static void applyProjectionMatrix(glm::vec2 virtual_size, glm::vec2 translation)
-{
-    // Simple pan reprojection of translated virtual coordinates to pixels via
-    // shader.
-    // Not sure if this will conflict with other shader operations!
-    glm::mat3 m{1.0f};
-    m[0][0] = 2.0f / virtual_size.x;
-    m[1][1] = -2.0f / virtual_size.y;
-    m[2][0] = -1.0f + (2.0f * translation.x / virtual_size.x);
-    m[2][1] = 1.0f - (2.0f * translation.y / virtual_size.y);
-    glUniformMatrix3fv(shader->getUniformLocation("u_projection"), 1, GL_FALSE, glm::value_ptr(m));
-}
-
 void RenderTarget::pushClipRegion(sp::Rect virtual_rect)
 {
     // Flush geometry
     finish();
 
-    // Apply the current translation (if any) so the clipped region aligns to
-    // the translated visual position.
-    glm::vec2 adj = virtual_rect.position + current_translation;
-    glm::ivec2 px_min = virtualToPixelPosition(adj);
-    glm::ivec2 px_max = virtualToPixelPosition(adj + virtual_rect.size);
+    glm::ivec2 px_min = virtualToPixelPosition(virtual_rect.position);
+    glm::ivec2 px_max = virtualToPixelPosition(virtual_rect.position + virtual_rect.size);
     GLint px = px_min.x;
     GLint py = px_min.y;
     GLint pw = px_max.x - px_min.x;
@@ -1321,42 +1303,6 @@ void RenderTarget::popClipRegion()
         const auto& top = clip_region_stack.back();
         glScissor(top[0], top[1], top[2], top[3]);
     }
-}
-
-void RenderTarget::pushTranslation(glm::vec2 offset)
-{
-    // Flush geometry
-    finish();
-
-    // Push a translation onto the stack and add it to the current translation
-    // value.
-    translation_stack.push_back(offset);
-    current_translation += offset;
-
-    // Reproject with the new translation value.
-    applyProjectionMatrix(virtual_size, current_translation);
-}
-
-void RenderTarget::popTranslation()
-{
-    // Flush geometry
-    finish();
-
-    // Pop a translation off the stack (if there is one) and remove it from the
-    // current translation value.
-    if (!translation_stack.empty())
-    {
-        current_translation -= translation_stack.back();
-        translation_stack.pop_back();
-    }
-
-    // Reproject with the new translation value.
-    applyProjectionMatrix(virtual_size, current_translation);
-}
-
-glm::vec2 RenderTarget::getTranslation() const
-{
-    return current_translation;
 }
 
 }
