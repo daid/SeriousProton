@@ -567,14 +567,47 @@ void RenderTarget::drawTriangleStrip(const std::vector<glm::vec2>& points, glm::
         finish();
 
     auto n = vertex_data.size();
-    for(auto& p : points)
+    for (auto& p : points)
         vertex_data.push_back({p, color, atlas_white_pixel});
-    for(unsigned int idx=0; idx<points.size() - 2;idx++)
+    for (size_t idx = 0; idx < points.size() - 2 ;idx++)
     {
         index_data.insert(index_data.end(), {
             uint16_t(n + idx), uint16_t(n + idx + 1), uint16_t(n + idx + 2),
         });
     }
+}
+
+void RenderTarget::drawTexturedTriangleStrip(std::string_view texture, const std::vector<glm::vec2>& points, const std::vector<glm::vec2>& uvs, glm::u8vec4 color)
+{
+    // Require UV count to match points count.
+    if (points.size() < 3 || points.size() != uvs.size()) return;
+
+    // Load texture and flush if necessary.
+    auto info = getTextureInfo(texture);
+    if (info.texture || vertex_data.size() >= std::numeric_limits<uint16_t>::max() - points.size())
+        finish();
+
+    // Map UVs to points, and push vertex data as in drawTriangleStrip.
+    auto n = vertex_data.size();
+    for (size_t i = 0; i < points.size(); i++)
+    {
+        glm::vec2 mapped_uv{
+            info.uv_rect.position.x + info.uv_rect.size.x * uvs[i].x,
+            info.uv_rect.position.y + info.uv_rect.size.y * uvs[i].y
+        };
+        vertex_data.push_back({points[i], color, mapped_uv});
+    }
+
+    // Build triangles as in drawTriangleStrip.
+    for (size_t idx = 0; idx < points.size() - 2; idx++)
+    {
+        index_data.insert(index_data.end(), {
+            uint16_t(n + idx), uint16_t(n + idx + 1), uint16_t(n + idx + 2),
+        });
+    }
+
+    // Flush batch.
+    if (info.texture) finish(info.texture);
 }
 
 void RenderTarget::drawTriangles(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& indices, glm::u8vec4 color)
