@@ -16,6 +16,8 @@ Keybinding* Keybinding::rebinding_key = nullptr;
 Keybinding::Type Keybinding::rebinding_type;
 
 float Keybinding::deadzone = 0.05f;
+Keybinding::Type Keybinding::globally_prohibited_types = Keybinding::Type::None;
+std::vector<int> Keybinding::globally_prohibited_keys;
 
 Keybinding::Keybinding(const string& name)
 : name(name), label(name.substr(0, 1).upper() + name.substr(1).lower())
@@ -74,15 +76,11 @@ void Keybinding::setKeys(const std::initializer_list<const string>& keys)
         addKey(key);
 }
 
-void Keybinding::addKey(const string& key, bool inverted)
+int Keybinding::parseKeyToInt(const string& key)
 {
-    if (key.startswith("-") && key.length() > 1)
-    {
-        return addKey(key.substr(1), !inverted);
-    }
-    //Format for joystick keys:
-    //joy:[joystick_id]:axis:[axis_id]
-    //joy:[joystick_id]:button:[button_id]
+    // Format for joystick inputs:
+    // joy:[joystick_id]:axis:[axis_id]
+    // joy:[joystick_id]:button:[button_id]
     if (key.startswith("joy:"))
     {
         std::vector<string> parts = key.split(":");
@@ -91,17 +89,17 @@ void Keybinding::addKey(const string& key, bool inverted)
             int joystick_id = parts[1].toInt();
             int axis_button_id = parts[3].toInt();
             if (parts[2] == "axis")
-                addBinding(int(axis_button_id) | int(joystick_id) << 8 | joystick_axis_mask, inverted);
+                return static_cast<int>(axis_button_id) | static_cast<int>(joystick_id) << 8 | joystick_axis_mask;
             else if (parts[2] == "button")
-                addBinding(int(axis_button_id) | int(joystick_id) << 8 | joystick_button_mask, inverted);
+                return static_cast<int>(axis_button_id) | static_cast<int>(joystick_id) << 8 | joystick_button_mask;
             else
                 LOG(Warning, "Unknown joystick binding:", key);
         }
-        return;
+        return 0;
     }
-    //Format for gamecontroller keys:
-    //gamecontroller:[joystick_id]:axis:[axis_name]
-    //gamecontroller:[joystick_id]:button:[button_name]
+    // Format for gamecontroller inputs:
+    // gamecontroller:[joystick_id]:axis:[axis_name]
+    // gamecontroller:[joystick_id]:button:[button_name]
     if (key.startswith("gamecontroller:"))
     {
         std::vector<string> parts = key.split(":");
@@ -114,9 +112,9 @@ void Keybinding::addKey(const string& key, bool inverted)
                 if (axis < 0)
                 {
                     LOG(Warning, "Unknown axis in game controller binding:", key);
-                    return;
+                    return 0;
                 }
-                addBinding(axis | int(controller_id) << 8 | game_controller_axis_mask, inverted);
+                return axis | int(controller_id) << 8 | game_controller_axis_mask;
             }
             else if (parts[2] == "button")
             {
@@ -124,48 +122,56 @@ void Keybinding::addKey(const string& key, bool inverted)
                 if (button < 0)
                 {
                     LOG(Warning, "Unknown button in game controller binding:", key);
-                    return;
+                    return 0;
                 }
-                addBinding(button | int(controller_id) << 8 | game_controller_button_mask, inverted);
+                return button | int(controller_id) << 8 | game_controller_button_mask;
             }
             else
-            {
                 LOG(Warning, "Unknown game controller binding:", key);
-            }
         }
-        return;
+        return 0;
     }
+    // Format for mouse inputs:
+    // pointer:[button_name]
+    // mouse:[axis_id]
+    // wheel:[axis_id]
     if (key.startswith("pointer:"))
-    {
-        addBinding(pointer_mask | key.substr(8).toInt(), inverted);
-        return;
-    }
+        return pointer_mask | key.substr(8).toInt();
+    if (key == "mouse:x") return mouse_movement_mask | 0;
+    if (key == "mouse:y") return mouse_movement_mask | 1;
     if (key.startswith("mouse:"))
     {
-        if (key == "mouse:x") addBinding(mouse_movement_mask | 0, inverted);
-        else if (key == "mouse:y") addBinding(mouse_movement_mask | 1, inverted);
-        else LOG(Warning, "Unknown mouse movement binding:", key);
-        return;
+        LOG(Warning, "Unknown mouse movement binding:", key);
+        return 0;
     }
+    if (key == "wheel:x") return mouse_wheel_mask | 0;
+    if (key == "wheel:y") return mouse_wheel_mask | 1;
     if (key.startswith("wheel:"))
     {
-        if (key == "wheel:x") addBinding(mouse_wheel_mask | 0, inverted);
-        else if (key == "wheel:y") addBinding(mouse_wheel_mask | 1, inverted);
-        else LOG(Warning, "Unknown mouse wheel binding:", key);
-        return;
+        LOG(Warning, "Unknown mouse wheel binding:", key);
+        return 0;
     }
+    // Format for virtual inputs:
+    // virtual:[id]
     if (key.startswith("virtual:"))
-    {
-        int index = key.substr(8).toInt();
-        addBinding(virtual_mask | index, inverted);
-        return;
-    }
+        return virtual_mask | key.substr(8).toInt();
 
     SDL_Keycode code = SDL_GetKeyFromName(key.c_str());
-    if (code != SDLK_UNKNOWN)
-        addBinding(code | keyboard_mask, inverted);
-    else
-        LOG(Warning, "Unknown key binding:", key);
+    if (code != SDLK_UNKNOWN) return code | keyboard_mask;
+
+    // If nothing's returned yet, input is unknown.
+    LOG(Warning, "Unknown key binding:", key);
+    return 0;
+}
+
+void Keybinding::addKey(const string& key, bool inverted)
+{
+    // Flip axis if bind starts with "-".
+    if (key.startswith("-") && key.length() > 1)
+        return addKey(key.substr(1), !inverted);
+    // If the input is valid, add it to the bind.
+    const int k = parseKeyToInt(key);
+    if (k != 0) addBinding(k, inverted);
 }
 
 void Keybinding::removeKey(int index)
@@ -188,6 +194,47 @@ void Keybinding::setDeadzone(float new_deadzone)
 bool Keybinding::isBound() const
 {
     return bindings.size() > 0;
+}
+
+void Keybinding::addGloballyProhibitedTypes(Type types)
+{
+    globally_prohibited_types = globally_prohibited_types | types;
+}
+
+void Keybinding::addGloballyProhibitedKey(const string& key)
+{
+    // If the input is valid, add it to the global prohibition list.
+    int k = parseKeyToInt(key);
+    if (k != 0) globally_prohibited_keys.push_back(k);
+}
+
+void Keybinding::addProhibitedTypes(Type types)
+{
+    prohibited_types = prohibited_types | types;
+}
+
+void Keybinding::addProhibitedKey(const string& key)
+{
+    // If the input is valid, add it to this bind's prohibition list.
+    int k = parseKeyToInt(key);
+    if (k != 0) prohibited_keys.push_back(k);
+}
+
+bool Keybinding::isInputAllowed(int key) const
+{
+    Type key_type = static_cast<Type>((key & type_mask) >> 16);
+
+    // Reject globally prohibited inputs.
+    if (globally_prohibited_types & key_type) return false;
+    for (int prohibited : globally_prohibited_keys)
+        if (prohibited == key) return false;
+
+    // Reject bind-specific prohibited inputs.
+    if (prohibited_types & key_type) return false;
+    for (int prohibited : prohibited_keys)
+        if (prohibited == key) return false;
+
+    return true;
 }
 
 string Keybinding::getKey(int index) const
@@ -478,6 +525,11 @@ void Keybinding::setVirtualKey(int index, float value)
 
 void Keybinding::addBinding(int key, bool inverted)
 {
+    if (!isInputAllowed(key))
+    {
+        LOG(Warning, "Prohibited input ", key, " can't be bound to keybinding ", name);
+        return;
+    }
     for(auto& bind : bindings)
     {
         if (bind.key == key)
@@ -723,8 +775,12 @@ void Keybinding::updateKeys(int key_number, float value)
     {
         if ((value > threshold || value < -threshold) && (key_number & (static_cast<int>(rebinding_type) << 16)))
         {
-            rebinding_key->addBinding(key_number, value < 0.0f);
-            rebinding_key = nullptr;
+            if (rebinding_key->isInputAllowed(key_number))
+            {
+                rebinding_key->addBinding(key_number, value < 0.0f);
+                rebinding_key = nullptr;
+            }
+            // else: prohibited input, skip it and keep rebinding active
         }
     }
 
