@@ -500,6 +500,15 @@ void Window::handleEvent(const SDL_Event& event)
                 render_chain->onPointerLeave(-1);
             }
             break;
+        case SDL_WINDOWEVENT_FOCUS_LOST:
+            if (mouse_button_down_mask)
+            {
+                mouse_button_down_mask = 0;
+                int mx, my;
+                SDL_GetMouseState(&mx, &my);
+                render_chain->onPointerUp(mapPixelToCoords({mx, my}), sp::io::Pointer::mouse);
+            }
+            break;
         case SDL_WINDOWEVENT_CLOSE:
             //close();
             break;
