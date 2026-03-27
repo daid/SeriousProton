@@ -349,11 +349,9 @@ void Window::handleEvent(const SDL_Event& event)
         break;
     case SDL_MOUSEBUTTONUP:
         mouse_button_down_mask &=~(1 << int(event.button.button));
+        render_chain->onPointerUp(mapPixelToCoords({event.button.x, event.button.y}), sp::io::Pointer::mouse);
         if (!mouse_button_down_mask)
-        {
-            render_chain->onPointerUp(mapPixelToCoords({event.button.x, event.button.y}), sp::io::Pointer::mouse);
             render_chain->onPointerMove(mapPixelToCoords({event.button.x, event.button.y}), sp::io::Pointer::mouse);
-        }
         break;
     case SDL_MOUSEWHEEL:
         render_chain->onMouseWheelScroll(mapPixelToCoords({event.wheel.mouseX, event.wheel.mouseY}), event.wheel.preciseY);
