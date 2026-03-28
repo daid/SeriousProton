@@ -18,9 +18,17 @@ public:
     static void update(float delta);
     static void addHandler(CollisionHandler* handler) { handlers.push_back(handler); }
 
+    // query all physics-enabled entities in an area
     static std::vector<sp::ecs::Entity> queryArea(glm::vec2 lowerBound, glm::vec2 upperBound);
 private:
     static std::vector<CollisionHandler*> handlers;
+};
+
+class TransformQuery
+{
+public:
+    // query all entities in an area
+    static std::vector<sp::ecs::Entity> queryArea(glm::vec2 lowerBound, glm::vec2 upperBound);
 };
 
 }
