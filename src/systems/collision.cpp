@@ -206,4 +206,23 @@ std::vector<sp::ecs::Entity> CollisionSystem::queryArea(glm::vec2 lowerBound, gl
     return callback.list;
 }
 
+std::vector<sp::ecs::Entity> TransformQuery::queryArea(glm::vec2 lowerBound, glm::vec2 upperBound)
+{
+    std::vector<sp::ecs::Entity> result;
+
+    for (auto [entity, transform, physics] : sp::ecs::Query<Transform, sp::ecs::optional<Physics>>())
+    {
+        auto radius = physics ? physics->getSize().x : 0;
+
+        if (transform.getPosition().x + radius < lowerBound.x || transform.getPosition().x - radius > upperBound.x)
+            continue;
+        if (transform.getPosition().y + radius < lowerBound.y || transform.getPosition().y - radius > upperBound.y)
+            continue;
+
+        result.push_back(entity);
+    }
+
+    return result;
+}
+
 }
