@@ -649,14 +649,12 @@ void Keybinding::setValue(float new_value, int key_type, Interaction bind_intera
     {
     case Interaction::Continuous:
         continuous_value = new_value;
-        LOG(Debug, "Continuous: ", continuous_value);
         break;
     case Interaction::Discrete:
         if (prev_threshold < threshold && threshold_value >= threshold)
             discrete_step_down = true;
         if (prev_threshold >= threshold && threshold_value < threshold)
             discrete_step_up = true;
-        LOG(Debug, "Discrete: down ", discrete_step_down ? "true" : "false", " up ", discrete_step_up ? "true" : "false");
         break;
     case Interaction::Repeating:
         if (prev_threshold < threshold && threshold_value >= threshold)
@@ -671,15 +669,12 @@ void Keybinding::setValue(float new_value, int key_type, Interaction bind_intera
             repeat_hold_ticks = 0;
             repeat_started = false;
         }
-        LOG(Debug, "Repeating: ready ", repeat_ready ? "true" : "false", " up ", discrete_step_up ? "true" : "false", "\nhold ticks: ", repeat_hold_ticks, " started: ", repeat_started ? "true" : "false");
         break;
     case Interaction::Axis0:
         axis0_value = std::clamp(new_value, 0.0f, 1.0f);
-        LOG(Debug, "Axis0: ", axis0_value, " (", new_value, ")");
         break;
     case Interaction::Axis1:
         axis1_value = new_value;
-        LOG(Debug, "Axis1: ", axis1_value);
         break;
     default:
         break;
