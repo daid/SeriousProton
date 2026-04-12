@@ -703,7 +703,7 @@ void RenderTarget::drawPoint(glm::vec2 position, glm::u8vec4 color)
     if (points_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2U)
         finish();
     points_vertex_data.push_back({position, color, atlas_white_pixel});
-    points_index_data.insert(points_index_data.end(), {uint16_t(points_vertex_data.size())});
+    points_index_data.insert(points_index_data.end(), {uint16_t(points_vertex_data.size() - 1)});
 }
 
 void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color)
