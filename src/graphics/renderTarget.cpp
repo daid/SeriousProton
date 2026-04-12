@@ -471,6 +471,7 @@ void RenderTarget::drawGLLine(const std::vector<glm::vec2>& points, glm::u8vec4 
 
 void RenderTarget::drawGLLineBlendAdd(const std::vector<glm::vec2>& points, glm::u8vec4 color)
 {
+    if (points.size() < 2) return;
     finish();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     auto n = lines_vertex_data.size();
