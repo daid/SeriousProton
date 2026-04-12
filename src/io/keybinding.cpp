@@ -698,8 +698,9 @@ void Keybinding::setValue(float new_value, int key_type)
         if (this->value >= threshold && threshold_value < threshold) up_event = true;
     }
 
-    // Set the keybind's value to the new value.
-    this->value = new_value;
+    // Store the absolute value so threshold comparisons on the next
+    // call work correctly for negative axis directions.
+    this->value = threshold_value;
 }
 
 void Keybinding::postUpdate()
