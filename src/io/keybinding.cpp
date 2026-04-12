@@ -515,17 +515,17 @@ void Keybinding::loadKeybindings(const string& filename)
         else keybinding->bindings.clear();
 
         // Get step size and threshold on discrete inputs.
-        if (entry.contains("discrete") && entry["discrete_step"].is_number())
+        if (entry.contains("discrete_step") && entry["discrete_step"].is_number())
             keybinding->discrete_step_size = entry["discrete_step"].get<float>();
-        if (entry.contains("discrete") && entry["discrete_threshold"].is_number())
+        if (entry.contains("discrete_threshold") && entry["discrete_threshold"].is_number())
             keybinding->threshold = entry["discrete_threshold"].get<float>();
         // Get delay values on repeating inputs.
-        if (entry.contains("repeat") && entry["repeat_delay"].is_number())
+        if (entry.contains("repeat_delay") && entry["repeat_delay"].is_number())
             keybinding->repeat_delay = entry["repeat_delay"].get<int>();
-        if (entry.contains("repeat") && entry["repeat_interval"].is_number())
+        if (entry.contains("repeat_interval") && entry["repeat_interval"].is_number())
             keybinding->repeat_interval = entry["repeat_interval"].get<int>();
         // Get sensitivity value on continuous inputs.
-        if (entry.contains("continuous") && entry["continuous_sensitivity"].is_number())
+        if (entry.contains("continuous_sensitivity") && entry["continuous_sensitivity"].is_number())
             keybinding->sensitivity = entry["continuous_sensitivity"].get<float>();
     }
     LOG(Info, "Keybindings loaded from ", filename);
