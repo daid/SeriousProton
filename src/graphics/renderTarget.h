@@ -55,6 +55,8 @@ public:
     void drawPoint(glm::vec2 position, glm::u8vec4 color);
     void drawTriangleStrip(const std::initializer_list<glm::vec2>& points, glm::u8vec4 color);
     void drawTriangleStrip(const std::vector<glm::vec2>& points, glm::u8vec4 color);
+    // Draw a triangle strip with a texture applied using a vector of UVs.
+    void drawTexturedTriangleStrip(std::string_view texture, const std::vector<glm::vec2>& points, const std::vector<glm::vec2>& uvs, glm::u8vec4 color={255,255,255,255});
     void drawTriangles(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& indices, glm::u8vec4 color);
 
     // GL_LINES primitive drawing (deprecated: no portable line width support)
