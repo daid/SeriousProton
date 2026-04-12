@@ -255,6 +255,7 @@ string Keybinding::getHumanReadableKeyName(int index) const
     {
         int key = bindings[index].key;
         int data = key & ~type_mask;
+        string sign = bindings[index].inverted ? "-" : "+";
         switch(key & type_mask)
         {
         case keyboard_mask:
@@ -272,21 +273,21 @@ string Keybinding::getHumanReadableKeyName(int index) const
             }
             break;
         case joystick_axis_mask:
-            return "Axis: " + string(data & 0xff);
+            return "Axis " + string(data & 0xff) + sign;
         case joystick_button_mask:
-            return "Button: " + string(data & 0xff);
+            return "Button " + string(data & 0xff);
         case mouse_movement_mask:
             switch(data)
             {
-            case 0: return "X";
-            case 1: return "Y";
+            case 0: return "Mouse X" + sign;
+            case 1: return "Mouse Y" + sign;
             }
             break;
         case mouse_wheel_mask:
             switch(data)
             {
-            case 0: return "Wheel Sideways";
-            case 1: return "Wheel";
+            case 0: return "Wheel Sideways" + sign;
+            case 1: return "Wheel" + sign;
             }
             break;
         case game_controller_button_mask:
@@ -312,12 +313,12 @@ string Keybinding::getHumanReadableKeyName(int index) const
         case game_controller_axis_mask:
             switch(data & 0xff)
             {
-            case SDL_CONTROLLER_AXIS_LEFTX: return "X Axis";
-            case SDL_CONTROLLER_AXIS_LEFTY: return "Y Axis";
-            case SDL_CONTROLLER_AXIS_RIGHTX: return "X Axis Right";
-            case SDL_CONTROLLER_AXIS_RIGHTY: return "Y Axis Right";
-            case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return "Trigger Axis Left";
-            case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return "Trigger Axis Right";
+            case SDL_CONTROLLER_AXIS_LEFTX: return "X Axis" + sign;
+            case SDL_CONTROLLER_AXIS_LEFTY: return "Y Axis" + sign;
+            case SDL_CONTROLLER_AXIS_RIGHTX: return "X Axis Right" + sign;
+            case SDL_CONTROLLER_AXIS_RIGHTY: return "Y Axis Right" + sign;
+            case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return "Trigger Axis Left" + sign;
+            case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return "Trigger Axis Right" + sign;
             }
             break;
         case virtual_mask:
@@ -546,11 +547,18 @@ void Keybinding::handleEvent(const SDL_Event& event)
     switch(event.type)
     {
     case SDL_KEYDOWN:
-        if (!SDL_IsTextInputActive())
+        // Ignore function keys (F1-F24) if SDL text input is active
+        if (!SDL_IsTextInputActive()
+            || (event.key.keysym.sym >= SDLK_F1 && event.key.keysym.sym <= SDLK_F12)
+            || (event.key.keysym.sym >= SDLK_F13 && event.key.keysym.sym <= SDLK_F24)
+        )
             updateKeys(event.key.keysym.sym | keyboard_mask, 1.0);
         break;
     case SDL_KEYUP:
-        if (!SDL_IsTextInputActive())
+        if (!SDL_IsTextInputActive()
+            || (event.key.keysym.sym >= SDLK_F1 && event.key.keysym.sym <= SDLK_F12)
+            || (event.key.keysym.sym >= SDLK_F13 && event.key.keysym.sym <= SDLK_F24)
+        )
             updateKeys(event.key.keysym.sym | keyboard_mask, 0.0);
         break;
     case SDL_MOUSEBUTTONDOWN:
@@ -629,14 +637,22 @@ void Keybinding::handleEvent(const SDL_Event& event)
         //event.tfinger.x, event.tfinger.x
         updateKeys(int(io::Pointer::Button::Touch) | pointer_mask, 0.0);
         break;
+
+    // To avoid competition between SDL_JOY... and SDL_CONTROLLER... events,
+    // skip joystick events for devices that also open as game controllers.
+    // Especially can't treat GC axes like joysticks because GCs report 0 at
+    // rest and joysticks report -1.
     case SDL_JOYBUTTONDOWN:
-        updateKeys(int(event.jbutton.button) | int(event.jbutton.which) << 8 | joystick_button_mask, 1.0);
+        if (!SDL_GameControllerFromInstanceID(event.jbutton.which))
+            updateKeys(static_cast<int>(event.jbutton.button) | static_cast<int>(event.jbutton.which) << 8 | joystick_button_mask, 1.0f);
         break;
     case SDL_JOYBUTTONUP:
-        updateKeys(int(event.jbutton.button) | int(event.jbutton.which) << 8 | joystick_button_mask, 0.0);
+        if (!SDL_GameControllerFromInstanceID(event.jbutton.which))
+            updateKeys(static_cast<int>(event.jbutton.button) | static_cast<int>(event.jbutton.which) << 8 | joystick_button_mask, 0.0f);
         break;
     case SDL_JOYAXISMOTION:
-        updateKeys(int(event.jaxis.axis) | int(event.jaxis.which) << 8 | joystick_axis_mask, float(event.jaxis.value) / 32768.0f);
+        if (!SDL_GameControllerFromInstanceID(event.jaxis.which))
+            updateKeys(static_cast<int>(event.jaxis.axis) | static_cast<int>(event.jaxis.which) << 8 | joystick_axis_mask, static_cast<float>(event.jaxis.value) / 32768.0f);
         break;
     case SDL_JOYDEVICEADDED:
         if (!SDL_IsGameController(event.jdevice.which))
@@ -648,6 +664,7 @@ void Keybinding::handleEvent(const SDL_Event& event)
                 LOG(Warning, "Failed to open joystick...");
         }
         break;
+
     case SDL_JOYDEVICEREMOVED:
         for(int button=0; button<32; button++)
             updateKeys(int(button) | int(event.jdevice.which) << 8 | joystick_button_mask, 0.0);

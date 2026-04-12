@@ -20,6 +20,9 @@ void PostProcessor::render(sp::RenderTarget& target)
     }
     target.finish();
 
+    GLint parentFramebuffer;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &parentFramebuffer);
+
     render_texture.setSize(target.getPhysicalSize());
     if (!render_texture.activateRenderTarget())
     {
@@ -29,7 +32,7 @@ void PostProcessor::render(sp::RenderTarget& target)
 
     chain->render(target);
     target.finish();
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, parentFramebuffer);
 
     shader->bind();
 

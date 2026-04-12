@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <limits>
+#include <functional>
 
 #include "component.h"
 
@@ -71,6 +72,10 @@ public:
 
 	static void destroyAllEntities();
 
+	static void setPreDestroyCallback(std::function<void(Entity)> callback) {
+		pre_destroy_callback = callback;
+	}
+
 	static void dumpDebugInfo();
 
 	static constexpr uint32_t no_index = std::numeric_limits<uint32_t>::max();
@@ -83,6 +88,7 @@ private:
 	static Entity fromIndex(uint32_t index);
 	static std::vector<uint32_t> entity_version;
 	static std::vector<uint32_t> free_list;
+	static std::function<void(Entity)> pre_destroy_callback;
 
 	template<class, class...> friend class Query;
 
