@@ -27,11 +27,6 @@ bool Keybinding::rebinding_preview_inverted = false;
 Keybinding::Interaction Keybinding::rebinding_preview_interaction = Keybinding::Interaction::None;
 
 float Keybinding::deadzone = 0.05f;
-float Keybinding::discrete_step_size = 0.1f;
-float Keybinding::threshold = 0.5f;
-unsigned int Keybinding::repeat_delay = 500; // ms
-unsigned int Keybinding::repeat_interval = 40; // ms
-float Keybinding::sensitivity = 1.0f;
 
 Keybinding::Keybinding(const string& name)
 : name(name), label(name.substr(0, 1).upper() + name.substr(1).lower())

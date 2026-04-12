@@ -241,15 +241,15 @@ private:
     // Deadzone tolerance.
     static float deadzone;
     // Discrete input step size
-    static float discrete_step_size;
+    float discrete_step_size = 0.1f;
     // Discrete input +/- threshold.
-    static float threshold;
+    float threshold = 0.5f;
     // Repeating input delay after first event, in milliseconds.
-    static unsigned int repeat_delay;
+    unsigned int repeat_delay = 500;
     // Repeating input interval after second event, in milliseconds.
-    static unsigned int repeat_interval;
+    unsigned int repeat_interval = 40;
     // Continuous input sensitivity factor.
-    static float sensitivity;
+    float sensitivity = 1.0f;
 
     float value;
     bool down_event;
