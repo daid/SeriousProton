@@ -408,6 +408,8 @@ void Keybinding::cancelUserRebind()
     rebinding_key = nullptr;
     rebinding_cancel_key = nullptr;
     rebinding_preview_mode = false;
+    rebinding_preview_target = nullptr;
+    rebinding_preview_key = 0;
 }
 
 void Keybinding::setUserRebindCancelKey(Keybinding* cancel_key)
