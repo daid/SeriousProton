@@ -1,5 +1,4 @@
-#ifndef SP_GRAPHICS_RENDERTARGET_H
-#define SP_GRAPHICS_RENDERTARGET_H
+#pragma once
 
 #include <glm/vec2.hpp>
 #include <glm/gtc/type_precision.hpp>
@@ -72,6 +71,14 @@ public:
     void drawStretchedHVClipped(sp::Rect rect, sp::Rect clip_rect, float corner_size, std::string_view texture, glm::u8vec4 color={255,255,255,255});
 
     void finish();
+
+    // Functions for using rect masks with glScissor to clip a render.
+
+    // Stack nested rects to determine the clip region's bounds.
+    void pushClipRegion(sp::Rect virtual_rect);
+    // Remove a nested rect from the clip region.
+    void popClipRegion();
+
     struct VertexData
     {
         glm::vec2 position;
@@ -91,5 +98,3 @@ private:
 };
 
 }
-
-#endif//SP_GRAPHICS_RENDERTARGET_H
