@@ -134,6 +134,7 @@ bool FreetypeFont::getGlyphInfo(int char_code, int pixel_size, Font::GlyphInfo& 
         
         info.bounds = Rect({0, 0}, {0, 0});
         info.advance = 0;
+        info.descender = 0.0f;
 
         if (static_cast<FT_Face>(ft_face)->size->metrics.x_ppem != pixel_size)
             FT_Set_Pixel_Sizes(static_cast<FT_Face>(ft_face), 0, pixel_size);
@@ -153,6 +154,7 @@ bool FreetypeFont::getGlyphInfo(int char_code, int pixel_size, Font::GlyphInfo& 
                 info.bounds.position.y = float(face->glyph->metrics.horiBearingY) / float(1 << 6);
                 info.bounds.size.x = float(face->glyph->metrics.width) / float(1 << 6);
                 info.bounds.size.y = float(face->glyph->metrics.height) / float(1 << 6);
+                info.descender = float(face->glyph->metrics.height - face->glyph->metrics.horiBearingY) / float(1 << 6);
                 
                 FT_Done_Glyph(glyph);
             }

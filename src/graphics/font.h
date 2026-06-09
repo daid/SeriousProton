@@ -29,6 +29,7 @@ public:
             int string_offset;
             float size;
             glm::u8vec4 color;
+            float descender;
         };
         std::vector<GlyphData> data;
 
@@ -65,6 +66,7 @@ public:
     public:
         Rect bounds;
         float advance;
+        float descender;
     };
     virtual CharacterInfo getCharacterInfo(const char* str) = 0;
     virtual bool getGlyphInfo(int char_code, int pixel_size, GlyphInfo& info) = 0;
