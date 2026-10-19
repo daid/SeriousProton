@@ -60,7 +60,7 @@ void SoundPlayback::onMixSamples(int16_t* stream, int sample_count)
                 }
             }
 
-            auto sample = static_cast<int>(float(sound->samples[int(index)]) * volume);
+            auto sample = static_cast<int>(float(sound->samples[size_t(index)]) * volume);
             mix(stream[idx+0], sample);
             mix(stream[idx+1], sample);
 
@@ -83,8 +83,8 @@ void SoundPlayback::onMixSamples(int16_t* stream, int sample_count)
                 }
             }
 
-            auto sample_left = static_cast<int>(float(sound->samples[int(index) * 2]) * volume);
-            auto sample_right = static_cast<int>(float(sound->samples[int(index) * 2 + 1]) * volume);
+            auto sample_left = static_cast<int>(float(sound->samples[size_t(index) * 2]) * volume);
+            auto sample_right = static_cast<int>(float(sound->samples[size_t(index) * 2 + 1]) * volume);
             mix(stream[idx+0], sample_left);
             mix(stream[idx+1], sample_right);
 
