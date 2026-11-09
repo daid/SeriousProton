@@ -12,6 +12,30 @@ namespace sp::script {
 
 int luaErrorHandler(lua_State* L);
 
+/** Maximum number of Lua VM instructions a single top-level call into Lua may execute.
+    0 (default) = no limit. Applies per call (run/call/callback/coroutine resume), not cumulatively.
+    When exceeded, the running Lua call is aborted with a Lua error, which is returned as the Result error.
+    Once exhausted, the call stays exhausted: a script can catch the error with pcall(), but its next instruction raises it again.
+ */
+void setMaxRunCycles(int count);
+int getMaxRunCycles();
+
+/** RAII guard: installs the instruction count hook on the given state for the duration of one call into Lua.
+    Restores whatever hook was installed before (calls into Lua can nest through C++ functions).
+ */
+class CycleLimitGuard : NonCopyable
+{
+public:
+    explicit CycleLimitGuard(lua_State* L);
+    ~CycleLimitGuard();
+private:
+    lua_State* L;
+    lua_Hook old_hook;
+    int old_mask;
+    int old_count;
+    bool active;
+};
+
 class Environment : NonCopyable
 {
 public:
@@ -64,7 +88,12 @@ public:
         }
         
         int arg_count = (Convert<ARGS>::toLua(Environment::L, args) + ... + 0);
-        auto result = lua_pcall(L, arg_count, 1, -arg_count - 3);
+        int result;
+        {
+            // Only around the pcall: conversions below can run metamethods, and an error outside a pcall aborts the process.
+            CycleLimitGuard cycle_limit(L);
+            result = lua_pcall(L, arg_count, 1, -arg_count - 3);
+        }
         if (result)
         {
             auto result = Result<T>::makeError(lua_tostring(L, -1));
@@ -102,7 +131,10 @@ private:
         if constexpr (std::is_same_v<T, CaptureAllResults>) {
             result_count = LUA_MULTRET;
         }
-        result = lua_pcall(L, 0, result_count, -2);
+        {
+            CycleLimitGuard cycle_limit(L);
+            result = lua_pcall(L, 0, result_count, -2);
+        }
         if (result) {
             auto result = Result<T>::makeError(lua_tostring(L, -1));
             lua_settop(L, stack_size);

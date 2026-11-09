@@ -30,7 +30,11 @@ public:
         //If it exists, push the arguments with it, can run it.
         int arg_count = (Convert<ARGS>::toLua(Environment::L, args) + ... + 0);
         int ret_count = std::is_void_v<RET> ? 0 : 1;
-        int result = lua_pcall(Environment::L, arg_count, ret_count, 0);
+        int result;
+        {
+            CycleLimitGuard cycle_limit(Environment::L);
+            result = lua_pcall(Environment::L, arg_count, ret_count, 0);
+        }
         if (result) {
             auto ret = Result<RET>::makeError(lua_tostring(Environment::L, -1));
             lua_pop(Environment::L, 1);
@@ -62,11 +66,17 @@ public:
         lua_State* lua = lua_newthread(Environment::L);
         lua_rotate(Environment::L, -2, 1);
         lua_xmove(Environment::L, lua, 1);
+        //lua_newthread copies the creator's hook. Clear it, the guard installs it on each start/resume.
+        lua_sethook(lua, nullptr, 0, 0);
 
         //If it exists, push the arguments with it, can run it.
         int arg_count = (Convert<ARGS>::toLua(lua, args) + ... + 0);
         int nresults = 0;
-        int result = lua_resume(lua, nullptr, arg_count, &nresults);
+        int result;
+        {
+            CycleLimitGuard cycle_limit(lua);
+            result = lua_resume(lua, nullptr, arg_count, &nresults);
+        }
         if (result == LUA_YIELD)
             return std::make_shared<Coroutine>(lua);
         if (result) {
