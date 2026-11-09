@@ -71,11 +71,11 @@ public:
             return std::make_shared<Coroutine>(lua);
         if (result) {
             auto ret = Result<CoroutinePtr>::makeError(lua_tostring(lua, -1));
-            lua_pop(lua, 1);
+            lua_pop(Environment::L, 1);//pop the coroutine off the main stack.
             return ret;
         }
         //Coroutine didn't yield. So no state to store for it.
-        lua_pop(lua, 1);//pop the coroutine off the main stack.
+        lua_pop(Environment::L, 1);//pop the coroutine off the main stack.
         return {nullptr};
     }
 
