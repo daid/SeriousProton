@@ -158,14 +158,19 @@ void ServerScanner::masterServerScanThread()
         if (response.status != 200)
         {
             LOG(WARNING) << "Failed to query master server " << master_server_url << " (status " << response.status << ")";
+            response.body = "";
         }
         for(string line : response.body.split("\n"))
         {
             std::vector<string> parts = line.split(":", 3);
             if (parts.size() == 4)
             {
-                sp::io::network::Address address(parts[0]);
                 int part_port = parts[1].toInt();
+                if (part_port < 1 || part_port > 65535)
+                    continue;
+                sp::io::network::Address address(parts[0]);
+                if (address.getHumanReadable().empty())
+                    continue;
                 int version = parts[2].toInt();
                 string name = parts[3];
                 
