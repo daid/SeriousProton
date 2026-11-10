@@ -34,6 +34,8 @@ public:
         {
             auto res = Result<bool>::makeError(lua_tostring(lua, -1));
             lua_pop(lua, 1);
+            release();
+            return res;
         }
         release();
         return false;
