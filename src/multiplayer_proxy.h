@@ -41,10 +41,15 @@ class GameServerProxy : public Updatable
     string proxyName;
     float boardcastServerDelay;
     std::unique_ptr<sp::io::network::TcpSocket> mainSocket;
+    bool listening = false;
 public:
     GameServerProxy(sp::io::network::Address hostname, int hostPort = defaultServerPort, string password = "", int listenPort = defaultServerPort, string proxyName="");
     GameServerProxy(string password = "", int listenPort = defaultServerPort, string proxyName="");
     virtual ~GameServerProxy();
+
+    // True only if the TCP listen socket was bound successfully. The constructors do not
+    // abort on failure; callers should check this and decide how to react.
+    bool isListening() const { return listening; }
 
     virtual void destroy() override;
 
