@@ -13,7 +13,9 @@ GameServerProxy::GameServerProxy(sp::io::network::Address hostname, int hostPort
     else
         LOG(INFO) << "Connected to server";
     mainSocket->setBlocking(false);
-    listenSocket.listen(static_cast<uint16_t>(listenPort));
+    listening = listenSocket.listen(static_cast<uint16_t>(listenPort));
+    if (!listening)
+        LOG(ERROR) << "Failed to listen on TCP port: " << listenPort;
     listenSocket.setBlocking(false);
 
     newSocket = std::make_unique<sp::io::network::TcpSocket>();
@@ -41,7 +43,9 @@ GameServerProxy::GameServerProxy(string password, int listenPort, string proxyNa
 : password(password), proxyName(proxyName)
 {
     LOG(INFO) << "Starting listening proxy server";
-    listenSocket.listen(static_cast<uint16_t>(listenPort));
+    listening = listenSocket.listen(static_cast<uint16_t>(listenPort));
+    if (!listening)
+        LOG(ERROR) << "Failed to listen on TCP port: " << listenPort;
     listenSocket.setBlocking(false);
 
     newSocket = std::make_unique<sp::io::network::TcpSocket>();
