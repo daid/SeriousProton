@@ -4,6 +4,7 @@
 #include <nonCopyable.h>
 #include <result.h>
 #include <script/conversion.h>
+#include <script/environment.h>
 #include <lua/lua.hpp>
 
 namespace sp::script {
@@ -26,7 +27,11 @@ public:
 
         int arg_count = (Convert<ARGS>::toLua(lua, args) + ... + 0);
         int nresult = 0;
-        int result = lua_resume(lua, nullptr, arg_count, &nresult);
+        int result;
+        {
+            CycleLimitGuard cycle_limit(lua);
+            result = lua_resume(lua, nullptr, arg_count, &nresult);
+        }
         if (result == LUA_YIELD) {
             return true;
         }

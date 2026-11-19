@@ -312,6 +312,42 @@ bool Environment::isFunction(const string& function_name)
     return result;
 }
 
+static int max_run_cycles = 0;
+
+void setMaxRunCycles(int count) { max_run_cycles = count > 0 ? count : 0; }
+int getMaxRunCycles() { return max_run_cycles; }
+
+static void cycleLimitHook(lua_State* L, lua_Debug*)
+{
+    // Stay exhausted until the outermost guard ends. Lua refills the counter before calling this hook, so without
+    // this a nested pcall that catches the error would hand the outer call a full new budget.
+    lua_sethook(L, cycleLimitHook, LUA_MASKCOUNT, 1);
+    // Level 0 is the running function (a hook gets no frame of its own), so this reports where the loop is.
+    luaL_where(L, 0);
+    lua_pushfstring(L, "Script exceeded the instruction limit of %d (script_cycle_limit); aborting this call.", max_run_cycles);
+    lua_concat(L, 2);
+    lua_error(L);
+}
+
+CycleLimitGuard::CycleLimitGuard(lua_State* L)
+: L(L), active(max_run_cycles > 0 && lua_gethook(L) != cycleLimitHook)
+{
+    // If our hook is already active on this state we are nested inside a guarded call. Leave it alone:
+    // lua_sethook would reset the outer call's remaining budget, letting a loop that re-enters Lua bypass the limit.
+    if (!active)
+        return;
+    old_hook = lua_gethook(L);
+    old_mask = lua_gethookmask(L);
+    old_count = lua_gethookcount(L);
+    lua_sethook(L, cycleLimitHook, LUA_MASKCOUNT, max_run_cycles);
+}
+
+CycleLimitGuard::~CycleLimitGuard()
+{
+    if (active)
+        lua_sethook(L, old_hook, old_mask, old_count);
+}
+
 int luaErrorHandler(lua_State* L)
 {
     const char * msg = lua_tostring(L, -1);
