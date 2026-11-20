@@ -40,6 +40,32 @@ namespace sp {
 namespace io {
 namespace network {
 
+int getMulticastIPv4(UdpMulticastMode mode, int group_nr) {
+    switch (mode) {
+    case UdpMulticastMode::SACN: // 239.255.gh.gl
+        return htonl((239 << 24) | (255 << 16) | (group_nr));
+    default:
+    case UdpMulticastMode::Default: // 239.192.gh.gl
+        return htonl((239 << 24) | (192 << 16) | (group_nr));
+    }
+}
+void setMulticastIPv6(unsigned char* address, UdpMulticastMode mode, int group_nr) {
+    address[14] = group_nr >> 8;
+    address[15] = group_nr;
+
+    switch (mode) {
+    case UdpMulticastMode::SACN: // FF18::8300:GHGL
+        address[0] = 0xff;
+        address[1] = 0x18;
+        address[12] = 0x83;
+        break;
+    default:
+    case UdpMulticastMode::Default: // FF08::GHGL
+        address[0] = 0xff;
+        address[1] = 0x08;
+    }
+}
+
 
 UdpSocket::UdpSocket()
 {
@@ -121,7 +147,7 @@ bool UdpSocket::joinMulticast(int group_nr)
                 memcpy(&server_addr, addr_info.addr.data(), addr_info.addr.size());
                 
                 struct ip_mreq mreq;
-                mreq.imr_multiaddr.s_addr = htonl((239 << 24) | (255 << 16) | (group_nr));
+                mreq.imr_multiaddr.s_addr = getMulticastIPv4(UdpMulticastMode::Default, group_nr);
                 mreq.imr_interface.s_addr = server_addr.sin_addr.s_addr;
                 
                 success = success && ::setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&mreq), sizeof(mreq)) == 0;
@@ -133,10 +159,7 @@ bool UdpSocket::joinMulticast(int group_nr)
         struct ipv6_mreq mreq;
         memset(&mreq, 0, sizeof(mreq));
         mreq.ipv6mr_interface = 0;
-        mreq.ipv6mr_multiaddr.s6_addr[0] = 0xff;
-        mreq.ipv6mr_multiaddr.s6_addr[1] = 0x08;
-        mreq.ipv6mr_multiaddr.s6_addr[14] = group_nr >> 8;
-        mreq.ipv6mr_multiaddr.s6_addr[15] = group_nr;
+        setMulticastIPv6(mreq.ipv6mr_multiaddr.s6_addr, UdpMulticastMode::Default, group_nr);
 
         success = ::setsockopt(handle, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&mreq), sizeof(mreq)) == 0;
     }
@@ -282,7 +305,7 @@ bool UdpSocket::receive(DataBuffer& buffer, Address& address, int& port)
     return received_size > 0;
 }
 
-bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int port)
+bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int port, UdpMulticastMode mode)
 {
     if (handle == INVALID_SOCKET)
     {
@@ -300,7 +323,7 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
             ::setsockopt(handle, IPPROTO_IP, IP_MULTICAST_IF, reinterpret_cast<const char*>(&server_addr.sin_addr), sizeof(server_addr.sin_addr));
 
             memset(&server_addr, 0, sizeof(server_addr));
-            server_addr.sin_addr.s_addr = htonl((239 << 24) | (192 << 16) | (group_nr));
+            server_addr.sin_addr.s_addr = getMulticastIPv4(mode, group_nr);
             
             server_addr.sin_family = AF_INET;
             server_addr.sin_port = htons(port);
@@ -317,10 +340,7 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
             ::setsockopt(handle, IPPROTO_IPV6, IPV6_MULTICAST_IF, reinterpret_cast<const char*>(&server_addr.sin6_addr), sizeof(server_addr.sin6_addr));
 
             memset(&server_addr, 0, sizeof(server_addr));
-            server_addr.sin6_addr.s6_addr[0] = 0xff;
-            server_addr.sin6_addr.s6_addr[1] = 0x08;
-            server_addr.sin6_addr.s6_addr[14] = group_nr >> 8;
-            server_addr.sin6_addr.s6_addr[15] = group_nr;
+            setMulticastIPv6(server_addr.sin6_addr.s6_addr, mode, group_nr);
             server_addr.sin6_family = AF_INET6;
             server_addr.sin6_port = htons(port);
 
@@ -332,9 +352,9 @@ bool UdpSocket::sendMulticast(const void* data, size_t size, int group_nr, int p
     return success;
 }
 
-bool UdpSocket::sendMulticast(const DataBuffer& buffer, int group_nr, int port)
+bool UdpSocket::sendMulticast(const DataBuffer& buffer, int group_nr, int port, UdpMulticastMode mode)
 {
-    return sendMulticast(buffer.getData(), buffer.getDataSize(), group_nr, port);
+    return sendMulticast(buffer.getData(), buffer.getDataSize(), group_nr, port, mode);
 }
 
 bool UdpSocket::sendBroadcast(const void* data, size_t size, int port)
