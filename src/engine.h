@@ -4,6 +4,7 @@
 #include "stringImproved.h"
 #include "ecs/system.h"
 #include "P.h"
+#include "timer.h"
 
 #ifdef WIN32
 #include "dynamicLibrary.h"
@@ -25,6 +26,11 @@ private:
     std::unordered_map<string, P<PObject> > objectMap;
     float elapsedTime;
     float gameSpeed;
+
+    sp::SystemStopwatch frame_timer;
+#ifdef DEBUG
+    sp::SystemTimer debug_output_timer;
+#endif
 
     EngineTiming last_engine_timing;
 #ifdef WIN32
@@ -51,8 +57,14 @@ public:
     }
 
     void runMainLoop();
+    void iterMainLoopHeadless();
+    void iterMainLoop();
+
     void shutdown();
     bool isRunning() { return running; }
+#ifdef __EMSCRIPTEN__
+    void emitVirtualResizeEvent();
+#endif
 private:
     void handleEvent(SDL_Event& event);
 };
