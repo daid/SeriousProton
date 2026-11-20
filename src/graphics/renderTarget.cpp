@@ -432,6 +432,8 @@ void RenderTarget::drawLineBlendAdd(const std::vector<glm::vec2>& points, glm::u
 
 void RenderTarget::drawPoint(glm::vec2 position, glm::u8vec4 color)
 {
+    // FIXME: Emscripten Safari Error, points are filling up the full screen. Disabled in Emscripten until further investigation
+#ifndef __EMSCRIPTEN__
     if (points_index_data.size() >= std::numeric_limits<uint16_t>::max() - 2U)
         finish();
     auto n = points_vertex_data.size();
@@ -439,6 +441,7 @@ void RenderTarget::drawPoint(glm::vec2 position, glm::u8vec4 color)
     points_index_data.insert(points_index_data.end(), {
         uint16_t(n)
     });
+#endif
 }
 
 void RenderTarget::drawRectColorMultiply(const sp::Rect& rect, glm::u8vec4 color)

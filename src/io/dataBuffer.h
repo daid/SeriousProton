@@ -250,6 +250,20 @@ public:
     DataBuffer& operator >>(double& data) { read(data); return *this; }
     DataBuffer& operator >>(string& data) { read(data); return *this; }
 
+#ifdef __EMSCRIPTEN__
+    void write(size_t i)
+    {
+        writeVLQu(i);
+    }
+    DataBuffer& operator <<(size_t data) { write(data); return *this; }
+    DataBuffer& operator >>(size_t& data) {
+        uint32_t d;
+        read(d);
+        data = d;
+        return *this;
+    }
+#endif
+
 #ifdef __APPLE__
     DataBuffer& operator <<(size_t data) { write(uint64_t(data)); return *this; }
     DataBuffer& operator >>(size_t& data) { read(data); return *this; }
