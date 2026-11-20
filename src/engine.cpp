@@ -282,14 +282,7 @@ static bool emscripten_call_back_resize(int eventType, const EmscriptenUiEvent *
 
 void Engine::emitVirtualResizeEvent() {
     auto window = Window::all_windows.at(0);
-    auto id = SDL_GetWindowID(static_cast<SDL_Window*>(window->window));
-
-    SDL_Event event;
-    event.type = SDL_WINDOWEVENT;
-    event.window.windowID = id;
-    event.window.type = SDL_WINDOWEVENT_RESIZED;
-
-    engine->handleEvent(event);
+    window->setupView();
 }
 
 #endif
