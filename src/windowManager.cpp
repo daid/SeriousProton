@@ -523,10 +523,21 @@ void Window::handleEvent(const SDL_Event& event)
     }
 }
 
+#ifdef __EMSCRIPTEN__
+extern "C" {
+extern void js_get_screen_size(int* w, int* h);
+}
+#endif
+
 void Window::setupView()
 {
     int w, h;
+#ifndef __EMSCRIPTEN__
     SDL_GetWindowSize(static_cast<SDL_Window*>(window), &w, &h);
+#else
+    // The previous call is wrong in Emscripten for unknow reasons.
+    js_get_screen_size(&w, &h);
+#endif
     glm::vec2 window_size{w, h};
 
     current_virtual_size = minimal_virtual_size;
@@ -537,6 +548,11 @@ void Window::setupView()
     }else{
         current_virtual_size.y = current_virtual_size.x / window_size.x * window_size.y;
     }
+
+#ifdef __EMSCRIPTEN__
+    // The event fire when available space change. This call update the canvas size accordingly
+    SDL_SetWindowSize(static_cast<SDL_Window*>(window), (int)window_size.x, (int) window_size.y);
+#endif
 }
 
 glm::ivec2 Window::calculateWindowSize() const
